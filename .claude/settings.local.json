@@ -3,7 +3,8 @@
     "allow": [
       "Bash(find C:/Users/HP/Desktop/XPMONEY -type f -name *.json -o -name *.js -o -name *.ts -o -name *.html)",
       "mcp__Claude_Preview__preview_start",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

@@ -33,7 +33,7 @@ export default clerkMiddleware(async (auth, request) => {
   }
 
   // Se está autenticado mas não completou onboarding
-  const onboardingCompleted = sessionClaims?.metadata?.onboarding_completed
+  const onboardingCompleted = (sessionClaims?.metadata as Record<string, unknown>)?.onboarding_completed
   if (requiresOnboarding(request) && !onboardingCompleted) {
     const onboardingUrl = new URL('/onboarding', request.url)
     return NextResponse.redirect(onboardingUrl)

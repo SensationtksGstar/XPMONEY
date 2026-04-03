@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
-import { dark } from '@clerk/themes'
 import './globals.css'
 import { PostHogProvider } from '@/components/providers/PostHogProvider'
 import { QueryProvider }    from '@/components/providers/QueryProvider'
@@ -58,7 +57,6 @@ export default function RootLayout({
   return (
     <ClerkProvider
       appearance={{
-        baseTheme: dark,
         variables: {
           colorPrimary:    '#22c55e',
           colorBackground: '#0a0f1e',

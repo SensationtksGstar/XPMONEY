@@ -79,9 +79,16 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Dar XP pela transação (+10 XP)
-  await db.rpc('add_xp', { p_user_id: user.id, p_amount: 10, p_reason: 'transaction_registered' })
-    .catch(() => null) // não bloquear se rpc falhar
+  // Dar XP pela transação (+10 XP) — best-effort
+  try {
+    await db.from('xp_progress').upsert({
+      user_id:          user.id,
+      xp_total:         10,
+      level:            1,
+      last_activity_at: new Date().toISOString(),
+      updated_at:       new Date().toISOString(),
+    })
+  } catch { /* não bloquear se falhar */ }
 
   return NextResponse.json({ data, error: null }, { status: 201 })
 }
