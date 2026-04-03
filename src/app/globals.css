@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background:             222 47% 6%;
+    --foreground:             210 40% 98%;
+    --card:                   222 47% 9%;
+    --card-foreground:        210 40% 98%;
+    --popover:                222 47% 9%;
+    --popover-foreground:     210 40% 98%;
+    --primary:                142 71% 45%;
+    --primary-foreground:     144 100% 5%;
+    --secondary:              217 33% 17%;
+    --secondary-foreground:   210 40% 98%;
+    --muted:                  217 33% 17%;
+    --muted-foreground:       215 20% 55%;
+    --accent:                 217 33% 17%;
+    --accent-foreground:      210 40% 98%;
+    --destructive:            0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border:                 217 33% 17%;
+    --input:                  217 33% 17%;
+    --ring:                   142 71% 45%;
+    --radius:                 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar customizada */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+  }
+}
+
+@layer components {
+  /* Card glassmorphism */
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
+  }
+
+  /* XP Bar animada */
+  .xp-bar-fill {
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Score ring */
+  .score-ring {
+    transform: rotate(-90deg);
+    transform-origin: center;
+  }
+  .score-ring-fill {
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    stroke-linecap: round;
+  }
+
+  /* Gradient de fundo do dashboard */
+  .dashboard-bg {
+    background:
+      radial-gradient(ellipse at top left,    rgba(34, 197, 94, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+      hsl(var(--background));
+  }
+
+  /* Badge de raridade */
+  .badge-common    { @apply border-slate-500/40 bg-slate-500/10; }
+  .badge-rare      { @apply border-blue-500/40  bg-blue-500/10; }
+  .badge-epic      { @apply border-purple-500/40 bg-purple-500/10; }
+  .badge-legendary { @apply border-yellow-500/40 bg-yellow-500/10; }
+
+  /* Número animado */
+  .animated-number {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+}
+
+@layer utilities {
+  /* Texto gradiente XP Money */
+  .text-gradient-brand {
+    @apply bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-xp {
+    @apply bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-elite {
+    @apply bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent;
+  }
+
+  /* Glow effects */
+  .glow-green  { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+  .glow-purple { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+  .glow-gold   { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+}
