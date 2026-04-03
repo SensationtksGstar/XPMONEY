@@ -98,6 +98,23 @@
 }
 
 @layer utilities {
+  /* Safe area iOS */
+  .safe-top    { padding-top:    env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-left   { padding-left:   env(safe-area-inset-left); }
+  .safe-right  { padding-right:  env(safe-area-inset-right); }
+
+  /* Touch target mínimo 44px (Apple HIG) */
+  .touch-target {
+    min-height: 44px;
+    min-width:  44px;
+  }
+
+  /* Previne highlight azul em mobile ao tocar */
+  .no-tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   /* Texto gradiente XP Money */
   .text-gradient-brand {
     @apply bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent;

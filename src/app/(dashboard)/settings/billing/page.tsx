@@ -1,0 +1,229 @@
+'use client'
+
+import { useState }  from 'react'
+import { Crown, Check, Zap, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import { cn } from '@/lib/utils'
+import { track } from '@/lib/posthog'
+
+type BillingCycle = 'monthly' | 'yearly'
+
+const PLANS = [
+  {
+    id:       'free',
+    name:     'Grátis',
+    icon:     '🌱',
+    monthly:  0,
+    yearly:   0,
+    color:    'border-white/10',
+    highlight: false,
+    features: [
+      'Transações ilimitadas',
+      'Score de saúde financeira',
+      'XP e níveis básicos',
+      'Voltix básico',
+      '3 missões ativas',
+      '10 categorias',
+      'Histórico de 3 meses',
+    ],
+  },
+  {
+    id:       'plus',
+    name:     'Plus',
+    icon:     '⚡',
+    monthly:  3.99,
+    yearly:   29.99,
+    color:    'border-green-500/40',
+    highlight: true,
+    features: [
+      'Tudo do Grátis',
+      'Missões ilimitadas',
+      'Categorias ilimitadas',
+      'Histórico completo',
+      'Relatórios PDF/CSV',
+      'Voltix evoluído',
+      'Sem anúncios',
+      'Objetivos ilimitados',
+    ],
+    priceIds: {
+      monthly: process.env.NEXT_PUBLIC_STRIPE_PLUS_MONTHLY ?? '',
+      yearly:  process.env.NEXT_PUBLIC_STRIPE_PLUS_YEARLY  ?? '',
+    },
+  },
+  {
+    id:       'pro',
+    name:     'Pro',
+    icon:     '👑',
+    monthly:  7.99,
+    yearly:   59.99,
+    color:    'border-purple-500/30',
+    highlight: false,
+    features: [
+      'Tudo do Plus',
+      'Multi-conta (5 contas)',
+      'Modo casal partilhado',
+      'Voltix skins exclusivos',
+      'Suporte prioritário',
+      'Acesso antecipado a features',
+      'Badge Pro exclusivo',
+    ],
+    priceIds: {
+      monthly: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY ?? '',
+      yearly:  process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY  ?? '',
+    },
+  },
+]
+
+export default function BillingPage() {
+  const [cycle, setCycle]   = useState<BillingCycle>('yearly')
+  const [loading, setLoading] = useState<string | null>(null)
+
+  async function handleUpgrade(planId: string) {
+    if (planId === 'free') return
+    setLoading(planId)
+    track.upgrade_clicked('billing_page', planId)
+    try {
+      const res = await fetch('/api/billing/checkout', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ plan: planId, cycle }),
+      })
+      const { url } = await res.json()
+      if (url) window.location.href = url
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const yearlySaving = Math.round((1 - (29.99 / (3.99 * 12))) * 100)
+
+  return (
+    <div className="space-y-6 max-w-2xl mx-auto pb-8">
+
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Link href="/settings" className="text-white/40 hover:text-white transition-colors p-1 -ml-1">
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <div>
+          <h1 className="text-xl font-bold text-white">Escolhe o teu plano</h1>
+          <p className="text-white/40 text-sm">Sem compromisso. Cancela quando quiseres.</p>
+        </div>
+      </div>
+
+      {/* Toggle mensal / anual */}
+      <div className="flex items-center justify-center gap-3">
+        <button
+          onClick={() => setCycle('monthly')}
+          className={cn('px-4 py-2 rounded-xl text-sm font-medium transition-all', cycle === 'monthly' ? 'bg-white/10 text-white' : 'text-white/40')}
+        >
+          Mensal
+        </button>
+        <button
+          onClick={() => setCycle('yearly')}
+          className={cn('relative px-4 py-2 rounded-xl text-sm font-medium transition-all', cycle === 'yearly' ? 'bg-white/10 text-white' : 'text-white/40')}
+        >
+          Anual
+          <span className="absolute -top-2 -right-2 bg-green-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+            -{yearlySaving}%
+          </span>
+        </button>
+      </div>
+
+      {/* Cards de planos */}
+      <div className="space-y-3">
+        {PLANS.map(plan => {
+          const price   = cycle === 'yearly' && plan.yearly > 0
+            ? (plan.yearly / 12).toFixed(2)
+            : plan.monthly.toFixed(2)
+          const isFree  = plan.id === 'free'
+          const isLoading = loading === plan.id
+
+          return (
+            <div
+              key={plan.id}
+              className={cn(
+                'border rounded-2xl p-5 transition-all',
+                plan.color,
+                plan.highlight ? 'bg-green-500/5' : 'bg-white/3',
+              )}
+            >
+              {plan.highlight && (
+                <div className="flex justify-end mb-3">
+                  <span className="bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-full">
+                    MAIS POPULAR
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-2xl">{plan.icon}</span>
+                    <h2 className="text-lg font-bold text-white">{plan.name}</h2>
+                  </div>
+                  {isFree ? (
+                    <p className="text-2xl font-bold text-white">Grátis</p>
+                  ) : (
+                    <div>
+                      <p className="text-2xl font-bold text-white">
+                        €{price}
+                        <span className="text-sm text-white/40 font-normal">/mês</span>
+                      </p>
+                      {cycle === 'yearly' && (
+                        <p className="text-xs text-white/40">€{plan.yearly}/ano · faturado anualmente</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {!isFree && (
+                  <button
+                    onClick={() => handleUpgrade(plan.id)}
+                    disabled={!!loading}
+                    className={cn(
+                      'flex items-center gap-2 font-bold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm',
+                      plan.highlight
+                        ? 'bg-green-500 hover:bg-green-400 text-black'
+                        : 'bg-purple-500/20 border border-purple-500/40 text-purple-400 hover:bg-purple-500/30',
+                      loading && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    {isLoading ? (
+                      <span className="animate-spin">⚡</span>
+                    ) : (
+                      <>
+                        <Crown className="w-4 h-4" />
+                        {plan.highlight ? 'Ativar Plus' : 'Ativar Pro'}
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Features */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {plan.features.map(f => (
+                  <div key={f} className="flex items-center gap-2">
+                    <Check className={cn('w-3.5 h-3.5 flex-shrink-0',
+                      plan.highlight ? 'text-green-400' : plan.id === 'pro' ? 'text-purple-400' : 'text-white/30'
+                    )} />
+                    <span className="text-xs text-white/60">{f}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Garantia */}
+      <div className="flex items-center justify-center gap-2 text-white/30 text-xs">
+        <Zap className="w-3.5 h-3.5" />
+        Cancela a qualquer momento · Sem taxa de cancelamento · Reembolso em 7 dias
+      </div>
+    </div>
+  )
+}

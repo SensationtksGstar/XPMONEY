@@ -1,0 +1,42 @@
+{
+  "name": "XP Money",
+  "short_name": "XP Money",
+  "description": "Controla as tuas finanças como um RPG",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060b14",
+  "theme_color": "#060b14",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "lang": "pt",
+  "shortcuts": [
+    {
+      "name": "Nova Transação",
+      "short_name": "Adicionar",
+      "description": "Regista uma transação rapidamente",
+      "url": "/transactions?new=true",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver o teu dashboard financeiro",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

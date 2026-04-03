@@ -1,21 +1,22 @@
 'use client'
 
-import Link         from 'next/link'
+import Link            from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserButton }  from '@clerk/nextjs'
 import {
   LayoutDashboard, ArrowLeftRight, Crosshair,
-  Zap, Target, Settings, Crown,
+  Zap, Target, Settings, Crown, Trophy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { href: '/dashboard',     label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/transactions',  label: 'Transações',  icon: ArrowLeftRight },
-  { href: '/missions',      label: 'Missões',     icon: Crosshair },
-  { href: '/voltix',        label: 'Voltix',      icon: Zap },
-  { href: '/goals',         label: 'Objetivos',   icon: Target },
-  { href: '/settings',      label: 'Definições',  icon: Settings },
+  { href: '/dashboard',    label: 'Dashboard',  icon: LayoutDashboard },
+  { href: '/transactions', label: 'Transações', icon: ArrowLeftRight },
+  { href: '/missions',     label: 'Missões',    icon: Crosshair },
+  { href: '/voltix',       label: 'Voltix',     icon: Zap },
+  { href: '/goals',        label: 'Objetivos',  icon: Target },
+  { href: '/badges',       label: 'Conquistas', icon: Trophy },
+  { href: '/settings',     label: 'Definições', icon: Settings },
 ]
 
 export function Sidebar() {
@@ -30,9 +31,9 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map(item => {
-          const Icon    = item.icon
+          const Icon     = item.icon
           const isActive = pathname.startsWith(item.href)
           return (
             <Link
@@ -45,7 +46,7 @@ export function Sidebar() {
                   : 'text-white/60 hover:text-white hover:bg-white/5',
               )}
             >
-              <Icon className="w-4.5 h-4.5 flex-shrink-0" />
+              <Icon className="w-4 h-4 flex-shrink-0" />
               {item.label}
             </Link>
           )
