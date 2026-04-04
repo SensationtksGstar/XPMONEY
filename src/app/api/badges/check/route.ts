@@ -18,12 +18,14 @@ export async function POST() {
 
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
+  const internalUserId = user.id
+
   const newlyAwarded: { code: string; name: string; icon: string; xp_reward: number }[] = []
 
   // Helper to conditionally award a badge and collect the result
   async function tryAward(condition: boolean, badgeCode: string) {
     if (!condition) return
-    const result = await awardBadge(db, user.id, badgeCode)
+    const result = await awardBadge(db, internalUserId, badgeCode)
     if (result.awarded && result.badge) {
       newlyAwarded.push({
         code:       result.badge.code,
@@ -38,7 +40,7 @@ export async function POST() {
   const { count: txCount } = await db
     .from('transactions')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
+    .eq('user_id', internalUserId)
 
   await tryAward((txCount ?? 0) > 0, 'first_transaction')
 
@@ -46,7 +48,7 @@ export async function POST() {
   const { data: latestScore } = await db
     .from('financial_scores')
     .select('score')
-    .eq('user_id', user.id)
+    .eq('user_id', internalUserId)
     .order('calculated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -62,7 +64,7 @@ export async function POST() {
   const { data: goals } = await db
     .from('goals')
     .select('id, current_amount, target_amount')
-    .eq('user_id', user.id)
+    .eq('user_id', internalUserId)
 
   const hasCompletedGoal = (goals ?? []).some(
     (g) => (g.current_amount ?? 0) >= (g.target_amount ?? Infinity),

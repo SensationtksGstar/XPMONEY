@@ -60,14 +60,16 @@ export default function OnboardingPage() {
     try {
       track.onboarding_step(3, { goal_amount: goalAmount })
 
-      await fetch('/api/onboarding', {
+      const res = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ challenge, goal, goal_amount: Number(goalAmount) || 0 }),
       })
 
-      // Marcar onboarding como completo nos metadados do Clerk
-      await user?.update({ unsafeMetadata: { onboarding_completed: true } })
+      if (!res.ok) throw new Error('Onboarding API failed')
+
+      // Reload the Clerk session so the updated publicMetadata is reflected in sessionClaims
+      await user?.reload()
 
       track.onboarding_completed(challenge)
       router.push('/dashboard')

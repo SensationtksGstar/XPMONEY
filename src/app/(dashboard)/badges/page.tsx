@@ -1,7 +1,8 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { cn }       from '@/lib/utils'
+import { useEffect } from 'react'
+import { useQuery }  from '@tanstack/react-query'
+import { cn }        from '@/lib/utils'
 import { BADGE_DEFINITIONS } from '@/lib/gamification'
 import type { UserBadge } from '@/types'
 
@@ -38,6 +39,11 @@ export default function BadgesPage() {
     queryKey: ['badges'],
     queryFn:  fetchUserBadges,
   })
+
+  // Fire badge check on mount — best-effort, no UI impact
+  useEffect(() => {
+    fetch('/api/badges/check', { method: 'POST' }).catch(() => {})
+  }, [])
 
   const earnedCodes = new Set(earned.map(b => b.badge?.code ?? ''))
 

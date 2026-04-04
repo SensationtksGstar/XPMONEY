@@ -1,4 +1,4 @@
-import { auth }              from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { MISSION_TEMPLATES }         from '@/lib/gamification'
@@ -135,6 +135,12 @@ export async function POST(req: NextRequest) {
       badge_id: badge.id,
     })
   }
+
+  // Update Clerk publicMetadata so the middleware session claim reflects onboarding completion
+  const clerk = await clerkClient()
+  await clerk.users.updateUserMetadata(userId, {
+    publicMetadata: { onboarding_completed: true },
+  })
 
   return NextResponse.json({ success: true, error: null })
 }
