@@ -7,6 +7,8 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/webhooks/(.*)',        // Stripe webhooks — sem auth
+  '/manifest.json',           // PWA manifest
+  '/icons/(.*)',              // PWA icons
 ])
 
 // Rotas que requerem onboarding completo

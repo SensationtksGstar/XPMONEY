@@ -2,6 +2,7 @@ import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { calculateXPProgress }       from '@/lib/gamification'
+import { recalculateScore }          from '@/lib/recalculateScore'
 
 export async function POST(
   _req: NextRequest,
@@ -57,6 +58,11 @@ export async function POST(
   })
 
   const leveledUp = progress.level > (xp?.level ?? 1)
+
+  // Recalculate financial score after mission completion — best-effort
+  try {
+    await recalculateScore(db, user.id)
+  } catch { /* never block the response */ }
 
   return NextResponse.json({
     success:   true,

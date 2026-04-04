@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { X, Zap, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTransactions } from '@/hooks/useTransactions'
-import { DEFAULT_CATEGORIES } from '@/types'
-import { track }              from '@/lib/posthog'
-import { cn }                 from '@/lib/utils'
+import { useAccounts }     from '@/hooks/useAccounts'
+import { useCategories }   from '@/hooks/useCategories'
+import { track }           from '@/lib/posthog'
+import { cn }              from '@/lib/utils'
 import type { TransactionType } from '@/types'
 
 interface Props {
@@ -15,7 +16,9 @@ interface Props {
 }
 
 export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
-  const { createTransaction } = useTransactions()
+  const { createTransaction }           = useTransactions()
+  const { defaultAccount }              = useAccounts()
+  const { byType }                      = useCategories()
   const [type, setType]             = useState<TransactionType>(initialType)
   const [amount, setAmount]         = useState('')
   const [category, setCategory]     = useState('')
@@ -32,9 +35,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
-  const categories = DEFAULT_CATEGORIES.filter(
-    c => c.transaction_type === type || c.transaction_type === 'both'
-  )
+  const categories = byType(type)
 
   function handleCategorySelect(name: string) {
     setCategory(name)
@@ -53,7 +54,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
         category_id: category,
         description,
         date,
-        account_id:  'default',
+        account_id:  defaultAccount?.id ?? '',
       })
       track.transaction_created(type, category, parseFloat(amount))
       setXpGained(10)
@@ -255,10 +256,17 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                 </motion.div>
               )}
 
+              {/* No account warning */}
+              {!defaultAccount && (
+                <p className="text-xs text-yellow-400/80 text-center mb-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
+                  Nenhuma conta configurada. Completa o onboarding.
+                </p>
+              )}
+
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading || !amount || !category}
+                disabled={loading || !amount || !category || !defaultAccount}
                 className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold py-4 rounded-2xl transition-all text-base active:scale-95"
               >
                 {loading ? '⚡ A guardar...' : 'Guardar transação'}

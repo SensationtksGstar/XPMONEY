@@ -45,10 +45,6 @@ const PLANS = [
       'Sem anúncios',
       'Objetivos ilimitados',
     ],
-    priceIds: {
-      monthly: process.env.NEXT_PUBLIC_STRIPE_PLUS_MONTHLY ?? '',
-      yearly:  process.env.NEXT_PUBLIC_STRIPE_PLUS_YEARLY  ?? '',
-    },
   },
   {
     id:       'pro',
@@ -67,10 +63,6 @@ const PLANS = [
       'Acesso antecipado a features',
       'Badge Pro exclusivo',
     ],
-    priceIds: {
-      monthly: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY ?? '',
-      yearly:  process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY  ?? '',
-    },
   },
 ]
 

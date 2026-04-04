@@ -1,7 +1,9 @@
 import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
+import { awardBadge }                from '@/lib/awardBadge'
 import { z }                         from 'zod'
+import { recalculateScore }          from '@/lib/recalculateScore'
 
 const CreateSchema = z.object({
   account_id:  z.string(),
@@ -101,6 +103,16 @@ export async function POST(req: NextRequest) {
       })
     }
   } catch { /* não bloquear se falhar */ }
+
+  // Award first_transaction badge — best-effort
+  try {
+    await awardBadge(db, user.id, 'first_transaction')
+  } catch { /* never block the response */ }
+
+  // Recalculate financial score after transaction — best-effort
+  try {
+    await recalculateScore(db, user.id)
+  } catch { /* never block the response */ }
 
   return NextResponse.json({ data, error: null }, { status: 201 })
 }

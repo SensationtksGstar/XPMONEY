@@ -1,10 +1,11 @@
 'use client'
 
-import { useState }     from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useUser }      from '@clerk/nextjs'
 import { useVoltix }    from '@/hooks/useVoltix'
 import { useXP }        from '@/hooks/useXP'
+import { useToast }     from '@/components/ui/toaster'
 import { Zap, MessageCircle, TrendingUp, Star } from 'lucide-react'
 import { cn }           from '@/lib/utils'
 import type { VoltixMood } from '@/types'
@@ -72,6 +73,26 @@ export default function VoltixPage() {
   const { xp }           = useXP(user?.id ?? '')
   const [msgIndex, setMsgIndex] = useState(0)
   const [tapped, setTapped]     = useState(false)
+  const { toast }        = useToast()
+  const checkinCalled    = useRef(false)
+
+  // Daily check-in — fires once on mount, ref prevents double-call in React Strict Mode
+  useEffect(() => {
+    if (checkinCalled.current) return
+    checkinCalled.current = true
+
+    fetch('/api/daily-checkin', { method: 'POST' })
+      .then(res => res.ok ? res.json() : null)
+      .then((result) => {
+        if (!result) return
+        if (result.badges_awarded && result.badges_awarded.length > 0) {
+          result.badges_awarded.forEach((badge: { name: string; icon: string }) => {
+            toast(`${badge.icon} Novo badge desbloqueado: ${badge.name}!`, 'xp')
+          })
+        }
+      })
+      .catch(() => { /* best-effort — never crash the page */ })
+  }, [toast])
 
   const mood   = voltix?.mood ?? 'neutral'
   const config = MOOD_CONFIG[mood]
