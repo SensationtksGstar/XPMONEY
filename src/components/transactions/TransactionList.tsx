@@ -1,6 +1,10 @@
 'use client'
 
+import { useState } from 'react'
+import { Trash2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useTransactions }  from '@/hooks/useTransactions'
+import { useToast }         from '@/components/ui/toaster'
 import { formatCurrency, formatDate, getTransactionColor, getTransactionSign, groupBy } from '@/lib/utils'
 
 interface Props {
@@ -9,7 +13,10 @@ interface Props {
 }
 
 export function TransactionList({ search, typeFilter }: Props) {
-  const { transactions, loading } = useTransactions()
+  const { transactions, loading, deleteTransaction } = useTransactions()
+  const { toast } = useToast()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmId, setConfirmId]   = useState<string | null>(null)
 
   const filtered = transactions.filter(tx => {
     const matchesType = typeFilter === 'all' || tx.type === typeFilter
@@ -19,8 +26,21 @@ export function TransactionList({ search, typeFilter }: Props) {
     return matchesType && matchesSearch
   })
 
-  const grouped = groupBy(filtered, 'date')
+  const grouped    = groupBy(filtered, 'date')
   const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+
+  async function handleDelete(id: string) {
+    setDeletingId(id)
+    try {
+      await deleteTransaction(id)
+      toast('Transação eliminada', 'success')
+    } catch {
+      toast('Erro ao eliminar', 'error')
+    } finally {
+      setDeletingId(null)
+      setConfirmId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -56,7 +76,7 @@ export function TransactionList({ search, typeFilter }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-4">
       {sortedDates.map(date => (
         <div key={date}>
           <div className="flex items-center justify-between mb-3">
@@ -69,24 +89,72 @@ export function TransactionList({ search, typeFilter }: Props) {
           </div>
           <div className="glass-card overflow-hidden divide-y divide-white/5">
             {grouped[date].map(tx => (
-              <div key={tx.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/3 transition-colors group">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                  style={{ backgroundColor: `${tx.category?.color ?? '#94a3b8'}15` }}
+              <div key={tx.id} className="relative overflow-hidden">
+                <motion.div
+                  className="flex items-center gap-3 px-4 py-3.5 bg-transparent"
+                  animate={{ x: confirmId === tx.id ? -72 : 0 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                 >
-                  {tx.category?.icon ?? '📦'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">
-                    {tx.description || tx.category?.name || 'Transação'}
-                  </p>
-                  <p className="text-xs text-white/40">{tx.category?.name}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <span className={`text-sm font-bold tabular-nums ${getTransactionColor(tx.type)}`}>
-                    {getTransactionSign(tx.type)}{formatCurrency(tx.amount)}
-                  </span>
-                </div>
+                  {/* Ícone categoria */}
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
+                    style={{ backgroundColor: `${tx.category?.color ?? '#94a3b8'}15` }}
+                  >
+                    {tx.category?.icon ?? '📦'}
+                  </div>
+
+                  {/* Info */}
+                  <button
+                    className="flex-1 min-w-0 text-left touch-target"
+                    onPointerDown={() => {
+                      if (confirmId === tx.id) setConfirmId(null)
+                    }}
+                  >
+                    <p className="text-sm font-medium text-white truncate">
+                      {tx.description || tx.category?.name || 'Transação'}
+                    </p>
+                    <p className="text-xs text-white/40">{tx.category?.name}</p>
+                  </button>
+
+                  {/* Valor + swipe hint */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`text-sm font-bold tabular-nums ${getTransactionColor(tx.type)}`}>
+                      {getTransactionSign(tx.type)}{formatCurrency(tx.amount)}
+                    </span>
+                    {/* Botão reveal delete — toque longo / click no valor */}
+                    <button
+                      onClick={() => setConfirmId(confirmId === tx.id ? null : tx.id)}
+                      className="p-1.5 text-white/20 hover:text-white/50 transition-colors active:scale-90 no-tap-highlight"
+                      aria-label="Opções"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </motion.div>
+
+                {/* Botão de confirmar delete */}
+                <AnimatePresence>
+                  {confirmId === tx.id && (
+                    <motion.button
+                      initial={{ opacity: 0, x: 72 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 72 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                      onClick={() => handleDelete(tx.id)}
+                      disabled={deletingId === tx.id}
+                      className="absolute right-0 top-0 bottom-0 w-[72px] bg-red-500 flex flex-col items-center justify-center gap-0.5 text-white"
+                    >
+                      {deletingId === tx.id ? (
+                        <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4" />
+                          <span className="text-[10px] font-semibold">Apagar</span>
+                        </>
+                      )}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
             ))}
           </div>

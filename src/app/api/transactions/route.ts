@@ -81,13 +81,25 @@ export async function POST(req: NextRequest) {
 
   // Dar XP pela transação (+10 XP) — best-effort
   try {
-    await db.from('xp_progress').upsert({
-      user_id:          user.id,
-      xp_total:         10,
-      level:            1,
-      last_activity_at: new Date().toISOString(),
-      updated_at:       new Date().toISOString(),
-    })
+    const { data: xp } = await db
+      .from('xp_progress').select('xp_total, level').eq('user_id', user.id).single()
+    if (xp) {
+      const { calculateXPProgress } = await import('@/lib/gamification')
+      const newTotal  = (xp.xp_total ?? 0) + 10
+      const progress  = calculateXPProgress(newTotal)
+      await db.from('xp_progress').update({
+        xp_total:         newTotal,
+        level:            progress.level,
+        last_activity_at: new Date().toISOString(),
+        updated_at:       new Date().toISOString(),
+      }).eq('user_id', user.id)
+      await db.from('xp_history').insert({
+        user_id:   user.id,
+        amount:    10,
+        reason:    'transaction_registered',
+        earned_at: new Date().toISOString(),
+      })
+    }
   } catch { /* não bloquear se falhar */ }
 
   return NextResponse.json({ data, error: null }, { status: 201 })

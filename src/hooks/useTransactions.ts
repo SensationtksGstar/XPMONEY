@@ -19,6 +19,11 @@ async function postTransaction(input: TransactionCreateInput): Promise<Transacti
   return data
 }
 
+async function deleteTransactionById(id: string): Promise<void> {
+  const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Erro ao eliminar transação')
+}
+
 export function useTransactions(userId?: string) {
   const client = useQueryClient()
 
@@ -38,11 +43,21 @@ export function useTransactions(userId?: string) {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteTransactionById,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ['transactions'] })
+      client.invalidateQueries({ queryKey: ['score'] })
+    },
+  })
+
   return {
     transactions:      query.data ?? [],
     loading:           query.isLoading,
     error:             query.error,
     createTransaction: mutation.mutateAsync,
     isCreating:        mutation.isPending,
+    deleteTransaction: deleteMutation.mutateAsync,
+    isDeleting:        deleteMutation.isPending,
   }
 }
