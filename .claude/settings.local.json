@@ -37,7 +37,8 @@
       "Bash(curl -s http://localhost:3000/api/categories)",
       "Bash(npx vercel:*)",
       "Bash(grep -v \"^$\")",
-      "Bash(start notepad:*)"
+      "Bash(start notepad:*)",
+      "Bash(npx kill-port:*)"
     ]
   }
 }
