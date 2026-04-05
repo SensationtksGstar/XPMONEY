@@ -27,7 +27,14 @@
       "Bash(echo \"Exit code: $?\")",
       "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/dashboard/loading.tsx)",
       "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/transactions/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/missions/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/goals/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/voltix/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/badges/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/settings/loading.tsx)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/sign-in)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/sign-in)",
+      "Bash(node -e \":*)",
+      "Bash(node -e \"require\\(''''pg''''\\)\")",
+      "Bash(node apply-schema.mjs \"Kuduro151991$\")",
+      "Bash(timeout 5 ping -n 1 supabase.com)",
+      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\HP\\\\Desktop\\\\XPMONEY\\\\database\\\\schema.sql'' -Raw | Set-Clipboard; Write-Host ''Copiado!''\")",
+      "Bash(start chrome:*)",
+      "Bash(curl -s http://localhost:3000/api/categories)"
     ]
   }
 }

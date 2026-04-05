@@ -283,6 +283,7 @@ export interface Goal {
   deadline: string | null
   status: GoalStatus
   created_at: string
+  updated_at?: string
 }
 
 // ---- SUBSCRIPTIONS ----
