@@ -45,3 +45,6 @@ Thumbs.db
 
 .vercel
 VERCEL_ENV_VARS.txt
+seed-admin.mjs
+seed-bruno.mjs
+apply-schema.mjs

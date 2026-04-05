@@ -68,11 +68,12 @@ export default function OnboardingPage() {
 
       if (!res.ok) throw new Error('Onboarding API failed')
 
-      // Reload the Clerk session so the updated publicMetadata is reflected in sessionClaims
-      await user?.reload()
-
       track.onboarding_completed(challenge)
-      router.push('/dashboard')
+
+      // Force full-page navigation so Clerk issues a fresh JWT
+      // with onboarding_completed: true in sessionClaims.
+      // router.push() reuses the cached token → middleware would redirect back to /onboarding.
+      window.location.href = '/dashboard'
     } catch (err) {
       console.error('Erro no onboarding:', err)
     } finally {

@@ -38,7 +38,8 @@
       "Bash(npx vercel:*)",
       "Bash(grep -v \"^$\")",
       "Bash(start notepad:*)",
-      "Bash(npx kill-port:*)"
+      "Bash(npx kill-port:*)",
+      "Bash(node seed-admin.mjs)"
     ]
   }
 }

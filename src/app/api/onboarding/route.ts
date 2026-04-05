@@ -54,56 +54,72 @@ export async function POST(req: NextRequest) {
 
   if (!user) return NextResponse.json({ error: 'Falha ao criar utilizador' }, { status: 500 })
 
-  // Criar conta padrão
-  await db.from('accounts').insert({
-    user_id:    user.id,
-    name:       'Conta Principal',
-    type:       'checking',
-    balance:    0,
-    is_default: true,
-  }).select().single()
+  // Criar conta padrão — só se ainda não existir
+  const { data: existingAccount } = await db
+    .from('accounts').select('id').eq('user_id', user.id).limit(1).single()
 
-  // Criar estado XP inicial
-  await db.from('xp_progress').upsert({
-    user_id:   user.id,
-    xp_total:  100, // bónus onboarding
-    level:     1,
-    updated_at: new Date().toISOString(),
-  })
+  if (!existingAccount) {
+    await db.from('accounts').insert({
+      user_id:    user.id,
+      name:       'Conta Principal',
+      type:       'checking',
+      balance:    0,
+      is_default: true,
+    })
+  }
 
-  // Log XP
-  await db.from('xp_history').insert({
-    user_id:  user.id,
-    amount:   100,
-    reason:   'onboarding_complete',
-  })
+  // Criar estado XP inicial — só se ainda não existir
+  const { data: existingXP } = await db
+    .from('xp_progress').select('id').eq('user_id', user.id).single()
 
-  // Criar estado Voltix
-  await db.from('voltix_states').upsert({
-    user_id:          user.id,
-    mood:             'happy',
-    evolution_level:  1,
-    last_interaction: new Date().toISOString(),
-  })
+  if (!existingXP) {
+    await db.from('xp_progress').insert({
+      user_id:  user.id,
+      xp_total: 100,
+      level:    1,
+    })
+    await db.from('xp_history').insert({
+      user_id: user.id,
+      amount:  100,
+      reason:  'onboarding_complete',
+    })
+  }
 
-  // Criar missões iniciais
-  const missions = MISSION_TEMPLATES
-    .filter(m => !m.is_premium)
-    .slice(0, 3)
-    .map(t => ({
-      user_id:       user!.id,
-      type:          t.type,
-      title:         t.title,
-      description:   t.description,
-      xp_reward:     t.xp_reward,
-      target_value:  t.target_value,
-      current_value: 0,
-      status:        'active',
-      is_premium:    false,
-      expires_at:    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    }))
+  // Criar estado Voltix — só se ainda não existir
+  const { data: existingVoltix } = await db
+    .from('voltix_states').select('id').eq('user_id', user.id).single()
 
-  await db.from('missions').insert(missions)
+  if (!existingVoltix) {
+    await db.from('voltix_states').insert({
+      user_id:          user.id,
+      mood:             'happy',
+      evolution_level:  1,
+      last_interaction: new Date().toISOString(),
+    })
+  }
+
+  // Criar missões iniciais — só se ainda não existir nenhuma
+  const { data: existingMissions } = await db
+    .from('missions').select('id').eq('user_id', user.id).limit(1)
+
+  if (!existingMissions || existingMissions.length === 0) {
+    const missions = MISSION_TEMPLATES
+      .filter(m => !m.is_premium)
+      .slice(0, 3)
+      .map(t => ({
+        user_id:       user!.id,
+        type:          t.type,
+        title:         t.title,
+        description:   t.description,
+        xp_reward:     t.xp_reward,
+        target_value:  t.target_value,
+        current_value: 0,
+        status:        'active',
+        is_premium:    false,
+        expires_at:    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      }))
+    await db.from('missions').insert(missions)
+  }
 
   // Criar objetivo financeiro se definido
   if (parsed.data.goal_amount > 0) {
