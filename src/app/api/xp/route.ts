@@ -3,8 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { calculateXPProgress }       from '@/lib/gamification'
 import { z }                         from 'zod'
+import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
+import { DEMO_XP }                   from '@/lib/demo/mockData'
 
 export async function GET() {
+  if (isDemoMode()) return demoResponse(DEMO_XP)
+
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

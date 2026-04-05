@@ -2,8 +2,12 @@ import { auth }              from '@clerk/nextjs/server'
 import { NextResponse }        from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { getVoltixMoodFromScore } from '@/types'
+import { isDemoMode, demoResponse } from '@/lib/demo/demoGuard'
+import { DEMO_VOLTIX }              from '@/lib/demo/mockData'
 
 export async function GET() {
+  if (isDemoMode()) return demoResponse(DEMO_VOLTIX)
+
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

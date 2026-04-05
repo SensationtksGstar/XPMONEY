@@ -19,6 +19,10 @@ function isYesterday(candidate: Date, today: Date): boolean {
 }
 
 export async function POST() {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+    return NextResponse.json({ already_checked: false, streak: 4, xp_earned: 20, badges_awarded: [] })
+  }
+
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

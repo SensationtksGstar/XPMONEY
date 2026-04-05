@@ -4,6 +4,8 @@ import { createSupabaseAdmin }       from '@/lib/supabase'
 import { awardBadge }                from '@/lib/awardBadge'
 import { z }                         from 'zod'
 import { recalculateScore }          from '@/lib/recalculateScore'
+import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
+import { DEMO_TRANSACTIONS }         from '@/lib/demo/mockData'
 
 const CreateSchema = z.object({
   account_id:  z.string(),
@@ -15,6 +17,8 @@ const CreateSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
+  if (isDemoMode()) return demoResponse(DEMO_TRANSACTIONS)
+
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -53,6 +57,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (isDemoMode()) return demoResponse(DEMO_TRANSACTIONS[0], 201)
+
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

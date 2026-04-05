@@ -2,8 +2,12 @@ import { auth }              from '@clerk/nextjs/server'
 import { NextResponse }        from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { calculateFinancialScore } from '@/lib/gamification'
+import { isDemoMode, demoResponse } from '@/lib/demo/demoGuard'
+import { DEMO_SCORE } from '@/lib/demo/mockData'
 
 export async function GET() {
+  if (isDemoMode()) return demoResponse(DEMO_SCORE)
+
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

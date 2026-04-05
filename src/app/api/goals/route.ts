@@ -2,6 +2,8 @@ import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { z }                         from 'zod'
+import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
+import { DEMO_GOALS }                from '@/lib/demo/mockData'
 
 const GoalSchema = z.object({
   name:          z.string().min(1),
@@ -11,6 +13,8 @@ const GoalSchema = z.object({
 })
 
 export async function GET() {
+  if (isDemoMode()) return demoResponse(DEMO_GOALS)
+
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -30,6 +34,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (isDemoMode()) return demoResponse(DEMO_GOALS[0], 201)
+
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

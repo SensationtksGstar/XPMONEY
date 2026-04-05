@@ -1,14 +1,17 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+
+// ---- DEMO MODE — bypasses all auth ----
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
 // Rotas públicas (não requerem autenticação)
 const isPublicRoute = createRouteMatcher([
-  '/',                        // landing page
+  '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/api/webhooks/(.*)',        // Stripe webhooks — sem auth
-  '/manifest.json',           // PWA manifest
-  '/icons/(.*)',              // PWA icons
+  '/api/webhooks/(.*)',
+  '/manifest.json',
+  '/icons/(.*)',
 ])
 
 // Rotas que requerem onboarding completo
@@ -19,30 +22,37 @@ const requiresOnboarding = createRouteMatcher([
   '/voltix(.*)',
   '/goals(.*)',
   '/settings(.*)',
+  '/badges(.*)',
 ])
 
-export default clerkMiddleware(async (auth, request) => {
-  const { userId, sessionClaims } = await auth()
-
-  // Se é rota pública, deixa passar
-  if (isPublicRoute(request)) return NextResponse.next()
-
-  // Se não está autenticado, redireciona para sign-in
-  if (!userId) {
-    const signInUrl = new URL('/sign-in', request.url)
-    signInUrl.searchParams.set('redirect_url', request.url)
-    return NextResponse.redirect(signInUrl)
+// Em demo mode, redireciona / para /dashboard e deixa tudo passar
+function demoMiddleware(request: NextRequest) {
+  if (request.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
-
-  // Se está autenticado mas não completou onboarding
-  const onboardingCompleted = (sessionClaims?.metadata as Record<string, unknown>)?.onboarding_completed
-  if (requiresOnboarding(request) && !onboardingCompleted) {
-    const onboardingUrl = new URL('/onboarding', request.url)
-    return NextResponse.redirect(onboardingUrl)
-  }
-
   return NextResponse.next()
-})
+}
+
+export default DEMO_MODE
+  ? (request: NextRequest) => demoMiddleware(request)
+  : clerkMiddleware(async (auth, request) => {
+      const { userId, sessionClaims } = await auth()
+
+      if (isPublicRoute(request)) return NextResponse.next()
+
+      if (!userId) {
+        const signInUrl = new URL('/sign-in', request.url)
+        signInUrl.searchParams.set('redirect_url', request.url)
+        return NextResponse.redirect(signInUrl)
+      }
+
+      const onboardingCompleted = (sessionClaims?.metadata as Record<string, unknown>)?.onboarding_completed
+      if (requiresOnboarding(request) && !onboardingCompleted) {
+        return NextResponse.redirect(new URL('/onboarding', request.url))
+      }
+
+      return NextResponse.next()
+    })
 
 export const config = {
   matcher: [

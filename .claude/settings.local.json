@@ -4,7 +4,30 @@
       "Bash(find C:/Users/HP/Desktop/XPMONEY -type f -name *.json -o -name *.js -o -name *.ts -o -name *.html)",
       "mcp__Claude_Preview__preview_start",
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(git push:*)",
+      "Bash(\"C:\\\\Users\\\\HP\\\\Desktop\\\\XPMONEY\\\\vercel.json\":*)",
+      "Bash(\"C:\\\\Users\\\\HP\\\\Desktop\\\\XPMONEY\\\\SETUP.md\":*)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/)",
+      "Bash(npx tsc:*)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/dashboard/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(auth\\\\\\)/sign-in/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(auth\\\\\\)/sign-up/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/transactions/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/missions/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/goals/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(auth\\\\\\)/sign-in/[[...sign-in]]/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(auth\\\\\\)/sign-up/[[...sign-up]]/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/voltix/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/badges/)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/settings/)",
+      "Bash(mkdir -p \"/c/Users/HP/Desktop/XPMONEY/src/app/sign-in/[[...sign-in]]\")",
+      "Bash(mkdir -p \"/c/Users/HP/Desktop/XPMONEY/src/app/sign-up/[[...sign-up]]\")",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/dashboard/loading.tsx)",
+      "Bash(ls /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/transactions/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/missions/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/goals/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/voltix/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/badges/loading.tsx /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/settings/loading.tsx)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/sign-in)"
     ]
   }
 }
