@@ -39,7 +39,11 @@
       "Bash(grep -v \"^$\")",
       "Bash(start notepad:*)",
       "Bash(npx kill-port:*)",
-      "Bash(node seed-admin.mjs)"
+      "Bash(node seed-admin.mjs)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"fix: move onboarding check to dashboard layout bypassing JWT cache:*)",
+      "Bash(ls -la /c/Users/HP/Desktop/XPMONEY/src/app/\\\\\\(dashboard\\\\\\)/settings/billing/)",
+      "Bash(cat -n \"C:/Users/HP/Desktop/XPMONEY/src/app/\\(dashboard\\)/settings/page.tsx\")"
     ]
   }
 }

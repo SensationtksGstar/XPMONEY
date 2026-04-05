@@ -6,17 +6,20 @@ import { UserButton }  from '@clerk/nextjs'
 import {
   LayoutDashboard, ArrowLeftRight, Crosshair,
   Zap, Target, Settings, Crown, Trophy,
+  Star, TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { href: '/dashboard',    label: 'Dashboard',  icon: LayoutDashboard },
-  { href: '/transactions', label: 'Transações', icon: ArrowLeftRight },
-  { href: '/missions',     label: 'Missões',    icon: Crosshair },
-  { href: '/voltix',       label: 'Voltix',     icon: Zap },
-  { href: '/goals',        label: 'Objetivos',  icon: Target },
-  { href: '/badges',       label: 'Conquistas', icon: Trophy },
-  { href: '/settings',     label: 'Definições', icon: Settings },
+  { href: '/dashboard',    label: 'Dashboard',  icon: LayoutDashboard, pro: false },
+  { href: '/transactions', label: 'Transações', icon: ArrowLeftRight,  pro: false },
+  { href: '/missions',     label: 'Missões',    icon: Crosshair,       pro: false },
+  { href: '/voltix',       label: 'Voltix',     icon: Zap,             pro: false },
+  { href: '/goals',        label: 'Objetivos',  icon: Target,          pro: false },
+  { href: '/badges',       label: 'Conquistas', icon: Trophy,          pro: false },
+  { href: '/perspetiva',   label: 'Perspetiva', icon: Star,            pro: true  },
+  { href: '/simulador',    label: 'Simulador',  icon: TrendingUp,      pro: true  },
+  { href: '/settings',     label: 'Definições', icon: Settings,        pro: false },
 ]
 
 export function Sidebar() {
@@ -42,27 +45,32 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-green-500/15 text-green-400 border border-green-500/20'
+                  ? item.pro
+                    ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20'
+                    : 'bg-green-500/15 text-green-400 border border-green-500/20'
                   : 'text-white/60 hover:text-white hover:bg-white/5',
               )}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.pro && (
+                <span className="text-[9px] font-bold bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full">PRO</span>
+              )}
             </Link>
           )
         })}
       </nav>
 
-      {/* Upgrade CTA */}
+      {/* Pro features CTA */}
       <div className="px-3 py-3">
         <Link
-          href="/settings/billing"
-          className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 hover:border-green-500/40 transition-all"
+          href="/perspetiva"
+          className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all"
         >
-          <Crown className="w-4 h-4 text-green-400" />
+          <Star className="w-4 h-4 text-purple-400" />
           <div>
-            <div className="text-xs font-semibold text-green-400">Upgrade para Plus</div>
-            <div className="text-xs text-white/40">€3.99/mês</div>
+            <div className="text-xs font-semibold text-purple-400">Features Pro</div>
+            <div className="text-xs text-white/40">Perspetiva · Simulador</div>
           </div>
         </Link>
       </div>
