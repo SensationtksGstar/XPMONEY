@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion }   from 'framer-motion'
 import { Clock, Coffee, Star, TrendingUp, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
 
 /* ─── Celebrity data (annual gross income in EUR, approximate) ───────── */
 const CELEBRITIES = [
@@ -252,9 +253,12 @@ export default function PerspectivaClient({ monthlyIncome, recentExpenses }: Pro
                       key={exp.id}
                       className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-4"
                     >
-                      <span className="text-xl w-8 text-center">
-                        {(exp.category as any)?.icon ?? '💸'}
-                      </span>
+                      <CategoryIcon
+                        categoryName={exp.category?.name}
+                        categoryColor={exp.category?.color}
+                        type="expense"
+                        size="md"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-white truncate">{exp.description}</div>
                         <div className="text-xs text-white/40">{exp.category?.name ?? 'Despesa'}</div>

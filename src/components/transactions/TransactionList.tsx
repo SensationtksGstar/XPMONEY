@@ -1,11 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2 }   from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTransactions }  from '@/hooks/useTransactions'
-import { useToast }         from '@/components/ui/toaster'
-import { formatCurrency, formatDate, getTransactionColor, getTransactionSign, groupBy } from '@/lib/utils'
+import { useTransactions }   from '@/hooks/useTransactions'
+import { useToast }          from '@/components/ui/toaster'
+import { CategoryIcon }      from '@/components/ui/CategoryIcon'
+import {
+  formatCurrency, formatDate, getTransactionColor,
+  getTransactionSign, groupBy,
+} from '@/lib/utils'
 
 interface Props {
   search:     string
@@ -14,19 +18,19 @@ interface Props {
 
 export function TransactionList({ search, typeFilter }: Props) {
   const { transactions, loading, deleteTransaction } = useTransactions()
-  const { toast } = useToast()
+  const { toast }   = useToast()
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [confirmId, setConfirmId]   = useState<string | null>(null)
+  const [confirmId,  setConfirmId]  = useState<string | null>(null)
 
   const filtered = transactions.filter(tx => {
-    const matchesType = typeFilter === 'all' || tx.type === typeFilter
+    const matchesType   = typeFilter === 'all' || tx.type === typeFilter
     const matchesSearch = !search ||
       tx.description.toLowerCase().includes(search.toLowerCase()) ||
       tx.category?.name.toLowerCase().includes(search.toLowerCase())
     return matchesType && matchesSearch
   })
 
-  const grouped    = groupBy(filtered, 'date')
+  const grouped     = groupBy(filtered, 'date')
   const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
 
   async function handleDelete(id: string) {
@@ -42,21 +46,22 @@ export function TransactionList({ search, typeFilter }: Props) {
     }
   }
 
+  /* ── Loading skeleton ─────────────────────────────────────────────── */
   if (loading) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map(i => (
           <div key={i} className="animate-pulse">
-            <div className="h-3 bg-white/10 rounded w-24 mb-3" />
+            <div className="h-3 bg-white/8 rounded w-24 mb-3" />
             <div className="glass-card divide-y divide-white/5">
               {[1, 2, 3].map(j => (
                 <div key={j} className="flex items-center gap-3 p-4">
-                  <div className="w-9 h-9 rounded-full bg-white/10" />
+                  <div className="w-10 h-10 rounded-2xl bg-white/8" />
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-3 bg-white/10 rounded w-2/3" />
-                    <div className="h-2.5 bg-white/10 rounded w-1/3" />
+                    <div className="h-3 bg-white/8 rounded w-2/3" />
+                    <div className="h-2.5 bg-white/5 rounded w-1/3" />
                   </div>
-                  <div className="h-4 bg-white/10 rounded w-16" />
+                  <div className="h-4 bg-white/8 rounded w-16" />
                 </div>
               ))}
             </div>
@@ -75,64 +80,64 @@ export function TransactionList({ search, typeFilter }: Props) {
     )
   }
 
+  /* ── List ─────────────────────────────────────────────────────────── */
   return (
     <div className="space-y-6 pb-4">
       {sortedDates.map(date => (
         <div key={date}>
-          <div className="flex items-center justify-between mb-3">
+          {/* Date header */}
+          <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">
               {formatDate(date)}
             </h3>
-            <span className="text-xs text-white/30">
+            <span className="text-xs text-white/20">
               {grouped[date].length} transaç{grouped[date].length === 1 ? 'ão' : 'ões'}
             </span>
           </div>
+
           <div className="glass-card overflow-hidden divide-y divide-white/5">
             {grouped[date].map(tx => (
-              <div key={tx.id} className="relative overflow-hidden">
+              <div key={tx.id} className="relative overflow-hidden group">
                 <motion.div
-                  className="flex items-center gap-3 px-4 py-3.5 bg-transparent"
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/[0.02] transition-colors"
                   animate={{ x: confirmId === tx.id ? -72 : 0 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                 >
-                  {/* Ícone categoria */}
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                    style={{ backgroundColor: `${tx.category?.color ?? '#94a3b8'}15` }}
-                  >
-                    {tx.category?.icon ?? '📦'}
-                  </div>
+                  {/* ── Category icon ── */}
+                  <CategoryIcon
+                    categoryName={tx.category?.name}
+                    categoryColor={tx.category?.color}
+                    type={tx.type}
+                    size="md"
+                  />
 
-                  {/* Info */}
+                  {/* ── Description + category ── */}
                   <button
-                    className="flex-1 min-w-0 text-left touch-target"
-                    onPointerDown={() => {
-                      if (confirmId === tx.id) setConfirmId(null)
-                    }}
+                    className="flex-1 min-w-0 text-left"
+                    onPointerDown={() => { if (confirmId === tx.id) setConfirmId(null) }}
                   >
-                    <p className="text-sm font-medium text-white truncate">
+                    <p className="text-sm font-medium text-white truncate leading-snug">
                       {tx.description || tx.category?.name || 'Transação'}
                     </p>
-                    <p className="text-xs text-white/40">{tx.category?.name}</p>
+                    <p className="text-xs text-white/35 mt-0.5">{tx.category?.name}</p>
                   </button>
 
-                  {/* Valor + swipe hint */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* ── Amount + delete trigger ── */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <span className={`text-sm font-bold tabular-nums ${getTransactionColor(tx.type)}`}>
                       {getTransactionSign(tx.type)}{formatCurrency(tx.amount)}
                     </span>
-                    {/* Botão reveal delete — toque longo / click no valor */}
                     <button
                       onClick={() => setConfirmId(confirmId === tx.id ? null : tx.id)}
-                      className="p-1.5 text-white/20 hover:text-white/50 transition-colors active:scale-90 no-tap-highlight"
-                      aria-label="Opções"
+                      className="p-1.5 text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+                      aria-label="Eliminar"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </motion.div>
 
-                {/* Botão de confirmar delete */}
+                {/* ── Delete confirm panel ── */}
                 <AnimatePresence>
                   {confirmId === tx.id && (
                     <motion.button
@@ -142,7 +147,7 @@ export function TransactionList({ search, typeFilter }: Props) {
                       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                       onClick={() => handleDelete(tx.id)}
                       disabled={deletingId === tx.id}
-                      className="absolute right-0 top-0 bottom-0 w-[72px] bg-red-500 flex flex-col items-center justify-center gap-0.5 text-white"
+                      className="absolute right-0 top-0 bottom-0 w-[72px] bg-red-500 hover:bg-red-400 flex flex-col items-center justify-center gap-0.5 text-white transition-colors"
                     >
                       {deletingId === tx.id ? (
                         <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
