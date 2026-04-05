@@ -14,17 +14,6 @@ const isPublicRoute = createRouteMatcher([
   '/icons/(.*)',
 ])
 
-// Rotas que requerem onboarding completo
-const requiresOnboarding = createRouteMatcher([
-  '/dashboard(.*)',
-  '/transactions(.*)',
-  '/missions(.*)',
-  '/voltix(.*)',
-  '/goals(.*)',
-  '/settings(.*)',
-  '/badges(.*)',
-])
-
 // Em demo mode, redireciona / para /dashboard e deixa tudo passar
 function demoMiddleware(request: NextRequest) {
   if (request.nextUrl.pathname === '/') {
@@ -36,7 +25,7 @@ function demoMiddleware(request: NextRequest) {
 export default DEMO_MODE
   ? (request: NextRequest) => demoMiddleware(request)
   : clerkMiddleware(async (auth, request) => {
-      const { userId, sessionClaims } = await auth()
+      const { userId } = await auth()
 
       if (isPublicRoute(request)) return NextResponse.next()
 
@@ -44,11 +33,6 @@ export default DEMO_MODE
         const signInUrl = new URL('/sign-in', request.url)
         signInUrl.searchParams.set('redirect_url', request.url)
         return NextResponse.redirect(signInUrl)
-      }
-
-      const onboardingCompleted = (sessionClaims?.metadata as Record<string, unknown>)?.onboarding_completed
-      if (requiresOnboarding(request) && !onboardingCompleted) {
-        return NextResponse.redirect(new URL('/onboarding', request.url))
       }
 
       return NextResponse.next()

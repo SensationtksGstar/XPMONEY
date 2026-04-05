@@ -1,12 +1,30 @@
+import { auth } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
+import { createSupabaseAdmin } from '@/lib/supabase'
 import { Sidebar }  from '@/components/layout/Sidebar'
 import { TopBar }   from '@/components/layout/TopBar'
 import { MobileNav } from '@/components/layout/MobileNav'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { userId } = await auth()
+  if (!userId) redirect('/sign-in')
+
+  // Check onboarding status directly in Supabase (bypasses JWT caching)
+  const db = createSupabaseAdmin()
+  const { data: user } = await db
+    .from('users')
+    .select('onboarding_completed')
+    .eq('clerk_id', userId)
+    .single()
+
+  if (!user || !user.onboarding_completed) {
+    redirect('/onboarding')
+  }
+
   return (
     <div className="min-h-screen dashboard-bg flex">
       {/* Sidebar desktop */}

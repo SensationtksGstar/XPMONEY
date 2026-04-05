@@ -70,9 +70,11 @@ export default function OnboardingPage() {
 
       track.onboarding_completed(challenge)
 
-      // Force full-page navigation so Clerk issues a fresh JWT
-      // with onboarding_completed: true in sessionClaims.
-      // router.push() reuses the cached token → middleware would redirect back to /onboarding.
+      // Reload Clerk session to pick up publicMetadata changes (best-effort)
+      await user?.reload()
+
+      // Force full-page navigation — dashboard layout reads Supabase directly
+      // so it will see onboarding_completed: true immediately.
       window.location.href = '/dashboard'
     } catch (err) {
       console.error('Erro no onboarding:', err)
