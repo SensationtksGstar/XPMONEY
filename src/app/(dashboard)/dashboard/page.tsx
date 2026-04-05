@@ -10,6 +10,7 @@ import { RecentTransactions } from '@/components/dashboard/RecentTransactions'
 import { VoltixWidget }       from '@/components/voltix/VoltixWidget'
 import { MissionCard }        from '@/components/missions/MissionCard'
 import { TransactionForm }    from '@/components/transactions/TransactionForm'
+import { AdBanner }           from '@/components/ads/AdBanner'
 import { formatMonth }        from '@/lib/utils'
 
 export default function DashboardPage() {
@@ -58,6 +59,9 @@ export default function DashboardPage() {
       {/* Resumo mensal */}
       <MonthlySummary userId={user?.id ?? ''} />
 
+      {/* ── AD 1: entre resumo e missões (alta visibilidade) ── */}
+      <AdBanner variant="feed" />
+
       {/* Missões */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -75,6 +79,9 @@ export default function DashboardPage() {
         </div>
         <RecentTransactions userId={user?.id ?? ''} limit={5} />
       </div>
+
+      {/* ── AD 2: no final do dashboard ── */}
+      <AdBanner variant="banner" />
 
       {/* Modal */}
       {showForm && <TransactionForm onClose={() => setShowForm(false)} />}

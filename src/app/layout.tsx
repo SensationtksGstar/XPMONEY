@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
+import Script from 'next/script'
 import './globals.css'
 import { PostHogProvider } from '@/components/providers/PostHogProvider'
 import { QueryProvider }   from '@/components/providers/QueryProvider'
 import { Toaster }         from '@/components/ui/toaster'
+
+const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ''
 
 const inter = Inter({
   subsets: ['latin'],
@@ -63,6 +66,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       }}
     >
       <html lang="pt" className={inter.variable} suppressHydrationWarning>
+        <head>
+          {/* Google AdSense — only loads when publisher ID is configured */}
+          {ADSENSE_CLIENT && (
+            <Script
+              async
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+              crossOrigin="anonymous"
+              strategy="afterInteractive"
+            />
+          )}
+        </head>
         <body className="font-sans antialiased">
           <PostHogProvider>
             <QueryProvider>
