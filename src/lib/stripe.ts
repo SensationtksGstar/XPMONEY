@@ -1,17 +1,19 @@
 import Stripe from 'stripe'
 import type { Plan } from '@/types'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-02-24.acacia',
-  typescript: true,
-})
+// Use fallback key so build doesn't fail when STRIPE_SECRET_KEY is not yet configured.
+// Actual Stripe calls will return 401 until a real key is set in env vars.
+export const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY ?? 'sk_test_placeholder_not_configured',
+  { apiVersion: '2025-02-24.acacia', typescript: true }
+)
 
 // Mapeamento de planos para price IDs do Stripe
 export const STRIPE_PRICES: Record<string, string> = {
-  plus_monthly:  process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!,
-  plus_yearly:   process.env.STRIPE_PLUS_YEARLY_PRICE_ID!,
-  pro_monthly:   process.env.STRIPE_PRO_MONTHLY_PRICE_ID!,
-  pro_yearly:    process.env.STRIPE_PRO_YEARLY_PRICE_ID!,
+  plus_monthly:  process.env.STRIPE_PLUS_MONTHLY_PRICE_ID ?? '',
+  plus_yearly:   process.env.STRIPE_PLUS_YEARLY_PRICE_ID ?? '',
+  pro_monthly:   process.env.STRIPE_PRO_MONTHLY_PRICE_ID ?? '',
+  pro_yearly:    process.env.STRIPE_PRO_YEARLY_PRICE_ID ?? '',
 }
 
 export function getPlanFromPriceId(priceId: string): Plan {

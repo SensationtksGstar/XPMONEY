@@ -34,7 +34,10 @@
       "Bash(timeout 5 ping -n 1 supabase.com)",
       "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\HP\\\\Desktop\\\\XPMONEY\\\\database\\\\schema.sql'' -Raw | Set-Clipboard; Write-Host ''Copiado!''\")",
       "Bash(start chrome:*)",
-      "Bash(curl -s http://localhost:3000/api/categories)"
+      "Bash(curl -s http://localhost:3000/api/categories)",
+      "Bash(npx vercel:*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(start notepad:*)"
     ]
   }
 }
