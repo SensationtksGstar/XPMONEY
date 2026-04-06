@@ -5,7 +5,7 @@ import { motion }          from 'framer-motion'
 import { Lock, Zap, Crown, CheckCircle2 } from 'lucide-react'
 import { useMissions }     from '@/hooks/useMissions'
 import { useQueryClient }  from '@tanstack/react-query'
-import { useToast }        from '@/components/ui/toaster'
+import { CelebrationModal } from '@/components/ui/CelebrationModal'
 import { formatPercent }   from '@/lib/utils'
 import Link                from 'next/link'
 import { cn }              from '@/lib/utils'
@@ -13,8 +13,10 @@ import { cn }              from '@/lib/utils'
 export default function MissionsPage() {
   const { missions, loading } = useMissions()
   const client  = useQueryClient()
-  const { toast } = useToast()
   const [completing, setCompleting] = useState<string | null>(null)
+  const [celebration, setCelebration] = useState<{
+    title: string; subtitle: string; xp: number
+  } | null>(null)
 
   const active    = missions.filter(m => m.status === 'active')
   const completed = missions.filter(m => m.status === 'completed')
@@ -26,9 +28,14 @@ export default function MissionsPage() {
       if (!res.ok) throw new Error()
       client.invalidateQueries({ queryKey: ['missions'] })
       client.invalidateQueries({ queryKey: ['xp'] })
-      toast(`"${title}" concluída!`, 'xp', xpReward)
+      // Show celebration instead of plain toast
+      setCelebration({
+        title:    `"${title}" concluída!`,
+        subtitle: 'Continua assim — o teu Voltix está a ficar mais forte! 💪',
+        xp:       xpReward,
+      })
     } catch {
-      toast('Erro ao completar missão', 'error')
+      /* silent */
     } finally {
       setCompleting(null)
     }
@@ -58,7 +65,7 @@ export default function MissionsPage() {
       </div>
 
       {/* Ativas */}
-      {active.length > 0 && (
+      {active.length > 0 ? (
         <div>
           <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">
             Ativas ({active.length})
@@ -88,6 +95,11 @@ export default function MissionsPage() {
                           <Lock className="w-3 h-3 text-purple-400 flex-shrink-0" />
                         )}
                         <h3 className="text-sm font-semibold text-white truncate">{mission.title}</h3>
+                        {canComplete && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full flex-shrink-0 animate-pulse">
+                            PRONTO!
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-white/40 leading-relaxed">{mission.description}</p>
                     </div>
@@ -108,15 +120,17 @@ export default function MissionsPage() {
                       transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
                     />
                   </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-white/40">
                       {mission.current_value}/{mission.target_value}
                     </span>
                     {canComplete ? (
-                      <button
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => handleComplete(mission.id, mission.xp_reward, mission.title)}
                         disabled={completing === mission.id}
-                        className="flex items-center gap-1.5 bg-green-500 hover:bg-green-400 text-black text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95 disabled:opacity-60"
+                        className="flex items-center gap-1.5 bg-green-500 hover:bg-green-400 text-black text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-60"
                       >
                         {completing === mission.id ? (
                           <div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
@@ -124,7 +138,7 @@ export default function MissionsPage() {
                           <CheckCircle2 className="w-3 h-3" />
                         )}
                         Completar
-                      </button>
+                      </motion.button>
                     ) : (
                       <span className="text-xs text-white/40">{formatPercent(pct, 0)}</span>
                     )}
@@ -134,13 +148,18 @@ export default function MissionsPage() {
             })}
           </div>
         </div>
-      )}
-
-      {active.length === 0 && (
-        <div className="glass-card p-8 text-center">
-          <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto mb-3" />
-          <p className="text-white font-medium mb-1">Todas concluídas!</p>
-          <p className="text-white/40 text-sm">Novas missões em breve.</p>
+      ) : (
+        /* Empty state */
+        <div className="glass-card p-10 text-center">
+          <div className="text-5xl mb-4">🎯</div>
+          <p className="text-white font-bold text-lg mb-1">Todas concluídas!</p>
+          <p className="text-white/40 text-sm mb-4">Novas missões serão geradas em breve.</p>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-xl hover:bg-green-500/20 transition-colors"
+          >
+            Voltar ao início
+          </Link>
         </div>
       )}
 
@@ -148,7 +167,7 @@ export default function MissionsPage() {
       {completed.length > 0 && (
         <div>
           <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">
-            Concluídas ({completed.length})
+            Concluídas ({completed.length}) 🏆
           </h2>
           <div className="space-y-2">
             {completed.map(mission => (
@@ -182,6 +201,18 @@ export default function MissionsPage() {
           Ver planos
         </Link>
       </div>
+
+      {/* Celebration modal */}
+      {celebration && (
+        <CelebrationModal
+          open
+          onClose={() => setCelebration(null)}
+          icon="🎯"
+          title={celebration.title}
+          subtitle={celebration.subtitle}
+          xp={celebration.xp}
+        />
+      )}
     </div>
   )
 }

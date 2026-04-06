@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PlusCircle } from 'lucide-react'
 import { useUser }   from '@clerk/nextjs'
 import { FinancialScoreCard } from '@/components/dashboard/FinancialScoreCard'
@@ -11,27 +11,75 @@ import { VoltixWidget }       from '@/components/voltix/VoltixWidget'
 import { MissionCard }        from '@/components/missions/MissionCard'
 import { TransactionForm }    from '@/components/transactions/TransactionForm'
 import { AdBanner }           from '@/components/ads/AdBanner'
+import { StreakBanner }       from '@/components/dashboard/StreakBanner'
+import { QuickActions }       from '@/components/dashboard/QuickActions'
+import { CelebrationModal }   from '@/components/ui/CelebrationModal'
 import { formatMonth }        from '@/lib/utils'
 
 export default function DashboardPage() {
   const { user }        = useUser()
-  const [showForm, setShowForm] = useState(false)
+  const [showForm, setShowForm]         = useState(false)
+  const [celebration, setCelebration]   = useState<{
+    icon: string; title: string; subtitle: string; xp?: number
+  } | null>(null)
+  const checkinDone = useRef(false)
 
   const firstName = user?.firstName ?? 'explorador'
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
+  const hour      = new Date().getHours()
+  const greeting  = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
+
+  /* ── daily check-in (awards XP + streak, shows celebration) ── */
+  useEffect(() => {
+    if (checkinDone.current || !user) return
+    checkinDone.current = true
+
+    fetch('/api/daily-checkin', { method: 'POST' })
+      .then(r => r.ok ? r.json() : null)
+      .then(res => {
+        if (!res || res.already_checked) return
+
+        // Milestone streak celebrations
+        const streak = res.streak ?? 0
+        if (streak === 7) {
+          setCelebration({
+            icon: '🔥',
+            title: '7 dias seguidos!',
+            subtitle: 'Semana perfeita! Tens um streak incrível.',
+            xp: res.xp_earned,
+          })
+        } else if (streak === 30) {
+          setCelebration({
+            icon: '👑',
+            title: '30 dias imparável!',
+            subtitle: 'Lenda absoluta. O Voltix nunca esteve tão poderoso.',
+            xp: res.xp_earned,
+          })
+        }
+
+        // Badge celebrations
+        res.badges_awarded?.forEach((b: { name: string; icon: string }) => {
+          setTimeout(() => {
+            setCelebration({
+              icon:     b.icon,
+              title:    'Badge desbloqueado!',
+              subtitle: b.name,
+            })
+          }, 800)
+        })
+      })
+      .catch(() => {})
+  }, [user])
 
   return (
     <div className="space-y-4 pb-2">
 
-      {/* Header mobile */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-white/50 text-sm">{greeting},</p>
           <h1 className="text-xl font-bold text-white capitalize">{firstName} 👋</h1>
           <p className="text-white/30 text-xs mt-0.5">{formatMonth()}</p>
         </div>
-        {/* Botão rápido no header — visível desktop */}
         <button
           onClick={() => setShowForm(true)}
           className="hidden sm:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
@@ -41,16 +89,21 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Voltix — destaque mobile no topo */}
+      {/* ── Streak banner — daily retention hook ── */}
+      <StreakBanner />
+
+      {/* ── Quick actions row — mobile primary CTA ── */}
+      <QuickActions />
+
+      {/* Voltix mobile */}
       <div className="lg:hidden">
         <VoltixWidget userId={user?.id ?? ''} />
       </div>
 
-      {/* Score + XP lado a lado mobile */}
+      {/* Score + XP + Voltix desktop */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <FinancialScoreCard userId={user?.id ?? ''} />
         <XPProgressBar     userId={user?.id ?? ''} />
-        {/* Voltix só no desktop */}
         <div className="hidden lg:block">
           <VoltixWidget userId={user?.id ?? ''} />
         </div>
@@ -59,7 +112,7 @@ export default function DashboardPage() {
       {/* Resumo mensal */}
       <MonthlySummary userId={user?.id ?? ''} />
 
-      {/* ── AD 1: entre resumo e missões (alta visibilidade) ── */}
+      {/* AD 1 */}
       <AdBanner variant="feed" />
 
       {/* Missões */}
@@ -80,11 +133,22 @@ export default function DashboardPage() {
         <RecentTransactions userId={user?.id ?? ''} limit={5} />
       </div>
 
-      {/* ── AD 2: no final do dashboard ── */}
+      {/* AD 2 */}
       <AdBanner variant="banner" />
 
-      {/* Modal */}
+      {/* Modals */}
       {showForm && <TransactionForm onClose={() => setShowForm(false)} />}
+
+      {celebration && (
+        <CelebrationModal
+          open
+          onClose={() => setCelebration(null)}
+          icon={celebration.icon}
+          title={celebration.title}
+          subtitle={celebration.subtitle}
+          xp={celebration.xp}
+        />
+      )}
     </div>
   )
 }

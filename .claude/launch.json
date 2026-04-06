@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "XP Money — Next.js Dev Server",
+      "name": "xpmoney-fresh",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "autoPort": true
+      "runtimeArgs": ["run", "dev", "--", "--port", "3006"],
+      "port": 3006
     }
   ]
 }
