@@ -7,7 +7,9 @@ import { useEffect } from 'react'
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+    const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
+    if (!key) return // skip if not configured
+    posthog.init(key, {
       api_host:         process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com',
       capture_pageview: false,
       autocapture:      false,

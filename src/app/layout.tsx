@@ -66,8 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       }}
     >
       <html lang="pt" className={inter.variable} suppressHydrationWarning>
-        <head>
-          {/* Google AdSense — only loads when publisher ID is configured */}
+        <body className="font-sans antialiased">
           {ADSENSE_CLIENT && (
             <Script
               async
@@ -76,8 +75,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               strategy="afterInteractive"
             />
           )}
-        </head>
-        <body className="font-sans antialiased">
           <PostHogProvider>
             <QueryProvider>
               <Toaster>
