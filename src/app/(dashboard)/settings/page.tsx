@@ -1,8 +1,8 @@
-import { auth, currentUser } from '@clerk/nextjs/server'
-import { UserProfile }       from '@clerk/nextjs'
+import { auth } from '@clerk/nextjs/server'
 import { Crown, Zap, Check } from 'lucide-react'
-import Link                  from 'next/link'
+import Link from 'next/link'
 import { createSupabaseAdmin } from '@/lib/supabase'
+import { ProfileEditForm }     from './ProfileEditForm'
 
 export const metadata = { title: 'Definições' }
 
@@ -15,13 +15,12 @@ const PLAN_LABELS: Record<string, { name: string; icon: string; color: string }>
 
 export default async function SettingsPage() {
   const { userId } = await auth()
-  const user       = await currentUser()
-  if (!userId || !user) return null
+  if (!userId) return null
 
   const db = createSupabaseAdmin()
   const { data: profile } = await db
     .from('users')
-    .select('plan')
+    .select('plan, name, email, avatar_url, challenge, goal, currency')
     .eq('clerk_id', userId)
     .single()
 
@@ -68,21 +67,15 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      {/* Perfil Clerk */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-        <h2 className="font-semibold text-white mb-4">Perfil e Conta</h2>
-        <UserProfile
-          appearance={{
-            elements: {
-              card:               'bg-transparent shadow-none border-0',
-              navbar:             'hidden',
-              pageScrollBox:      'p-0',
-              rootBox:            'w-full',
-              formButtonPrimary:  'bg-green-500 hover:bg-green-400 text-black',
-            },
-          }}
-        />
-      </div>
+      {/* Formulário de edição de perfil */}
+      <ProfileEditForm
+        initialName={profile?.name ?? ''}
+        initialChallenge={profile?.challenge ?? ''}
+        initialGoal={profile?.goal ?? ''}
+        initialCurrency={profile?.currency ?? 'EUR'}
+        email={profile?.email ?? ''}
+        avatarUrl={profile?.avatar_url ?? null}
+      />
     </div>
   )
 }
