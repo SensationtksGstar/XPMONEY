@@ -3,23 +3,17 @@ import { NextRequest, NextResponse }   from 'next/server'
 import { createSupabaseAdmin }         from '@/lib/supabase'
 import { isDemoMode, demoResponse }    from '@/lib/demo/demoGuard'
 import { DEMO_CATEGORIES }             from '@/lib/demo/mockData'
-import { GoogleGenerativeAI }          from '@google/generative-ai'
+import {
+  parseStatement, AIProvidersError,
+  type StatementParseResult, type ParsedTransaction as LibParsedTransaction,
+} from '@/lib/ai'
 
-// ── Shape returned per parsed transaction ────────────────────────────────────
-export interface ParsedTransaction {
-  date:                 string   // YYYY-MM-DD
-  description:          string   // cleaned
-  original_description: string   // raw from CSV
-  amount:               number   // always positive
-  type:                 'income' | 'expense'
-  category_hint:        string   // matches our category names
-  selected:             boolean  // UI: user can deselect before confirming
+// Extended shape used by the UI (adds `selected` for deselection flow)
+export interface ParsedTransaction extends LibParsedTransaction {
+  selected: boolean
 }
 
-export interface ImportStatementResult {
-  bank:         string
-  currency:     string
-  total:        number
+export interface ImportStatementResult extends Omit<StatementParseResult, 'transactions'> {
   transactions: ParsedTransaction[]
 }
 
@@ -38,14 +32,11 @@ const DEMO_RESULT: ImportStatementResult = {
 }
 
 export async function POST(req: NextRequest) {
-  // ── Demo mode ──
   if (isDemoMode()) return demoResponse(DEMO_RESULT)
 
-  // ── Auth ──
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // ── Fetch categories from DB for hints ──
   const db = createSupabaseAdmin()
   const { data: user } = await db
     .from('users').select('id').eq('clerk_id', userId).single()
@@ -73,121 +64,54 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Conteúdo inválido.' }, { status: 400 })
   }
 
-  // ── Check Gemini key ──
-  const apiKey =
-    process.env.GOOGLE_GEMINI_API_KEY ??
-    process.env.GOOGLE_API_KEY ??
-    process.env.GEMINI_API_KEY
-  if (!apiKey || apiKey.includes('xxxxxx')) {
-    return NextResponse.json(
-      { error: 'GOOGLE_GEMINI_API_KEY não configurada no servidor.' },
-      { status: 503 },
-    )
-  }
-
-  // ── Call Gemini ──
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      responseMimeType: 'application/json',
-      temperature:      0.1,
-      maxOutputTokens:  8192,
-    },
-  })
-
-  const prompt = `És um especialista em análise de extratos bancários portugueses.
-Recebes o conteúdo bruto de um ficheiro CSV ou TXT exportado de um banco português.
-A tua tarefa é identificar o banco, fazer parse de TODAS as transações e categorizá-las.
-
-── Bancos comuns e formatos ──
-- CGD (Caixa): CSV separado por ponto-e-vírgula, colunas Data/Descrição/Valor/Saldo
-- Millennium BCP: CSV/Excel, colunas Data/Descritivo/Valor/Saldo
-- BPI: CSV com ";" como separador, colunas "Data mov.", "Data valor", "Descrição", "Débito", "Crédito", "Saldo"
-- Santander: CSV, colunas Data/Descrição/Montante/Saldo
-- Novobanco / Montepio / Activobank: formato semelhante a BPI (Débito/Crédito separados)
-- Wise / Revolut / N26: CSV em inglês, colunas "Date", "Description", "Amount"
-
-── Regras de parsing ──
-- Datas: aceita DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD — converte SEMPRE para YYYY-MM-DD
-- Decimais portugueses: "1.234,56" ou "1234,56" → 1234.56 (ponto é milhares, vírgula é decimal)
-- Decimais ingleses: "1,234.56" → 1234.56 (Wise/Revolut)
-- Colunas Débito/Crédito SEPARADAS (BPI, Novobanco): valor em Débito → type="expense"; valor em Crédito → type="income"
-- Coluna única com sinal: valor negativo → expense; positivo → income
-- IGNORA linhas de cabeçalho, totais, saldos iniciais/finais, linhas vazias
-- "amount" devolvido é SEMPRE positivo (o type determina o sinal)
-
-── Categorização ──
-Usa palavras-chave: "PINGO", "CONTINENTE", "LIDL" → Alimentação · "GALP", "BP", "REPSOL" → Transportes ·
-"EDP", "MEO", "NOS", "VODAFONE" → Casa · "NETFLIX", "SPOTIFY", "HBO" → Lazer · "FARMACIA", "CLINICA" → Saúde ·
-"SALARIO", "ORDENADO", "VENCIMENTO" → Salário · "RENDA", "CONDOMINIO" → Casa · "UBER", "BOLT", "METRO" → Transportes
-
-Ficheiro: ${filename}
-
-CONTEÚDO:
-${content}
-
-Devolve APENAS este JSON (sem markdown, sem texto extra):
-{
-  "bank": "<nome do banco identificado>",
-  "currency": "<código ISO 3 letras, padrão EUR>",
-  "total": <número total de transações encontradas>,
-  "transactions": [
-    {
-      "date": "<YYYY-MM-DD>",
-      "description": "<descrição limpa e legível em português>",
-      "original_description": "<texto original do CSV>",
-      "amount": <número positivo>,
-      "type": "<income|expense>",
-      "category_hint": "<categoria mais adequada de: ${categoryNames}>"
-    }
-  ]
-}`
-
+  // ── Parse (Gemini 2.0 → Gemini 1.5 → Groq) ──
   try {
-    const result = await model.generateContent(prompt)
-    const raw    = result.response.text()
-    const json   = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const result = await parseStatement(content, filename, categoryNames)
 
-    let parsed: ImportStatementResult
-    try {
-      const obj = JSON.parse(json)
-      parsed = {
-        bank:     obj.bank     ?? 'Banco desconhecido',
-        currency: obj.currency ?? 'EUR',
-        total:    obj.total    ?? 0,
-        transactions: (obj.transactions ?? []).map((t: Omit<ParsedTransaction, 'selected'>) => ({
-          ...t,
-          amount:   Math.abs(Number(t.amount)) || 0,
-          selected: true,
-        })),
+    const withSelected: ImportStatementResult = {
+      ...result.data,
+      transactions: result.data.transactions.map(t => ({ ...t, selected: true })),
+    }
+
+    return NextResponse.json(
+      { data: withSelected },
+      {
+        headers: {
+          'x-ai-provider':  result.provider,
+          'x-ai-cache-hit': '0',
+        },
+      },
+    )
+  } catch (err) {
+    if (err instanceof AIProvidersError) {
+      console.error('[import-statement] all providers failed:', err.attempts)
+      if (err.kind === 'auth') {
+        return NextResponse.json(
+          { error: 'Serviço de IA não configurado. Contacta o suporte.', code: 'ai_auth' },
+          { status: 503 },
+        )
       }
-    } catch {
+      if (err.kind === 'quota') {
+        return NextResponse.json(
+          {
+            error: 'Serviço de análise de extratos temporariamente indisponível. Tenta novamente dentro de alguns minutos ou adiciona as transações manualmente.',
+            code:  'ai_quota',
+          },
+          { status: 503 },
+        )
+      }
+    }
+
+    // Parse failures from the library — treat as unreadable file
+    if (err instanceof SyntaxError) {
       return NextResponse.json(
         { error: 'A IA não conseguiu interpretar o ficheiro. Verifica o formato.' },
         { status: 422 },
       )
     }
 
-    return NextResponse.json({ data: parsed })
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Erro de IA'
+    const msg = err instanceof Error ? err.message : 'unknown'
     console.error('[import-statement]', msg)
-
-    // Friendly fallback for known AI provider errors
-    const isQuota     = /quota|resource[_ ]?exhausted|429|rate|billing|credit/i.test(msg)
-    const isAuth      = /401|403|api[_ ]?key|unauthenticated|permission/i.test(msg)
-
-    if (isQuota || isAuth) {
-      return NextResponse.json(
-        {
-          error: 'Serviço de análise de extratos temporariamente indisponível. Tenta novamente dentro de alguns minutos ou adiciona as transações manualmente.',
-          code:  isQuota ? 'ai_quota' : 'ai_auth',
-        },
-        { status: 503 },
-      )
-    }
-
     return NextResponse.json(
       { error: 'Não foi possível processar o extrato. Verifica o formato do ficheiro ou tenta novamente.' },
       { status: 500 },
