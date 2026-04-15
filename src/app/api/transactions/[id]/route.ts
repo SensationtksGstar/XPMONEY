@@ -1,6 +1,7 @@
 import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
+import { resolveUser }               from '@/lib/resolveUser'
 
 export async function DELETE(
   _req: NextRequest,
@@ -11,16 +12,16 @@ export async function DELETE(
 
   const { id } = await params
 
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
   const db = createSupabaseAdmin()
-  const { data: user } = await db
-    .from('users').select('id').eq('clerk_id', userId).single()
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const { error } = await db
     .from('transactions')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id) // garante que só apaga as suas próprias
+    .eq('user_id', internalId) // garante que só apaga as suas próprias
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })

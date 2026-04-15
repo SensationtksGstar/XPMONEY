@@ -6,7 +6,6 @@ import {
   ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts'
 import { TrendingUp, Info, Zap } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 /* ─── Strategies ──────────────────────────────────────────────────────── */
@@ -166,12 +165,7 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
       </div>
 
       {/* Results summary */}
-      <motion.div
-        key={`${monthly}-${years}-${stratId}`}
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="grid grid-cols-3 gap-3"
-      >
+      <div className="grid grid-cols-3 gap-3 animate-fade-in-up">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
           <div className="text-xs text-white/40 mb-1">Total investido</div>
           <div className="text-lg font-bold text-white">{fmt(result.invested)}</div>
@@ -184,7 +178,7 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
           <div className="text-xs text-purple-400/60 mb-1">Lucro ({gainPct}%)</div>
           <div className="text-lg font-bold text-purple-400">+{fmt(result.gains)}</div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Chart */}
       {years >= 2 && (
@@ -275,11 +269,7 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
         </button>
 
         {compare && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="mt-3 bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2"
-          >
+          <div className="mt-3 bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2 animate-fade-in-up">
             <h3 className="text-sm font-semibold text-white mb-3">Após {years} anos com {fmt(monthly)}/mês</h3>
             {allResults.sort((a,b) => b.final - a.final).map(s => (
               <div key={s.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
@@ -294,7 +284,7 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
                 </div>
               </div>
             ))}
-          </motion.div>
+          </div>
         )}
       </div>
 

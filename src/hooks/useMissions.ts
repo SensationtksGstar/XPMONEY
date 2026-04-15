@@ -8,10 +8,12 @@ async function fetchMissions(): Promise<Mission[]> {
   return data ?? []
 }
 
-export function useMissions(userId?: string) {
+export function useMissions(_userId?: string) {
   const query = useQuery({
-    queryKey: ['missions', userId],
-    queryFn:  fetchMissions,
+    queryKey:             ['missions'],
+    queryFn:              fetchMissions,
+    staleTime:            10 * 60 * 1000,  // 10 min
+    refetchOnWindowFocus: false,
   })
 
   return {

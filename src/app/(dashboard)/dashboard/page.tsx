@@ -1,23 +1,50 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { PlusCircle } from 'lucide-react'
-import { useUser }   from '@clerk/nextjs'
-import { FinancialScoreCard } from '@/components/dashboard/FinancialScoreCard'
-import { XPProgressBar }      from '@/components/dashboard/XPProgressBar'
-import { MonthlySummary }     from '@/components/dashboard/MonthlySummary'
-import { RecentTransactions } from '@/components/dashboard/RecentTransactions'
-import { VoltixWidget }       from '@/components/voltix/VoltixWidget'
-import { MissionCard }        from '@/components/missions/MissionCard'
-import { TransactionForm }    from '@/components/transactions/TransactionForm'
-import { AdBanner }           from '@/components/ads/AdBanner'
-import { StreakBanner }       from '@/components/dashboard/StreakBanner'
-import { QuickActions }       from '@/components/dashboard/QuickActions'
-import { CelebrationModal }   from '@/components/ui/CelebrationModal'
-import { formatMonth }        from '@/lib/utils'
+import dynamic                         from 'next/dynamic'
+import { PlusCircle, Crown, BookOpen } from 'lucide-react'
+import { useUser }                     from '@clerk/nextjs'
+import { useUserPlan }                 from '@/lib/contexts/UserPlanContext'
+import { QuickActions }                from '@/components/dashboard/QuickActions'
+import { StreakBanner }                from '@/components/dashboard/StreakBanner'
+import { TransactionForm }             from '@/components/transactions/TransactionForm'
+import { CelebrationModal }            from '@/components/ui/CelebrationModal'
+import { formatMonth }                 from '@/lib/utils'
+import Link                            from 'next/link'
+
+// ── Dynamic imports — only load when needed (reduces mobile JS) ──────────────
+const FinancialScoreCard = dynamic(
+  () => import('@/components/dashboard/FinancialScoreCard').then(m => ({ default: m.FinancialScoreCard })),
+  { ssr: false, loading: () => <div className="h-36 bg-white/5 rounded-2xl animate-pulse" /> },
+)
+const XPProgressBar = dynamic(
+  () => import('@/components/dashboard/XPProgressBar').then(m => ({ default: m.XPProgressBar })),
+  { ssr: false, loading: () => <div className="h-36 bg-white/5 rounded-2xl animate-pulse" /> },
+)
+const VoltixWidget = dynamic(
+  () => import('@/components/voltix/VoltixWidget').then(m => ({ default: m.VoltixWidget })),
+  { ssr: false, loading: () => <div className="h-36 bg-white/5 rounded-2xl animate-pulse" /> },
+)
+const MonthlySummary = dynamic(
+  () => import('@/components/dashboard/MonthlySummary').then(m => ({ default: m.MonthlySummary })),
+  { ssr: false, loading: () => <div className="h-24 bg-white/5 rounded-2xl animate-pulse" /> },
+)
+const RecentTransactions = dynamic(
+  () => import('@/components/dashboard/RecentTransactions').then(m => ({ default: m.RecentTransactions })),
+  { ssr: false, loading: () => <div className="h-40 bg-white/5 rounded-2xl animate-pulse" /> },
+)
+const MissionCard = dynamic(
+  () => import('@/components/missions/MissionCard').then(m => ({ default: m.MissionCard })),
+  { ssr: false, loading: () => <div className="h-24 bg-white/5 rounded-2xl animate-pulse" /> },
+)
+const AdBanner = dynamic(
+  () => import('@/components/ads/AdBanner').then(m => ({ default: m.AdBanner })),
+  { ssr: false },
+)
 
 export default function DashboardPage() {
   const { user }        = useUser()
+  const { plan, isFree } = useUserPlan()
   const [showForm, setShowForm]         = useState(false)
   const [celebration, setCelebration]   = useState<{
     icon: string; title: string; subtitle: string; xp?: number
@@ -28,46 +55,39 @@ export default function DashboardPage() {
   const hour      = new Date().getHours()
   const greeting  = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
 
-  /* ── daily check-in (awards XP + streak, shows celebration) ── */
+  /* ── daily check-in ── */
   useEffect(() => {
     if (checkinDone.current || !user) return
     checkinDone.current = true
 
-    fetch('/api/daily-checkin', { method: 'POST' })
+    const controller = new AbortController()
+
+    fetch('/api/daily-checkin', { method: 'POST', signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(res => {
         if (!res || res.already_checked) return
 
-        // Milestone streak celebrations
         const streak = res.streak ?? 0
         if (streak === 7) {
-          setCelebration({
-            icon: '🔥',
-            title: '7 dias seguidos!',
-            subtitle: 'Semana perfeita! Tens um streak incrível.',
-            xp: res.xp_earned,
-          })
+          setCelebration({ icon: '🔥', title: '7 dias seguidos!', subtitle: 'Semana perfeita! Tens um streak incrível.', xp: res.xp_earned })
         } else if (streak === 30) {
-          setCelebration({
-            icon: '👑',
-            title: '30 dias imparável!',
-            subtitle: 'Lenda absoluta. O Voltix nunca esteve tão poderoso.',
-            xp: res.xp_earned,
-          })
+          setCelebration({ icon: '👑', title: '30 dias imparável!', subtitle: 'Lenda absoluta. O Voltix nunca esteve tão poderoso.', xp: res.xp_earned })
         }
 
-        // Badge celebrations
         res.badges_awarded?.forEach((b: { name: string; icon: string }) => {
           setTimeout(() => {
-            setCelebration({
-              icon:     b.icon,
-              title:    'Badge desbloqueado!',
-              subtitle: b.name,
-            })
+            setCelebration({ icon: b.icon, title: 'Badge desbloqueado!', subtitle: b.name })
           }, 800)
         })
       })
-      .catch(() => {})
+      .catch(err => {
+        // AbortError is expected on unmount; other errors are logged but non-blocking
+        if (err?.name !== 'AbortError') {
+          console.warn('[daily-checkin] failed:', err)
+        }
+      })
+
+    return () => controller.abort()
   }, [user])
 
   return (
@@ -82,53 +102,81 @@ export default function DashboardPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="hidden sm:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
+          className="hidden sm:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-colors text-sm active:scale-95"
         >
           <PlusCircle className="w-4 h-4" />
           Adicionar
         </button>
       </div>
 
-      {/* ── Streak banner — daily retention hook ── */}
+      {/* Streak */}
       <StreakBanner />
 
-      {/* ── Quick actions row — mobile primary CTA ── */}
+      {/* Quick actions */}
       <QuickActions />
 
-      {/* Voltix mobile */}
-      <div className="lg:hidden">
-        <VoltixWidget userId={user?.id ?? ''} />
-      </div>
+      {/* Upgrade banner for free users — mobile only */}
+      {isFree && (
+        <Link href="/settings/billing"
+          className="flex items-center gap-3 bg-gradient-to-r from-purple-500/15 to-green-500/10 border border-purple-500/25 rounded-2xl px-4 py-3 hover:border-purple-500/40 transition-colors"
+        >
+          <Crown className="w-5 h-5 text-purple-400 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">Desbloqueia funcionalidades Pro</p>
+            <p className="text-xs text-white/50">Perspetiva · Simulador · Academia · Sem anúncios</p>
+          </div>
+          <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-2.5 py-1 rounded-lg flex-shrink-0">
+            Ver planos
+          </span>
+        </Link>
+      )}
 
-      {/* Score + XP + Voltix desktop */}
+      {/* Score + XP + Voltix — single widget instance, reordered via CSS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <FinancialScoreCard userId={user?.id ?? ''} />
-        <XPProgressBar     userId={user?.id ?? ''} />
-        <div className="hidden lg:block">
+        {/* On mobile/sm: widget appears first (order-first); on lg: third column */}
+        <div className="order-first sm:col-span-2 lg:col-span-1 lg:order-last">
           <VoltixWidget userId={user?.id ?? ''} />
         </div>
+        <FinancialScoreCard userId={user?.id ?? ''} />
+        <XPProgressBar     userId={user?.id ?? ''} />
       </div>
 
       {/* Resumo mensal */}
       <MonthlySummary userId={user?.id ?? ''} />
 
-      {/* AD 1 */}
+      {/* AD */}
       <AdBanner variant="feed" />
 
       {/* Missões */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-white">Missões Ativas</h2>
-          <a href="/missions" className="text-xs text-green-400 hover:text-green-300">Ver todas →</a>
+          <Link href="/missions" className="text-xs text-green-400 hover:text-green-300">Ver todas →</Link>
         </div>
         <MissionCard userId={user?.id ?? ''} limit={3} />
       </div>
+
+      {/* Academia teaser — visible for plus/pro */}
+      {!isFree && (
+        <Link href="/cursos"
+          className="flex items-center gap-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-2xl px-4 py-4 hover:border-purple-500/35 transition-colors"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center text-2xl flex-shrink-0">
+            🎓
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-white text-sm">Academia XP Money</p>
+            <p className="text-xs text-white/50">Cursos com certificado · Gestão · Investimento · FIRE</p>
+          </div>
+          <BookOpen className="w-4 h-4 text-purple-400 flex-shrink-0" />
+        </Link>
+      )}
 
       {/* Transações recentes */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-white">Transações Recentes</h2>
-          <a href="/transactions" className="text-xs text-green-400 hover:text-green-300">Ver todas →</a>
+          <Link href="/transactions" className="text-xs text-green-400 hover:text-green-300">Ver todas →</Link>
         </div>
         <RecentTransactions userId={user?.id ?? ''} limit={5} />
       </div>
@@ -138,7 +186,6 @@ export default function DashboardPage() {
 
       {/* Modals */}
       {showForm && <TransactionForm onClose={() => setShowForm(false)} />}
-
       {celebration && (
         <CelebrationModal
           open

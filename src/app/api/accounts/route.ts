@@ -1,6 +1,7 @@
 import { auth }                    from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
+import { resolveUser }               from '@/lib/resolveUser'
 import { z }                         from 'zod'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
 import { DEMO_ACCOUNT }              from '@/lib/demo/mockData'
@@ -20,22 +21,13 @@ export async function GET(_req: NextRequest) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
   const db = createSupabaseAdmin()
-
-  const { data: user } = await db
-    .from('users')
-    .select('id')
-    .eq('clerk_id', userId)
-    .single()
-
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-
   const { data, error } = await db
-    .from('accounts')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('is_default', { ascending: false })
-    .order('name', { ascending: true })
+    .from('accounts').select('*').eq('user_id', internalId)
+    .order('is_default', { ascending: false }).order('name', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ data, error: null })
@@ -47,26 +39,17 @@ export async function POST(req: NextRequest) {
 
   const body   = await req.json()
   const parsed = CreateAccountSchema.safeParse(body)
-
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
   const db = createSupabaseAdmin()
-
-  const { data: user } = await db
-    .from('users')
-    .select('id')
-    .eq('clerk_id', userId)
-    .single()
-
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-
   const { data, error } = await db
-    .from('accounts')
-    .insert({ ...parsed.data, user_id: user.id, is_default: false })
-    .select('*')
-    .single()
+    .from('accounts').insert({ ...parsed.data, user_id: internalId, is_default: false })
+    .select('*').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ data, error: null }, { status: 201 })

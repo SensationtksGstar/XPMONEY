@@ -7,15 +7,20 @@ import SimuladorClient         from './SimuladorClient'
 
 export const metadata = { title: 'Simulador de Investimento' }
 
+// Force dynamic — plan check must always be fresh (no stale cache)
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function SimuladorPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
   const db = createSupabaseAdmin()
 
+  // Direct DB query — never cached — ensures paywall sees authoritative plan
   const { data: profile } = await db
     .from('users')
-    .select('plan, id')
+    .select('id, plan')
     .eq('clerk_id', userId)
     .single()
 
@@ -42,7 +47,6 @@ export default async function SimuladorPage() {
     )
   }
 
-  // Fetch average monthly savings (income - expenses last 3 months)
   const threeMonthsAgo = new Date()
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
   const dateStr = threeMonthsAgo.toISOString().split('T')[0]

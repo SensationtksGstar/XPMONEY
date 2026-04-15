@@ -43,6 +43,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# claude code assistant state (may contain secrets — never commit)
+.claude/
+
 .vercel
 VERCEL_ENV_VARS.txt
 seed-admin.mjs

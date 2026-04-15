@@ -1,11 +1,15 @@
 import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
+import { resolveUser }               from '@/lib/resolveUser'
 import { awardBadge }                from '@/lib/awardBadge'
+import { awardXP }                   from '@/lib/awardXP'
+import { parseBoundedInt }           from '@/lib/safeNumber'
 import { z }                         from 'zod'
 import { recalculateScore }          from '@/lib/recalculateScore'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
 import { DEMO_TRANSACTIONS }         from '@/lib/demo/mockData'
+import { XP_REWARDS }                from '@/types'
 
 const CreateSchema = z.object({
   account_id:  z.string(),
@@ -22,26 +26,20 @@ export async function GET(req: NextRequest) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
   const { searchParams } = new URL(req.url)
-  const limit  = parseInt(searchParams.get('limit')  ?? '50')
-  const offset = parseInt(searchParams.get('offset') ?? '0')
+  const limit  = parseBoundedInt(searchParams.get('limit'),  { default: 50, min: 1, max: 200 })
+  const offset = parseBoundedInt(searchParams.get('offset'), { default: 0,  min: 0, max: 10_000 })
   const type   = searchParams.get('type')
 
   const db = createSupabaseAdmin()
 
-  // Resolver user interno
-  const { data: user } = await db
-    .from('users')
-    .select('id')
-    .eq('clerk_id', userId)
-    .single()
-
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-
   let query = db
     .from('transactions')
     .select('*, category:categories(id,name,icon,color,transaction_type,is_default)')
-    .eq('user_id', user.id)
+    .eq('user_id', internalId)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
@@ -64,61 +62,29 @@ export async function POST(req: NextRequest) {
 
   const body   = await req.json()
   const parsed = CreateSchema.safeParse(body)
-
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
   const db = createSupabaseAdmin()
-
-  const { data: user } = await db
-    .from('users')
-    .select('id')
-    .eq('clerk_id', userId)
-    .single()
-
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const { data, error } = await db
     .from('transactions')
-    .insert({ ...parsed.data, user_id: user.id })
+    .insert({ ...parsed.data, user_id: internalId })
     .select('*, category:categories(id,name,icon,color,transaction_type,is_default)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Dar XP pela transação (+10 XP) — best-effort
-  try {
-    const { data: xp } = await db
-      .from('xp_progress').select('xp_total, level').eq('user_id', user.id).single()
-    if (xp) {
-      const { calculateXPProgress } = await import('@/lib/gamification')
-      const newTotal  = (xp.xp_total ?? 0) + 10
-      const progress  = calculateXPProgress(newTotal)
-      await db.from('xp_progress').update({
-        xp_total:         newTotal,
-        level:            progress.level,
-        last_activity_at: new Date().toISOString(),
-        updated_at:       new Date().toISOString(),
-      }).eq('user_id', user.id)
-      await db.from('xp_history').insert({
-        user_id:   user.id,
-        amount:    10,
-        reason:    'transaction_registered',
-        earned_at: new Date().toISOString(),
-      })
-    }
-  } catch { /* não bloquear se falhar */ }
-
-  // Award first_transaction badge — best-effort
-  try {
-    await awardBadge(db, user.id, 'first_transaction')
-  } catch { /* never block the response */ }
-
-  // Recalculate financial score after transaction — best-effort
-  try {
-    await recalculateScore(db, user.id)
-  } catch { /* never block the response */ }
+  // All secondary effects run in parallel — none block the response
+  await Promise.allSettled([
+    awardXP(db, internalId, XP_REWARDS.TRANSACTION_REGISTERED, 'transaction_registered'),
+    awardBadge(db, internalId, 'first_transaction'),
+    recalculateScore(db, internalId),
+  ])
 
   return NextResponse.json({ data, error: null }, { status: 201 })
 }

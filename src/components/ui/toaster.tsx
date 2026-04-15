@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { X, CheckCircle, AlertCircle, Info, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -62,35 +61,29 @@ export function Toaster({ children }: { children?: ReactNode }) {
           right:  '1rem',
         }}
       >
-        <AnimatePresence>
-          {toasts.map(t => (
-            <motion.div
-              key={t.id}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0,  scale: 1    }}
-              exit={{    opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className={cn(
-                'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-md shadow-xl',
-                STYLES[t.type],
-              )}
+        {toasts.map(t => (
+          <div
+            key={t.id}
+            className={cn(
+              'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-md shadow-xl animate-slide-up',
+              STYLES[t.type],
+            )}
+          >
+            {ICONS[t.type]}
+            <span className="text-sm font-medium text-white flex-1">{t.message}</span>
+            {t.xp && (
+              <span className="text-xs font-bold text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full">
+                +{t.xp} XP
+              </span>
+            )}
+            <button
+              onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
+              className="text-white/30 hover:text-white transition-colors"
             >
-              {ICONS[t.type]}
-              <span className="text-sm font-medium text-white flex-1">{t.message}</span>
-              {t.xp && (
-                <span className="text-xs font-bold text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full">
-                  +{t.xp} XP
-                </span>
-              )}
-              <button
-                onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
-                className="text-white/30 hover:text-white transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ))}
       </div>
     </ToastContext.Provider>
   )

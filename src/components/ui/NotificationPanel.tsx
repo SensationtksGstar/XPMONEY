@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence }      from 'framer-motion'
 import { Bell, X, Zap, Flame, Trophy, Star, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -88,15 +87,8 @@ export function NotificationPanel() {
       </button>
 
       {/* Panel */}
-      <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0,  scale: 1    }}
-            exit={{    opacity: 0, y: -8, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 top-11 z-50 w-72 bg-[#0f1829] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
-          >
+          <div className="absolute right-0 top-11 z-50 w-72 bg-[#0f1829] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
               <span className="text-sm font-bold text-white">Atividade recente</span>
               <button onClick={() => setOpen(false)} className="text-white/30 hover:text-white transition-colors">
@@ -148,9 +140,8 @@ export function NotificationPanel() {
                 )
               })}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
     </div>
   )
 }

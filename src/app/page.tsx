@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, Zap, Shield, TrendingUp, Star, Target, Brain } from 'lucide-react'
+import { Logo } from '@/components/ui/Logo'
 
 export default function LandingPage() {
   return (
@@ -7,10 +8,10 @@ export default function LandingPage() {
 
       {/* NAV */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#060b14]/80 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">⚡</span>
-          <span className="font-bold text-lg text-white">XP Money</span>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          <Logo size={32} />
+          <span className="font-bold text-lg text-white tracking-tight">XP Money</span>
+        </Link>
         <div className="flex items-center gap-3">
           <Link
             href="/sign-in"
@@ -217,8 +218,8 @@ export default function LandingPage() {
               MAIS POPULAR
             </div>
             <div className="text-green-400 text-sm font-medium mb-2">PLUS</div>
-            <div className="text-4xl font-bold mb-1">€3.99</div>
-            <div className="text-white/40 text-sm mb-6">por mês · €29.99/ano</div>
+            <div className="text-4xl font-bold mb-1">€2,99</div>
+            <div className="text-white/40 text-sm mb-6">por mês · €24,99/ano</div>
             <ul className="space-y-3 text-sm text-white/70 mb-8">
               {['Tudo do Free', 'Missões ilimitadas', 'Categorias ilimitadas', 'Histórico completo', 'Relatórios PDF', 'Sem anúncios'].map(f => (
                 <li key={f} className="flex items-center gap-2">
@@ -234,8 +235,8 @@ export default function LandingPage() {
           {/* Pro */}
           <div className="border border-purple-500/30 rounded-2xl p-6 bg-purple-500/5">
             <div className="text-purple-400 text-sm font-medium mb-2">PRO</div>
-            <div className="text-4xl font-bold mb-1">€7.99</div>
-            <div className="text-white/40 text-sm mb-6">por mês · €59.99/ano</div>
+            <div className="text-4xl font-bold mb-1">€5,99</div>
+            <div className="text-white/40 text-sm mb-6">por mês · €49,99/ano</div>
             <ul className="space-y-3 text-sm text-white/70 mb-8">
               {['Tudo do Plus', 'Multi-conta (5)', 'Modo casal', 'Voltix evoluído', 'Suporte prioritário', 'API access'].map(f => (
                 <li key={f} className="flex items-center gap-2">

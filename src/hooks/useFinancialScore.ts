@@ -8,13 +8,13 @@ async function fetchScore(): Promise<FinancialScore | null> {
   return data
 }
 
-export function useFinancialScore(userId?: string) {
+export function useFinancialScore(_userId?: string) {
   const query = useQuery({
-    queryKey:            ['score', userId],
-    queryFn:             fetchScore,
-    staleTime:           2 * 60 * 1000,  // 2 minutos
-    refetchInterval:     5 * 60 * 1000,  // recalcular a cada 5 minutos
-    refetchOnWindowFocus: true,
+    queryKey:             ['score'],
+    queryFn:              fetchScore,
+    staleTime:            10 * 60 * 1000,  // 10 min — score rarely changes
+    refetchInterval:      10 * 60 * 1000,  // background refresh every 10 min
+    refetchOnWindowFocus: false,
   })
 
   return {

@@ -24,13 +24,14 @@ async function deleteTransactionById(id: string): Promise<void> {
   if (!res.ok) throw new Error('Erro ao eliminar transação')
 }
 
-export function useTransactions(userId?: string) {
+export function useTransactions(_userId?: string) {
   const client = useQueryClient()
 
   const query = useQuery({
-    queryKey: ['transactions', userId],
-    queryFn:  fetchTransactions,
-    enabled:  true,
+    queryKey:             ['transactions'],
+    queryFn:              fetchTransactions,
+    staleTime:            5 * 60 * 1000,   // 5 min
+    refetchOnWindowFocus: false,
   })
 
   const mutation = useMutation({

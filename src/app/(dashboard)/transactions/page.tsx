@@ -1,10 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, SlidersHorizontal } from 'lucide-react'
-import { TransactionForm } from '@/components/transactions/TransactionForm'
-import { TransactionList } from '@/components/transactions/TransactionList'
+import { Search, FileText } from 'lucide-react'
+import { TransactionForm }     from '@/components/transactions/TransactionForm'
+import { TransactionList }     from '@/components/transactions/TransactionList'
+import { StatementImporter }   from '@/components/transactions/StatementImporter'
 import { cn } from '@/lib/utils'
+import dynamic from 'next/dynamic'
+
+const AdBanner = dynamic(
+  () => import('@/components/ads/AdBanner').then(m => ({ default: m.AdBanner })),
+  { ssr: false },
+)
 
 const FILTERS = [
   { value: 'all',     label: 'Todas' },
@@ -13,10 +20,11 @@ const FILTERS = [
 ]
 
 export default function TransactionsPage() {
-  const [showForm, setShowForm]       = useState(false)
-  const [search, setSearch]           = useState('')
-  const [typeFilter, setTypeFilter]   = useState('all')
-  const [showSearch, setShowSearch]   = useState(false)
+  const [showForm,      setShowForm]     = useState(false)
+  const [showImporter,  setShowImporter] = useState(false)
+  const [search,        setSearch]       = useState('')
+  const [typeFilter,    setTypeFilter]   = useState('all')
+  const [showSearch,    setShowSearch]   = useState(false)
 
   return (
     <div className="animate-fade-in-up">
@@ -37,6 +45,14 @@ export default function TransactionsPage() {
             )}
           >
             <Search className="w-4 h-4" />
+          </button>
+          {/* Import statement button */}
+          <button
+            onClick={() => setShowImporter(true)}
+            className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 text-blue-400 px-3 py-2.5 rounded-xl transition-all text-sm font-medium active:scale-95"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Importar Extrato</span>
           </button>
           <button
             onClick={() => setShowForm(true)}
@@ -82,10 +98,14 @@ export default function TransactionsPage() {
         ))}
       </div>
 
+      {/* AD — free users only */}
+      <AdBanner variant="feed" />
+
       {/* Lista */}
       <TransactionList search={search} typeFilter={typeFilter} />
 
-      {showForm && <TransactionForm onClose={() => setShowForm(false)} />}
+      {showForm     && <TransactionForm    onClose={() => setShowForm(false)} />}
+      {showImporter && <StatementImporter onClose={() => setShowImporter(false)} />}
     </div>
   )
 }

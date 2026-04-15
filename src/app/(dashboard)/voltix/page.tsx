@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence }      from 'framer-motion'
+
 import { useUser }  from '@clerk/nextjs'
 import { useVoltix } from '@/hooks/useVoltix'
 import { useXP }     from '@/hooks/useXP'
@@ -118,10 +118,9 @@ export default function VoltixPage() {
       </div>
 
       {/* ── Main interactive card ── */}
-      <motion.div
-        className="glass-card p-8 flex flex-col items-center text-center cursor-pointer select-none relative overflow-hidden"
+      <div
+        className="glass-card p-8 flex flex-col items-center text-center cursor-pointer select-none relative overflow-hidden active:scale-[0.975] transition-transform"
         style={{ borderColor: `${palette.body}30` }}
-        whileTap={{ scale: 0.975 }}
         onClick={handleTap}
       >
         {/* Top gradient bar */}
@@ -166,23 +165,17 @@ export default function VoltixPage() {
         </p>
 
         {/* Rotating message */}
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={msgIdx}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.22 }}
-            className="text-sm text-white/70 leading-relaxed px-2 mb-4 relative z-10"
-          >
-            {msgs[msgIdx]}
-          </motion.p>
-        </AnimatePresence>
+        <p
+          key={msgIdx}
+          className="text-sm text-white/70 leading-relaxed px-2 mb-4 relative z-10 animate-fade-in-up"
+        >
+          {msgs[msgIdx]}
+        </p>
 
         <p className="text-[11px] text-white/22 flex items-center gap-1 relative z-10">
           <MessageCircle className="w-3 h-3" /> Toca para mudar mensagem
         </p>
-      </motion.div>
+      </div>
 
       {/* ── Streak ── */}
       {streak > 0 && (
@@ -226,12 +219,12 @@ export default function VoltixPage() {
                 <span>Nível {(xp.level ?? 1) + 1}</span>
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{ backgroundColor: palette.body }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(100, ((xp.xp_in_current_level ?? 0) / ((xp.xp_in_current_level ?? 0) + (xp.xp_to_next_level ?? 1))) * 100)}%` }}
-                  transition={{ duration: 1.2, ease: 'easeOut' }}
+                <div
+                  className="h-full rounded-full transition-all duration-1000"
+                  style={{
+                    backgroundColor: palette.body,
+                    width: `${Math.min(100, ((xp.xp_in_current_level ?? 0) / ((xp.xp_in_current_level ?? 0) + (xp.xp_to_next_level ?? 1))) * 100)}%`,
+                  }}
                 />
               </div>
             </div>
@@ -251,10 +244,10 @@ export default function VoltixPage() {
             const p = isUnlocked ? MOOD_PALETTE['happy'] : { body: '#334155', shade: '#1e293b', light: '#475569', accent: '#475569' }
 
             return (
-              <motion.button
+              <button
                 key={stage}
                 className={cn(
-                  'w-full flex items-center gap-4 p-3.5 rounded-xl border transition-all text-left',
+                  'w-full flex items-center gap-4 p-3.5 rounded-xl border transition-all text-left hover:scale-[1.01] active:scale-[0.99]',
                   isCurrent
                     ? 'border-opacity-60'
                     : isUnlocked
@@ -269,8 +262,6 @@ export default function VoltixPage() {
                 onMouseLeave={() => setPreview(null)}
                 onTouchStart={() => setPreview(stage)}
                 onTouchEnd={() => setPreview(null)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
               >
                 {/* Mini creature preview */}
                 <div className="w-14 h-14 flex-shrink-0 relative">
@@ -322,7 +313,7 @@ export default function VoltixPage() {
                 >
                   {stage}
                 </div>
-              </motion.button>
+              </button>
             )
           })}
         </div>

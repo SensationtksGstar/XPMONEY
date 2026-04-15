@@ -8,11 +8,12 @@ async function fetchVoltix(): Promise<VoltixState | null> {
   return data
 }
 
-export function useVoltix(userId?: string) {
+export function useVoltix(_userId?: string) {
   const query = useQuery({
-    queryKey: ['voltix', userId],
-    queryFn:  fetchVoltix,
-    staleTime: 2 * 60 * 1000,
+    queryKey:             ['voltix'],
+    queryFn:              fetchVoltix,
+    staleTime:            10 * 60 * 1000,  // 10 min
+    refetchOnWindowFocus: false,
   })
 
   return {

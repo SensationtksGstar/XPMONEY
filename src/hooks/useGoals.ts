@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Goal } from '@/types'
+import type { Goal, GoalDeposit } from '@/types'
+
+// ── Goals ──────────────────────────────────────────────────────────────────
 
 async function fetchGoals(): Promise<Goal[]> {
   const res = await fetch('/api/goals')
@@ -35,12 +37,14 @@ async function deleteGoal(id: string): Promise<void> {
   if (!res.ok) throw new Error('Erro ao eliminar objetivo')
 }
 
-export function useGoals(userId?: string) {
+export function useGoals(_userId?: string) {
   const client = useQueryClient()
 
   const query = useQuery({
-    queryKey: ['goals', userId],
-    queryFn:  fetchGoals,
+    queryKey:             ['goals'],
+    queryFn:              fetchGoals,
+    staleTime:            10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 
   const createMutation = useMutation({
@@ -66,4 +70,49 @@ export function useGoals(userId?: string) {
     updateGoal: updateMutation.mutateAsync,
     deleteGoal: deleteMutation.mutateAsync,
   }
+}
+
+// ── Goal Deposits ───────────────────────────────────────────────────────────
+
+async function fetchDeposits(goalId: string): Promise<GoalDeposit[]> {
+  const res = await fetch(`/api/goals/${goalId}/deposits`)
+  if (!res.ok) return []
+  const { data } = await res.json()
+  return data ?? []
+}
+
+interface AddDepositInput {
+  goalId:  string
+  amount:  number
+  note?:   string
+  date?:   string
+}
+
+async function addDeposit({ goalId, ...body }: AddDepositInput) {
+  const res = await fetch(`/api/goals/${goalId}/deposits`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error('Erro ao registar depósito')
+  return res.json()
+}
+
+export function useGoalDeposits(goalId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['goal-deposits', goalId],
+    queryFn:  () => fetchDeposits(goalId),
+    enabled:  !!goalId && enabled,
+  })
+}
+
+export function useAddDeposit() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: addDeposit,
+    onSuccess:  (_data, vars) => {
+      client.invalidateQueries({ queryKey: ['goals'] })
+      client.invalidateQueries({ queryKey: ['goal-deposits', vars.goalId] })
+    },
+  })
 }

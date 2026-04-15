@@ -7,16 +7,20 @@ import PerspectivaClient       from './PerspectivaClient'
 
 export const metadata = { title: 'Perspetiva de Riqueza' }
 
+// Force dynamic — plan check must always be fresh (no stale cache)
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function PerspectivaPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
   const db = createSupabaseAdmin()
 
-  // Check plan
+  // Direct DB query — never cached — ensures paywall sees authoritative plan
   const { data: profile } = await db
     .from('users')
-    .select('plan, id')
+    .select('id, plan')
     .eq('clerk_id', userId)
     .single()
 
@@ -43,34 +47,48 @@ export default async function PerspectivaPage() {
     )
   }
 
-  // Fetch average monthly income (last 3 months)
-  const threeMonthsAgo = new Date()
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+  // Fetch salary category IDs (Salário + Freelance)
+  const { data: salaryCats } = await db
+    .from('categories')
+    .select('id, name')
+    .in('name', ['Salário', 'Freelance'])
+    .eq('is_default', true)
 
-  const { data: incomeData } = await db
-    .from('transactions')
-    .select('amount, date')
-    .eq('user_id', profile.id)
-    .eq('type', 'income')
-    .gte('date', threeMonthsAgo.toISOString().split('T')[0])
-    .order('date', { ascending: false })
+  const salaryIds = (salaryCats ?? []).map(c => c.id)
 
-  const totalIncome3M = incomeData?.reduce((s, t) => s + t.amount, 0) ?? 0
-  const monthlyIncome = totalIncome3M / 3
+  // Fetch all salary transactions and recent expenses in parallel
+  const [salaryRes, expenseRes] = await Promise.all([
+    salaryIds.length > 0
+      ? db
+          .from('transactions')
+          .select('amount, date')
+          .eq('user_id', profile.id)
+          .eq('type', 'income')
+          .in('category_id', salaryIds)
+          .order('date', { ascending: false })
+          .limit(24)
+      : Promise.resolve({ data: [] }),
+    db
+      .from('transactions')
+      .select('id, description, amount, date, category:categories(name, icon, color)')
+      .eq('user_id', profile.id)
+      .eq('type', 'expense')
+      .order('date', { ascending: false })
+      .limit(12),
+  ])
 
-  // Fetch last 10 expenses
-  const { data: recentExpenses } = await db
-    .from('transactions')
-    .select('id, description, amount, date, category:categories(name, icon, color)')
-    .eq('user_id', profile.id)
-    .eq('type', 'expense')
-    .order('date', { ascending: false })
-    .limit(12)
+  const salaryTxs = salaryRes.data ?? []
+  const monthSet = new Set(salaryTxs.map(t => t.date.slice(0, 7)))
+  const totalSalary   = salaryTxs.reduce((s, t) => s + Number(t.amount), 0)
+  const salaryMonths  = monthSet.size || 1
+  const monthlyIncome = totalSalary / salaryMonths
 
   return (
     <PerspectivaClient
       monthlyIncome={monthlyIncome}
-      recentExpenses={(recentExpenses ?? []) as any[]}
+      salaryMonths={salaryMonths}
+      salaryTotal={totalSalary}
+      recentExpenses={(expenseRes.data ?? []) as any[]}
     />
   )
 }

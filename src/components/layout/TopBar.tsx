@@ -1,22 +1,23 @@
 'use client'
 
 import { usePathname }       from 'next/navigation'
-import { useUser }           from '@clerk/nextjs'
 import { UserButton }        from '@clerk/nextjs'
 import { Crown }             from 'lucide-react'
 import Link                  from 'next/link'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
+import { Logo }              from '@/components/ui/Logo'
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard':    'Dashboard',
   '/transactions': 'Transações',
   '/missions':     'Missões',
   '/voltix':       'Voltix',
-  '/goals':        'Objetivos',
+  '/goals':        'Poupanças',
   '/settings':     'Definições',
   '/badges':       'Conquistas',
   '/perspetiva':   'Perspetiva',
   '/simulador':    'Simulador',
+  '/cursos':       'Academia',
 }
 
 export function TopBar() {
@@ -36,10 +37,10 @@ export function TopBar() {
 
         {/* Logo ou título */}
         {isDashboard ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xl">⚡</span>
-            <span className="font-bold text-white text-lg">XP Money</span>
-          </div>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <Logo size={28} />
+            <span className="font-bold text-white text-lg tracking-tight">XP Money</span>
+          </Link>
         ) : (
           <h1 className="font-bold text-white text-lg">{title}</h1>
         )}
@@ -59,7 +60,28 @@ export function TopBar() {
           <NotificationPanel />
 
           {/* Avatar */}
-          <UserButton afterSignOutUrl="/" />
+          <UserButton
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                /* popup card */
+                userButtonPopoverCard:
+                  'bg-[#111827] border border-white/10 shadow-2xl shadow-black/60 rounded-2xl !text-white',
+                /* header inside popup */
+                userButtonPopoverActionButton:
+                  'hover:bg-white/10 rounded-xl text-white',
+                userButtonPopoverActionButtonText: 'text-white/90 font-medium',
+                userButtonPopoverActionButtonIcon: 'text-white/60',
+                /* footer */
+                userButtonPopoverFooter: 'hidden',
+                /* name + email */
+                userPreviewMainIdentifier: 'text-white font-semibold',
+                userPreviewSecondaryIdentifier: 'text-white/50',
+                /* avatar trigger */
+                avatarBox: 'ring-2 ring-white/20 hover:ring-green-400/60 transition-all',
+              },
+            }}
+          />
         </div>
       </div>
     </header>

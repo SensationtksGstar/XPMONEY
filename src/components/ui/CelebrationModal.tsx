@@ -1,17 +1,16 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 
 interface Props {
-  open:     boolean
-  onClose:  () => void
-  icon:     string        // emoji or text
-  title:    string
-  subtitle: string
-  xp?:      number
-  autoClose?: number      // ms, default 3500
+  open:       boolean
+  onClose:    () => void
+  icon:       string        // emoji or text
+  title:      string
+  subtitle:   string
+  xp?:        number
+  autoClose?: number | false // ms before auto-dismiss, or false to disable
 }
 
 /* ── tiny pure-CSS confetti ───────────────────────────────────── */
@@ -30,121 +29,142 @@ const PIECES = Array.from({ length: 28 }, (_, i) => ({
 }))
 
 export function CelebrationModal({
-  open, onClose, icon, title, subtitle, xp, autoClose = 3500,
+  open, onClose, icon, title, subtitle, xp, autoClose = 4500,
 }: Props) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [paused, setPaused] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
 
+  // Countdown bar — updates every 50ms, pauses on hover
   useEffect(() => {
-    if (open) {
-      timerRef.current = setTimeout(onClose, autoClose)
+    if (!open || !autoClose || paused) return
+
+    const start = Date.now() - elapsed
+    const interval = setInterval(() => {
+      const now = Date.now() - start
+      setElapsed(now)
+      if (now >= autoClose) {
+        clearInterval(interval)
+        onClose()
+      }
+    }, 50)
+    return () => clearInterval(interval)
+  }, [open, autoClose, onClose, paused, elapsed])
+
+  // Reset elapsed when modal re-opens
+  useEffect(() => {
+    if (open) setElapsed(0)
+  }, [open])
+
+  // Keyboard: ESC to close, Enter to dismiss
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter') {
+        if (timerRef.current) clearTimeout(timerRef.current)
+        onClose()
+      }
     }
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [open, onClose, autoClose])
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [open, onClose])
+
+  if (!open) return null
+
+  const progress = autoClose ? Math.min(100, (elapsed / autoClose) * 100) : 0
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="cel-bg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm animate-fade-in"
+        aria-hidden="true"
+      />
+
+      {/* Card */}
+      <div className="fixed inset-0 z-[201] flex items-center justify-center p-6 pointer-events-none">
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="celebration-title"
+          aria-describedby="celebration-subtitle"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          className="pointer-events-auto relative w-full max-w-sm bg-[#0f1829] border border-white/15 rounded-3xl p-8 text-center overflow-hidden animate-fade-in-up"
+        >
+          {/* Confetti */}
+          <div className="absolute inset-x-0 top-0 h-40 overflow-hidden pointer-events-none" aria-hidden="true">
+            {PIECES.map(p => (
+              <span
+                key={p.id}
+                className="absolute top-0 block rounded-sm"
+                style={{
+                  left: p.left,
+                  width:  p.size,
+                  height: p.size,
+                  backgroundColor: p.color,
+                  animation: `confettiFall ${p.duration} ${p.delay} ease-in forwards`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Close — larger touch target */}
+          <button
             onClick={onClose}
-            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm"
-          />
-
-          {/* Card */}
-          <motion.div
-            key="cel-card"
-            initial={{ opacity: 0, scale: 0.7, y: 40 }}
-            animate={{ opacity: 1, scale: 1,   y: 0 }}
-            exit={{    opacity: 0, scale: 0.8,  y: -20 }}
-            transition={{ type: 'spring', damping: 18, stiffness: 280 }}
-            className="fixed inset-0 z-[201] flex items-center justify-center p-6 pointer-events-none"
+            aria-label="Fechar celebração"
+            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center text-white/30 hover:text-white rounded-full hover:bg-white/5 transition-colors"
           >
-            <div className="pointer-events-auto relative w-full max-w-sm bg-[#0f1829] border border-white/15 rounded-3xl p-8 text-center overflow-hidden">
+            <X className="w-4 h-4" />
+          </button>
 
-              {/* Confetti */}
-              <div className="absolute inset-x-0 top-0 h-40 overflow-hidden pointer-events-none">
-                {PIECES.map(p => (
-                  <span
-                    key={p.id}
-                    className="absolute top-0 block rounded-sm"
-                    style={{
-                      left: p.left,
-                      width:  p.size,
-                      height: p.size,
-                      backgroundColor: p.color,
-                      animation: `confettiFall ${p.duration} ${p.delay} ease-in forwards`,
-                    }}
-                  />
-                ))}
-              </div>
+          {/* Icon */}
+          <div className="text-6xl mb-4 inline-block" aria-hidden="true">
+            {icon}
+          </div>
 
-              {/* Close */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          {/* Title */}
+          <h2 id="celebration-title" className="text-2xl font-black text-white mb-2">
+            {title}
+          </h2>
 
-              {/* Icon */}
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: [0, 1.3, 1] }}
-                transition={{ delay: 0.15, duration: 0.4, times: [0, 0.7, 1] }}
-                className="text-6xl mb-4 inline-block"
-              >
-                {icon}
-              </motion.div>
+          {/* Subtitle */}
+          <p id="celebration-subtitle" className="text-white/60 text-sm leading-relaxed mb-5">
+            {subtitle}
+          </p>
 
-              {/* Title */}
-              <motion.h2
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="text-2xl font-black text-white mb-2"
-              >
-                {title}
-              </motion.h2>
-
-              {/* Subtitle */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
-                className="text-white/60 text-sm leading-relaxed mb-5"
-              >
-                {subtitle}
-              </motion.p>
-
-              {/* XP badge */}
-              {xp && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.45, type: 'spring', stiffness: 300 }}
-                  className="inline-flex items-center gap-2 bg-yellow-500/15 border border-yellow-500/30 rounded-2xl px-5 py-2.5 mb-5"
-                >
-                  <span className="text-xl">⚡</span>
-                  <span className="text-yellow-400 font-black text-lg">+{xp} XP</span>
-                </motion.div>
-              )}
-
-              {/* Close CTA */}
-              <button
-                onClick={onClose}
-                className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-3.5 rounded-2xl transition-all active:scale-95"
-              >
-                Continuar →
-              </button>
+          {/* XP badge */}
+          {xp && (
+            <div className="inline-flex items-center gap-2 bg-yellow-500/15 border border-yellow-500/30 rounded-2xl px-5 py-2.5 mb-5">
+              <span className="text-xl" aria-hidden="true">⚡</span>
+              <span className="text-yellow-400 font-black text-lg">+{xp} XP</span>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          )}
+
+          {/* Close CTA */}
+          <button
+            onClick={onClose}
+            className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-3.5 rounded-2xl transition-all active:scale-95 min-h-[44px]"
+            autoFocus
+          >
+            Continuar →
+          </button>
+
+          {/* Countdown progress bar — bottom of card, gives user spatial awareness */}
+          {autoClose && (
+            <div
+              className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 overflow-hidden"
+              aria-hidden="true"
+            >
+              <div
+                className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-[50ms] ease-linear"
+                style={{ width: `${100 - progress}%` }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   )
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { calculateXPProgress }       from '@/lib/gamification'
 import { recalculateScore }          from '@/lib/recalculateScore'
+import { resolveUser }               from '@/lib/resolveUser'
 
 export async function POST(
   _req: NextRequest,
@@ -12,18 +13,18 @@ export async function POST(
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
-  const db = createSupabaseAdmin()
 
-  const { data: user } = await db
-    .from('users').select('id').eq('clerk_id', userId).single()
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
+  const db = createSupabaseAdmin()
 
   // Buscar missão e verificar se pertence ao user
   const { data: mission } = await db
     .from('missions')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', internalId)
     .single()
 
   if (!mission) return NextResponse.json({ error: 'Mission not found' }, { status: 404 })
@@ -38,7 +39,7 @@ export async function POST(
 
   // Dar XP
   const { data: xp } = await db
-    .from('xp_progress').select('xp_total, level').eq('user_id', user.id).single()
+    .from('xp_progress').select('xp_total, level').eq('user_id', internalId).single()
 
   const newTotal = (xp?.xp_total ?? 0) + mission.xp_reward
   const progress = calculateXPProgress(newTotal)
@@ -48,10 +49,10 @@ export async function POST(
     level:            progress.level,
     last_activity_at: new Date().toISOString(),
     updated_at:       new Date().toISOString(),
-  }).eq('user_id', user.id)
+  }).eq('user_id', internalId)
 
   await db.from('xp_history').insert({
-    user_id:   user.id,
+    user_id:   internalId,
     amount:    mission.xp_reward,
     reason:    `mission_completed:${id}`,
     earned_at: new Date().toISOString(),
@@ -61,7 +62,7 @@ export async function POST(
 
   // Recalculate financial score after mission completion — best-effort
   try {
-    await recalculateScore(db, user.id)
+    await recalculateScore(db, internalId)
   } catch { /* never block the response */ }
 
   return NextResponse.json({

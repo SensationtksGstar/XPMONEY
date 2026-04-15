@@ -21,8 +21,8 @@ const PLANS = [
     features: [
       'Transações ilimitadas',
       'Score de saúde financeira',
-      'XP e níveis básicos',
-      'Voltix básico',
+      'XP, níveis e conquistas',
+      'Voltix companheiro',
       '3 missões ativas',
       '10 categorias',
       'Histórico de 3 meses',
@@ -32,8 +32,8 @@ const PLANS = [
     id:       'plus',
     name:     'Plus',
     icon:     '⚡',
-    monthly:  3.99,
-    yearly:   29.99,
+    monthly:  2.99,
+    yearly:   24.99,
     color:    'border-green-500/40',
     highlight: true,
     features: [
@@ -41,28 +41,28 @@ const PLANS = [
       'Missões ilimitadas',
       'Categorias ilimitadas',
       'Histórico completo',
-      'Relatórios PDF/CSV',
-      'Voltix evoluído',
-      'Sem anúncios',
-      'Objetivos ilimitados',
+      'Objetivos financeiros ilimitados',
+      'Sem publicidade',
+      '📷 Scanner de faturas com IA',
+      '🎓 Academia — Curso Iniciante + Certificado',
     ],
   },
   {
     id:       'pro',
     name:     'Pro',
     icon:     '👑',
-    monthly:  7.99,
-    yearly:   59.99,
+    monthly:  5.99,
+    yearly:   49.99,
     color:    'border-purple-500/30',
     highlight: false,
     features: [
       'Tudo do Plus',
-      'Multi-conta (5 contas)',
-      'Modo casal partilhado',
-      'Voltix skins exclusivos',
+      '🎓 Academia completa — 3 cursos + certificados',
+      '💰 Perspetiva de Riqueza',
+      '📊 Simulador de Investimento',
+      '🎨 Voltix skins exclusivos',
+      '⭐ Badge Pro exclusivo',
       'Suporte prioritário',
-      'Acesso antecipado a features',
-      'Badge Pro exclusivo',
     ],
   },
 ]
@@ -96,7 +96,7 @@ export default function BillingClient({ currentPlan }: Props) {
     }
   }
 
-  const yearlySaving = Math.round((1 - (29.99 / (3.99 * 12))) * 100)
+  const yearlySaving = Math.round((1 - (24.99 / (2.99 * 12))) * 100)
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto pb-8">

@@ -2,6 +2,7 @@ import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { z }                         from 'zod'
+import { resolveUser }               from '@/lib/resolveUser'
 
 const PatchSchema = z.object({
   current_amount: z.number().min(0).optional(),
@@ -25,16 +26,16 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
   const db = createSupabaseAdmin()
-  const { data: user } = await db
-    .from('users').select('id').eq('clerk_id', userId).single()
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const { data, error } = await db
     .from('goals')
     .update({ ...parsed.data, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', internalId)
     .select()
     .single()
 
@@ -51,16 +52,16 @@ export async function DELETE(
 
   const { id } = await params
 
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
   const db = createSupabaseAdmin()
-  const { data: user } = await db
-    .from('users').select('id').eq('clerk_id', userId).single()
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const { error } = await db
     .from('goals')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', internalId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { motion }   from 'framer-motion'
 import { Clock, Coffee, Star, TrendingUp, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CategoryIcon } from '@/components/ui/CategoryIcon'
@@ -62,12 +61,14 @@ interface Expense {
 }
 
 interface Props {
-  monthlyIncome: number
+  monthlyIncome:  number
+  salaryMonths:   number      // distinct months used to compute the average
+  salaryTotal:    number      // total declared salary amount
   recentExpenses: Expense[]
 }
 
 /* ─── Component ───────────────────────────────────────────────────────── */
-export default function PerspectivaClient({ monthlyIncome, recentExpenses }: Props) {
+export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryTotal, recentExpenses }: Props) {
   const [selectedCel, setSelectedCel] = useState(CELEBRITIES[0])
   const [tab, setTab] = useState<'celebrities' | 'hourly' | 'equivalents'>('celebrities')
 
@@ -96,21 +97,37 @@ export default function PerspectivaClient({ monthlyIncome, recentExpenses }: Pro
       {/* Income summary */}
       {monthlyIncome === 0 ? (
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-sm text-yellow-300">
-          ⚠️ Não foi encontrado rendimento registado. Adiciona transações de receita para ver os teus dados personalizados.
+          ⚠️ Não foram encontradas transações de <strong>Salário</strong> ou <strong>Freelance</strong> registadas.
+          Adiciona receitas nessas categorias para ver a comparação personalizada.
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Por hora',   value: fmtDec(hourlyRate), icon: '⏱️' },
-            { label: 'Por dia',    value: fmt(dailyRate),      icon: '📅' },
-            { label: 'Por mês',   value: fmt(monthlyIncome),   icon: '💰' },
-          ].map(c => (
-            <div key={c.label} className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
-              <div className="text-2xl mb-1">{c.icon}</div>
-              <div className="text-lg font-bold text-white">{c.value}</div>
-              <div className="text-xs text-white/40">{c.label}</div>
-            </div>
-          ))}
+        <div className="space-y-3">
+          {/* Source label */}
+          <div className="flex items-center gap-2 text-xs text-white/40 px-1">
+            <Info className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+            <span>
+              Média calculada com base em{' '}
+              <strong className="text-green-400">{salaryMonths} {salaryMonths === 1 ? 'mês' : 'meses'}</strong>
+              {' '}de salário/freelance declarado
+              {salaryMonths > 1 && (
+                <> · Total: <strong className="text-white">{fmt(salaryTotal)}</strong></>
+              )}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Por hora',  value: fmtDec(hourlyRate),  icon: '⏱️' },
+              { label: 'Por dia',   value: fmt(dailyRate),       icon: '📅' },
+              { label: 'Por mês',  value: fmt(monthlyIncome),    icon: '💰' },
+            ].map(c => (
+              <div key={c.label} className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+                <div className="text-2xl mb-1">{c.icon}</div>
+                <div className="text-lg font-bold text-white">{c.value}</div>
+                <div className="text-xs text-white/40">{c.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -138,7 +155,7 @@ export default function PerspectivaClient({ monthlyIncome, recentExpenses }: Pro
 
       {/* ── TAB: CELEBRITIES ── */}
       {tab === 'celebrities' && (
-        <motion.div key="celebrities" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+        <div className="space-y-4 animate-fade-in-up">
           {/* Celebrity picker */}
           <div className="grid grid-cols-4 gap-2">
             {CELEBRITIES.map(c => (
@@ -217,12 +234,12 @@ export default function PerspectivaClient({ monthlyIncome, recentExpenses }: Pro
               <p className="text-white/40 text-sm">Regista rendimentos para ver a comparação personalizada.</p>
             )}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* ── TAB: HOURLY COST ── */}
       {tab === 'hourly' && (
-        <motion.div key="hourly" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+        <div className="space-y-3 animate-fade-in-up">
           {monthlyIncome === 0 ? (
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-sm text-yellow-300">
               ⚠️ Regista as tuas receitas para ver o custo das despesas em horas de trabalho.
@@ -277,12 +294,12 @@ export default function PerspectivaClient({ monthlyIncome, recentExpenses }: Pro
               )}
             </>
           )}
-        </motion.div>
+        </div>
       )}
 
       {/* ── TAB: EQUIVALENTS ── */}
       {tab === 'equivalents' && (
-        <motion.div key="equivalents" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+        <div className="space-y-3 animate-fade-in-up">
           <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-2 flex items-center gap-3">
             <Coffee className="w-5 h-5 text-yellow-400" />
             <div>
@@ -341,7 +358,7 @@ export default function PerspectivaClient({ monthlyIncome, recentExpenses }: Pro
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
       )}
     </div>
   )

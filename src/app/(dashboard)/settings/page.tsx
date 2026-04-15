@@ -1,8 +1,10 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth }             from '@clerk/nextjs/server'
 import { Crown, Zap, Check } from 'lucide-react'
-import Link from 'next/link'
+import Link                  from 'next/link'
 import { createSupabaseAdmin } from '@/lib/supabase'
-import { ProfileEditForm }     from './ProfileEditForm'
+import { getUserProfile }    from '@/lib/userCache'
+import { ProfileEditForm }   from './ProfileEditForm'
+import { PushOptIn }         from '@/components/notifications/PushOptIn'
 
 export const metadata = { title: 'Definições' }
 
@@ -17,16 +19,19 @@ export default async function SettingsPage() {
   const { userId } = await auth()
   if (!userId) return null
 
+  // Plan from shared cache — no extra DB call
+  const cached = await getUserProfile(userId)
+  const plan     = (cached?.plan ?? 'free') as string
+  const planInfo = PLAN_LABELS[plan] ?? PLAN_LABELS.free
+  const isPaid   = plan !== 'free'
+
+  // Profile details (name, email, etc.) — fetch separately since they change more often
   const db = createSupabaseAdmin()
   const { data: profile } = await db
     .from('users')
-    .select('plan, name, email, avatar_url, challenge, goal, currency')
+    .select('name, email, avatar_url, challenge, goal, currency')
     .eq('clerk_id', userId)
     .single()
-
-  const plan      = profile?.plan ?? 'free'
-  const planInfo  = PLAN_LABELS[plan] ?? PLAN_LABELS.free
-  const isPaid    = plan !== 'free'
 
   return (
     <div className="space-y-6 animate-fade-in-up max-w-2xl">
@@ -65,6 +70,18 @@ export default async function SettingsPage() {
             </Link>
           )}
         </div>
+      </div>
+
+      {/* Notificações push */}
+      <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+        <h2 className="font-semibold text-white mb-1 flex items-center gap-2">
+          <span className="text-base">🔔</span>
+          Notificações Diárias
+        </h2>
+        <p className="text-sm text-white/50 mb-4">
+          Recebe lembretes diários com frases motivacionais para manteres os bons hábitos financeiros.
+        </p>
+        <PushOptIn />
       </div>
 
       {/* Formulário de edição de perfil */}

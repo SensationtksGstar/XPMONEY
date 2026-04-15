@@ -1,7 +1,7 @@
 'use client'
 
 import { useState }        from 'react'
-import { motion }          from 'framer-motion'
+
 import { Lock, Zap, Crown, CheckCircle2 } from 'lucide-react'
 import { useMissions }     from '@/hooks/useMissions'
 import { useQueryClient }  from '@tanstack/react-query'
@@ -77,13 +77,10 @@ export default function MissionsPage() {
               const canComplete = pct >= 100 && mission.status === 'active'
 
               return (
-                <motion.div
+                <div
                   key={mission.id}
-                  layout
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    'glass-card p-4 transition-all',
+                    'glass-card p-4 transition-all animate-fade-in-up',
                     mission.is_premium && 'border-purple-500/20',
                     canComplete && 'border-green-500/30 bg-green-500/5',
                   )}
@@ -110,14 +107,12 @@ export default function MissionsPage() {
                   </div>
 
                   <div className="relative h-2 bg-white/10 rounded-full overflow-hidden mb-1.5">
-                    <motion.div
+                    <div
                       className={cn(
-                        'absolute left-0 top-0 h-full rounded-full',
+                        'absolute left-0 top-0 h-full rounded-full transition-all duration-700',
                         canComplete ? 'bg-green-400' : mission.is_premium ? 'bg-purple-500' : 'bg-green-500'
                       )}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+                      style={{ width: `${pct}%` }}
                     />
                   </div>
 
@@ -126,11 +121,10 @@ export default function MissionsPage() {
                       {mission.current_value}/{mission.target_value}
                     </span>
                     {canComplete ? (
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
+                      <button
                         onClick={() => handleComplete(mission.id, mission.xp_reward, mission.title)}
                         disabled={completing === mission.id}
-                        className="flex items-center gap-1.5 bg-green-500 hover:bg-green-400 text-black text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-60"
+                        className="flex items-center gap-1.5 bg-green-500 hover:bg-green-400 text-black text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-60 active:scale-95"
                       >
                         {completing === mission.id ? (
                           <div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
@@ -138,12 +132,12 @@ export default function MissionsPage() {
                           <CheckCircle2 className="w-3 h-3" />
                         )}
                         Completar
-                      </motion.button>
+                      </button>
                     ) : (
                       <span className="text-xs text-white/40">{formatPercent(pct, 0)}</span>
                     )}
                   </div>
-                </motion.div>
+                </div>
               )
             })}
           </div>

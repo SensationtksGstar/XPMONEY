@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { Flame, Zap } from 'lucide-react'
 import { useVoltix } from '@/hooks/useVoltix'
 import { useUser }   from '@clerk/nextjs'
@@ -34,11 +33,7 @@ export function StreakBanner() {
   if (streak === 0) {
     return (
       <Link href="/transactions">
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 cursor-pointer hover:border-white/20 transition-all active:scale-[0.99]"
-        >
+        <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 cursor-pointer hover:border-white/20 transition-all active:scale-[0.99] animate-fade-in-up">
           <div className="w-9 h-9 rounded-xl bg-white/8 flex items-center justify-center flex-shrink-0">
             <Flame className="w-5 h-5 text-white/30" />
           </div>
@@ -47,7 +42,7 @@ export function StreakBanner() {
             <p className="text-xs text-white/40">Regista uma transação e ganha +20 XP</p>
           </div>
           <span className="text-xs text-green-400 font-bold flex-shrink-0">Registar →</span>
-        </motion.div>
+        </div>
       </Link>
     )
   }
@@ -62,19 +57,11 @@ export function StreakBanner() {
   const iconColor = isLegend ? 'text-purple-400' : 'text-orange-400'
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`flex items-center gap-3 border rounded-2xl px-4 py-3 ${bgColor}`}
-    >
-      {/* animated flame */}
-      <motion.div
-        animate={{ scale: [1, 1.15, 1], rotate: [-3, 3, -3] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-        className="flex-shrink-0"
-      >
+    <div className={`flex items-center gap-3 border rounded-2xl px-4 py-3 animate-fade-in-up ${bgColor}`}>
+      {/* flame icon */}
+      <div className="flex-shrink-0">
         <Flame className={`w-6 h-6 ${iconColor}`} />
-      </motion.div>
+      </div>
 
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-bold ${textColor}`}>
@@ -92,6 +79,6 @@ export function StreakBanner() {
           </span>
         </div>
       )}
-    </motion.div>
+    </div>
   )
 }

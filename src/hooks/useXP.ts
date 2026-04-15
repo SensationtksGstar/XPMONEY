@@ -18,12 +18,14 @@ async function addXP(payload: { amount: number; reason: string }) {
   return res.json()
 }
 
-export function useXP(userId?: string) {
+export function useXP(_userId?: string) {
   const client = useQueryClient()
 
   const query = useQuery({
-    queryKey: ['xp', userId],
-    queryFn:  fetchXP,
+    queryKey:             ['xp'],
+    queryFn:              fetchXP,
+    staleTime:            10 * 60 * 1000,  // 10 min
+    refetchOnWindowFocus: false,
   })
 
   const mutation = useMutation({

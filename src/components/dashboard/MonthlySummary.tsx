@@ -2,33 +2,25 @@
 
 import { TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
 import { formatCurrency, formatPercent } from '@/lib/utils'
-import { useTransactions } from '@/hooks/useTransactions'
-import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import type { MonthlySummaryData } from '@/app/api/summary/route'
 
-interface Props { userId: string }
+async function fetchSummary(): Promise<MonthlySummaryData | null> {
+  const res = await fetch('/api/summary')
+  if (!res.ok) return null
+  const { data } = await res.json()
+  return data
+}
 
-export function MonthlySummary({ userId }: Props) {
-  const { transactions, loading } = useTransactions(userId)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function MonthlySummary({ userId: _userId }: { userId?: string }) {
+  const { data: summary, isLoading } = useQuery({
+    queryKey:  ['summary'],
+    queryFn:   fetchSummary,
+    staleTime: 5 * 60 * 1000,
+  })
 
-  const summary = useMemo(() => {
-    const now   = new Date()
-    const month = now.getMonth()
-    const year  = now.getFullYear()
-
-    const thisMonth = transactions.filter(t => {
-      const d = new Date(t.date)
-      return d.getMonth() === month && d.getFullYear() === year
-    })
-
-    const income  = thisMonth.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-    const expense = thisMonth.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-    const savings = income - expense
-    const rate    = income > 0 ? (savings / income) * 100 : 0
-
-    return { income, expense, savings, rate }
-  }, [transactions])
-
-  if (loading) {
+  if (isLoading || !summary) {
     return (
       <div className="grid grid-cols-3 gap-4">
         {[1, 2, 3].map(i => (

@@ -1,6 +1,7 @@
 import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
+import { resolveUser }               from '@/lib/resolveUser'
 
 export async function GET(req: NextRequest) {
   const { userId } = await auth()
@@ -9,15 +10,15 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '10'), 50)
 
+  const internalId = await resolveUser(userId)
+  if (!internalId) return NextResponse.json({ data: [], error: null })
+
   const db = createSupabaseAdmin()
-  const { data: user } = await db
-    .from('users').select('id').eq('clerk_id', userId).single()
-  if (!user) return NextResponse.json({ data: [], error: null })
 
   const { data, error } = await db
     .from('xp_history')
     .select('id, amount, reason, earned_at')
-    .eq('user_id', user.id)
+    .eq('user_id', internalId)
     .order('earned_at', { ascending: false })
     .limit(limit)
 

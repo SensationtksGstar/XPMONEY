@@ -286,6 +286,16 @@ export interface Goal {
   updated_at?: string
 }
 
+export interface GoalDeposit {
+  id: string
+  goal_id: string
+  user_id: string
+  amount: number        // positive = deposit, negative = withdrawal
+  note: string
+  date: string          // "YYYY-MM-DD"
+  created_at: string
+}
+
 // ---- SUBSCRIPTIONS ----
 
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing'

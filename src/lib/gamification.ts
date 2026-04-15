@@ -38,14 +38,18 @@ export function getXPPercentage(xpProgress: Omit<XPProgress, 'id' | 'user_id' | 
 // ---- Score Financeiro ----
 
 export interface ScoreInput {
-  income_month: number
-  expense_month: number
-  savings_this_month: number
-  days_with_transactions: number
-  goals_with_progress: number
-  total_goals: number
-  budget_overspent_categories: number
-  total_categories_used: number
+  income_month:              number
+  expense_month:             number
+  savings_this_month:        number
+  days_with_transactions:    number
+  goals_with_progress:       number
+  total_goals:               number
+  /**
+   * Optional — expense breakdown by category for the current month.
+   * Used to detect concentration risk (e.g. >50% of spending in one category).
+   * Pass an empty object if unavailable; a neutral score is returned.
+   */
+  expense_by_category?: Record<string, number>
 }
 
 export function calculateFinancialScore(input: ScoreInput): {
@@ -58,24 +62,42 @@ export function calculateFinancialScore(input: ScoreInput): {
   }
 } {
   // 1. Taxa de poupança (0-25 pts)
-  // Ideal: poupar >= 20% do rendimento
+  // Ideal: poupar >= 20% do rendimento → 25 pts no tecto
   const savingsRate = input.income_month > 0
     ? input.savings_this_month / input.income_month
     : 0
-  const savingsScore = Math.min(25, Math.round(savingsRate * 125))
+  const savingsScore = Math.max(0, Math.min(25, Math.round(savingsRate * 125)))
 
   // 2. Controlo de despesas (0-25 pts)
-  // Penaliza categorias em que gastou acima do orçamento
-  const overspendRatio = input.total_categories_used > 0
-    ? input.budget_overspent_categories / input.total_categories_used
-    : 0
-  const expenseScore = Math.round(25 * (1 - overspendRatio))
+  // Avalia duas dimensões:
+  //   a) rácio despesa/rendimento (penaliza quem gasta mais do que ganha)
+  //   b) concentração (penaliza quando uma categoria consome >50% das despesas)
+  let expenseScore = 12 // valor neutro quando não há dados
+  if (input.income_month > 0) {
+    const expenseRatio = input.expense_month / input.income_month
+    // 25 pts se gastar ≤60%; 0 pts se gastar ≥110%
+    const ratioPts = expenseRatio <= 0.6
+      ? 25
+      : expenseRatio >= 1.1
+        ? 0
+        : Math.round(25 * (1 - (expenseRatio - 0.6) / 0.5))
+
+    // Concentração: se existir uma categoria >50% das despesas, perde até 10 pts
+    let concentrationPenalty = 0
+    const categories = input.expense_by_category ?? {}
+    const catTotal   = Object.values(categories).reduce((s, n) => s + n, 0)
+    if (catTotal > 0) {
+      const maxCatShare = Math.max(...Object.values(categories)) / catTotal
+      if (maxCatShare > 0.5) concentrationPenalty = Math.round((maxCatShare - 0.5) * 20)
+    }
+    expenseScore = Math.max(0, Math.min(25, ratioPts - concentrationPenalty))
+  }
 
   // 3. Consistência de registo (0-25 pts)
   // Ideal: registar transações todos os dias do mês
   const daysInMonth   = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
   const consistencyRatio = input.days_with_transactions / daysInMonth
-  const consistencyScore = Math.min(25, Math.round(consistencyRatio * 25))
+  const consistencyScore = Math.max(0, Math.min(25, Math.round(consistencyRatio * 25)))
 
   // 4. Progresso em objetivos (0-25 pts)
   const goalsScore = input.total_goals > 0

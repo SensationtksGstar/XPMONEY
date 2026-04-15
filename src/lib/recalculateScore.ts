@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { calculateFinancialScore } from '@/lib/gamification'
+import { toNumber } from '@/lib/safeNumber'
 import type { FinancialScore } from '@/types'
 
 /**
@@ -26,11 +27,14 @@ export async function recalculateScore(
     .toISOString()
     .split('T')[0]
 
-  // Fetch current-month transactions and active goals in parallel
+  // Fetch current-month transactions (with category) and active goals in parallel
+  interface TxRow { amount: number | string; type: string; date: string; category_id: string | null }
+  interface GoalRow { current_amount: number | string; target_amount: number | string; status: string }
+
   const [txResult, goalsResult] = await Promise.all([
     db
       .from('transactions')
-      .select('amount, type, date')
+      .select('amount, type, date, category_id')
       .eq('user_id', userId)
       .gte('date', start)
       .lte('date', end),
@@ -41,32 +45,36 @@ export async function recalculateScore(
       .eq('status', 'active'),
   ])
 
-  const txs   = txResult.data   ?? []
-  const goals = goalsResult.data ?? []
+  const txs   = (txResult.data   ?? []) as TxRow[]
+  const goals = (goalsResult.data ?? []) as GoalRow[]
 
   const income  = txs
-    .filter((t: { type: string }) => t.type === 'income')
-    .reduce((s: number, t: { amount: number }) => s + t.amount, 0)
+    .filter(t => t.type === 'income')
+    .reduce((s, t) => s + toNumber(t.amount), 0)
   const expense = txs
-    .filter((t: { type: string }) => t.type === 'expense')
-    .reduce((s: number, t: { amount: number }) => s + t.amount, 0)
+    .filter(t => t.type === 'expense')
+    .reduce((s, t) => s + toNumber(t.amount), 0)
   const savings = income - expense
 
-  const daysWithTx        = new Set(txs.map((t: { date: string }) => t.date)).size
-  const goalsWithProgress = (goals as { current_amount: number }[])
-    .filter(g => g.current_amount > 0).length
+  const daysWithTx        = new Set(txs.map(t => t.date)).size
+  const goalsWithProgress = goals.filter(g => toNumber(g.current_amount) > 0).length
+
+  // Build per-category expense map (key = category_id) for concentration analysis.
+  const expenseByCategory: Record<string, number> = {}
+  for (const t of txs) {
+    if (t.type !== 'expense' || !t.category_id) continue
+    expenseByCategory[t.category_id] =
+      (expenseByCategory[t.category_id] ?? 0) + toNumber(t.amount)
+  }
 
   const result = calculateFinancialScore({
-    income_month:                income,
-    expense_month:               expense,
-    savings_this_month:          savings,
-    days_with_transactions:      daysWithTx,
-    goals_with_progress:         goalsWithProgress,
-    total_goals:                 goals.length,
-    budget_overspent_categories: 0, // TODO: calculate with budgets
-    total_categories_used:       new Set(
-      txs.map((t: { type: string }) => t.type)
-    ).size,
+    income_month:           income,
+    expense_month:          expense,
+    savings_this_month:     savings,
+    days_with_transactions: daysWithTx,
+    goals_with_progress:    goalsWithProgress,
+    total_goals:            goals.length,
+    expense_by_category:    expenseByCategory,
   })
 
   // Fetch previous score to determine trend

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
-import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Check, Target, TrendingUp, PlusCircle } from 'lucide-react'
 import { track } from '@/lib/posthog'
 
@@ -108,17 +107,10 @@ export default function OnboardingPage() {
       </div>
 
       <div className="w-full max-w-md">
-        <AnimatePresence mode="wait">
 
           {/* PASSO 1 — Desafio */}
           {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <div key="step1" className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4">👋</div>
                 <h1 className="text-2xl font-bold text-white mb-2">
@@ -148,18 +140,12 @@ export default function OnboardingPage() {
                   </button>
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* PASSO 2 — Objetivo */}
           {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <div key="step2" className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4">🎯</div>
                 <h1 className="text-2xl font-bold text-white mb-2">
@@ -198,18 +184,12 @@ export default function OnboardingPage() {
                 Continuar
                 <ArrowRight className="w-5 h-5" />
               </button>
-            </motion.div>
+            </div>
           )}
 
           {/* PASSO 3 — Primeira transação / missão */}
           {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <div key="step3" className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4 animate-bounce">⚡</div>
                 <h1 className="text-2xl font-bold text-white mb-2">
@@ -246,7 +226,7 @@ export default function OnboardingPage() {
                   <div>
                     <p className="text-sm font-medium text-green-400">Missão criada automaticamente</p>
                     <p className="text-xs text-white/60 mt-0.5">
-                      "Regista 5 transações esta semana" — +150 XP
+                      &quot;Regista 5 transações esta semana&quot; — +150 XP
                     </p>
                   </div>
                 </div>
@@ -278,10 +258,9 @@ export default function OnboardingPage() {
                   </>
                 )}
               </button>
-            </motion.div>
+            </div>
           )}
 
-        </AnimatePresence>
       </div>
     </main>
   )
