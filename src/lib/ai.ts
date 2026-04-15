@@ -265,6 +265,8 @@ interface GroqResponse {
 async function groqVision(
   apiKey: string, imageBase64: string, mimeType: string,
 ): Promise<ReceiptScanResult> {
+  // Llama 4 Scout — current Groq vision-capable model (replaces deprecated
+  // llama-3.2-90b-vision-preview which was removed in late 2025).
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method:  'POST',
     headers: {
@@ -272,7 +274,7 @@ async function groqVision(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama-3.2-90b-vision-preview',
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       messages: [
         {
           role:    'user',
@@ -426,8 +428,8 @@ export async function scanReceipt(
         () => groqVision(groqKey, imageBase64, mimeType),
         'groq-vision',
       )
-      await setCachedReceipt(hash, data, 'groq-llama-3.2-vision')
-      return { data, provider: 'groq-llama-3.2-vision', cache_hit: false, attempts }
+      await setCachedReceipt(hash, data, 'groq-llama-4-scout')
+      return { data, provider: 'groq-llama-4-scout', cache_hit: false, attempts }
     } catch (err) {
       attempts.push(`groq-vision: ${err instanceof Error ? err.message : err}`)
     }
