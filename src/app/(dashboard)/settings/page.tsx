@@ -5,6 +5,7 @@ import { createSupabaseAdmin } from '@/lib/supabase'
 import { getUserProfile }    from '@/lib/userCache'
 import { ProfileEditForm }   from './ProfileEditForm'
 import { PushOptIn }         from '@/components/notifications/PushOptIn'
+import { ResetTransactionsCard } from '@/components/settings/ResetTransactionsCard'
 
 export const metadata = { title: 'Definições' }
 
@@ -93,6 +94,9 @@ export default async function SettingsPage() {
         email={profile?.email ?? ''}
         avatarUrl={profile?.avatar_url ?? null}
       />
+
+      {/* Zona de perigo — apagar todas as transações */}
+      <ResetTransactionsCard />
     </div>
   )
 }
