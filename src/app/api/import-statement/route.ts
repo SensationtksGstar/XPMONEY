@@ -3,7 +3,7 @@ import { NextRequest, NextResponse }   from 'next/server'
 import { createSupabaseAdmin }         from '@/lib/supabase'
 import { isDemoMode, demoResponse }    from '@/lib/demo/demoGuard'
 import { DEMO_CATEGORIES }             from '@/lib/demo/mockData'
-import Anthropic                       from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI }          from '@google/generative-ai'
 
 // ── Shape returned per parsed transaction ────────────────────────────────────
 export interface ParsedTransaction {
@@ -66,7 +66,6 @@ export async function POST(req: NextRequest) {
     content  = body.content  as string
     filename = body.filename as string ?? 'extrato.csv'
     if (!content || content.trim().length < 10) throw new Error('empty')
-    // Safety cap — ~200KB of text is plenty for a bank statement
     if (content.length > 200_000) {
       return NextResponse.json({ error: 'Ficheiro demasiado grande (máx 200 KB de texto).' }, { status: 413 })
     }
@@ -74,16 +73,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Conteúdo inválido.' }, { status: 400 })
   }
 
-  // ── Check Anthropic key ──
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  // ── Check Gemini key ──
+  const apiKey =
+    process.env.GOOGLE_GEMINI_API_KEY ??
+    process.env.GOOGLE_API_KEY ??
+    process.env.GEMINI_API_KEY
   if (!apiKey || apiKey.includes('xxxxxx')) {
-    return NextResponse.json({ error: 'ANTHROPIC_API_KEY não configurada.' }, { status: 503 })
+    return NextResponse.json(
+      { error: 'GOOGLE_GEMINI_API_KEY não configurada no servidor.' },
+      { status: 503 },
+    )
   }
 
-  // ── Call Claude ──
-  const client = new Anthropic({ apiKey })
+  // ── Call Gemini ──
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature:      0.1,
+      maxOutputTokens:  8192,
+    },
+  })
 
-  const systemPrompt = `És um especialista em análise de extratos bancários portugueses.
+  const prompt = `És um especialista em análise de extratos bancários portugueses.
 Recebes o conteúdo bruto de um ficheiro CSV ou TXT exportado de um banco português.
 A tua tarefa é identificar o banco, fazer parse de TODAS as transações e categorizá-las.
 
@@ -97,7 +110,7 @@ A tua tarefa é identificar o banco, fazer parse de TODAS as transações e cate
 
 ── Regras de parsing ──
 - Datas: aceita DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD — converte SEMPRE para YYYY-MM-DD
-- Decimais portugueses: "1.234,56" ou "1234,56" → 1234.56 (ponto é separador de milhares, vírgula é decimal)
+- Decimais portugueses: "1.234,56" ou "1234,56" → 1234.56 (ponto é milhares, vírgula é decimal)
 - Decimais ingleses: "1,234.56" → 1234.56 (Wise/Revolut)
 - Colunas Débito/Crédito SEPARADAS (BPI, Novobanco): valor em Débito → type="expense"; valor em Crédito → type="income"
 - Coluna única com sinal: valor negativo → expense; positivo → income
@@ -105,18 +118,16 @@ A tua tarefa é identificar o banco, fazer parse de TODAS as transações e cate
 - "amount" devolvido é SEMPRE positivo (o type determina o sinal)
 
 ── Categorização ──
-Usa palavras-chave no descritivo: "PINGO", "CONTINENTE", "LIDL" → Alimentação · "GALP", "BP", "REPSOL" → Transportes ·
+Usa palavras-chave: "PINGO", "CONTINENTE", "LIDL" → Alimentação · "GALP", "BP", "REPSOL" → Transportes ·
 "EDP", "MEO", "NOS", "VODAFONE" → Casa · "NETFLIX", "SPOTIFY", "HBO" → Lazer · "FARMACIA", "CLINICA" → Saúde ·
 "SALARIO", "ORDENADO", "VENCIMENTO" → Salário · "RENDA", "CONDOMINIO" → Casa · "UBER", "BOLT", "METRO" → Transportes
 
-Devolve APENAS JSON válido (sem markdown, sem explicação, sem texto antes/depois).`
-
-  const userPrompt = `Ficheiro: ${filename}
+Ficheiro: ${filename}
 
 CONTEÚDO:
 ${content}
 
-Devolve este JSON exacto:
+Devolve APENAS este JSON (sem markdown, sem texto extra):
 {
   "bank": "<nome do banco identificado>",
   "currency": "<código ISO 3 letras, padrão EUR>",
@@ -134,15 +145,9 @@ Devolve este JSON exacto:
 }`
 
   try {
-    const message = await client.messages.create({
-      model:      'claude-3-5-haiku-20241022',
-      max_tokens: 4096,
-      system:     systemPrompt,
-      messages:   [{ role: 'user', content: userPrompt }],
-    })
-
-    const raw  = message.content[0].type === 'text' ? message.content[0].text : '{}'
-    const json = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const result = await model.generateContent(prompt)
+    const raw    = result.response.text()
+    const json   = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
     let parsed: ImportStatementResult
     try {
@@ -158,7 +163,10 @@ Devolve este JSON exacto:
         })),
       }
     } catch {
-      return NextResponse.json({ error: 'Claude não conseguiu interpretar o ficheiro. Verifica o formato.' }, { status: 422 })
+      return NextResponse.json(
+        { error: 'A IA não conseguiu interpretar o ficheiro. Verifica o formato.' },
+        { status: 422 },
+      )
     }
 
     return NextResponse.json({ data: parsed })
@@ -167,15 +175,14 @@ Devolve este JSON exacto:
     console.error('[import-statement]', msg)
 
     // Friendly fallback for known AI provider errors
-    const isCreditIssue = /credit balance|insufficient|billing/i.test(msg)
-    const isRateLimit   = /rate limit|429|too many/i.test(msg)
-    const isAuth        = /401|invalid api key|unauthorized/i.test(msg)
+    const isQuota     = /quota|resource[_ ]?exhausted|429|rate|billing|credit/i.test(msg)
+    const isAuth      = /401|403|api[_ ]?key|unauthenticated|permission/i.test(msg)
 
-    if (isCreditIssue || isRateLimit || isAuth) {
+    if (isQuota || isAuth) {
       return NextResponse.json(
         {
           error: 'Serviço de análise de extratos temporariamente indisponível. Tenta novamente dentro de alguns minutos ou adiciona as transações manualmente.',
-          code:  isCreditIssue ? 'ai_unavailable' : isRateLimit ? 'ai_rate_limit' : 'ai_auth',
+          code:  isQuota ? 'ai_quota' : 'ai_auth',
         },
         { status: 503 },
       )

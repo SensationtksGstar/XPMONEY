@@ -446,12 +446,12 @@ export function StatementImporter({ onClose }: Props) {
                 Tentar de novo
               </button>
             </div>
-            {errorMsg.includes('ANTHROPIC') && (
+            {(errorMsg.includes('GEMINI') || errorMsg.includes('GOOGLE')) && (
               <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-left">
                 <TriangleAlert className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <p className="text-amber-300/80 text-xs">
-                  A chave ANTHROPIC_API_KEY não está configurada em <code>.env.local</code>.
-                  Adiciona: <code>ANTHROPIC_API_KEY=sk-ant-...</code>
+                  A chave <code>GOOGLE_GEMINI_API_KEY</code> não está configurada em <code>.env.local</code>.
+                  Obtém uma grátis em <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">aistudio.google.com</a>.
                 </p>
               </div>
             )}

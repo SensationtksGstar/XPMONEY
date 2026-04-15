@@ -10,7 +10,7 @@ Primary user flow: log transactions → earn XP → level up Voltix (mascot) →
 - **Clerk** auth — user id is `user.id` (Clerk ID), not Supabase UUID
 - **React Query** (`@tanstack/react-query`) — provider at `src/components/providers/QueryProvider.tsx` (staleTime 5min, gcTime 15min, retry 1)
 - **Stripe** billing (free / plus / pro / family plans, ranks in `PLAN_RANK` constant)
-- **Anthropic SDK** for receipt OCR (`/api/scan-receipt`)
+- **Google Gemini** (`@google/generative-ai`, model `gemini-2.0-flash`) for receipt OCR (`/api/scan-receipt`) and bank-statement parsing (`/api/import-statement`). Free tier: 1M tokens/day. Env: `GOOGLE_GEMINI_API_KEY` (falls back to `GOOGLE_API_KEY` / `GEMINI_API_KEY`).
 - **PostHog** analytics, **web-push** for notifications
 - Tailwind + Radix UI + lucide-react + framer-motion + recharts
 - `next.config.ts` has `experimental.optimizePackageImports` for lucide/recharts/framer/radix
@@ -119,7 +119,7 @@ Never `.catch(() => {})`. Use `console.warn('[source] failed:', err)` + `AbortCo
 
 ## Receipt OCR & bank statement import
 
-- `/api/scan-receipt` — Claude Vision via Anthropic SDK, returns structured `{ amount, date, description, category }`
+- `/api/scan-receipt` — Gemini Vision (`gemini-2.0-flash`), returns structured `{ amount, date, description, category }`. Uses `responseMimeType: 'application/json'` for reliable JSON output.
 - `/api/import-statement` — parses bank statements and categorises transactions
 
 ## Things to remember
