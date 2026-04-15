@@ -3,10 +3,10 @@
  *
  * Features:
  *  - SHA-256 hash-based cache for receipt scans (Supabase `ai_receipt_cache`)
- *  - Multi-provider fallback chain for resilience:
- *      1. Gemini 2.0 Flash  (primary, generous free tier)
- *      2. Gemini 1.5 Flash  (separate quota pool, same key)
- *      3. Groq Llama 3.2 Vision (if GROQ_API_KEY set — free tier)
+ *  - Multi-provider fallback chain for resilience (most capable → lighter):
+ *      1. Gemini 2.5 Flash   (primary — thinking model, best quality, free tier)
+ *      2. Gemini 2.0 Flash   (secondary — fast non-thinking fallback)
+ *      3. Groq Llama 4 Scout 17B (vision) / Llama 3.3 70B (text) — free tier
  *  - Exponential backoff retry (3 attempts) on 429 / quota errors
  *  - Consistent JSON output via model-specific JSON mode
  *
@@ -229,7 +229,9 @@ async function geminiVision(
     generationConfig: {
       responseMimeType: 'application/json',
       temperature:      0.1,
-      maxOutputTokens:  1024,
+      // 2.5 Flash is a thinking model: reasoning tokens are counted in the
+      // output budget. Keep headroom so the JSON actually gets emitted.
+      maxOutputTokens:  4096,
     },
   })
   const result = await m.generateContent([
@@ -248,7 +250,9 @@ async function geminiText(
     generationConfig: {
       responseMimeType: 'application/json',
       temperature:      0.1,
-      maxOutputTokens:  8192,
+      // Statements can be long and 2.5 thinking tokens add overhead on top of
+      // the JSON output — budget generously so we never truncate the array.
+      maxOutputTokens:  16_384,
     },
   })
   const result = await m.generateContent(prompt)
@@ -395,8 +399,20 @@ export async function scanReceipt(
     throw new AIProvidersError(['no-provider-configured'], 'auth')
   }
 
-  // 2a) Gemini 2.0 Flash
+  // 2a) Gemini 2.5 Flash — most capable (thinking model, best OCR quality)
   if (geminiKey) {
+    try {
+      const data = await withRetry(
+        () => geminiVision(geminiKey, 'gemini-2.5-flash', imageBase64, mimeType),
+        'gemini-2.5-flash',
+      )
+      await setCachedReceipt(hash, data, 'gemini-2.5-flash')
+      return { data, provider: 'gemini-2.5-flash', cache_hit: false, attempts }
+    } catch (err) {
+      attempts.push(`gemini-2.5-flash: ${err instanceof Error ? err.message : err}`)
+    }
+
+    // 2b) Gemini 2.0 Flash — non-thinking fallback (different quota pool)
     try {
       const data = await withRetry(
         () => geminiVision(geminiKey, 'gemini-2.0-flash', imageBase64, mimeType),
@@ -407,21 +423,9 @@ export async function scanReceipt(
     } catch (err) {
       attempts.push(`gemini-2.0-flash: ${err instanceof Error ? err.message : err}`)
     }
-
-    // 2b) Gemini 1.5 Flash
-    try {
-      const data = await withRetry(
-        () => geminiVision(geminiKey, 'gemini-1.5-flash', imageBase64, mimeType),
-        'gemini-1.5-flash',
-      )
-      await setCachedReceipt(hash, data, 'gemini-1.5-flash')
-      return { data, provider: 'gemini-1.5-flash', cache_hit: false, attempts }
-    } catch (err) {
-      attempts.push(`gemini-1.5-flash: ${err instanceof Error ? err.message : err}`)
-    }
   }
 
-  // 2c) Groq Llama 3.2 Vision
+  // 2c) Groq Llama 4 Scout 17B Vision
   if (groqKey) {
     try {
       const data = await withRetry(
@@ -454,6 +458,18 @@ export async function parseStatement(
   }
 
   if (geminiKey) {
+    // Primary: Gemini 2.5 Flash — reasoning helps with ambiguous bank rows
+    try {
+      const data = await withRetry(
+        () => geminiText(geminiKey, 'gemini-2.5-flash', prompt),
+        'gemini-2.5-flash',
+      )
+      return { data, provider: 'gemini-2.5-flash', cache_hit: false, attempts }
+    } catch (err) {
+      attempts.push(`gemini-2.5-flash: ${err instanceof Error ? err.message : err}`)
+    }
+
+    // Secondary: Gemini 2.0 Flash — separate quota pool on the same key
     try {
       const data = await withRetry(
         () => geminiText(geminiKey, 'gemini-2.0-flash', prompt),
@@ -462,16 +478,6 @@ export async function parseStatement(
       return { data, provider: 'gemini-2.0-flash', cache_hit: false, attempts }
     } catch (err) {
       attempts.push(`gemini-2.0-flash: ${err instanceof Error ? err.message : err}`)
-    }
-
-    try {
-      const data = await withRetry(
-        () => geminiText(geminiKey, 'gemini-1.5-flash', prompt),
-        'gemini-1.5-flash',
-      )
-      return { data, provider: 'gemini-1.5-flash', cache_hit: false, attempts }
-    } catch (err) {
-      attempts.push(`gemini-1.5-flash: ${err instanceof Error ? err.message : err}`)
     }
   }
 
