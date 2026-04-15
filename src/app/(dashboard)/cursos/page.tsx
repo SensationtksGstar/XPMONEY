@@ -33,7 +33,7 @@ export default function CursosPage() {
   const doneLessons    = Object.values(progress).reduce((s, p) => s + p.completedLessons.length, 0)
 
   return (
-    <div className="space-y-6 animate-fade-in-up pb-24">
+    <div className="space-y-6 sm:animate-fade-in-up pb-24">
 
       {/* Header */}
       <div>
@@ -79,7 +79,7 @@ export default function CursosPage() {
           return (
             <div
               key={course.id}
-              className="animate-fade-in-up"
+              className="sm:animate-fade-in-up"
               style={{ animationDelay: `${i * 60}ms`, animationFillMode: 'both' }}
             >
               {isLocked ? (

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import dynamic                         from 'next/dynamic'
-import { PlusCircle, Crown, BookOpen } from 'lucide-react'
+import { PlusCircle, Crown }           from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
 import { useUserPlan }                 from '@/lib/contexts/UserPlanContext'
 import { QuickActions }                from '@/components/dashboard/QuickActions'
+import { ProToolsShowcase }            from '@/components/dashboard/ProToolsShowcase'
 import { StreakBanner }                from '@/components/dashboard/StreakBanner'
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
 import { CelebrationModal }            from '@/components/ui/CelebrationModal'
@@ -50,10 +51,57 @@ export default function DashboardPage() {
     icon: string; title: string; subtitle: string; xp?: number
   } | null>(null)
   const checkinDone = useRef(false)
+  const welcomeDone = useRef(false)
 
   const firstName = user?.firstName ?? 'explorador'
   const hour      = new Date().getHours()
   const greeting  = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
+
+  /* ── first-login welcome (once per user per device) ── */
+  useEffect(() => {
+    if (welcomeDone.current || !user?.id) return
+    welcomeDone.current = true
+
+    if (typeof window === 'undefined') return
+    const key = `xpm_welcomed_${user.id}`
+    if (localStorage.getItem(key)) return
+
+    const controller = new AbortController()
+
+    fetch('/api/xp', { signal: controller.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(res => {
+        const xpTotal = res?.data?.xp_total ?? 0
+        const level   = res?.data?.level ?? 1
+        const isBrandNew = xpTotal === 0 && level === 1
+
+        // Delay so daily-checkin celebration (if any) shows first
+        setTimeout(() => {
+          setCelebration(
+            isBrandNew
+              ? {
+                  icon:     '⚡',
+                  title:    `Bem-vindo, ${firstName}!`,
+                  subtitle: 'Começa a registar as tuas finanças e ganha XP. O Voltix está pronto!',
+                  xp:       0,
+                }
+              : {
+                  icon:     '👋',
+                  title:    `Bem-vindo de volta, ${firstName}!`,
+                  subtitle: `Nível ${level} · ${xpTotal} XP. Continua a construir a tua jornada financeira.`,
+                  xp:       xpTotal,
+                },
+          )
+        }, 1500)
+
+        localStorage.setItem(key, String(Date.now()))
+      })
+      .catch(err => {
+        if (err?.name !== 'AbortError') console.warn('[welcome] failed:', err)
+      })
+
+    return () => controller.abort()
+  }, [user?.id, firstName])
 
   /* ── daily check-in ── */
   useEffect(() => {
@@ -115,7 +163,10 @@ export default function DashboardPage() {
       {/* Quick actions */}
       <QuickActions />
 
-      {/* Upgrade banner for free users — mobile only */}
+      {/* Pro tools showcase — always visible, locked items link to billing */}
+      <ProToolsShowcase />
+
+      {/* Upgrade banner for free users */}
       {isFree && (
         <Link href="/settings/billing"
           className="flex items-center gap-3 bg-gradient-to-r from-purple-500/15 to-green-500/10 border border-purple-500/25 rounded-2xl px-4 py-3 hover:border-purple-500/40 transition-colors"
@@ -155,22 +206,6 @@ export default function DashboardPage() {
         </div>
         <MissionCard userId={user?.id ?? ''} limit={3} />
       </div>
-
-      {/* Academia teaser — visible for plus/pro */}
-      {!isFree && (
-        <Link href="/cursos"
-          className="flex items-center gap-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-2xl px-4 py-4 hover:border-purple-500/35 transition-colors"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center text-2xl flex-shrink-0">
-            🎓
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-white text-sm">Academia XP Money</p>
-            <p className="text-xs text-white/50">Cursos com certificado · Gestão · Investimento · FIRE</p>
-          </div>
-          <BookOpen className="w-4 h-4 text-purple-400 flex-shrink-0" />
-        </Link>
-      )}
 
       {/* Transações recentes */}
       <div>

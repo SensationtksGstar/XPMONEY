@@ -144,6 +144,25 @@ Always return the JSON object even if some fields are null.`
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'AI error'
     console.error('[scan-receipt]', msg)
-    return NextResponse.json({ error: msg }, { status: 500 })
+
+    // Friendly fallback for known AI provider errors
+    const isCreditIssue   = /credit balance|insufficient|billing/i.test(msg)
+    const isRateLimit     = /rate limit|429|too many/i.test(msg)
+    const isAuth          = /401|invalid api key|unauthorized/i.test(msg)
+
+    if (isCreditIssue || isRateLimit || isAuth) {
+      return NextResponse.json(
+        {
+          error: 'Serviço de leitura de recibos temporariamente indisponível. Tenta novamente dentro de alguns minutos ou introduz os dados manualmente.',
+          code:  isCreditIssue ? 'ai_unavailable' : isRateLimit ? 'ai_rate_limit' : 'ai_auth',
+        },
+        { status: 503 },
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Não foi possível processar o recibo. Tenta novamente ou introduz manualmente.' },
+      { status: 500 },
+    )
   }
 }

@@ -165,6 +165,25 @@ Devolve este JSON exacto:
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Erro de IA'
     console.error('[import-statement]', msg)
-    return NextResponse.json({ error: msg }, { status: 500 })
+
+    // Friendly fallback for known AI provider errors
+    const isCreditIssue = /credit balance|insufficient|billing/i.test(msg)
+    const isRateLimit   = /rate limit|429|too many/i.test(msg)
+    const isAuth        = /401|invalid api key|unauthorized/i.test(msg)
+
+    if (isCreditIssue || isRateLimit || isAuth) {
+      return NextResponse.json(
+        {
+          error: 'Serviço de análise de extratos temporariamente indisponível. Tenta novamente dentro de alguns minutos ou adiciona as transações manualmente.',
+          code:  isCreditIssue ? 'ai_unavailable' : isRateLimit ? 'ai_rate_limit' : 'ai_auth',
+        },
+        { status: 503 },
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Não foi possível processar o extrato. Verifica o formato do ficheiro ou tenta novamente.' },
+      { status: 500 },
+    )
   }
 }
