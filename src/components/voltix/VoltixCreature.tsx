@@ -801,16 +801,33 @@ export function VoltixCreature({ evo, mood, className = '', animate = true }: Pr
   if (!animate) return <div className={`relative ${className}`}>{creature}</div>
 
   return (
-    <div
-      className={`relative ${className}`}
-      style={{ animation: 'voltixFloat 3s ease-in-out infinite' }}
-    >
-      {/* Mood glow pool */}
+    <div className={`relative ${className} animate-mascot-float`}>
+      {/* Mood glow pool — pulses with breathing */}
       <div
-        className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3/5 h-6 blur-2xl rounded-full opacity-50 transition-colors duration-700"
+        className="absolute -bottom-2 left-1/2 w-3/5 h-6 blur-2xl rounded-full animate-mascot-aura transition-colors duration-700"
         style={{ backgroundColor: c.body }}
       />
-      {creature}
+      {/* Inner breath layer — subtle scale sway */}
+      <div className="animate-mascot-breathe">
+        {creature}
+      </div>
+      {/* Ambient sparkles — only on upper evos */}
+      {evo >= 3 && (
+        <>
+          <span
+            className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-yellow-300 animate-mascot-sparkle"
+            aria-hidden
+          />
+          <span
+            className="absolute top-6 left-3 w-1 h-1 rounded-full bg-white animate-mascot-sparkle delay-600"
+            aria-hidden
+          />
+          <span
+            className="absolute bottom-10 right-5 w-1 h-1 rounded-full bg-yellow-200 animate-mascot-sparkle delay-1200"
+            aria-hidden
+          />
+        </>
+      )}
     </div>
   )
 }

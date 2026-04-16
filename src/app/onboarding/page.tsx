@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ArrowRight, Check, Target, TrendingUp, PlusCircle } from 'lucide-react'
 import { track } from '@/lib/posthog'
+import { MascotCreature, type MascotGender } from '@/components/voltix/MascotCreature'
 
 type Challenge = {
   id:   string
@@ -30,12 +30,12 @@ const GOALS = [
   { id: 'other',     icon: '🎯', text: 'Outro objetivo' },
 ]
 
-type Step = 1 | 2 | 3
+type Step = 1 | 2 | 3 | 4
 
 export default function OnboardingPage() {
-  const router = useRouter()
   const { user } = useUser()
   const [step, setStep]             = useState<Step>(1)
+  const [mascot, setMascot]         = useState<MascotGender | ''>('')
   const [challenge, setChallenge]   = useState<string>('')
   const [goal, setGoal]             = useState<string>('')
   const [goalAmount, setGoalAmount] = useState<string>('')
@@ -43,26 +43,37 @@ export default function OnboardingPage() {
 
   const firstName = user?.firstName ?? 'explorador'
 
+  function handleMascotSelect(g: MascotGender) {
+    setMascot(g)
+    track.onboarding_step(1, { mascot: g })
+    setTimeout(() => setStep(2), 350)
+  }
+
   function handleChallengeSelect(id: string) {
     setChallenge(id)
-    track.onboarding_step(1, { challenge: id })
-    setTimeout(() => setStep(2), 300)
+    track.onboarding_step(2, { challenge: id })
+    setTimeout(() => setStep(3), 300)
   }
 
   function handleGoalSelect(id: string) {
     setGoal(id)
-    track.onboarding_step(2, { goal: id })
+    track.onboarding_step(3, { goal: id })
   }
 
   async function handleComplete() {
     setLoading(true)
     try {
-      track.onboarding_step(3, { goal_amount: goalAmount })
+      track.onboarding_step(4, { goal_amount: goalAmount })
 
       const res = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challenge, goal, goal_amount: Number(goalAmount) || 0 }),
+        body: JSON.stringify({
+          mascot_gender: mascot || 'voltix',
+          challenge,
+          goal,
+          goal_amount: Number(goalAmount) || 0,
+        }),
       })
 
       if (!res.ok) throw new Error('Onboarding API failed')
@@ -88,7 +99,7 @@ export default function OnboardingPage() {
       {/* Progress bar */}
       <div className="w-full max-w-md mb-8">
         <div className="flex items-center justify-between mb-3">
-          {[1, 2, 3].map(s => (
+          {[1, 2, 3, 4].map(s => (
             <div key={s} className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                 step > s  ? 'bg-green-500 text-black' :
@@ -97,27 +108,103 @@ export default function OnboardingPage() {
               }`}>
                 {step > s ? <Check className="w-4 h-4" /> : s}
               </div>
-              {s < 3 && (
-                <div className={`flex-1 h-0.5 w-24 transition-all ${step > s ? 'bg-green-500' : 'bg-white/10'}`} />
+              {s < 4 && (
+                <div className={`flex-1 h-0.5 w-16 transition-all ${step > s ? 'bg-green-500' : 'bg-white/10'}`} />
               )}
             </div>
           ))}
         </div>
-        <p className="text-white/30 text-xs text-center">Passo {step} de 3</p>
+        <p className="text-white/30 text-xs text-center">Passo {step} de 4</p>
       </div>
 
       <div className="w-full max-w-md">
 
-          {/* PASSO 1 — Desafio */}
+          {/* PASSO 1 — Escolha de mascote */}
           {step === 1 && (
             <div key="step1" className="animate-fade-in-up">
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-bold text-white mb-2">
+                  Olá, {firstName}! Escolhe o teu companheiro
+                </h1>
+                <p className="text-white/60">
+                  Vai crescer e evoluir contigo à medida que dominas as tuas finanças.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Voltix */}
+                <button
+                  onClick={() => handleMascotSelect('voltix')}
+                  className={`group flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
+                    mascot === 'voltix'
+                      ? 'border-green-500 bg-green-500/10'
+                      : 'border-white/10 bg-white/5 hover:border-green-500/40 hover:bg-green-500/5'
+                  }`}
+                >
+                  <div className="w-28 h-28 flex items-center justify-center">
+                    <MascotCreature
+                      gender="voltix"
+                      evo={3}
+                      mood="happy"
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white font-bold">Voltix</p>
+                    <p className="text-xs text-white/50 mt-0.5">Dragão-trovão azul</p>
+                  </div>
+                  {mascot === 'voltix' && (
+                    <span className="text-xs text-green-400 font-semibold flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Escolhido
+                    </span>
+                  )}
+                </button>
+
+                {/* Penny */}
+                <button
+                  onClick={() => handleMascotSelect('penny')}
+                  className={`group flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
+                    mascot === 'penny'
+                      ? 'border-pink-400 bg-pink-400/10'
+                      : 'border-white/10 bg-white/5 hover:border-pink-400/40 hover:bg-pink-400/5'
+                  }`}
+                >
+                  <div className="w-28 h-28 flex items-center justify-center">
+                    <MascotCreature
+                      gender="penny"
+                      evo={3}
+                      mood="happy"
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white font-bold">Penny</p>
+                    <p className="text-xs text-white/50 mt-0.5">Gata-anjo creme</p>
+                  </div>
+                  {mascot === 'penny' && (
+                    <span className="text-xs text-pink-300 font-semibold flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Escolhida
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              <p className="text-white/30 text-xs text-center mt-5">
+                Podes trocar mais tarde nas definições.
+              </p>
+            </div>
+          )}
+
+          {/* PASSO 2 — Desafio */}
+          {step === 2 && (
+            <div key="step2" className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4">👋</div>
                 <h1 className="text-2xl font-bold text-white mb-2">
-                  Olá, {firstName}!
+                  Qual é o teu maior desafio?
                 </h1>
                 <p className="text-white/60">
-                  Qual é o teu maior desafio financeiro agora?
+                  {mascot === 'penny' ? 'A Penny' : 'O Voltix'} vai ajudar-te a ultrapassá-lo.
                 </p>
               </div>
 
@@ -143,16 +230,16 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* PASSO 2 — Objetivo */}
-          {step === 2 && (
-            <div key="step2" className="animate-fade-in-up">
+          {/* PASSO 3 — Objetivo */}
+          {step === 3 && (
+            <div key="step3" className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4">🎯</div>
                 <h1 className="text-2xl font-bold text-white mb-2">
                   Qual é o teu próximo objetivo?
                 </h1>
                 <p className="text-white/60">
-                  O Voltix vai ajudar-te a chegar lá.
+                  {mascot === 'penny' ? 'A Penny' : 'O Voltix'} vai ajudar-te a chegar lá.
                 </p>
               </div>
 
@@ -177,7 +264,7 @@ export default function OnboardingPage() {
               </div>
 
               <button
-                onClick={() => goal && setStep(3)}
+                onClick={() => goal && setStep(4)}
                 disabled={!goal}
                 className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold py-4 rounded-xl transition-all"
               >
@@ -187,9 +274,9 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* PASSO 3 — Primeira transação / missão */}
-          {step === 3 && (
-            <div key="step3" className="animate-fade-in-up">
+          {/* PASSO 4 — Primeira transação / missão */}
+          {step === 4 && (
+            <div key="step4" className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4 animate-bounce">⚡</div>
                 <h1 className="text-2xl font-bold text-white mb-2">

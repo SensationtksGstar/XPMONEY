@@ -136,6 +136,54 @@
   50%       { transform: translateY(-10px); }
 }
 
+/* ── Mascot idle animations — subtle "alive" motion ────────────────── */
+@keyframes mascotFloat {
+  0%, 100% { transform: translateY(0)    rotate(0deg);   }
+  25%       { transform: translateY(-4px) rotate(-1.2deg); }
+  50%       { transform: translateY(-8px) rotate(0deg);   }
+  75%       { transform: translateY(-4px) rotate(1.2deg);  }
+}
+@keyframes mascotBreathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.025); }
+}
+@keyframes mascotBlink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  96%, 98%       { transform: scaleY(0.06); }
+}
+@keyframes mascotSway {
+  0%, 100% { transform: rotate(-3deg); }
+  50%       { transform: rotate(3deg); }
+}
+@keyframes mascotAuraPulse {
+  0%, 100% { opacity: 0.45; transform: translateX(-50%) scale(1);    }
+  50%       { opacity: 0.7;  transform: translateX(-50%) scale(1.15); }
+}
+@keyframes mascotFeatherDrift {
+  0%   { transform: translate(0, -4px)  rotate(-6deg); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translate(8px, 10px) rotate(18deg); opacity: 0; }
+}
+@keyframes mascotSparkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.8); }
+  50%       { opacity: 0.9;  transform: scale(1.2); }
+}
+
+.animate-mascot-float    { animation: mascotFloat 4.5s ease-in-out infinite; }
+.animate-mascot-breathe  { animation: mascotBreathe 2.6s ease-in-out infinite; }
+.animate-mascot-blink    { animation: mascotBlink 5s ease-in-out infinite; }
+.animate-mascot-sway     { animation: mascotSway 2.8s ease-in-out infinite; transform-origin: center bottom; }
+.animate-mascot-aura     { animation: mascotAuraPulse 3s ease-in-out infinite; }
+.animate-mascot-feather  { animation: mascotFeatherDrift 4s ease-in-out infinite; }
+.animate-mascot-sparkle  { animation: mascotSparkle 2.2s ease-in-out infinite; }
+
+/* Stagger helpers for multiple particles */
+.delay-300  { animation-delay: 0.3s; }
+.delay-600  { animation-delay: 0.6s; }
+.delay-900  { animation-delay: 0.9s; }
+.delay-1200 { animation-delay: 1.2s; }
+.delay-1500 { animation-delay: 1.5s; }
+
 
 @layer utilities {
   /* Safe area iOS */

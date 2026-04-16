@@ -13,7 +13,10 @@
     "db:studio": "prisma studio",
     "setup": "node scripts/setup.mjs",
     "db:migrate": "node scripts/create-table.mjs",
-    "set:anthropic": "node scripts/set-anthropic-key.mjs"
+    "set:anthropic": "node scripts/set-anthropic-key.mjs",
+    "assets:voltix":  "node scripts/process-mascot.mjs voltix",
+    "assets:penny":   "node scripts/process-mascot.mjs penny",
+    "assets:mascot":  "node scripts/process-mascot.mjs all"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.0.0",
@@ -58,6 +61,7 @@
     "eslint-config-next": "15.0.0",
     "pg": "^8.20.0",
     "postcss": "^8.4.47",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3"
   }

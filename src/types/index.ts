@@ -246,6 +246,8 @@ export const BADGE_CODES = {
 export type VoltixMood = 'sad' | 'neutral' | 'happy' | 'excited' | 'celebrating'
 export type VoltixEvolution = 1 | 2 | 3 | 4 | 5
 
+export type MascotGender = 'voltix' | 'penny'
+
 export interface VoltixState {
   id: string
   user_id: string
@@ -254,6 +256,8 @@ export interface VoltixState {
   last_interaction: string
   streak_days: number
   customizations: VoltixCustomizations
+  /** Which mascot the user picked during onboarding. Defaults to 'voltix'. */
+  mascot_gender?: MascotGender
 }
 
 export interface VoltixCustomizations {

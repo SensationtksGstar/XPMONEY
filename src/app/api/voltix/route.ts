@@ -17,11 +17,12 @@ export async function GET() {
 
   const db = createSupabaseAdmin()
 
-  // Fetch voltix + latest score in parallel
-  const [voltixRes, scoreRes] = await Promise.all([
+  // Fetch voltix + latest score + mascot gender in parallel
+  const [voltixRes, scoreRes, userRes] = await Promise.all([
     db.from('voltix_states').select('*').eq('user_id', internalId).single(),
     db.from('financial_scores').select('score').eq('user_id', internalId)
       .order('calculated_at', { ascending: false }).limit(1).single(),
+    db.from('users').select('mascot_gender').eq('id', internalId).single(),
   ])
 
   const voltix = voltixRes.data
@@ -38,5 +39,12 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ data: voltix, error: null })
+  // Attach mascot_gender from users table — default to voltix for back-compat
+  const mascot_gender: 'voltix' | 'penny' =
+    userRes.data?.mascot_gender === 'penny' ? 'penny' : 'voltix'
+
+  return NextResponse.json({
+    data: { ...voltix, mascot_gender },
+    error: null,
+  })
 }

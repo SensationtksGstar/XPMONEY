@@ -37,6 +37,9 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 
+# Mascot raw generator outputs — heavy PNGs, only commit the processed WebP
+/public/mascot/raw/
+
 # IDE
 .vscode/
 .idea/

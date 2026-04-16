@@ -5,9 +5,10 @@ import { MISSION_TEMPLATES }         from '@/lib/gamification'
 import { z }                         from 'zod'
 
 const OnboardingSchema = z.object({
-  challenge:   z.string(),
-  goal:        z.string(),
-  goal_amount: z.number().min(0).default(0),
+  mascot_gender: z.enum(['voltix', 'penny']).default('voltix'),
+  challenge:     z.string(),
+  goal:          z.string(),
+  goal_amount:   z.number().min(0).default(0),
 })
 
 export async function POST(req: NextRequest) {
@@ -40,15 +41,19 @@ export async function POST(req: NextRequest) {
         name:                 `${clerkUser.first_name ?? ''} ${clerkUser.last_name ?? ''}`.trim() || 'Utilizador',
         avatar_url:           clerkUser.image_url ?? null,
         onboarding_completed: true,
+        mascot_gender:        parsed.data.mascot_gender,
       })
       .select('id')
       .single()
 
     user = created
   } else {
-    // Marcar onboarding completo
+    // Marcar onboarding completo + gravar escolha de mascote
     await db.from('users')
-      .update({ onboarding_completed: true })
+      .update({
+        onboarding_completed: true,
+        mascot_gender:        parsed.data.mascot_gender,
+      })
       .eq('id', user.id)
   }
 

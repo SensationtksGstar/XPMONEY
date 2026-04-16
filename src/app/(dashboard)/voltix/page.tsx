@@ -8,10 +8,15 @@ import { useXP }     from '@/hooks/useXP'
 import { useToast }  from '@/components/ui/toaster'
 import { Zap, Star, TrendingUp, MessageCircle, Flame, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { MOOD_PALETTE } from '@/components/voltix/VoltixCreature'
 import {
-  VoltixCreature, EVO_NAMES, EVO_DESCRIPTIONS,
-  EVO_REQUIREMENTS, MOOD_PALETTE,
-} from '@/components/voltix/VoltixCreature'
+  MascotCreature,
+  getMascotEvoName,
+  getMascotEvoDescription,
+  getMascotEvoRequirement,
+  getMascotMaxEvo,
+  type MascotGender,
+} from '@/components/voltix/MascotCreature'
 import type { VoltixMood } from '@/types'
 
 /* ── Mood config ─────────────────────────────────────────────────── */
@@ -48,9 +53,6 @@ const MOOD_LABELS: Record<VoltixMood, string> = {
   excited: 'Animado!', celebrating: 'LENDÁRIO! 👑',
 }
 
-/* ── Evolution stage cards ───────────────────────────────────────── */
-const EVO_STAGES = [1, 2, 3, 4, 5] as const
-
 export default function VoltixPage() {
   const { user }            = useUser()
   const { voltix, loading } = useVoltix(user?.id ?? '')
@@ -79,7 +81,10 @@ export default function VoltixPage() {
   const mood    = (voltix?.mood ?? 'neutral') as VoltixMood
   const evo     = voltix?.evolution_level ?? 1
   const streak  = voltix?.streak_days ?? 0
+  const gender  = (voltix?.mascot_gender ?? 'voltix') as MascotGender
   const palette = MOOD_PALETTE[mood]
+  const maxEvo  = getMascotMaxEvo(gender)
+  const evoStages = Array.from({ length: maxEvo }, (_, i) => i + 1)
 
   const msgs = MOOD_MESSAGES[mood]
 
@@ -112,7 +117,7 @@ export default function VoltixPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">
-          {EVO_NAMES[evo] ?? 'Voltix'}
+          {getMascotEvoName(gender, evo)}
         </h1>
         <p className="text-white/50 text-sm mt-0.5">O teu copiloto financeiro — evolui contigo</p>
       </div>
@@ -135,7 +140,8 @@ export default function VoltixPage() {
         />
 
         {/* Creature */}
-        <VoltixCreature
+        <MascotCreature
+          gender={gender}
           evo={displayEvo}
           mood={displayMood}
           className="w-48 h-48 mb-2 relative z-10"
@@ -150,12 +156,12 @@ export default function VoltixPage() {
 
         {/* Name + evo badge */}
         <div className="flex items-center gap-2 mb-1 relative z-10">
-          <span className="text-2xl font-bold text-white">{EVO_NAMES[displayEvo]}</span>
+          <span className="text-2xl font-bold text-white">{getMascotEvoName(gender, displayEvo)}</span>
           <span
             className="text-xs font-bold px-2.5 py-0.5 rounded-full border"
             style={{ color: palette.body, borderColor: `${palette.body}40`, backgroundColor: `${palette.body}18` }}
           >
-            EVO {displayEvo}/5
+            EVO {displayEvo}/{maxEvo}
           </span>
         </div>
 
@@ -238,7 +244,7 @@ export default function VoltixPage() {
           <Star className="w-3.5 h-3.5" /> Linha de evolução
         </h2>
         <div className="space-y-3">
-          {EVO_STAGES.map(stage => {
+          {evoStages.map(stage => {
             const isUnlocked = stage <= evo
             const isCurrent  = stage === evo
             const p = isUnlocked ? MOOD_PALETTE['happy'] : { body: '#334155', shade: '#1e293b', light: '#475569', accent: '#475569' }
@@ -265,7 +271,8 @@ export default function VoltixPage() {
               >
                 {/* Mini creature preview */}
                 <div className="w-14 h-14 flex-shrink-0 relative">
-                  <VoltixCreature
+                  <MascotCreature
+                    gender={gender}
                     evo={stage}
                     mood={isUnlocked ? 'happy' : 'neutral'}
                     className="w-full h-full"
@@ -280,7 +287,7 @@ export default function VoltixPage() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-bold text-white">{EVO_NAMES[stage]}</span>
+                    <span className="text-sm font-bold text-white">{getMascotEvoName(gender, stage)}</span>
                     {isCurrent && (
                       <span
                         className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
@@ -296,10 +303,10 @@ export default function VoltixPage() {
                     )}
                   </div>
                   <p className="text-[11px] text-white/45 leading-snug line-clamp-1">
-                    {EVO_DESCRIPTIONS[stage]}
+                    {getMascotEvoDescription(gender, stage)}
                   </p>
                   <p className="text-[10px] text-white/25 mt-1">
-                    {EVO_REQUIREMENTS[stage]}
+                    {getMascotEvoRequirement(gender, stage)}
                   </p>
                 </div>
 

@@ -1,7 +1,8 @@
 'use client'
 
 import { useVoltix } from '@/hooks/useVoltix'
-import { VoltixCreature, EVO_NAMES, MOOD_PALETTE } from './VoltixCreature'
+import { MOOD_PALETTE } from './VoltixCreature'
+import { MascotCreature, getMascotEvoName, type MascotGender } from './MascotCreature'
 import { cn } from '@/lib/utils'
 import type { VoltixMood } from '@/types'
 
@@ -44,6 +45,7 @@ export function VoltixWidget({ userId, expanded = false }: Props) {
   const mood    = (voltix?.mood ?? 'neutral') as VoltixMood
   const evo     = voltix?.evolution_level ?? 1
   const streak  = voltix?.streak_days ?? 0
+  const gender  = (voltix?.mascot_gender ?? 'voltix') as MascotGender
   const palette = MOOD_PALETTE[mood]
 
   return (
@@ -57,8 +59,9 @@ export function VoltixWidget({ userId, expanded = false }: Props) {
         style={{ background: `linear-gradient(90deg, transparent, ${palette.body}, transparent)` }}
       />
 
-      {/* Creature */}
-      <VoltixCreature
+      {/* Creature — routes to Voltix or Penny based on user's choice */}
+      <MascotCreature
+        gender={gender}
         evo={evo}
         mood={mood}
         className={cn(expanded ? 'w-44 h-44' : 'w-24 h-24', 'mb-2')}
@@ -67,7 +70,7 @@ export function VoltixWidget({ userId, expanded = false }: Props) {
       {/* Name + evo badge */}
       <div className="flex items-center gap-2 mb-1">
         <span className="text-base font-bold text-white">
-          {EVO_NAMES[evo] ?? 'Voltix'}
+          {getMascotEvoName(gender, evo)}
         </span>
         <span
           className="text-[10px] font-bold px-2 py-0.5 rounded-full border"

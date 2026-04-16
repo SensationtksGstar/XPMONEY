@@ -151,6 +151,7 @@ export const DEMO_VOLTIX = {
   evolution_level: 3,
   streak_days: 4,
   last_interaction: new Date().toISOString(),
+  mascot_gender: 'voltix' as const,
 }
 
 export const DEMO_ACCOUNT = {
