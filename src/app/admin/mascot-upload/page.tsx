@@ -25,8 +25,8 @@ interface SlotState {
   bust?:       number  // cache-buster for re-uploads
 }
 
-const VOLTIX_NAMES = ['Volt', 'Voltix', 'Voltron', 'Voltair', 'Voltarius', 'Legendrix']
-const PENNY_NAMES  = ['Pennini', 'Pennito', 'Penny', 'Pennyara', 'Pennael']
+const VOLTIX_NAMES = ['Voltini', 'Voltito', 'Voltix', 'Voltaryon', 'Magnavoltix', 'Imperivoltix']
+const PENNY_NAMES  = ['Pennini', 'Pennito', 'Penny', 'Pennyara', 'Pennael', 'Seraphenny']
 
 function Tile({
   gender, evo, label, state, onFile,
@@ -170,7 +170,7 @@ export default function MascotUploadPage() {
   }
 
   const voltixSlots = [1, 2, 3, 4, 5, 6]
-  const pennySlots  = [1, 2, 3, 4, 5]
+  const pennySlots  = [1, 2, 3, 4, 5, 6]
 
   const allVoltix = voltixSlots.every(n => slots[key('voltix', n)]?.status === 'success')
   const allPenny  = pennySlots.every(n => slots[key('penny', n)]?.status === 'success')
@@ -224,8 +224,8 @@ export default function MascotUploadPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-bold text-pink-300">Penny (5 evoluções)</h2>
-              <p className="text-sm text-white/40">Pennini → Pennael — gata-anjo creme</p>
+              <h2 className="text-xl font-bold text-pink-300">Penny (6 evoluções)</h2>
+              <p className="text-sm text-white/40">Pennini → Seraphenny — gata-anjo creme</p>
             </div>
             {allPenny && (
               <span className="text-sm text-green-400 flex items-center gap-2">

@@ -53,7 +53,7 @@ export const PENNY_PALETTE: Record<Mood, PennyPalette> = {
 }
 
 export const PENNY_EVO_NAMES: Record<number, string> = {
-  1: 'Pennini', 2: 'Pennito', 3: 'Penny', 4: 'Pennyara', 5: 'Pennael',
+  1: 'Pennini', 2: 'Pennito', 3: 'Penny', 4: 'Pennyara', 5: 'Pennael', 6: 'Seraphenny',
 }
 
 export const PENNY_EVO_DESCRIPTIONS: Record<number, string> = {
@@ -62,6 +62,7 @@ export const PENNY_EVO_DESCRIPTIONS: Record<number, string> = {
   3: 'Forma felina desbloqueada. Luvas mustard e fitas com runas.',
   4: 'Sacerdotisa-guerreira. Visor rúnico e arco de luz.',
   5: 'Anjo ascendido. 6 asas, arco dourado, gema emerald no peito.',
+  6: 'Forma seráfica cósmica. Aura divina e asas de luz estelar.',
 }
 
 export const PENNY_EVO_REQUIREMENTS: Record<number, string> = {
@@ -70,6 +71,7 @@ export const PENNY_EVO_REQUIREMENTS: Record<number, string> = {
   3: 'Score ≥ 50 ou Nível ≥ 4',
   4: 'Score ≥ 70 ou Nível ≥ 6',
   5: 'Score ≥ 90 ou Nível ≥ 9',
+  6: 'Score ≥ 95 ou Nível ≥ 12',
 }
 
 // ── Shared mini-helpers ──────────────────────────────────────────────────────

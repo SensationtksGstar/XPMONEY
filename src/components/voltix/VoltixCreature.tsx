@@ -29,15 +29,16 @@ export const MOOD_PALETTE: Record<Mood, C> = {
 }
 
 export const EVO_NAMES: Record<number, string> = {
-  1: 'Cointinho', 2: 'Moedix', 3: 'Vaultix', 4: 'Aurion', 5: 'Legendrix',
+  1: 'Voltini', 2: 'Voltito', 3: 'Voltix', 4: 'Voltaryon', 5: 'Magnavoltix', 6: 'Imperivoltix',
 }
 
 export const EVO_DESCRIPTIONS: Record<number, string> = {
-  1: 'Recrutinha das finanças. Mal nasceu mas já sabe o que é um €.',
-  2: 'A crescer! Já tem coins nas orelhas e uma jóia na testa.',
-  3: 'Forma dragão desbloqueada. Escamas de moeda e asas de raio.',
-  4: 'Campeão coroado. Armadura de ouro e aura de riqueza.',
-  5: 'LENDÁRIO. Asas abertas, coroa real, aura de abundância total.',
+  1: 'Ovo-bebé elétrico. Mal nasceu e já sabe o que é um €.',
+  2: 'A crescer. Ainda chibi mas já com faíscas nos dedos.',
+  3: 'Forma dragão desbloqueada. Escamas safira e raios cianos.',
+  4: 'Campeão armado. Peitoral dourado e aura elétrica azul.',
+  5: 'Divindade do trovão. Quatro asas e capa de plasma elétrico.',
+  6: 'Lenda cósmica. Seis asas de galáxia e coroa imperial.',
 }
 
 export const EVO_REQUIREMENTS: Record<number, string> = {
@@ -46,6 +47,7 @@ export const EVO_REQUIREMENTS: Record<number, string> = {
   3: 'Score ≥ 50 ou Nível ≥ 4',
   4: 'Score ≥ 70 ou Nível ≥ 6',
   5: 'Score ≥ 90 ou Nível ≥ 9',
+  6: 'Score ≥ 95 ou Nível ≥ 12',
 }
 
 /* ── Iris colors per mood ──────────────────────────────────────────── */

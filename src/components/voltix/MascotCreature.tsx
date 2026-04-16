@@ -132,9 +132,9 @@ export function getMascotEvoRequirement(gender: MascotGender, evo: number): stri
   return source[evo] ?? source[1]
 }
 
-/** Highest implemented evolution per mascot — Voltix has 6, Penny has 5. */
+/** Highest implemented evolution per mascot — both have 6. */
 export function getMascotMaxEvo(gender: MascotGender): number {
-  return gender === 'penny' ? 5 : 6
+  return gender === 'penny' ? 6 : 6
 }
 
 // Exported so tests / tooling can reuse the same path logic.
