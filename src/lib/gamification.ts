@@ -72,8 +72,17 @@ export function calculateFinancialScore(input: ScoreInput): {
   // Avalia duas dimensões:
   //   a) rácio despesa/rendimento (penaliza quem gasta mais do que ganha)
   //   b) concentração (penaliza quando uma categoria consome >50% das despesas)
-  let expenseScore = 12 // valor neutro quando não há dados
-  if (input.income_month > 0) {
+  //
+  // Estado vazio (sem qualquer movimento): 0 pts — reflete honestamente que
+  // ainda não há dados para avaliar. Apenas se atribui pontuação parcial (12)
+  // quando há despesas registadas mas sem rendimento declarado.
+  let expenseScore: number
+  if (input.income_month === 0 && input.expense_month === 0) {
+    expenseScore = 0
+  } else if (input.income_month === 0) {
+    // Tem despesas mas sem rendimento — mantém o neutro até haver dados completos.
+    expenseScore = 12
+  } else {
     const expenseRatio = input.expense_month / input.income_month
     // 25 pts se gastar ≤60%; 0 pts se gastar ≥110%
     const ratioPts = expenseRatio <= 0.6
@@ -100,9 +109,11 @@ export function calculateFinancialScore(input: ScoreInput): {
   const consistencyScore = Math.max(0, Math.min(25, Math.round(consistencyRatio * 25)))
 
   // 4. Progresso em objetivos (0-25 pts)
+  // Sem objetivos definidos → 0 pts (não há nada para medir progresso contra).
+  // Cria um objetivo → começa a somar conforme o progresso.
   const goalsScore = input.total_goals > 0
     ? Math.min(25, Math.round((input.goals_with_progress / input.total_goals) * 25))
-    : 12 // neutro se não tem objetivos
+    : 0
 
   const total = savingsScore + expenseScore + consistencyScore + goalsScore
 
