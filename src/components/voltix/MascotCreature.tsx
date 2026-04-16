@@ -14,7 +14,7 @@
  * without SSR flicker.
  */
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   VoltixCreature,
   EVO_NAMES,
@@ -67,12 +67,26 @@ export function MascotCreature(props: Props) {
   )
 }
 
+/** Max rotation applied on pointer-follow tilt, in degrees. */
+const TILT_MAX_DEG = 16
+
+/** Set inline transform directly on a ref'd node — avoids re-rendering on every pixel of mouse movement. */
+function applyTilt(node: HTMLDivElement | null, rx: number, ry: number) {
+  if (!node) return
+  node.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`
+}
+
 /**
  * Inner wrapper that attaches the onError of the <img> to our fallback trigger.
  * Separated so we can keep MascotImage reusable.
+ *
+ * Also hosts the pointer-driven 3D tilt: a middle layer between the float
+ * animation and the breathe animation rotates on mousemove to give the
+ * illusion of a real 3D pet. Disabled on touch + prefers-reduced-motion.
  */
 function RasterWithFallback({ onFallback, ...props }: Props & { onFallback: () => void }) {
   const [failed, setFailed] = useState(false)
+  const tiltRef = useRef<HTMLDivElement>(null)
 
   if (failed) {
     // onFallback runs once on first error to trigger parent re-render
@@ -99,13 +113,50 @@ function RasterWithFallback({ onFallback, ...props }: Props & { onFallback: () =
 
   if (!animate) return <div className={`relative ${className}`}>{img}</div>
 
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    // Skip on touch/pen — feels jittery when finger is on the creature
+    if (e.pointerType !== 'mouse') return
+    // Skip if user wants reduced motion
+    if (typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const el = e.currentTarget
+    const rect = el.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width  - 0.5  // -0.5 .. 0.5
+    const y = (e.clientY - rect.top)  / rect.height - 0.5
+    // Invert Y so moving mouse up tilts the top of the head toward you
+    applyTilt(tiltRef.current, -y * TILT_MAX_DEG, x * TILT_MAX_DEG)
+  }
+
+  function onPointerLeave() {
+    applyTilt(tiltRef.current, 0, 0)
+  }
+
   return (
     <div className={`relative ${className} animate-mascot-float`}>
       <div
         className="absolute -bottom-2 left-1/2 w-3/5 h-6 blur-2xl rounded-full animate-mascot-aura transition-colors duration-700"
         style={{ backgroundColor: palette.aura }}
       />
-      <div className="animate-mascot-breathe w-full h-full">{img}</div>
+      {/* Perspective host — listens to pointer, anchors the 3D scene */}
+      <div
+        className="relative w-full h-full"
+        style={{ perspective: '800px' }}
+        onPointerMove={onPointerMove}
+        onPointerLeave={onPointerLeave}
+      >
+        {/* Tilt layer — rotates on mousemove, returns home on leave.
+            Breathing animation lives inside so the two transforms compose. */}
+        <div
+          ref={tiltRef}
+          className="w-full h-full will-change-transform"
+          style={{
+            transformStyle: 'preserve-3d',
+            transition: 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)',
+          }}
+        >
+          <div className="animate-mascot-breathe w-full h-full">{img}</div>
+        </div>
+      </div>
       {evo >= 3 && (
         <>
           <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-yellow-300 animate-mascot-sparkle" aria-hidden />
