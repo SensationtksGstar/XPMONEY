@@ -63,7 +63,9 @@ export async function POST(
   // Recalculate financial score after mission completion — best-effort
   try {
     await recalculateScore(db, internalId)
-  } catch { /* never block the response */ }
+  } catch (err) {
+    console.warn('[missions/complete] score recalc failed:', err)
+  }
 
   return NextResponse.json({
     success:   true,

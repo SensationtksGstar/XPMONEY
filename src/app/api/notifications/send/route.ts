@@ -53,15 +53,15 @@ function initVapid() {
   )
 }
 
-// Accept either Vercel Cron bearer token OR legacy setup secret header
+// Authorization: only the Vercel Cron job may trigger a broadcast.
+// The previous legacy `x-setup-secret: XPMONEY_SETUP` path is removed — the
+// secret was committed in the repo, making daily-spam of every subscriber
+// one curl away for anyone who read the source.
 function authorised(req: NextRequest): boolean {
-  const cronSecret  = process.env.CRON_SECRET
-  const setupSecret = req.headers.get('x-setup-secret')
-  const authHeader  = req.headers.get('authorization')
-
-  if (setupSecret === 'XPMONEY_SETUP') return true
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true
-  return false
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) return false
+  const authHeader = req.headers.get('authorization')
+  return authHeader === `Bearer ${cronSecret}`
 }
 
 async function sendDailyBroadcast() {

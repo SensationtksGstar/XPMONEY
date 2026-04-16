@@ -17,6 +17,14 @@ export interface ImportStatementResult extends Omit<StatementParseResult, 'trans
   transactions: ParsedTransaction[]
 }
 
+// ── Plan gating: Plus or higher can import statements ───────────────────────
+const PLAN_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, family: 3 }
+
+// Text (CSV/TSV/TXT) limits — small, parsed instantly
+const MAX_TEXT_BYTES = 200_000
+// PDF limits — Gemini accepts up to 20 MB but we clamp for cost/latency
+const MAX_PDF_BYTES  = 8_000_000
+
 // ── Demo mock ────────────────────────────────────────────────────────────────
 const DEMO_RESULT: ImportStatementResult = {
   bank:     'Millennium BCP (demonstração)',
@@ -31,6 +39,14 @@ const DEMO_RESULT: ImportStatementResult = {
   ],
 }
 
+interface RequestBody {
+  /** Raw text content (CSV/TSV/TXT). Mutually exclusive with `pdfBase64`. */
+  content?:    string
+  /** Base64-encoded PDF (no data-url prefix). Mutually exclusive with `content`. */
+  pdfBase64?:  string
+  filename?:   string
+}
+
 export async function POST(req: NextRequest) {
   if (isDemoMode()) return demoResponse(DEMO_RESULT)
 
@@ -38,9 +54,24 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = createSupabaseAdmin()
+
+  // Probe with .maybeSingle() — a fresh user won't have a row yet and
+  // .single() throws PGRST116 (500 to the client).
   const { data: user } = await db
-    .from('users').select('id').eq('clerk_id', userId).single()
+    .from('users').select('id, plan').eq('clerk_id', userId).maybeSingle()
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
+  // Plan gate — Plus or higher. Matches /api/scan-receipt.
+  const rank = PLAN_RANK[user.plan ?? 'free'] ?? 0
+  if (rank < 1) {
+    return NextResponse.json(
+      {
+        error: 'Importação de extratos disponível apenas nos planos Plus e superiores.',
+        code:  'plan_required',
+      },
+      { status: 403 },
+    )
+  }
 
   const { data: cats } = await db
     .from('categories')
@@ -49,24 +80,67 @@ export async function POST(req: NextRequest) {
   const categoryNames = (cats ?? DEMO_CATEGORIES).map((c: { name: string }) => c.name).join(', ')
 
   // ── Parse body ──
-  let content:  string
-  let filename: string
-
+  let body: RequestBody
   try {
-    const body = await req.json()
-    content  = body.content  as string
-    filename = body.filename as string ?? 'extrato.csv'
-    if (!content || content.trim().length < 10) throw new Error('empty')
-    if (content.length > 200_000) {
-      return NextResponse.json({ error: 'Ficheiro demasiado grande (máx 200 KB de texto).' }, { status: 413 })
-    }
+    body = await req.json() as RequestBody
   } catch {
     return NextResponse.json({ error: 'Conteúdo inválido.' }, { status: 400 })
   }
 
-  // ── Parse (Gemini 2.0 → Gemini 1.5 → Groq) ──
+  const filename = (body.filename ?? 'extrato').slice(0, 120)
+
+  // PDF path — `pdfBase64` wins if both are supplied
+  if (body.pdfBase64) {
+    // Strip data-url prefix if present, then validate base64 size
+    const cleaned = body.pdfBase64.includes(',')
+      ? body.pdfBase64.split(',').pop() ?? ''
+      : body.pdfBase64
+
+    // base64 is ~4/3 the size of the decoded binary
+    const approxBytes = Math.floor(cleaned.length * 0.75)
+    if (approxBytes > MAX_PDF_BYTES) {
+      return NextResponse.json(
+        { error: 'PDF demasiado grande (máx 8 MB).' },
+        { status: 413 },
+      )
+    }
+    if (approxBytes < 500) {
+      return NextResponse.json(
+        { error: 'PDF vazio ou inválido.' },
+        { status: 400 },
+      )
+    }
+
+    return runParse({ kind: 'pdf', pdfBase64: cleaned, filename }, categoryNames)
+  }
+
+  // Text path
+  const content = body.content
+  if (!content || content.trim().length < 10) {
+    return NextResponse.json({ error: 'Conteúdo inválido.' }, { status: 400 })
+  }
+  if (content.length > MAX_TEXT_BYTES) {
+    return NextResponse.json(
+      { error: 'Ficheiro demasiado grande (máx 200 KB de texto).' },
+      { status: 413 },
+    )
+  }
+
+  return runParse({ kind: 'text', content, filename }, categoryNames)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared parse + error translation
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function runParse(
+  input:
+    | { kind: 'text'; content: string; filename: string }
+    | { kind: 'pdf';  pdfBase64: string; filename: string },
+  categoryNames: string,
+): Promise<NextResponse> {
   try {
-    const result = await parseStatement(content, filename, categoryNames)
+    const result = await parseStatement(input, categoryNames)
 
     const withSelected: ImportStatementResult = {
       ...result.data,
@@ -102,7 +176,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Parse failures from the library — treat as unreadable file
     if (err instanceof SyntaxError) {
       return NextResponse.json(
         { error: 'A IA não conseguiu interpretar o ficheiro. Verifica o formato.' },

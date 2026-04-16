@@ -3,44 +3,43 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { revalidateTag }             from 'next/cache'
 
-// POST /api/admin/set-plan
-// Header: x-setup-secret: XPMONEY_SETUP
-// Body: { "plan": "pro" }   OR   { "plan": "pro", "all": true }
-// Sets plan for current user (or all users if all:true)
-
+/**
+ * POST /api/admin/set-plan
+ *
+ * Dev-only helper for escalating the current user's plan during local testing
+ * (e.g. to exercise gated Pro features without going through Stripe).
+ *
+ * Security:
+ *   - Hard-refused in production (NODE_ENV === 'production').
+ *   - Requires a logged-in Clerk session — only updates the caller's row.
+ *   - The previous `x-setup-secret` header + `{ all: true }` broadcast path
+ *     is removed; it was a plan-escalation hole if the hard-coded secret
+ *     ever leaked.
+ *
+ * Body: { "plan": "free" | "plus" | "pro" | "family" }
+ */
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get('x-setup-secret')
-  if (secret !== 'XPMONEY_SETUP') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production.' }, { status: 403 })
   }
 
-  const { plan, all } = await req.json()
-  const validPlans = ['free', 'plus', 'pro', 'family']
-  if (!validPlans.includes(plan)) {
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  let body: { plan?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
+  }
+
+  const validPlans = ['free', 'plus', 'pro', 'family'] as const
+  const plan = body.plan
+  if (typeof plan !== 'string' || !validPlans.includes(plan as typeof validPlans[number])) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
   }
 
   const db = createSupabaseAdmin()
-
-  if (all) {
-    // Update ALL users
-    const { error, data: updated } = await db
-      .from('users')
-      .update({ plan })
-      .neq('id', '00000000-0000-0000-0000-000000000000') // match all rows
-      .select('id')
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-    // Invalidate entire user-profile cache
-    revalidateTag('user-profile')
-    return NextResponse.json({ success: true, plan, updated: updated?.length ?? 0 })
-  }
-
-  // Single user
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   const { error } = await db
     .from('users')
     .update({ plan })
@@ -48,8 +47,6 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Invalidate this user's cache
   revalidateTag(`user-profile-${userId}`)
-
   return NextResponse.json({ success: true, plan })
 }

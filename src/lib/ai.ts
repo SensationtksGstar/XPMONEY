@@ -80,14 +80,14 @@ Devolve APENAS este JSON (sem markdown, sem texto extra):
   "raw_text": "<todo o texto visível, separado por vírgulas>"
 }`
 
-function buildStatementPrompt(content: string, filename: string, categoryNames: string): string {
+function buildStatementInstructions(filename: string, categoryNames: string): string {
   return `És um especialista em análise de extratos bancários portugueses.
-Recebes o conteúdo bruto de um ficheiro CSV ou TXT exportado de um banco português.
+Recebes um ficheiro exportado de um banco (CSV/TXT/TSV com texto bruto, ou um PDF scan do extrato).
 A tua tarefa é identificar o banco, fazer parse de TODAS as transações e categorizá-las.
 
 ── Bancos comuns e formatos ──
-- CGD (Caixa): CSV separado por ponto-e-vírgula, colunas Data/Descrição/Valor/Saldo
-- Millennium BCP: CSV/Excel, colunas Data/Descritivo/Valor/Saldo
+- CGD (Caixa): CSV separado por ponto-e-vírgula, colunas Data/Descrição/Valor/Saldo · PDF com logo Caixa
+- Millennium BCP: CSV/Excel, colunas Data/Descritivo/Valor/Saldo · PDF com logo Millennium
 - BPI: CSV com ";" como separador, colunas "Data mov.", "Data valor", "Descrição", "Débito", "Crédito", "Saldo"
 - Santander: CSV, colunas Data/Descrição/Montante/Saldo
 - Novobanco / Montepio / Activobank: formato semelhante a BPI (Débito/Crédito separados)
@@ -99,7 +99,8 @@ A tua tarefa é identificar o banco, fazer parse de TODAS as transações e cate
 - Decimais EN: "1,234.56" → 1234.56 (Wise/Revolut)
 - Colunas Débito/Crédito SEPARADAS: valor em Débito → type="expense"; Crédito → type="income"
 - Coluna única com sinal: negativo → expense; positivo → income
-- IGNORA linhas de cabeçalho, totais, saldos iniciais/finais, linhas vazias
+- Em PDFs: cada linha de movimento tipicamente tem Data, Descrição e Valor (pode ter sinal ou estar em colunas separadas)
+- IGNORA linhas de cabeçalho, totais, saldos iniciais/finais, linhas vazias, páginas em branco
 - "amount" é SEMPRE positivo (o type determina o sinal)
 
 ── Categorização ──
@@ -109,14 +110,11 @@ A tua tarefa é identificar o banco, fazer parse de TODAS as transações e cate
 
 Ficheiro: ${filename}
 
-CONTEÚDO:
-${content}
-
 Devolve APENAS este JSON (sem markdown, sem texto extra):
 {
   "bank": "<nome do banco identificado>",
   "currency": "<código ISO 3 letras, padrão EUR>",
-  "total": <número total>,
+  "total": <número total de transações>,
   "transactions": [
     {
       "date": "<YYYY-MM-DD>",
@@ -128,6 +126,13 @@ Devolve APENAS este JSON (sem markdown, sem texto extra):
     }
   ]
 }`
+}
+
+function buildStatementPromptWithContent(content: string, filename: string, categoryNames: string): string {
+  return `${buildStatementInstructions(filename, categoryNames)}
+
+CONTEÚDO:
+${content}`
 }
 
 // ── Keys ─────────────────────────────────────────────────────────────────────
@@ -256,6 +261,31 @@ async function geminiText(
     },
   })
   const result = await m.generateContent(prompt)
+  return normaliseStatement(result.response.text())
+}
+
+/**
+ * Gemini PDF statement parser — sends the PDF as inline binary data
+ * alongside the instructions. Both 2.5 Flash and 2.0 Flash can read PDFs
+ * natively up to ~20 MB (we clamp at 8 MB server-side for speed/cost).
+ */
+async function geminiPdfStatement(
+  apiKey: string, model: string, pdfBase64: string, instructions: string,
+): Promise<StatementParseResult> {
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const m = genAI.getGenerativeModel({
+    model,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature:      0.1,
+      // PDFs can have dozens of pages — keep a very generous budget.
+      maxOutputTokens:  16_384,
+    },
+  })
+  const result = await m.generateContent([
+    instructions,
+    { inlineData: { data: pdfBase64, mimeType: 'application/pdf' } },
+  ])
   return normaliseStatement(result.response.text())
 }
 
@@ -444,10 +474,19 @@ export async function scanReceipt(
   throw new AIProvidersError(attempts, kind)
 }
 
+/**
+ * Parse a bank statement — accepts either raw text (CSV/TSV/TXT) or a PDF.
+ * When `pdfBase64` is supplied, only Gemini providers are tried (Groq's text
+ * models don't read PDFs). Falls through to Groq as a text-only fallback when
+ * the input is textual.
+ */
 export async function parseStatement(
-  content: string, filename: string, categoryNames: string,
+  input:
+    | { kind: 'text'; content: string; filename: string }
+    | { kind: 'pdf';  pdfBase64: string; filename: string },
+  categoryNames: string,
 ): Promise<AIResult<StatementParseResult>> {
-  const prompt = buildStatementPrompt(content, filename, categoryNames)
+  const instructions = buildStatementInstructions(input.filename, categoryNames)
 
   const geminiKey = getGeminiKey()
   const groqKey   = getGroqKey()
@@ -457,8 +496,39 @@ export async function parseStatement(
     throw new AIProvidersError(['no-provider-configured'], 'auth')
   }
 
+  // ── PDF path: Gemini only (vision/document understanding) ──
+  if (input.kind === 'pdf') {
+    if (!geminiKey) {
+      throw new AIProvidersError(['pdf-requires-gemini'], 'auth')
+    }
+    try {
+      const data = await withRetry(
+        () => geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions),
+        'gemini-2.5-flash-pdf',
+      )
+      return { data, provider: 'gemini-2.5-flash-pdf', cache_hit: false, attempts }
+    } catch (err) {
+      attempts.push(`gemini-2.5-flash-pdf: ${err instanceof Error ? err.message : err}`)
+    }
+
+    try {
+      const data = await withRetry(
+        () => geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions),
+        'gemini-2.0-flash-pdf',
+      )
+      return { data, provider: 'gemini-2.0-flash-pdf', cache_hit: false, attempts }
+    } catch (err) {
+      attempts.push(`gemini-2.0-flash-pdf: ${err instanceof Error ? err.message : err}`)
+    }
+
+    const kind = classifyError(attempts.join(' | '))
+    throw new AIProvidersError(attempts, kind)
+  }
+
+  // ── Text path: Gemini → Gemini 2.0 → Groq ──
+  const prompt = buildStatementPromptWithContent(input.content, input.filename, categoryNames)
+
   if (geminiKey) {
-    // Primary: Gemini 2.5 Flash — reasoning helps with ambiguous bank rows
     try {
       const data = await withRetry(
         () => geminiText(geminiKey, 'gemini-2.5-flash', prompt),
@@ -469,7 +539,6 @@ export async function parseStatement(
       attempts.push(`gemini-2.5-flash: ${err instanceof Error ? err.message : err}`)
     }
 
-    // Secondary: Gemini 2.0 Flash — separate quota pool on the same key
     try {
       const data = await withRetry(
         () => geminiText(geminiKey, 'gemini-2.0-flash', prompt),

@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect, useId } from 'react'
+import Link from 'next/link'
 import {
   X, Upload, FileText, Loader2, CheckCircle2, AlertCircle,
-  ChevronDown, Sparkles, Download, TriangleAlert, Info,
+  ChevronDown, Sparkles, Download, TriangleAlert, Info, Crown, Lock,
 } from 'lucide-react'
 import { useCategories }    from '@/hooks/useCategories'
 import { useAccounts }      from '@/hooks/useAccounts'
+import { useUserPlan }      from '@/lib/contexts/UserPlanContext'
 import { useQueryClient }   from '@tanstack/react-query'
 import { cn }               from '@/lib/utils'
 import type { ParsedTransaction, ImportStatementResult } from '@/app/api/import-statement/route'
@@ -15,11 +17,11 @@ interface Props { onClose: () => void }
 
 type Step = 'upload' | 'parsing' | 'preview' | 'saving' | 'done' | 'error'
 
-const ACCEPTED = '.csv,.txt,.tsv'
-const MAX_BYTES = 1_000_000 // 1 MB
+const ACCEPTED = '.csv,.txt,.tsv,.pdf,application/pdf,text/csv,text/plain'
+const MAX_TEXT_BYTES = 1_000_000 // 1 MB for text
+const MAX_PDF_BYTES  = 8_000_000 // 8 MB for PDF
 
 const BANKS = [
-  { id: 'auto',        label: 'Detectar automaticamente' },
   { id: 'cgd',         label: 'Caixa Geral de Depósitos' },
   { id: 'millennium',  label: 'Millennium BCP' },
   { id: 'bpi',         label: 'BPI' },
@@ -31,8 +33,31 @@ const BANKS = [
   { id: 'revolut',     label: 'Revolut' },
 ]
 
+/** Read a File as base64 (without the data-url prefix). */
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload  = () => {
+      const result = r.result as string
+      resolve(result.split(',').pop() ?? '')
+    }
+    r.onerror = () => reject(r.error)
+    r.readAsDataURL(file)
+  })
+}
+
+function isPdfFile(file: File): boolean {
+  return (
+    file.type === 'application/pdf' ||
+    /\.pdf$/i.test(file.name)
+  )
+}
+
 export function StatementImporter({ onClose }: Props) {
-  const [step,      setStep]     = useState<Step>('upload')
+  const { isFree, plan } = useUserPlan()
+  const titleId          = useId()
+
+  const [step,      setStep]     = useState<Step>(isFree ? 'upload' : 'upload')
   const [dragOver,  setDragOver] = useState(false)
   const [result,    setResult]   = useState<ImportStatementResult | null>(null)
   const [rows,      setRows]     = useState<ParsedTransaction[]>([])
@@ -42,33 +67,62 @@ export function StatementImporter({ onClose }: Props) {
   const fileRef  = useRef<HTMLInputElement>(null)
   const qc       = useQueryClient()
 
-  const { categories: allCategories }  = useCategories()
-  const { accounts, defaultAccount } = useAccounts()
+  const { categories: allCategories } = useCategories()
+  const { accounts, defaultAccount }  = useAccounts()
 
   // Set default account once loaded
   const resolvedAccount = accountId || defaultAccount?.id || ''
 
-  // ── Parse file via Claude ──────────────────────────────────────────────────
+  // Esc to close
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [onClose])
+
+  // ── Parse file via AI ─────────────────────────────────────────────────────
   const parseFile = useCallback(async (file: File) => {
-    if (file.size > MAX_BYTES) {
-      setErrorMsg('Ficheiro demasiado grande. Máximo 1 MB.')
+    const isPdf = isPdfFile(file)
+    const maxBytes = isPdf ? MAX_PDF_BYTES : MAX_TEXT_BYTES
+
+    if (file.size > maxBytes) {
+      setErrorMsg(
+        isPdf
+          ? 'PDF demasiado grande. Máximo 8 MB.'
+          : 'Ficheiro demasiado grande. Máximo 1 MB.'
+      )
       setStep('error')
       return
     }
 
     setStep('parsing')
-    const content = await file.text()
 
     try {
-      const res = await fetch('/api/import-statement', {
+      const body = isPdf
+        ? { pdfBase64: await fileToBase64(file),       filename: file.name }
+        : { content:   await file.text(),              filename: file.name }
+
+      const res  = await fetch('/api/import-statement', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ content, filename: file.name }),
+        body:    JSON.stringify(body),
       })
       const json = await res.json()
+
+      if (res.status === 403 && json.code === 'plan_required') {
+        setErrorMsg(json.error ?? 'Plano insuficiente.')
+        setStep('error')
+        return
+      }
       if (!res.ok || json.error) throw new Error(json.error ?? 'Erro desconhecido')
 
       const data = json.data as ImportStatementResult
+      if (!data.transactions || data.transactions.length === 0) {
+        setErrorMsg('Nenhum movimento detectado neste ficheiro.')
+        setStep('error')
+        return
+      }
+
       setResult(data)
       setRows(data.transactions)
       setStep('preview')
@@ -82,9 +136,10 @@ export function StatementImporter({ onClose }: Props) {
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
+    if (isFree) return
     const file = e.dataTransfer.files[0]
     if (file) parseFile(file)
-  }, [parseFile])
+  }, [parseFile, isFree])
 
   // ── Toggle row ────────────────────────────────────────────────────────────
   const toggleRow = (i: number) =>
@@ -138,7 +193,6 @@ export function StatementImporter({ onClose }: Props) {
       const msg = message
         ?? `${inserted} transações importadas! +${xp_gained} XP 🎉`
 
-      // Invalidate all relevant caches
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['score'] })
       qc.invalidateQueries({ queryKey: ['xp'] })
@@ -155,10 +209,68 @@ export function StatementImporter({ onClose }: Props) {
   const selectedCount = rows.filter(r => r.selected).length
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Free-plan gate: full-panel paywall, no upload button
+  // ─────────────────────────────────────────────────────────────────────────
+  if (isFree) {
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      >
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden />
+        <div className="relative z-10 bg-[#0f1117] border border-white/10 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+            <h2 id={titleId} className="font-bold text-white text-base flex items-center gap-2">
+              <Crown className="w-4 h-4 text-yellow-400" /> Importar Extrato
+            </h2>
+            <button onClick={onClose} aria-label="Fechar"
+              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-6 text-center space-y-4">
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-yellow-500/15 to-purple-500/15 border border-yellow-500/25 flex items-center justify-center">
+              <Sparkles className="w-10 h-10 text-yellow-400" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-lg">Funcionalidade Plus</p>
+              <p className="text-white/50 text-sm mt-2 leading-relaxed">
+                Envia o teu extrato bancário (CSV ou PDF) e a IA extrai e categoriza
+                automaticamente todos os movimentos — sem digitar nada à mão.
+              </p>
+            </div>
+            <ul className="text-left space-y-1.5 text-white/60 text-xs mx-auto max-w-xs">
+              <li>✓ Suporta CGD, Millennium, BPI, Santander, Revolut, Wise</li>
+              <li>✓ Categorização automática com IA</li>
+              <li>✓ Deteta receitas e despesas</li>
+              <li>✓ Ignora saldos e cabeçalhos</li>
+            </ul>
+            <Link
+              href="/settings/billing"
+              onClick={onClose}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold px-5 py-3 rounded-xl transition-all min-h-[44px]"
+            >
+              <Crown className="w-4 h-4" /> Fazer upgrade para Plus
+            </Link>
+            <p className="text-white/30 text-xs">Plano actual: <span className="uppercase">{plan}</span></p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden />
 
       {/* Panel */}
       <div className={cn(
@@ -174,16 +286,17 @@ export function StatementImporter({ onClose }: Props) {
               <FileText className="w-4 h-4 text-blue-400" />
             </div>
             <div>
-              <h2 className="font-bold text-white text-base">Importar Extrato</h2>
+              <h2 id={titleId} className="font-bold text-white text-base">Importar Extrato</h2>
               <p className="text-white/40 text-xs">
                 {step === 'preview'
                   ? `${result?.bank} · ${result?.transactions.length} movimentos detectados`
-                  : 'CSV · TXT · Qualquer banco português'}
+                  : 'CSV · PDF · Qualquer banco português'}
               </p>
             </div>
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
+            aria-label="Fechar importação"
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -195,8 +308,8 @@ export function StatementImporter({ onClose }: Props) {
             <div className="flex gap-3 bg-blue-500/8 border border-blue-500/20 rounded-xl p-3">
               <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
               <p className="text-blue-300/80 text-xs leading-relaxed">
-                Exporta o extrato do teu banco em formato CSV ou TXT.
-                O Claude analisa e categoriza automaticamente cada movimento.
+                Envia o extrato do teu banco em <strong className="text-blue-300">CSV/TXT</strong> ou <strong className="text-blue-300">PDF</strong>.
+                A IA analisa e categoriza automaticamente cada movimento.
                 Os dados <strong className="text-blue-300">nunca são armazenados</strong> além das transações confirmadas.
               </p>
             </div>
@@ -207,6 +320,10 @@ export function StatementImporter({ onClose }: Props) {
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
               onClick={() => fileRef.current?.click()}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click() }}
+              role="button"
+              tabIndex={0}
+              aria-label="Seleccionar ficheiro de extrato bancário"
               className={cn(
                 'border-2 border-dashed rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all',
                 dragOver
@@ -222,7 +339,7 @@ export function StatementImporter({ onClose }: Props) {
                 <p className="text-white font-medium text-sm">
                   {dragOver ? 'Larga aqui' : 'Arrasta o ficheiro ou clica para seleccionar'}
                 </p>
-                <p className="text-white/35 text-xs mt-1">CSV · TXT · TSV — máx. 1 MB</p>
+                <p className="text-white/35 text-xs mt-1">CSV · TXT · PDF — texto até 1 MB · PDF até 8 MB</p>
               </div>
               <input ref={fileRef} type="file" accept={ACCEPTED}
                 className="hidden"
@@ -233,7 +350,7 @@ export function StatementImporter({ onClose }: Props) {
             <div>
               <p className="text-white/30 text-xs mb-2">Bancos compatíveis:</p>
               <div className="flex flex-wrap gap-1.5">
-                {BANKS.slice(1).map(b => (
+                {BANKS.map(b => (
                   <span key={b.id}
                     className="px-2 py-0.5 bg-white/5 border border-white/8 rounded-full text-white/50 text-xs">
                     {b.label}
@@ -250,12 +367,12 @@ export function StatementImporter({ onClose }: Props) {
                 <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180 ml-auto" />
               </summary>
               <div className="mt-2 space-y-2 text-white/45 text-xs leading-relaxed pl-5 border-l border-white/8">
-                <p><strong className="text-white/60">CGD (Caixa):</strong> Netcaixa → Movimentos → Exportar → CSV</p>
-                <p><strong className="text-white/60">Millennium:</strong> Site → Conta → Movimentos → Exportar Excel/CSV</p>
+                <p><strong className="text-white/60">CGD (Caixa):</strong> Netcaixa → Movimentos → Exportar → CSV ou PDF</p>
+                <p><strong className="text-white/60">Millennium:</strong> Site → Conta → Movimentos → Exportar Excel/CSV/PDF</p>
                 <p><strong className="text-white/60">BPI:</strong> BPI Net → Consultas → Movimentos → Exportar</p>
                 <p><strong className="text-white/60">Santander:</strong> Online → Conta corrente → Movimentos → Download</p>
-                <p><strong className="text-white/60">Revolut:</strong> App → Conta → Declaração → CSV</p>
-                <p><strong className="text-white/60">Wise:</strong> Account → Statements → Download CSV</p>
+                <p><strong className="text-white/60">Revolut:</strong> App → Conta → Declaração → CSV ou PDF</p>
+                <p><strong className="text-white/60">Wise:</strong> Account → Statements → Download CSV ou PDF</p>
               </div>
             </details>
           </div>
@@ -263,7 +380,7 @@ export function StatementImporter({ onClose }: Props) {
 
         {/* ── PARSING step ── */}
         {step === 'parsing' && (
-          <div className="p-8 flex flex-col items-center gap-5">
+          <div className="p-8 flex flex-col items-center gap-5" role="status" aria-live="polite">
             <div className="relative">
               <div className="w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                 <Sparkles className="w-8 h-8 text-blue-400" />
@@ -271,7 +388,7 @@ export function StatementImporter({ onClose }: Props) {
               <Loader2 className="w-6 h-6 text-blue-400 absolute -top-1 -right-1 animate-spin" />
             </div>
             <div className="text-center">
-              <p className="text-white font-semibold">Claude está a analisar...</p>
+              <p className="text-white font-semibold">A IA está a analisar...</p>
               <p className="text-white/40 text-sm mt-1">A identificar o banco, extrair e categorizar movimentos</p>
             </div>
             <div className="w-full max-w-xs bg-white/5 rounded-full h-1.5 overflow-hidden">
@@ -285,8 +402,9 @@ export function StatementImporter({ onClose }: Props) {
           <>
             {/* Account selector */}
             <div className="px-5 py-3 border-b border-white/8 flex-shrink-0 flex items-center gap-3">
-              <span className="text-white/50 text-sm whitespace-nowrap">Importar para:</span>
+              <label htmlFor="import-account" className="text-white/50 text-sm whitespace-nowrap">Importar para:</label>
               <select
+                id="import-account"
                 value={resolvedAccount}
                 onChange={e => setAccountId(e.target.value)}
                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-blue-500/50 appearance-none"
@@ -341,6 +459,7 @@ export function StatementImporter({ onClose }: Props) {
                       )}>
                       <td className="px-4 py-3">
                         <input type="checkbox" checked={row.selected} readOnly
+                          aria-label={`${row.selected ? 'Desmarcar' : 'Marcar'} ${row.description}`}
                           className="w-4 h-4 rounded accent-blue-500 pointer-events-none" />
                       </td>
                       <td className="px-2 py-3 text-white/50 text-xs whitespace-nowrap">
@@ -354,6 +473,7 @@ export function StatementImporter({ onClose }: Props) {
                         <select
                           value={row.category_hint}
                           onChange={e => setCategory(i, e.target.value)}
+                          aria-label={`Categoria para ${row.description}`}
                           className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white/70 text-xs outline-none focus:border-blue-500/50 max-w-[130px] appearance-none"
                         >
                           {allCategories
@@ -383,14 +503,14 @@ export function StatementImporter({ onClose }: Props) {
             {/* Footer action */}
             <div className="px-5 py-4 border-t border-white/8 flex-shrink-0 flex items-center gap-3">
               <button onClick={onClose}
-                className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/25 transition-all text-sm font-medium">
+                className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/25 transition-all text-sm font-medium min-h-[44px]">
                 Cancelar
               </button>
               <button
                 onClick={confirm}
                 disabled={selectedCount === 0}
                 className={cn(
-                  'flex-[2] py-3 rounded-xl font-bold text-sm transition-all',
+                  'flex-[2] py-3 rounded-xl font-bold text-sm transition-all min-h-[44px]',
                   selectedCount > 0
                     ? 'bg-blue-500 hover:bg-blue-400 text-white active:scale-[0.98]'
                     : 'bg-white/5 text-white/20 cursor-not-allowed'
@@ -403,7 +523,7 @@ export function StatementImporter({ onClose }: Props) {
 
         {/* ── SAVING step ── */}
         {step === 'saving' && (
-          <div className="p-8 flex flex-col items-center gap-4">
+          <div className="p-8 flex flex-col items-center gap-4" role="status" aria-live="polite">
             <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
             <p className="text-white font-medium">A guardar transações...</p>
           </div>
@@ -420,7 +540,7 @@ export function StatementImporter({ onClose }: Props) {
               <p className="text-white/50 text-sm mt-1">{doneMsg}</p>
             </div>
             <button onClick={onClose}
-              className="w-full max-w-xs py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl transition-all">
+              className="w-full max-w-xs py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl transition-all min-h-[44px]">
               Fechar
             </button>
           </div>
@@ -428,21 +548,25 @@ export function StatementImporter({ onClose }: Props) {
 
         {/* ── ERROR step ── */}
         {step === 'error' && (
-          <div className="p-8 flex flex-col items-center gap-5 text-center">
+          <div className="p-8 flex flex-col items-center gap-5 text-center" role="alert">
             <div className="w-20 h-20 rounded-full bg-red-500/15 border border-red-500/25 flex items-center justify-center">
-              <AlertCircle className="w-10 h-10 text-red-400" />
+              {errorMsg.includes('Plano') || errorMsg.includes('plano')
+                ? <Lock className="w-10 h-10 text-red-400" />
+                : <AlertCircle className="w-10 h-10 text-red-400" />}
             </div>
             <div>
-              <p className="text-white font-bold">Ocorreu um erro</p>
+              <p className="text-white font-bold">
+                {errorMsg.includes('Plano') || errorMsg.includes('plano') ? 'Plano insuficiente' : 'Ocorreu um erro'}
+              </p>
               <p className="text-white/50 text-sm mt-1">{errorMsg}</p>
             </div>
             <div className="flex gap-3 w-full max-w-xs">
               <button onClick={onClose}
-                className="flex-1 py-3 border border-white/10 text-white/60 rounded-xl text-sm hover:border-white/25 hover:text-white transition-all">
+                className="flex-1 py-3 border border-white/10 text-white/60 rounded-xl text-sm hover:border-white/25 hover:text-white transition-all min-h-[44px]">
                 Fechar
               </button>
               <button onClick={() => { setStep('upload'); setErrorMsg('') }}
-                className="flex-1 py-3 bg-white/10 hover:bg-white/15 text-white rounded-xl text-sm font-medium transition-all">
+                className="flex-1 py-3 bg-white/10 hover:bg-white/15 text-white rounded-xl text-sm font-medium transition-all min-h-[44px]">
                 Tentar de novo
               </button>
             </div>

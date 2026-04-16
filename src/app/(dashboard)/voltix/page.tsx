@@ -75,7 +75,9 @@ export default function VoltixPage() {
           toast(`${b.icon} Badge desbloqueado: ${b.name}!`, 'xp')
         )
       })
-      .catch(() => {})
+      .catch(err => {
+        console.warn('[voltix] daily-checkin failed:', err)
+      })
   }, [toast])
 
   const mood    = (voltix?.mood ?? 'neutral') as VoltixMood

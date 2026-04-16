@@ -17,12 +17,14 @@ export async function GET() {
 
   const db = createSupabaseAdmin()
 
-  // Fetch voltix + latest score + mascot gender in parallel
+  // Fetch voltix + latest score + mascot gender in parallel.
+  // All three use `maybeSingle()` because a brand-new user may not yet have
+  // any of these rows, and `.single()` would reject the whole Promise.all.
   const [voltixRes, scoreRes, userRes] = await Promise.all([
-    db.from('voltix_states').select('*').eq('user_id', internalId).single(),
+    db.from('voltix_states').select('*').eq('user_id', internalId).maybeSingle(),
     db.from('financial_scores').select('score').eq('user_id', internalId)
-      .order('calculated_at', { ascending: false }).limit(1).single(),
-    db.from('users').select('mascot_gender').eq('id', internalId).single(),
+      .order('calculated_at', { ascending: false }).limit(1).maybeSingle(),
+    db.from('users').select('mascot_gender').eq('id', internalId).maybeSingle(),
   ])
 
   const voltix = voltixRes.data

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId } from 'react'
 import { X, Zap, ChevronDown, ScanLine, Crown, Lock } from 'lucide-react'
 import { useTransactions }    from '@/hooks/useTransactions'
 import { useAccounts }        from '@/hooks/useAccounts'
@@ -18,11 +18,35 @@ interface Props {
   initialType?:  TransactionType
 }
 
+/**
+ * Accepts both PT ("1.234,56") and EN ("1,234.56") decimal conventions,
+ * plus the plain "12.34" / "12,34" short forms. Returns NaN on failure.
+ */
+function parseAmountLocale(raw: string): number {
+  const trimmed = raw.trim().replace(/\s+/g, '')
+  if (!trimmed) return NaN
+  // If both separators appear, the rightmost one is the decimal separator.
+  const lastDot   = trimmed.lastIndexOf('.')
+  const lastComma = trimmed.lastIndexOf(',')
+  let normalised: string
+  if (lastDot === -1 && lastComma === -1) {
+    normalised = trimmed
+  } else if (lastComma > lastDot) {
+    // PT: comma is decimal, dots are thousands
+    normalised = trimmed.replace(/\./g, '').replace(',', '.')
+  } else {
+    // EN: dot is decimal, commas are thousands
+    normalised = trimmed.replace(/,/g, '')
+  }
+  return Number(normalised)
+}
+
 export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
   const { createTransaction }              = useTransactions()
   const { defaultAccount }                 = useAccounts()
   const { byType }                         = useCategories()
   const { isFree }                         = useUserPlan()
+  const titleId                            = useId()
 
   const [type,              setType]             = useState<TransactionType>(initialType)
   const [amount,            setAmount]           = useState('')
@@ -83,17 +107,19 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!amount || !selectedCategory) return
+    const parsedAmount = parseAmountLocale(amount)
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return
     setLoading(true)
     try {
       await createTransaction({
-        amount:      parseFloat(amount),
+        amount:      parsedAmount,
         type,
         category_id: selectedCategory.id,
         description,
         date,
         account_id:  defaultAccount?.id ?? '',
       })
-      track.transaction_created(type, selectedCategory.name, parseFloat(amount))
+      track.transaction_created(type, selectedCategory.name, parsedAmount)
       setXpGained(10)
       setTimeout(onClose, 1000)
     } catch (err) {
@@ -107,6 +133,9 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
     <>
       <div
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm animate-fade-in
                    flex items-end sm:items-center sm:justify-center sm:p-4"
       >
@@ -140,7 +169,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                   <ChevronDown className="w-5 h-5 rotate-90" />
                 </button>
               )}
-              <h2 className="font-bold text-white text-lg">
+              <h2 id={titleId} className="font-bold text-white text-lg">
                 {showScanner ? 'Digitalizar Fatura' : 'Nova transação'}
               </h2>
             </div>
@@ -284,13 +313,16 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       <div className="flex items-center gap-2">
                         <span className="text-white/40 font-bold text-2xl">€</span>
                         <input
-                          type="number"
+                          // type="text" + inputMode="decimal" so browsers show a
+                          // numeric keyboard AND accept both "," and "." — native
+                          // type="number" rejects commas in pt-PT locale.
+                          type="text"
                           inputMode="decimal"
-                          min="0.01"
-                          step="0.01"
+                          pattern="[0-9.,]*"
                           placeholder="0,00"
                           value={amount}
-                          onChange={e => setAmount(e.target.value)}
+                          onChange={e => setAmount(e.target.value.replace(/[^\d.,]/g, ''))}
+                          aria-label="Valor em euros"
                           className="flex-1 bg-transparent text-white text-4xl font-bold placeholder-white/15 outline-none"
                           required
                           autoFocus={step === 2}

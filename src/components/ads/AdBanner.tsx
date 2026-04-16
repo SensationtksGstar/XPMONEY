@@ -46,7 +46,9 @@ export function AdBanner({ variant = 'feed', className = '' }: Props) {
     try {
       ;(window.adsbygoogle = window.adsbygoogle || []).push({})
       pushed.current = true
-    } catch {}
+    } catch (err) {
+      console.warn('[AdBanner] adsbygoogle push failed:', err)
+    }
   }, [isFree])
 
   // Don't render for paid users

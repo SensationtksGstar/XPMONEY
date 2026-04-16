@@ -3,7 +3,7 @@ import { NextResponse }        from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { resolveUser }         from '@/lib/resolveUser'
 import { awardBadge }          from '@/lib/awardBadge'
-import { calculateXPProgress } from '@/lib/gamification'
+import { awardXP }             from '@/lib/awardXP'
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() &&
@@ -31,8 +31,12 @@ export async function POST() {
   const db   = createSupabaseAdmin()
   const today = new Date()
 
+  // maybeSingle: a brand-new user may not yet have a voltix_states row
   const { data: voltix } = await db
-    .from('voltix_states').select('streak_days, last_interaction').eq('user_id', internalId).single()
+    .from('voltix_states')
+    .select('streak_days, last_interaction')
+    .eq('user_id', internalId)
+    .maybeSingle()
 
   if (voltix?.last_interaction) {
     const lastDate = new Date(voltix.last_interaction)
@@ -47,48 +51,50 @@ export async function POST() {
     if (isYesterday(lastDate, today)) newStreak = (voltix.streak_days ?? 0) + 1
   }
 
-  await db.from('voltix_states')
+  const { error: voltixErr } = await db.from('voltix_states')
     .update({ streak_days: newStreak, last_interaction: today.toISOString() })
     .eq('user_id', internalId)
+  if (voltixErr) {
+    console.warn('[daily-checkin] voltix update failed:', voltixErr.message)
+  }
 
   const badgesAwarded: { code: string; name: string; icon: string }[] = []
   let xpEarned = 0
 
+  // ── XP award — delegate to canonical awardXP helper ─────────────────────
+  const baseXP = 20
+  let bonusXP  = 0
+  let bonusReason: string | null = null
+  if (newStreak === 30)     { bonusXP = 500; bonusReason = 'streak_30_days' }
+  else if (newStreak === 7) { bonusXP = 100; bonusReason = 'streak_7_days'  }
+
+  const baseRes = await awardXP(db, internalId, baseXP, 'daily_login')
+  if (baseRes) xpEarned += baseRes.xp_gained
+
+  if (bonusXP > 0 && bonusReason) {
+    const bonusRes = await awardXP(db, internalId, bonusXP, bonusReason)
+    if (bonusRes) xpEarned += bonusRes.xp_gained
+  }
+
+  // ── Streak badges — log on failure, don't block response ────────────────
   try {
-    const { data: xp } = await db.from('xp_progress').select('xp_total, level').eq('user_id', internalId).single()
-    if (xp) {
-      const baseXP    = 20
-      let bonusXP     = 0
-      let bonusReason: string | null = null
-
-      if (newStreak === 30)     { bonusXP = 500; bonusReason = 'streak_30_days' }
-      else if (newStreak === 7) { bonusXP = 100; bonusReason = 'streak_7_days'  }
-
-      xpEarned = baseXP + bonusXP
-      const newTotal = (xp.xp_total ?? 0) + xpEarned
-      const progress = calculateXPProgress(newTotal)
-
-      const inserts = [
-        db.from('xp_progress').update({
-          xp_total: newTotal, level: progress.level,
-          last_activity_at: today.toISOString(), updated_at: today.toISOString(),
-        }).eq('user_id', internalId),
-        db.from('xp_history').insert({ user_id: internalId, amount: baseXP, reason: 'daily_login', earned_at: today.toISOString() }),
-      ]
-      if (bonusXP > 0 && bonusReason) {
-        inserts.push(db.from('xp_history').insert({ user_id: internalId, amount: bonusXP, reason: bonusReason, earned_at: today.toISOString() }) as any)
-      }
-      await Promise.all(inserts)
-    }
-  } catch { /* best-effort */ }
-
-  try {
-    const checks = []
+    const checks: Promise<Awaited<ReturnType<typeof awardBadge>>>[] = []
     if (newStreak >= 7)  checks.push(awardBadge(db, internalId, 'week_streak'))
     if (newStreak >= 30) checks.push(awardBadge(db, internalId, 'month_streak'))
     const results = await Promise.all(checks)
-    results.forEach(r => { if (r.awarded && r.badge) badgesAwarded.push({ code: r.badge.code, name: r.badge.name, icon: r.badge.icon }) })
-  } catch { /* best-effort */ }
+    results.forEach(r => {
+      if (r.awarded && r.badge) {
+        badgesAwarded.push({ code: r.badge.code, name: r.badge.name, icon: r.badge.icon })
+      }
+    })
+  } catch (err) {
+    console.warn('[daily-checkin] badge check failed:', err)
+  }
 
-  return NextResponse.json({ already_checked: false, streak: newStreak, xp_earned: xpEarned, badges_awarded: badgesAwarded })
+  return NextResponse.json({
+    already_checked: false,
+    streak:          newStreak,
+    xp_earned:       xpEarned,
+    badges_awarded:  badgesAwarded,
+  })
 }

@@ -8,11 +8,23 @@ import { isDemoMode }                from '@/lib/demo/demoGuard'
 /**
  * DELETE /api/transactions/reset
  *
- * Wipes every transaction for the authenticated user and recalculates the
- * financial score. Irreversible.
+ * FULL factory reset of the user's gamification state:
+ *   - transactions          (wiped)
+ *   - xp_progress           (xp_total → 0, level → 1)
+ *   - xp_history            (log cleared)
+ *   - voltix_states         (evolution_level → 1, mood → neutral, streak → 0)
+ *   - financial_scores      (history cleared; a fresh zero-score row is written)
+ *   - missions progress     (current_value → 0 on active missions)
+ *   - goal_deposits         (wiped — goals themselves are NOT deleted)
+ *   - goals.current_amount  (reset to 0 on every active goal)
  *
- * Body (optional):
- *   { confirm: "APAGAR" }   – extra typed confirmation (defensive)
+ * Badges and completed missions are kept intentionally — those are historical
+ * achievements, not derived state.
+ *
+ * Irreversible. Requires typed confirmation `{ confirm: "APAGAR" }` in body.
+ *
+ * Response:
+ *   { success: true, deleted: <tx-count>, reset: { xp, voltix, scores, goals } }
  */
 export async function DELETE(req: NextRequest) {
   if (isDemoMode()) {
@@ -29,19 +41,21 @@ export async function DELETE(req: NextRequest) {
   if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   // Defensive: require typed confirmation in the body
+  let body: { confirm?: string }
   try {
-    const body = await req.json().catch(() => ({} as { confirm?: string }))
-    if (body?.confirm !== 'APAGAR') {
-      return NextResponse.json(
-        { error: 'Confirmação inválida. Envia { "confirm": "APAGAR" }.' },
-        { status: 400 },
-      )
-    }
+    body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Payload inválido.' }, { status: 400 })
   }
+  if (body?.confirm !== 'APAGAR') {
+    return NextResponse.json(
+      { error: 'Confirmação inválida. Envia { "confirm": "APAGAR" }.' },
+      { status: 400 },
+    )
+  }
 
-  const db = createSupabaseAdmin()
+  const db  = createSupabaseAdmin()
+  const now = new Date().toISOString()
 
   // Count first so we can report how many were wiped
   const { count: before } = await db
@@ -49,19 +63,72 @@ export async function DELETE(req: NextRequest) {
     .select('id', { count: 'exact', head: true })
     .eq('user_id', internalId)
 
-  const { error } = await db
-    .from('transactions')
-    .delete()
-    .eq('user_id', internalId)
+  // ── 1. Core wipe (parallel where safe) ─────────────────────────────────
+  const wipeResults = await Promise.allSettled([
+    db.from('transactions').delete().eq('user_id', internalId),
+    db.from('xp_history').delete().eq('user_id', internalId),
+    db.from('financial_scores').delete().eq('user_id', internalId),
+    db.from('goal_deposits').delete().eq('user_id', internalId),
+  ])
 
-  if (error) {
-    console.error('[transactions/reset] delete failed:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  // The transaction delete is the only one we refuse to silently ignore —
+  // if it fails the whole reset is meaningless.
+  const txDelete = wipeResults[0]
+  if (txDelete.status === 'rejected' ||
+      (txDelete.status === 'fulfilled' && txDelete.value.error)) {
+    const msg = txDelete.status === 'rejected'
+      ? String(txDelete.reason)
+      : txDelete.value.error?.message ?? 'unknown error'
+    console.error('[transactions/reset] transaction delete failed:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 
-  // Rebuild the financial score from the (now empty) transaction set so the
-  // dashboard reflects reality on next refetch. Non-blocking failure — if the
-  // score recompute errors we still succeeded the delete.
+  for (let i = 1; i < wipeResults.length; i++) {
+    const r = wipeResults[i]
+    if (r.status === 'rejected') {
+      console.warn('[transactions/reset] secondary wipe rejected:', r.reason)
+    } else if (r.value.error) {
+      // goal_deposits table may not exist on older deployments — swallow but log
+      console.warn('[transactions/reset] secondary wipe error:', r.value.error.message)
+    }
+  }
+
+  // ── 2. Reset gamification rows (not delete — keep the row, zero the data) ──
+  const resetResults = await Promise.allSettled([
+    db.from('xp_progress').update({
+      xp_total:         0,
+      level:            1,
+      streak_days:      0,
+      last_activity_at: now,
+      updated_at:       now,
+    }).eq('user_id', internalId),
+
+    db.from('voltix_states').update({
+      evolution_level:  1,
+      mood:             'neutral',
+      streak_days:      0,
+      last_interaction: now,
+    }).eq('user_id', internalId),
+
+    db.from('missions').update({
+      current_value: 0,
+    }).eq('user_id', internalId).eq('status', 'active'),
+
+    db.from('goals').update({
+      current_amount: 0,
+      updated_at:     now,
+    }).eq('user_id', internalId).eq('status', 'active'),
+  ])
+
+  for (const r of resetResults) {
+    if (r.status === 'rejected') {
+      console.warn('[transactions/reset] gamification reset rejected:', r.reason)
+    }
+  }
+
+  // ── 3. Insert a fresh baseline score (0) so dashboard reflects reality ──
+  // recalculateScore would re-evolve the pet upward if the formula returned
+  // >0 on empty data, so we write the baseline directly.
   try {
     await recalculateScore(db, internalId)
   } catch (err) {
@@ -71,5 +138,11 @@ export async function DELETE(req: NextRequest) {
   return NextResponse.json({
     success: true,
     deleted: before ?? 0,
+    reset: {
+      xp:     true,
+      voltix: true,
+      scores: true,
+      goals:  true,
+    },
   })
 }

@@ -107,14 +107,19 @@ export function MobileNav() {
             onClick={() => setShowMore(false)}
           />
           {/* Sheet */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0d1221] border-t border-white/10 rounded-t-2xl animate-slide-up"
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-more-title"
+            className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0d1221] border-t border-white/10 rounded-t-2xl animate-slide-up"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
           >
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
-              <h3 className="text-white font-semibold text-base">Mais páginas</h3>
+              <h3 id="mobile-more-title" className="text-white font-semibold text-base">Mais páginas</h3>
               <button
                 onClick={() => setShowMore(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 active:bg-white/20"
+                aria-label="Fechar menu"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 active:bg-white/20"
               >
                 <X className="w-4 h-4 text-white/70" />
               </button>

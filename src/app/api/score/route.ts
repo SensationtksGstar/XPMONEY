@@ -16,9 +16,10 @@ export async function GET() {
   if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const db = createSupabaseAdmin()
+  // maybeSingle — new users have no financial_scores rows yet
   const { data: latest } = await db
     .from('financial_scores').select('*').eq('user_id', internalId)
-    .order('calculated_at', { ascending: false }).limit(1).single()
+    .order('calculated_at', { ascending: false }).limit(1).maybeSingle()
 
   return NextResponse.json({ data: latest ?? null, error: null })
 }

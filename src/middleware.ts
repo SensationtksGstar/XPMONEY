@@ -5,13 +5,17 @@ import { NextResponse, type NextRequest } from 'next/server'
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
 // Rotas públicas (não requerem autenticação)
+// NOTE: admin routes (setup-db, set-plan) are NOT public — they require a
+// signed-in Clerk session AND refuse to run in production. They were public
+// before, which combined with a hard-coded shared secret was a plan-escalation
+// hole.
+// notifications/send is also NOT public — it accepts Vercel Cron Bearer via
+// the `authorization` header, which Clerk middleware does not block.
 const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/webhooks/(.*)',
-  '/api/admin/setup-db',
-  '/api/admin/set-plan',
   '/api/notifications/send',
   '/sw.js',
   '/manifest.json',

@@ -43,11 +43,11 @@ export const EVO_DESCRIPTIONS: Record<number, string> = {
 
 export const EVO_REQUIREMENTS: Record<number, string> = {
   1: 'Estado inicial',
-  2: 'Score ≥ 30 ou Nível ≥ 2',
-  3: 'Score ≥ 50 ou Nível ≥ 4',
-  4: 'Score ≥ 70 ou Nível ≥ 6',
-  5: 'Score ≥ 90 ou Nível ≥ 9',
-  6: 'Score ≥ 95 ou Nível ≥ 12',
+  2: 'Score ≥ 35',
+  3: 'Score ≥ 55',
+  4: 'Score ≥ 72',
+  5: 'Score ≥ 85',
+  6: 'Score ≥ 95',
 }
 
 /* ── Iris colors per mood ──────────────────────────────────────────── */

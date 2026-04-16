@@ -1,19 +1,26 @@
-/**
- * One-time database setup endpoint.
- * Creates missing tables using a direct pg connection.
- *
- * Usage:
- *   curl -X POST http://localhost:3000/api/admin/setup-db \
- *     -H "x-setup-secret: XPMONEY_SETUP" \
- *     -H "Content-Type: application/json" \
- *     -d '{"dbPassword":"your-supabase-db-password"}'
- *
- * The DB password is in: Supabase Dashboard → Settings → Database → Database password
- */
-
+import { auth }                    from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-const SETUP_SECRET = 'XPMONEY_SETUP'
+/**
+ * One-time database setup endpoint (DEV ONLY).
+ *
+ * Per CLAUDE.md migrations must be applied by the user via the Supabase SQL
+ * editor — there is no DB password available at deploy time. This route is
+ * kept only for local scripting during development.
+ *
+ * Security:
+ *   - Hard-refused in production (NODE_ENV === 'production').
+ *   - Requires a logged-in Clerk session (prevents random scanners).
+ *   - The previous `x-setup-secret: XPMONEY_SETUP` header path is removed:
+ *     that secret is committed in the repo and was the sole guard, which made
+ *     this endpoint a takeover vector if exposed.
+ *
+ * Usage (local only):
+ *   curl -X POST http://localhost:3000/api/admin/setup-db \
+ *     -H "Content-Type: application/json" \
+ *     -b "__clerk_session=..." \
+ *     -d '{"dbPassword":"your-supabase-db-password"}'
+ */
 
 const MIGRATION_SQL = `
 CREATE TABLE IF NOT EXISTS public.goal_deposits (
@@ -52,35 +59,33 @@ END $$;
 `
 
 export async function POST(req: NextRequest) {
-  // Secret header check
-  const secret = req.headers.get('x-setup-secret')
-  if (secret !== SETUP_SECRET) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production.' }, { status: 403 })
   }
+
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Get DB password from body
   let dbPassword: string
   try {
     const body = await req.json()
     dbPassword = body.dbPassword
-    if (!dbPassword) throw new Error('missing')
+    if (!dbPassword || typeof dbPassword !== 'string') throw new Error('missing')
   } catch {
     return NextResponse.json({ error: 'Provide {"dbPassword":"..."}' }, { status: 400 })
   }
 
   const projectRef = 'iuhezbbfrssvlbwqnmhu'
 
-  // Try to dynamically import pg (it's a devDependency but available at runtime)
+  // Try to dynamically import pg (devDependency only available in local dev)
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Client } = require('pg')
 
     const connStrings = [
-      // Session pooler (IPv4) — works from Vercel
       `postgres://postgres.${projectRef}:${dbPassword}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`,
-      // Transaction pooler
       `postgres://postgres.${projectRef}:${dbPassword}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres`,
-      // Direct connection
       `postgres://postgres:${dbPassword}@db.${projectRef}.supabase.co:5432/postgres`,
     ]
 
@@ -98,7 +103,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           success: true,
           message: 'goal_deposits table created successfully ✓',
-          connection: connStr.replace(dbPassword, '***'),
         })
       } catch (err: unknown) {
         errors.push(String(err instanceof Error ? err.message : err).slice(0, 120))

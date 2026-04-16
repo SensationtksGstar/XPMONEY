@@ -1,12 +1,18 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, Legend,
-} from 'recharts'
+import dynamic from 'next/dynamic'
 import { TrendingUp, Info, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+// Dynamic-imported so recharts (~100 KB gz) never hits the initial bundle.
+const SimuladorChart = dynamic(
+  () => import('./SimuladorChart'),
+  {
+    ssr: false,
+    loading: () => <div className="h-[220px] bg-white/3 rounded-xl animate-pulse" />,
+  },
+)
 
 /* ─── Strategies ──────────────────────────────────────────────────────── */
 const STRATEGIES = [
@@ -43,22 +49,6 @@ function calcCompound(monthly: number, years: number, annualRate: number) {
   }
 
   return { data, final: portfolio, invested: totalInvested, gains: portfolio - totalInvested }
-}
-
-/* ─── Custom Tooltip ─────────────────────────────────────────────────── */
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-[#0f1629] border border-white/10 rounded-xl p-3 text-xs shadow-xl">
-      <p className="text-white/60 mb-2 font-medium">Ano {label}</p>
-      {payload.map((p: any) => (
-        <div key={p.name} className="flex justify-between gap-4">
-          <span style={{ color: p.color }}>{p.name === 'portfolio' ? 'Portfólio' : p.name === 'invested' ? 'Investido' : 'Ganhos'}</span>
-          <span className="text-white font-bold">{fmt(p.value)}</span>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 /* ─── Component ───────────────────────────────────────────────────────── */
@@ -184,46 +174,7 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
       {years >= 2 && (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white mb-4">Crescimento ao longo do tempo</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={result.data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="gradPortfolio" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={strat.color} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={strat.color} stopOpacity={0}   />
-                </linearGradient>
-                <linearGradient id="gradInvested" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#6b7280" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#6b7280" stopOpacity={0}   />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis
-                dataKey="year"
-                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }}
-                tickFormatter={v => `${v}a`}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
-                tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : `${v}`}
-                axisLine={false}
-                tickLine={false}
-                width={38}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Area
-                type="monotone" dataKey="invested" name="invested"
-                stroke="#6b7280" strokeWidth={1.5}
-                fill="url(#gradInvested)"
-              />
-              <Area
-                type="monotone" dataKey="portfolio" name="portfolio"
-                stroke={strat.color} strokeWidth={2}
-                fill="url(#gradPortfolio)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <SimuladorChart data={result.data} color={strat.color} />
           <div className="flex gap-4 justify-center mt-2">
             <div className="flex items-center gap-1.5 text-xs text-white/50">
               <div className="w-3 h-0.5 bg-gray-500 rounded" />

@@ -42,7 +42,9 @@ export default function BadgesPage() {
 
   // Fire badge check on mount — best-effort, no UI impact
   useEffect(() => {
-    fetch('/api/badges/check', { method: 'POST' }).catch(() => {})
+    fetch('/api/badges/check', { method: 'POST' }).catch(err => {
+      console.warn('[badges] badge-check call failed:', err)
+    })
   }, [])
 
   const earnedCodes = new Set(earned.map(b => b.badge?.code ?? ''))

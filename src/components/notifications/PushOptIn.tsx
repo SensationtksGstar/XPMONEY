@@ -27,7 +27,9 @@ export function PushOptIn() {
     setState(Notification.permission as PermState)
 
     // Register service worker
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {})
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
+      console.warn('[PushOptIn] sw register failed:', err)
+    })
   }, [])
 
   async function subscribe() {

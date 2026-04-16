@@ -37,8 +37,10 @@ export default function TransactionsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowSearch(s => !s)}
+            aria-label={showSearch ? 'Fechar pesquisa' : 'Pesquisar transações'}
+            aria-pressed={showSearch}
             className={cn(
-              'w-9 h-9 flex items-center justify-center rounded-xl border transition-all',
+              'w-11 h-11 flex items-center justify-center rounded-xl border transition-all',
               showSearch
                 ? 'bg-green-500/10 border-green-500/30 text-green-400'
                 : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
@@ -49,14 +51,15 @@ export default function TransactionsPage() {
           {/* Import statement button */}
           <button
             onClick={() => setShowImporter(true)}
-            className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 text-blue-400 px-3 py-2.5 rounded-xl transition-all text-sm font-medium active:scale-95"
+            aria-label="Importar extrato bancário"
+            className="flex items-center gap-1.5 min-h-[44px] bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 text-blue-400 px-3 py-2.5 rounded-xl transition-all text-sm font-medium active:scale-95"
           >
             <FileText className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Importar Extrato</span>
           </button>
           <button
             onClick={() => setShowForm(true)}
-            className="hidden sm:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
+            className="hidden sm:flex items-center gap-2 min-h-[44px] bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
           >
             + Nova
           </button>

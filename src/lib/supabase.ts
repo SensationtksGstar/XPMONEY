@@ -1,9 +1,15 @@
+// This module is SERVER-ONLY. It exports `createSupabaseAdmin` which reads
+// the service-role key — if this file ever gets imported into a Client
+// Component bundle, `server-only` throws at build time and the bundle fails
+// rather than silently leaking the key to the browser.
+import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Client-side: usa a anon key (segura no browser)
+// Anon-key client — kept for server-side use where we don't need
+// service-role privileges (e.g. public selects via RLS).
 export const supabase = createClient(supabaseUrl, supabaseAnon)
 
 // Server-side: usa a service role key (apenas em API routes e Server Components)

@@ -1,10 +1,12 @@
-import { auth }            from '@clerk/nextjs/server'
-import { redirect }         from 'next/navigation'
+import { Suspense }         from 'react'
+import { auth }              from '@clerk/nextjs/server'
+import { redirect }          from 'next/navigation'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { Sidebar }          from '@/components/layout/Sidebar'
 import { TopBar }           from '@/components/layout/TopBar'
 import { MobileNav }        from '@/components/layout/MobileNav'
 import { UserPlanProvider } from '@/lib/contexts/UserPlanContext'
+import { MascotEvolutionWatcher } from '@/components/voltix/MascotEvolutionWatcher'
 
 // Force dynamic — plan must always be authoritative, never cached
 export const dynamic = 'force-dynamic'
@@ -54,6 +56,12 @@ export default async function DashboardLayout({
 
         {/* Nav mobile (bottom) */}
         <MobileNav />
+
+        {/* Global: fires Digimon-style cinematic when the mascot evolves.
+            Wrapped in Suspense because it reads searchParams (dev preview). */}
+        <Suspense fallback={null}>
+          <MascotEvolutionWatcher />
+        </Suspense>
       </div>
     </UserPlanProvider>
   )

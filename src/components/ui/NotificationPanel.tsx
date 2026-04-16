@@ -33,12 +33,39 @@ function timeAgo(iso: string): string {
   return `${d}d`
 }
 
+const LAST_SEEN_KEY = 'xpmoney:notif_last_seen'
+
 export function NotificationPanel() {
   const [open, setOpen]       = useState(false)
   const [items, setItems]     = useState<XPEntry[]>([])
   const [loading, setLoading] = useState(false)
-  const [hasNew, setHasNew]   = useState(true)
+  // Start false — flip true only once we've confirmed there's unseen activity.
+  const [hasNew, setHasNew]   = useState(false)
   const panelRef              = useRef<HTMLDivElement>(null)
+
+  // ── Poll once on mount for the latest entry, so the dot is accurate ──
+  useEffect(() => {
+    const ac = new AbortController()
+    ;(async () => {
+      try {
+        const res  = await fetch('/api/xp/history?limit=1', { signal: ac.signal })
+        const json = await res.json()
+        const latest = (json.data ?? [])[0] as XPEntry | undefined
+        if (!latest) return
+        const lastSeen = typeof window !== 'undefined'
+          ? window.localStorage.getItem(LAST_SEEN_KEY)
+          : null
+        if (!lastSeen || new Date(latest.earned_at).getTime() > new Date(lastSeen).getTime()) {
+          setHasNew(true)
+        }
+      } catch (err) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          console.warn('[NotificationPanel] latest poll failed:', err)
+        }
+      }
+    })()
+    return () => ac.abort()
+  }, [])
 
   async function loadHistory() {
     if (loading || items.length > 0) return
@@ -47,13 +74,26 @@ export function NotificationPanel() {
       const res  = await fetch('/api/xp/history?limit=10')
       const json = await res.json()
       setItems(json.data ?? [])
-    } catch { /* silent */ }
+    } catch (err) {
+      console.warn('[NotificationPanel] failed to load history:', err)
+    }
     finally { setLoading(false) }
   }
 
   function handleOpen() {
-    setOpen(o => !o)
-    setHasNew(false)
+    setOpen(o => {
+      const next = !o
+      // Only clear the dot when actually opening.
+      if (next) {
+        setHasNew(false)
+        try {
+          window.localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString())
+        } catch {
+          // storage quota / private mode — dot will reappear on reload, acceptable
+        }
+      }
+      return next
+    })
     loadHistory()
   }
 
@@ -70,11 +110,14 @@ export function NotificationPanel() {
 
   return (
     <div ref={panelRef} className="relative">
-      {/* Bell button */}
+      {/* Bell button — 44×44 for touch a11y */}
       <button
         onClick={handleOpen}
+        aria-label={open ? 'Fechar notificações' : 'Abrir notificações'}
+        aria-expanded={open}
+        aria-haspopup="dialog"
         className={cn(
-          'w-9 h-9 flex items-center justify-center rounded-xl border transition-colors relative active:scale-95',
+          'w-11 h-11 flex items-center justify-center rounded-xl border transition-colors relative active:scale-95',
           open
             ? 'bg-green-500/10 border-green-500/30 text-green-400'
             : 'bg-white/5 border-white/8 text-white/50 hover:text-white',
@@ -82,16 +125,25 @@ export function NotificationPanel() {
       >
         <Bell className="w-4 h-4" />
         {hasNew && (
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-green-500 rounded-full" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full" aria-hidden />
         )}
       </button>
 
       {/* Panel */}
         {open && (
-          <div className="absolute right-0 top-11 z-50 w-72 bg-[#0f1829] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
+          <div
+            role="dialog"
+            aria-modal="false"
+            aria-label="Atividade recente"
+            className="absolute right-0 top-12 z-50 w-72 max-w-[calc(100vw-1rem)] bg-[#0f1829] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up"
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
               <span className="text-sm font-bold text-white">Atividade recente</span>
-              <button onClick={() => setOpen(false)} className="text-white/30 hover:text-white transition-colors">
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Fechar notificações"
+                className="w-8 h-8 -m-1 flex items-center justify-center text-white/30 hover:text-white transition-colors"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
