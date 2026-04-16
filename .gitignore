@@ -39,6 +39,7 @@ Thumbs.db
 
 # Mascot raw generator outputs — heavy PNGs, only commit the processed WebP
 /public/mascot/raw/
+/public/mascot/raw-clean/
 
 # IDE
 .vscode/

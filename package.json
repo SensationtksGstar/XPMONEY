@@ -14,9 +14,9 @@
     "setup": "node scripts/setup.mjs",
     "db:migrate": "node scripts/create-table.mjs",
     "set:anthropic": "node scripts/set-anthropic-key.mjs",
-    "assets:voltix":  "node scripts/process-mascot.mjs voltix",
-    "assets:penny":   "node scripts/process-mascot.mjs penny",
-    "assets:mascot":  "node scripts/process-mascot.mjs all"
+    "assets:voltix": "node scripts/process-mascot.mjs voltix",
+    "assets:penny": "node scripts/process-mascot.mjs penny",
+    "assets:mascot": "node scripts/process-mascot.mjs all"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.0.0",
@@ -53,6 +53,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@imgly/background-removal-node": "^1.4.5",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
