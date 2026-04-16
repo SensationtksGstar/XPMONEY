@@ -6,6 +6,7 @@ import { getUserProfile }    from '@/lib/userCache'
 import { ProfileEditForm }   from './ProfileEditForm'
 import { PushOptIn }         from '@/components/notifications/PushOptIn'
 import { ResetTransactionsCard } from '@/components/settings/ResetTransactionsCard'
+import { MascotPicker }      from '@/components/settings/MascotPicker'
 
 export const metadata = { title: 'Definições' }
 
@@ -30,9 +31,11 @@ export default async function SettingsPage() {
   const db = createSupabaseAdmin()
   const { data: profile } = await db
     .from('users')
-    .select('name, email, avatar_url, challenge, goal, currency')
+    .select('name, email, avatar_url, challenge, goal, currency, mascot_gender')
     .eq('clerk_id', userId)
     .single()
+
+  const mascotGender = (profile?.mascot_gender === 'penny' ? 'penny' : 'voltix') as 'voltix' | 'penny'
 
   return (
     <div className="space-y-6 animate-fade-in-up max-w-2xl">
@@ -84,6 +87,9 @@ export default async function SettingsPage() {
         </p>
         <PushOptIn />
       </div>
+
+      {/* Mascote */}
+      <MascotPicker initialGender={mascotGender} />
 
       {/* Formulário de edição de perfil */}
       <ProfileEditForm

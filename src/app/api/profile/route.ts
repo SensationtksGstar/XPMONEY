@@ -4,10 +4,11 @@ import { createSupabaseAdmin }       from '@/lib/supabase'
 import { z }                         from 'zod'
 
 const UpdateProfileSchema = z.object({
-  name:        z.string().min(1).max(100).optional(),
-  challenge:   z.string().optional(),
-  goal:        z.string().optional(),
-  currency:    z.string().length(3).optional(),
+  name:          z.string().min(1).max(100).optional(),
+  challenge:     z.string().optional(),
+  goal:          z.string().optional(),
+  currency:      z.string().length(3).optional(),
+  mascot_gender: z.enum(['voltix', 'penny']).optional(),
 })
 
 export async function GET(_req: NextRequest) {
@@ -38,10 +39,11 @@ export async function PATCH(req: NextRequest) {
   const db = createSupabaseAdmin()
 
   const updates: Record<string, string> = { updated_at: new Date().toISOString() }
-  if (parsed.data.name)      updates.name      = parsed.data.name
-  if (parsed.data.challenge) updates.challenge = parsed.data.challenge
-  if (parsed.data.goal)      updates.goal      = parsed.data.goal
-  if (parsed.data.currency)  updates.currency  = parsed.data.currency
+  if (parsed.data.name)          updates.name          = parsed.data.name
+  if (parsed.data.challenge)     updates.challenge     = parsed.data.challenge
+  if (parsed.data.goal)          updates.goal          = parsed.data.goal
+  if (parsed.data.currency)      updates.currency      = parsed.data.currency
+  if (parsed.data.mascot_gender) updates.mascot_gender = parsed.data.mascot_gender
 
   const { data, error } = await db
     .from('users')
