@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { VoltixState } from '@/types'
+import { resolveMascotGender } from '@/lib/mascotGender'
 
 async function fetchVoltix(): Promise<VoltixState | null> {
   const res = await fetch('/api/voltix')
@@ -16,8 +17,14 @@ export function useVoltix(_userId?: string) {
     refetchOnWindowFocus: false,
   })
 
+  // Merge DB value with localStorage fallback so the user's mascot choice
+  // works even before the `mascot_gender` column migration has been applied.
+  const voltix = query.data
+    ? { ...query.data, mascot_gender: resolveMascotGender(query.data.mascot_gender) }
+    : null
+
   return {
-    voltix:  query.data ?? null,
+    voltix,
     loading: query.isLoading,
   }
 }

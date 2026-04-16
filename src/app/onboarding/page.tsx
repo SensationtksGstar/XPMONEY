@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs'
 import { ArrowRight, Check, Target, TrendingUp, PlusCircle } from 'lucide-react'
 import { track } from '@/lib/posthog'
 import { MascotCreature, type MascotGender } from '@/components/voltix/MascotCreature'
+import { saveMascotGenderLocal } from '@/lib/mascotGender'
 
 type Challenge = {
   id:   string
@@ -45,6 +46,7 @@ export default function OnboardingPage() {
 
   function handleMascotSelect(g: MascotGender) {
     setMascot(g)
+    saveMascotGenderLocal(g)
     track.onboarding_step(1, { mascot: g })
     setTimeout(() => setStep(2), 350)
   }

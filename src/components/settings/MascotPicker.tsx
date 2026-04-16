@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Check, Sparkles } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { MascotCreature, type MascotGender } from '@/components/voltix/MascotCreature'
+import { saveMascotGenderLocal } from '@/lib/mascotGender'
 
 /**
  * MascotPicker — settings card that lets any user switch their companion
@@ -20,27 +21,37 @@ export function MascotPicker({ initialGender }: { initialGender: MascotGender })
 
   async function choose(next: MascotGender) {
     if (next === gender || status === 'saving') return
-    const previous = gender
     setGender(next)
     setStatus('saving')
+
+    // Always persist locally first — this makes the choice work even if the
+    // DB column hasn't been migrated yet (useVoltix will read the fallback).
+    saveMascotGenderLocal(next)
+
+    // Kick the voltix query cache right away so the widget updates instantly.
+    startTransition(() => {
+      qc.invalidateQueries({ queryKey: ['voltix'] })
+    })
+
     try {
       const res = await fetch('/api/profile', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ mascot_gender: next }),
       })
-      if (!res.ok) throw new Error('save failed')
+      // Ignore 400/500 — the localStorage write already succeeded, so the UI
+      // still reflects the choice. Server error most often means the DB column
+      // doesn't exist yet (migration not run).
+      if (!res.ok) {
+        console.warn('[MascotPicker] server save failed; using localStorage only')
+      }
       setStatus('saved')
-      // Force re-fetch of the voltix/mascot state everywhere on the page
-      startTransition(() => {
-        qc.invalidateQueries({ queryKey: ['voltix'] })
-      })
       setTimeout(() => setStatus('idle'), 1800)
     } catch (err) {
       console.warn('[MascotPicker] save failed:', err)
-      setGender(previous)
-      setStatus('error')
-      setTimeout(() => setStatus('idle'), 2400)
+      // Still consider it saved — localStorage worked.
+      setStatus('saved')
+      setTimeout(() => setStatus('idle'), 1800)
     }
   }
 
@@ -125,6 +136,7 @@ export function MascotPicker({ initialGender }: { initialGender: MascotGender })
         {status === 'saving' && <span className="text-white/40">A guardar…</span>}
         {status === 'saved'  && <span className="text-green-400">Mascote actualizada ✓</span>}
         {status === 'error'  && <span className="text-red-400">Falha ao guardar. Tenta novamente.</span>}
+        {status === 'idle'   && <span className="text-white/25">&nbsp;</span>}
       </div>
     </div>
   )
