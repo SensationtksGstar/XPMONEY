@@ -1,15 +1,20 @@
 /**
  * Client-side persistence for the user's mascot choice.
  *
- * The canonical storage is `public.users.mascot_gender` in Postgres, but that
- * column is added via migration — until it's applied, the API always returns
- * undefined and we fall back to 'voltix'. This helper lets us persist the
- * choice in localStorage as well, so the widget respects the user's selection
- * even before the DB migration runs.
+ * Canonical storage is `public.users.mascot_gender` in Postgres, but the user's
+ * most recent click in the picker lives in localStorage. We treat localStorage
+ * as the authoritative value for THIS device, because:
  *
- * Precedence when reading:
- *   1. DB value (if column exists + user has a value)    — primary
- *   2. localStorage override                             — fallback
+ *   - The PATCH /api/profile may be in-flight or may have failed silently (the
+ *     most common cause is the DB migration not having run yet).
+ *   - Even if the DB still has the old value, the user's explicit click should
+ *     take effect instantly and survive a page refresh.
+ *   - On a brand-new device / after clearing storage, the DB takes over so
+ *     cross-device sync still works once the migration is applied.
+ *
+ * Precedence when reading (order matters):
+ *   1. localStorage override    — most recent click on this device
+ *   2. DB value                 — canonical, kicks in on fresh devices
  *   3. 'voltix' default
  */
 
@@ -38,15 +43,15 @@ export function readMascotGenderLocal(): MascotGender | null {
 }
 
 /**
- * Merge DB-provided gender with localStorage fallback. DB always wins if
- * present and valid; otherwise we use the local override; otherwise default
- * to 'voltix'.
+ * Merge localStorage override with DB-provided gender. See precedence in the
+ * file header. LocalStorage wins if present, otherwise DB value, otherwise
+ * default to 'voltix'.
  */
 export function resolveMascotGender(
   dbValue: MascotGender | null | undefined,
 ): MascotGender {
-  if (dbValue === 'penny' || dbValue === 'voltix') return dbValue
   const local = readMascotGenderLocal()
   if (local) return local
+  if (dbValue === 'penny' || dbValue === 'voltix') return dbValue
   return 'voltix'
 }

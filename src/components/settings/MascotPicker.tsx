@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { Check, Sparkles } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { MascotCreature, type MascotGender } from '@/components/voltix/MascotCreature'
-import { saveMascotGenderLocal } from '@/lib/mascotGender'
+import { readMascotGenderLocal, saveMascotGenderLocal } from '@/lib/mascotGender'
 
 /**
  * MascotPicker — settings card that lets any user switch their companion
@@ -12,12 +12,25 @@ import { saveMascotGenderLocal } from '@/lib/mascotGender'
  *
  * Writes to PATCH /api/profile { mascot_gender } and then invalidates the
  * ['voltix'] query so the widget / page re-fetch the new gender.
+ *
+ * `initialGender` is what the server page read from the DB on render. Once
+ * mounted, we override that with the localStorage value if present — the user's
+ * last click on this device is more authoritative than whatever the DB
+ * happened to have cached (see src/lib/mascotGender.ts).
  */
 export function MascotPicker({ initialGender }: { initialGender: MascotGender }) {
   const [gender, setGender] = useState<MascotGender>(initialGender)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [, startTransition] = useTransition()
   const qc = useQueryClient()
+
+  // Hydrate from localStorage after mount (SSR-safe — window not available
+  // during the server render that sets initialGender).
+  useEffect(() => {
+    const local = readMascotGenderLocal()
+    if (local && local !== initialGender) setGender(local)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function choose(next: MascotGender) {
     if (next === gender || status === 'saving') return

@@ -39,9 +39,15 @@ export async function GET() {
     }
   }
 
-  // Attach mascot_gender from users table — default to voltix for back-compat
-  const mascot_gender: 'voltix' | 'penny' =
-    userRes.data?.mascot_gender === 'penny' ? 'penny' : 'voltix'
+  // Attach mascot_gender from users table — send `null` when the column is
+  // missing or the user hasn't set a value. This lets the client fall back to
+  // its localStorage override via resolveMascotGender(). If we forced a default
+  // here (e.g. 'voltix'), the client would see a concrete value and ignore the
+  // user's picker choice whenever the DB migration hadn't run or the PATCH
+  // had failed silently.
+  const raw = userRes.data?.mascot_gender
+  const mascot_gender: 'voltix' | 'penny' | null =
+    raw === 'voltix' || raw === 'penny' ? raw : null
 
   return NextResponse.json({
     data: { ...voltix, mascot_gender },

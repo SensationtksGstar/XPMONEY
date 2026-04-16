@@ -256,8 +256,12 @@ export interface VoltixState {
   last_interaction: string
   streak_days: number
   customizations: VoltixCustomizations
-  /** Which mascot the user picked during onboarding. Defaults to 'voltix'. */
-  mascot_gender?: MascotGender
+  /**
+   * Which mascot the user picked during onboarding. May be `null` when the
+   * users.mascot_gender column hasn't been migrated or the user hasn't set
+   * a value — in that case the client falls back to localStorage.
+   */
+  mascot_gender?: MascotGender | null
 }
 
 export interface VoltixCustomizations {
