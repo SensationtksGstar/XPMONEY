@@ -5,11 +5,12 @@ import { Check } from 'lucide-react'
  * LandingPricing — 3 tiers with honest feature claims.
  *
  * Cleanup vs previous version:
- *   - Removed "API access" from Pro (we don't expose an API).
- *   - Removed "Voltix evoluído" language — every plan has the full mascot
- *     since we gate evolutions by score, not by plan.
- *   - Added actual Pro/Family differentiators that match the code
- *     (simulator investimento, relatório PDF, modo família).
+ *   - Removed "API access" (we don't expose one).
+ *   - Removed "Voltix evoluído" (evos are score-based, not plan-based).
+ *   - Removed "Modo família / multi-conta" (no sharing logic exists yet).
+ *   - Removed "Voltix E Penny simultâneo" (user picks one; switching is free).
+ *   - Removed "Certificado NFT" (waitlist-only per CLAUDE.md).
+ *   - Moved "Relatório PDF" from Plus to Pro (real gate is rank≥2).
  *
  * Keep prices hard-coded here + in settings/billing/BillingClient.tsx. This
  * is the "marketing copy" source, that one is the "checkout source". If
@@ -26,13 +27,13 @@ const PLANS = [
     ctaVariant: 'ghost' as const,
     features: [
       'Registo de transações ilimitado',
-      'Score financeiro + histórico básico',
-      'Voltix OU Penny (evolução completa)',
-      'XP, níveis e 3 missões/semana',
+      'Score financeiro + histórico',
+      'Mascote à escolha — Voltix ou Penny (6 evoluções)',
+      'XP, níveis e missões do plano grátis',
       '1 objetivo de poupança',
-      'Acesso à Academia (1 curso)',
+      'Acesso inicial à Academia',
     ],
-    note: 'Tem anúncios discretos.',
+    note: 'Tem anúncios discretos e não-intrusivos.',
   },
   {
     tier:    'PLUS',
@@ -45,12 +46,11 @@ const PLANS = [
     badge:   'MAIS POPULAR',
     features: [
       'Tudo do Grátis, sem anúncios',
-      'Missões ilimitadas + badges exclusivos',
+      'Missões premium + badges exclusivos',
       'Categorias e objetivos ilimitados',
-      'Scan de recibos com IA',
+      'Scan de recibos com IA (Gemini Vision)',
       'Import de extratos (PDF / CSV)',
-      'Academia completa (todos os cursos)',
-      'Relatório mensal em PDF',
+      'Cursos Plus da Academia',
     ],
   },
   {
@@ -64,10 +64,10 @@ const PLANS = [
     features: [
       'Tudo do Plus',
       'Simulador de investimento (DCA)',
-      'Modo família (partilha até 4 pessoas)',
-      'Voltix E Penny em simultâneo',
-      'Certificado NFT dos cursos',
-      'Suporte prioritário em < 4h',
+      'Perspetiva de Riqueza (projeção patrimonial)',
+      'Relatório financeiro em PDF',
+      'Academia completa — todos os cursos Pro',
+      'Suporte prioritário',
       'Acesso antecipado a novas features',
     ],
   },
