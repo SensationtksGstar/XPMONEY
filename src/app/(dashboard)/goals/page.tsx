@@ -317,8 +317,9 @@ export default function GoalsPage() {
     e.preventDefault()
     if (!name || !targetAmount) return
     try {
-      await createGoal({ name, icon, target_amount: parseFloat(targetAmount), deadline: deadline || null })
-      toast('Poupança criada! 🎯', 'success')
+      const res = await createGoal({ name, icon, target_amount: parseFloat(targetAmount), deadline: deadline || null })
+      const xp  = res?.xp_gained ?? 0
+      toast(xp > 0 ? `Poupança criada! +${xp} XP 🎯` : 'Poupança criada! 🎯', 'success')
       setShowForm(false)
       resetCreateForm()
     } catch {

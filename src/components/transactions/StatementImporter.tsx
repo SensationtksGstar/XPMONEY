@@ -18,8 +18,10 @@ interface Props { onClose: () => void }
 type Step = 'upload' | 'parsing' | 'preview' | 'saving' | 'done' | 'error'
 
 const ACCEPTED = '.csv,.txt,.tsv,.pdf,application/pdf,text/csv,text/plain'
-const MAX_TEXT_BYTES = 1_000_000 // 1 MB for text
-const MAX_PDF_BYTES  = 8_000_000 // 8 MB for PDF
+const MAX_TEXT_BYTES = 200_000   // 200 KB for text (matches server)
+// Vercel's Serverless Function request body cap is 4.5 MB. Base64 inflates raw
+// bytes by ~33% and JSON wrap adds more — 3 MB raw is the safe ceiling.
+const MAX_PDF_BYTES  = 3_000_000 // 3 MB for PDF
 
 const BANKS = [
   { id: 'cgd',         label: 'Caixa Geral de Depósitos' },
@@ -88,37 +90,69 @@ export function StatementImporter({ onClose }: Props) {
     if (file.size > maxBytes) {
       setErrorMsg(
         isPdf
-          ? 'PDF demasiado grande. Máximo 8 MB.'
-          : 'Ficheiro demasiado grande. Máximo 1 MB.'
+          ? 'PDF demasiado grande. Máximo 3 MB. Experimenta exportar só as páginas com movimentos.'
+          : 'Ficheiro demasiado grande. Máximo 200 KB.'
       )
+      setStep('error')
+      return
+    }
+    if (file.size < 50) {
+      setErrorMsg('Ficheiro vazio ou demasiado pequeno.')
       setStep('error')
       return
     }
 
     setStep('parsing')
 
-    try {
-      const body = isPdf
-        ? { pdfBase64: await fileToBase64(file),       filename: file.name }
-        : { content:   await file.text(),              filename: file.name }
+    // 60s timeout — PDFs can take a while on Gemini
+    const abort = new AbortController()
+    const timer = setTimeout(() => abort.abort(), 60_000)
 
-      const res  = await fetch('/api/import-statement', {
+    try {
+      let body: { pdfBase64: string; filename: string } | { content: string; filename: string }
+      try {
+        body = isPdf
+          ? { pdfBase64: await fileToBase64(file), filename: file.name }
+          : { content:   await file.text(),        filename: file.name }
+      } catch {
+        throw new Error('Não foi possível ler o ficheiro. Verifica se não está corrompido.')
+      }
+
+      const res = await fetch('/api/import-statement', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),
+        signal:  abort.signal,
       })
-      const json = await res.json()
+
+      // Handle non-JSON responses (e.g. Vercel's HTML 413/504 pages). Calling
+      // res.json() on those on Safari/WebKit throws the cryptic DOMException
+      // "The string did not match the expected pattern". Read as text first.
+      const raw  = await res.text()
+      let json: { error?: string; code?: string; data?: ImportStatementResult } = {}
+      try {
+        json = raw ? JSON.parse(raw) : {}
+      } catch {
+        // Non-JSON body — most likely Vercel's edge error page
+        if (res.status === 413) {
+          throw new Error('Ficheiro demasiado grande para o servidor. Reduz para menos de 3 MB.')
+        }
+        if (res.status === 504 || res.status === 502 || res.status === 408) {
+          throw new Error('O servidor demorou demasiado a responder. Tenta um ficheiro mais pequeno.')
+        }
+        throw new Error(`Erro inesperado do servidor (${res.status}). Tenta novamente em alguns minutos.`)
+      }
 
       if (res.status === 403 && json.code === 'plan_required') {
         setErrorMsg(json.error ?? 'Plano insuficiente.')
         setStep('error')
         return
       }
-      if (!res.ok || json.error) throw new Error(json.error ?? 'Erro desconhecido')
+      if (!res.ok || json.error) throw new Error(json.error ?? `Erro ${res.status}`)
 
-      const data = json.data as ImportStatementResult
-      if (!data.transactions || data.transactions.length === 0) {
-        setErrorMsg('Nenhum movimento detectado neste ficheiro.')
+      const data = json.data as ImportStatementResult | undefined
+      if (!data?.transactions?.length) {
+        setErrorMsg('Nenhum movimento detectado neste ficheiro. Verifica se é um extrato bancário com transações visíveis.')
         setStep('error')
         return
       }
@@ -127,8 +161,14 @@ export function StatementImporter({ onClose }: Props) {
       setRows(data.transactions)
       setStep('preview')
     } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : 'Erro ao analisar ficheiro.')
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        setErrorMsg('A análise foi cancelada por demorar mais de 60 segundos. Tenta um PDF mais pequeno.')
+      } else {
+        setErrorMsg(e instanceof Error ? e.message : 'Erro ao analisar ficheiro.')
+      }
       setStep('error')
+    } finally {
+      clearTimeout(timer)
     }
   }, [])
 
@@ -339,7 +379,7 @@ export function StatementImporter({ onClose }: Props) {
                 <p className="text-white font-medium text-sm">
                   {dragOver ? 'Larga aqui' : 'Arrasta o ficheiro ou clica para seleccionar'}
                 </p>
-                <p className="text-white/35 text-xs mt-1">CSV · TXT · PDF — texto até 1 MB · PDF até 8 MB</p>
+                <p className="text-white/35 text-xs mt-1">CSV · TXT · PDF — texto até 200 KB · PDF até 3 MB</p>
               </div>
               <input ref={fileRef} type="file" accept={ACCEPTED}
                 className="hidden"
@@ -570,12 +610,12 @@ export function StatementImporter({ onClose }: Props) {
                 Tentar de novo
               </button>
             </div>
-            {(errorMsg.includes('GEMINI') || errorMsg.includes('GOOGLE')) && (
+            {errorMsg.toLowerCase().includes('manutenção') && (
               <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-left">
                 <TriangleAlert className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                <p className="text-amber-300/80 text-xs">
-                  A chave <code>GOOGLE_GEMINI_API_KEY</code> não está configurada em <code>.env.local</code>.
-                  Obtém uma grátis em <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">aistudio.google.com</a>.
+                <p className="text-amber-300/80 text-xs leading-relaxed">
+                  Enquanto a IA está a recarregar, podes adicionar as transações manualmente
+                  em poucos segundos — ainda assim ganhas XP.
                 </p>
               </div>
             )}

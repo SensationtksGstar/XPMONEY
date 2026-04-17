@@ -17,13 +17,22 @@ export interface ImportStatementResult extends Omit<StatementParseResult, 'trans
   transactions: ParsedTransaction[]
 }
 
+// PDFs can take 30-45s on Gemini for multi-page documents.
+export const runtime     = 'nodejs'
+export const maxDuration = 60
+
 // ── Plan gating: Plus or higher can import statements ───────────────────────
 const PLAN_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, family: 3 }
 
 // Text (CSV/TSV/TXT) limits — small, parsed instantly
 const MAX_TEXT_BYTES = 200_000
-// PDF limits — Gemini accepts up to 20 MB but we clamp for cost/latency
-const MAX_PDF_BYTES  = 8_000_000
+// PDF limits — Vercel Serverless Functions cap the request body at 4.5 MB.
+// Base64 inflates the raw bytes by ~33%, plus JSON wrap overhead. A 3 MB PDF
+// becomes ~4 MB base64 → ~4.1 MB JSON, safely under the Vercel edge cap.
+// Raising this past 3 MB causes Vercel to return a 413 HTML page, which
+// Safari's res.json() then rejects with "The string did not match the
+// expected pattern" — cryptic and unhelpful for the user.
+const MAX_PDF_BYTES  = 3_000_000
 
 // ── Demo mock ────────────────────────────────────────────────────────────────
 const DEMO_RESULT: ImportStatementResult = {
@@ -91,22 +100,40 @@ export async function POST(req: NextRequest) {
 
   // PDF path — `pdfBase64` wins if both are supplied
   if (body.pdfBase64) {
-    // Strip data-url prefix if present, then validate base64 size
-    const cleaned = body.pdfBase64.includes(',')
+    // Strip data-url prefix + any whitespace/newlines that some clients inject
+    // (FileReader in older Safari adds CRLF every 76 chars).
+    const afterComma = body.pdfBase64.includes(',')
       ? body.pdfBase64.split(',').pop() ?? ''
       : body.pdfBase64
+    const cleaned = afterComma.replace(/\s+/g, '')
+
+    // Validate base64 charset — Gemini rejects invalid base64 with a cryptic
+    // 400, better to catch it here with a clear message.
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleaned)) {
+      return NextResponse.json(
+        { error: 'PDF corrompido ou mal codificado. Tenta exportar o extrato de novo.' },
+        { status: 400 },
+      )
+    }
 
     // base64 is ~4/3 the size of the decoded binary
     const approxBytes = Math.floor(cleaned.length * 0.75)
     if (approxBytes > MAX_PDF_BYTES) {
       return NextResponse.json(
-        { error: 'PDF demasiado grande (máx 8 MB).' },
+        { error: 'PDF demasiado grande. Máximo 3 MB. Experimenta exportar só as páginas com movimentos.' },
         { status: 413 },
       )
     }
     if (approxBytes < 500) {
       return NextResponse.json(
         { error: 'PDF vazio ou inválido.' },
+        { status: 400 },
+      )
+    }
+    // Quick magic-bytes check: base64 of "%PDF" starts with "JVBERi".
+    if (!cleaned.startsWith('JVBERi')) {
+      return NextResponse.json(
+        { error: 'Ficheiro não parece ser um PDF válido.' },
         { status: 400 },
       )
     }
@@ -158,10 +185,22 @@ async function runParse(
     )
   } catch (err) {
     if (err instanceof AIProvidersError) {
-      console.error('[import-statement] all providers failed:', err.attempts)
+      // Loud internal log so missing env vars are obvious in Vercel logs
+      console.error('[import-statement] all providers failed:', {
+        kind:     err.kind,
+        attempts: err.attempts,
+        hint:     err.kind === 'auth'
+          ? 'Set GOOGLE_GEMINI_API_KEY (or GROQ_API_KEY) in Vercel env vars.'
+          : undefined,
+      })
       if (err.kind === 'auth') {
         return NextResponse.json(
-          { error: 'Serviço de IA não configurado. Contacta o suporte.', code: 'ai_auth' },
+          {
+            // User-facing: don't expose "not configured" — sounds broken. Treat
+            // as temporary, suggest a workaround so they aren't blocked.
+            error: 'Análise de extratos em manutenção. Volta dentro de momentos ou adiciona as transações manualmente.',
+            code:  'ai_auth',
+          },
           { status: 503 },
         )
       }
@@ -184,7 +223,31 @@ async function runParse(
     }
 
     const msg = err instanceof Error ? err.message : 'unknown'
-    console.error('[import-statement]', msg)
+    console.error('[import-statement] unexpected failure:', msg, err)
+
+    // Surface specific, actionable messages for the most common failures
+    // instead of the opaque generic one. The cryptic "string did not match
+    // the expected pattern" the user was seeing came from Vercel returning an
+    // HTML 413 page that the client then tried to res.json().
+    const lower = msg.toLowerCase()
+    if (lower.includes('encrypted') || lower.includes('password')) {
+      return NextResponse.json(
+        { error: 'PDF protegido por palavra-passe. Remove a proteção antes de carregar.' },
+        { status: 422 },
+      )
+    }
+    if (lower.includes('safety') || lower.includes('blocked')) {
+      return NextResponse.json(
+        { error: 'A IA bloqueou o conteúdo por política de segurança. Verifica se o PDF é mesmo um extrato bancário.' },
+        { status: 422 },
+      )
+    }
+    if (lower.includes('timeout') || lower.includes('deadline')) {
+      return NextResponse.json(
+        { error: 'A análise demorou demasiado. Tenta um PDF mais pequeno ou com menos páginas.' },
+        { status: 504 },
+      )
+    }
     return NextResponse.json(
       { error: 'Não foi possível processar o extrato. Verifica o formato do ficheiro ou tenta novamente.' },
       { status: 500 },

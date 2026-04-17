@@ -147,6 +147,7 @@ export const XP_REWARDS = {
   STREAK_30_DAYS:        1000,
   MISSION_COMPLETED:      150,  // base, varia por missão
   SCORE_IMPROVED:         100,
+  GOAL_CREATED:            75,  // recompensa por definir uma meta — primeiro passo importante
   GOAL_REACHED:          1000,
   BUDGET_KEPT:            200,
   FIRST_TRANSACTION:       50,

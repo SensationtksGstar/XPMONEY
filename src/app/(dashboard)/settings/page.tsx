@@ -1,4 +1,4 @@
-import { auth }             from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { Crown, Zap, Check } from 'lucide-react'
 import Link                  from 'next/link'
 import { createSupabaseAdmin } from '@/lib/supabase'
@@ -27,13 +27,27 @@ export default async function SettingsPage() {
   const planInfo = PLAN_LABELS[plan] ?? PLAN_LABELS.free
   const isPaid   = plan !== 'free'
 
-  // Profile details (name, email, etc.) — fetch separately since they change more often
+  // Profile details (name, email, etc.) — fetch separately since they change more often.
+  // `challenge` and `goal` live in Clerk publicMetadata (see /api/profile for the why).
   const db = createSupabaseAdmin()
   const { data: profile } = await db
     .from('users')
-    .select('name, email, avatar_url, challenge, goal, currency, mascot_gender')
+    .select('name, email, avatar_url, currency, mascot_gender')
     .eq('clerk_id', userId)
-    .single()
+    .maybeSingle()
+
+  // Challenge/goal from Clerk metadata (no DDL required)
+  let challenge = ''
+  let goal      = ''
+  try {
+    const clerk = await clerkClient()
+    const cu    = await clerk.users.getUser(userId)
+    const meta  = (cu.publicMetadata ?? {}) as { challenge?: string; goal?: string }
+    challenge   = meta.challenge ?? ''
+    goal        = meta.goal      ?? ''
+  } catch (err) {
+    console.warn('[settings] failed to read Clerk metadata:', err)
+  }
 
   const mascotGender = (profile?.mascot_gender === 'penny' ? 'penny' : 'voltix') as 'voltix' | 'penny'
 
@@ -94,8 +108,8 @@ export default async function SettingsPage() {
       {/* Formulário de edição de perfil */}
       <ProfileEditForm
         initialName={profile?.name ?? ''}
-        initialChallenge={profile?.challenge ?? ''}
-        initialGoal={profile?.goal ?? ''}
+        initialChallenge={challenge}
+        initialGoal={goal}
         initialCurrency={profile?.currency ?? 'EUR'}
         email={profile?.email ?? ''}
         avatarUrl={profile?.avatar_url ?? null}

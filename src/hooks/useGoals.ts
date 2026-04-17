@@ -10,15 +10,25 @@ async function fetchGoals(): Promise<Goal[]> {
   return data ?? []
 }
 
-async function createGoal(input: Partial<Goal>): Promise<Goal> {
+interface CreateGoalResult {
+  goal:       Goal
+  xp_gained:  number
+  leveled_up: boolean
+}
+
+async function createGoal(input: Partial<Goal>): Promise<CreateGoalResult> {
   const res = await fetch('/api/goals', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(input),
   })
   if (!res.ok) throw new Error('Erro ao criar objetivo')
-  const { data } = await res.json()
-  return data
+  const json = await res.json()
+  return {
+    goal:       json.data,
+    xp_gained:  json.xp_gained ?? 0,
+    leveled_up: json.leveled_up ?? false,
+  }
 }
 
 async function updateGoal({ id, ...patch }: Partial<Goal> & { id: string }): Promise<Goal> {
@@ -49,7 +59,11 @@ export function useGoals(_userId?: string) {
 
   const createMutation = useMutation({
     mutationFn: createGoal,
-    onSuccess:  () => client.invalidateQueries({ queryKey: ['goals'] }),
+    onSuccess:  () => {
+      client.invalidateQueries({ queryKey: ['goals']     })
+      client.invalidateQueries({ queryKey: ['xp']        })
+      client.invalidateQueries({ queryKey: ['missions']  })
+    },
   })
 
   const updateMutation = useMutation({

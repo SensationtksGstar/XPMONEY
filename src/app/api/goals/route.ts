@@ -2,6 +2,8 @@ import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
+import { awardXP }                   from '@/lib/awardXP'
+import { XP_REWARDS }                from '@/types'
 import { z }                         from 'zod'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
 import { DEMO_GOALS }                from '@/lib/demo/mockData'
@@ -50,5 +52,23 @@ export async function POST(req: NextRequest) {
     .from('goals').insert({ ...parsed.data, user_id: internalId }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ data, error: null }, { status: 201 })
+
+  // Reward creating a goal — defining a target is the first step of the savings loop.
+  // Best-effort: XP failure never blocks the goal creation itself.
+  let xpGained  = 0
+  let leveledUp = false
+  try {
+    const r = await awardXP(db, internalId, XP_REWARDS.GOAL_CREATED, 'goal_created')
+    if (r) {
+      xpGained  = r.xp_gained
+      leveledUp = r.leveled_up
+    }
+  } catch (err) {
+    console.warn('[goals] XP award failed (non-fatal):', err)
+  }
+
+  return NextResponse.json(
+    { data, xp_gained: xpGained, leveled_up: leveledUp, error: null },
+    { status: 201 },
+  )
 }

@@ -157,10 +157,16 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Update Clerk publicMetadata so the middleware session claim reflects onboarding completion
-  const clerk = await clerkClient()
+  // Update Clerk publicMetadata — onboarding flag + goal/challenge (no DDL needed)
+  const clerk       = await clerkClient()
+  const clerkUser   = await clerk.users.getUser(userId)
   await clerk.users.updateUserMetadata(userId, {
-    publicMetadata: { onboarding_completed: true },
+    publicMetadata: {
+      ...clerkUser.publicMetadata,
+      onboarding_completed: true,
+      challenge:            parsed.data.challenge,
+      goal:                 parsed.data.goal,
+    },
   })
 
   return NextResponse.json({ success: true, error: null })
