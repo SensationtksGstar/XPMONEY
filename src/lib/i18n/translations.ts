@@ -1,5 +1,5 @@
 /**
- * XP Money — i18n translation tables.
+ * XP-Money — i18n translation tables.
  *
  * The PT file is the source of truth (app was built PT-PT first). Every key
  * MUST exist in `pt`. `en` is additive — if a key is missing there, `useT()`

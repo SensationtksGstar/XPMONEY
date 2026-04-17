@@ -17,9 +17,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://xp-money.com'),
+  alternates: { canonical: '/' },
   title: {
-    default:  'XP Money — Controla as tuas finanças como um RPG',
-    template: '%s | XP Money',
+    default:  'XP-Money — Controla as tuas finanças como um RPG',
+    template: '%s | XP-Money',
   },
   description:
     'A app de finanças pessoais gamificada que te recompensa por controlares o teu dinheiro. Score de saúde financeira, missões, XP e o Voltix ao teu lado.',
@@ -27,19 +29,19 @@ export const metadata: Metadata = {
     'finanças pessoais', 'controlo de gastos', 'gamificação',
     'orçamento pessoal', 'poupança', 'gestão financeira', 'app finanças',
   ],
-  authors:  [{ name: 'XP Money' }],
+  authors:  [{ name: 'XP-Money' }],
   manifest: '/manifest.json',
   appleWebApp: {
     capable:        true,
     statusBarStyle: 'black-translucent',
-    title:          'XP Money',
+    title:          'XP-Money',
   },
   formatDetection: { telephone: false },
   openGraph: {
     type:        'website',
     locale:      'pt_PT',
-    siteName:    'XP Money',
-    title:       'XP Money — Controla as tuas finanças como um RPG',
+    siteName:    'XP-Money',
+    title:       'XP-Money — Controla as tuas finanças como um RPG',
     description: 'A única app que te recompensa por controlares o teu dinheiro.',
   },
   robots: { index: true, follow: true },

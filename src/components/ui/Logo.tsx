@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 interface Props {
   /** Size in pixels. Defaults to 28. */
   size?:      number
-  /** Show the "XP Money" wordmark next to the icon. */
+  /** Show the "XP-Money" wordmark next to the icon. */
   showText?:  boolean
   /** Extra classes on the wordmark text. */
   textClass?: string
@@ -12,7 +12,7 @@ interface Props {
 }
 
 /**
- * XP Money logo — v3 "Digivice" edition.
+ * XP-Money logo — v3 "Digivice" edition.
  *
  * An emerald handheld-device silhouette (Digimon Digivice-inspired): chassis
  * with side buttons, a dark inner screen showing the signature lightning
@@ -31,7 +31,7 @@ export function Logo({ size = 28, showText = false, textClass, className }: Prop
         viewBox="0 0 64 64"
         xmlns="http://www.w3.org/2000/svg"
         role="img"
-        aria-label="XP Money"
+        aria-label="XP-Money"
         className="flex-shrink-0 drop-shadow-[0_2px_8px_rgba(16,185,129,0.3)]"
       >
         <defs>
@@ -79,7 +79,7 @@ export function Logo({ size = 28, showText = false, textClass, className }: Prop
 
       {showText && (
         <span className={cn('font-bold text-white tracking-tight', textClass)}>
-          XP Money
+          XP-Money
         </span>
       )}
     </span>

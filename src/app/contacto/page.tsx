@@ -4,7 +4,7 @@ import { ContactForm } from './ContactForm'
 import { LandingFooter } from '@/components/landing/LandingFooter'
 
 export const metadata = {
-  title:       'Contacto · XP Money',
+  title:       'Contacto · XP-Money',
   description: 'Envia-nos uma mensagem. Respondemos em menos de 24 horas.',
 }
 
@@ -22,7 +22,7 @@ export default function ContactoPage() {
       <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#060b14]/85 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2">
           <Logo size={28} />
-          <span className="font-bold text-white tracking-tight">XP Money</span>
+          <span className="font-bold text-white tracking-tight">XP-Money</span>
         </Link>
         <Link href="/" className="text-sm text-white/60 hover:text-white transition-colors">
           ← Voltar

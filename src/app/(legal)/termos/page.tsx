@@ -1,6 +1,6 @@
 export const metadata = {
-  title:       'Termos de Serviço · XP Money',
-  description: 'As regras de utilização do XP Money.',
+  title:       'Termos de Serviço · XP-Money',
+  description: 'As regras de utilização do XP-Money.',
 }
 
 /**
@@ -25,9 +25,9 @@ export default function TermosPage() {
 
       <h2>1. Objeto e aceitação</h2>
       <p>
-        Estes Termos regulam a utilização da aplicação <strong>XP Money</strong>{' '}
+        Estes Termos regulam a utilização da aplicação <strong>XP-Money</strong>{' '}
         (&quot;Serviço&quot;) — uma plataforma de finanças pessoais gamificadas acessível
-        em <code>xp-money.vercel.app</code> e como PWA instalável.
+        em <code>xp-money.com</code> e como PWA instalável.
       </p>
       <p>
         Ao criar uma conta ou utilizar o Serviço, declaras ter <strong>16 anos ou mais</strong>{' '}
@@ -43,7 +43,7 @@ export default function TermosPage() {
       </ul>
 
       <h2>3. Utilização aceitável</h2>
-      <p>Ao usar o XP Money, comprometes-te a NÃO:</p>
+      <p>Ao usar o XP-Money, comprometes-te a NÃO:</p>
       <ul>
         <li>Introduzir dados de terceiros sem consentimento.</li>
         <li>Tentar contornar limites de plano, manipular XP, criar múltiplas contas para abusar de ofertas.</li>

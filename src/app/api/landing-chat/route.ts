@@ -7,7 +7,7 @@ import { z }                         from 'zod'
  *
  * Endpoint público para o agente de IA da landing. Recebe o histórico de
  * conversa (últimas N mensagens) e responde com base num system prompt
- * afinado sobre o XP Money.
+ * afinado sobre o XP-Money.
  *
  * Desenho:
  *   - Provider Gemini 2.5 Flash (free tier gera respostas rápidas suficientes)
@@ -36,7 +36,7 @@ const Schema = z.object({
   messages: z.array(MessageSchema).min(1).max(MAX_HISTORY),
 })
 
-const SYSTEM_PROMPT = `És o assistente virtual da XP Money — uma app portuguesa de finanças pessoais gamificadas. Respondes em PT-PT, em tom descontraído mas profissional.
+const SYSTEM_PROMPT = `És o assistente virtual da XP-Money — uma app portuguesa de finanças pessoais gamificadas. Respondes em PT-PT, em tom descontraído mas profissional.
 
 ## O QUE É A XP MONEY
 App web/PWA que transforma gerir finanças num jogo de RPG:

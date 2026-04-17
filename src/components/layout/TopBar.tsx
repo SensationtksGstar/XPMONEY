@@ -24,7 +24,7 @@ export function TopBar() {
   const pathname = usePathname()
   const title    = Object.entries(PAGE_TITLES).find(([path]) =>
     pathname.startsWith(path)
-  )?.[1] ?? 'XP Money'
+  )?.[1] ?? 'XP-Money'
 
   const isDashboard = pathname === '/dashboard'
 
@@ -39,7 +39,7 @@ export function TopBar() {
         {isDashboard ? (
           <Link href="/dashboard" className="flex items-center gap-2">
             <Logo size={28} />
-            <span className="font-bold text-white text-lg tracking-tight">XP Money</span>
+            <span className="font-bold text-white text-lg tracking-tight">XP-Money</span>
           </Link>
         ) : (
           <h1 className="font-bold text-white text-lg">{title}</h1>

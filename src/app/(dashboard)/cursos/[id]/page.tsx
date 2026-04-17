@@ -104,7 +104,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-[#f5d97a]/15 via-[#f5d97a]/25 to-[#f5d97a]/15 border border-[#f5d97a]/30 mb-5">
                 <Shield className="w-3 h-3 text-[#f5d97a]" />
                 <span className="text-[10px] font-bold text-[#f5d97a] uppercase tracking-[0.3em]">
-                  XP Money · Academia
+                  XP-Money · Academia
                 </span>
                 <Shield className="w-3 h-3 text-[#f5d97a]" />
               </div>
@@ -160,7 +160,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
               <div className="grid grid-cols-3 gap-3 items-end max-w-md mx-auto mb-6">
                 {/* Left — academy signature */}
                 <div className="text-center">
-                  <div className="font-serif italic text-[#f5d97a] text-sm mb-1">~ XP Money ~</div>
+                  <div className="font-serif italic text-[#f5d97a] text-sm mb-1">~ XP-Money ~</div>
                   <div className="h-px bg-white/20 mb-1" />
                   <p className="text-[9px] text-white/40 uppercase tracking-wider">Academia</p>
                 </div>
@@ -806,7 +806,7 @@ export default function CourseDetailPage() {
                     { icon: '🔐', title: 'Prova de conhecimento verificável', desc: 'Registo público e imutável na blockchain Polygon — para sempre.' },
                     { icon: '💎', title: 'Só 500 unidades · Nunca mais', desc: 'Após esgotar, este NFT nunca voltará a ser emitido.' },
                     { icon: '🌍', title: 'Partilha Web3', desc: 'Mostra no OpenSea, perfil Discord, LinkedIn ou CV.' },
-                    { icon: '🏆', title: 'Badge Founding Collector', desc: 'Top 100 recebe badge exclusivo no perfil XP Money.' },
+                    { icon: '🏆', title: 'Badge Founding Collector', desc: 'Top 100 recebe badge exclusivo no perfil XP-Money.' },
                   ].map(f => (
                     <div key={f.title} className="flex items-start gap-3 text-sm">
                       <span className="text-lg flex-shrink-0">{f.icon}</span>

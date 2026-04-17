@@ -1,5 +1,5 @@
 /**
- * AI provider abstraction for XP Money.
+ * AI provider abstraction for XP-Money.
  *
  * Features:
  *  - SHA-256 hash-based cache for receipt scans (Supabase `ai_receipt_cache`)

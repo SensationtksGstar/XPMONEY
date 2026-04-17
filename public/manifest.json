@@ -1,6 +1,6 @@
 {
-  "name": "XP Money",
-  "short_name": "XP Money",
+  "name": "XP-Money",
+  "short_name": "XP-Money",
   "description": "Controla as tuas finanças como um RPG",
   "start_url": "/dashboard",
   "display": "standalone",

@@ -333,7 +333,7 @@ export default function OnboardingPage() {
                   <div>
                     <p className="text-sm font-medium text-yellow-400">+100 XP de bónus</p>
                     <p className="text-xs text-white/60 mt-0.5">
-                      Por completares o onboarding — bem-vindo ao XP Money!
+                      Por completares o onboarding — bem-vindo ao XP-Money!
                     </p>
                   </div>
                 </div>
@@ -348,7 +348,7 @@ export default function OnboardingPage() {
                   <span className="animate-spin text-xl">⚡</span>
                 ) : (
                   <>
-                    Entrar no XP Money
+                    Entrar no XP-Money
                     <ArrowRight className="w-5 h-5" />
                   </>
                 )}

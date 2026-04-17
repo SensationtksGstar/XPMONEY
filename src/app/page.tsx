@@ -13,7 +13,7 @@ import { LandingPricing }         from '@/components/landing/LandingPricing'
 import { LandingFooter }          from '@/components/landing/LandingFooter'
 
 /**
- * Landing page — the face of XP Money.
+ * Landing page — the face of XP-Money.
  *
  * Page flow (ordered to walk the reader from "what is this?" → "I want it"):
  *
@@ -41,7 +41,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3.5 border-b border-white/5 bg-[#060b14]/85 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2">
           <Logo size={32} />
-          <span className="font-bold text-lg text-white tracking-tight">XP Money</span>
+          <span className="font-bold text-lg text-white tracking-tight">XP-Money</span>
         </Link>
 
         {/* Middle nav (desktop only) */}

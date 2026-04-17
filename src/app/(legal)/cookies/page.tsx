@@ -1,11 +1,11 @@
 export const metadata = {
-  title:       'Política de Cookies · XP Money',
+  title:       'Política de Cookies · XP-Money',
   description: 'Que cookies usamos e porquê.',
 }
 
 /**
  * Política de Cookies — obrigatória pela Diretiva ePrivacy se o site usar
- * cookies além das estritamente necessárias. O XP Money usa cookies de
+ * cookies além das estritamente necessárias. O XP-Money usa cookies de
  * sessão (Clerk), preferências (locale, tema) e analytics (PostHog), logo
  * precisa de divulgar.
  */
@@ -28,7 +28,7 @@ export default function CookiesPage() {
         utilização anónima.
       </p>
       <p>
-        Além de cookies, o XP Money também usa <strong>localStorage</strong> e{' '}
+        Além de cookies, o XP-Money também usa <strong>localStorage</strong> e{' '}
         <strong>IndexedDB</strong> para guardar preferências e cache offline. Para
         efeitos desta política, são tratados como &quot;cookies&quot;.
       </p>

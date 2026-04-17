@@ -295,7 +295,7 @@ export default async function ReportPrintPage() {
 
         {/* Footer */}
         <footer className="mt-12 pt-5 border-t border-gray-200 text-[10px] text-gray-400 flex items-center justify-between">
-          <span>Gerado por XP Money · xpmoney.app</span>
+          <span>Gerado por XP-Money · xpmoney.app</span>
           <span>Para fins informativos — não substitui aconselhamento financeiro profissional.</span>
         </footer>
       </div>

@@ -172,7 +172,7 @@ export const LEVELS: Level[] = [
   { number: 8,  name: 'Analista de Riqueza',     xp_required: 8000,   icon: '🔍' },
   { number: 9,  name: 'Estrategista de Riqueza', xp_required: 11500,  icon: '🏆' },
   { number: 10, name: 'Mestre das Finanças',     xp_required: 16000,  icon: '👑' },
-  { number: 20, name: 'Lenda XP Money',          xp_required: 100000, icon: '🌟' },
+  { number: 20, name: 'Lenda XP-Money',          xp_required: 100000, icon: '🌟' },
 ]
 
 // ---- MISSIONS ----

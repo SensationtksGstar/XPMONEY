@@ -61,7 +61,7 @@ const REVIEWS: Review[] = [
     handle: 'Aveiro · Pro',
     avatar: '👩‍🏫',
     rating: 5,
-    quote:  'Os cursos da Academia valem sozinhos o valor do plano. Passei o de investimento, tirei o certificado e finalmente comecei o meu DCA num ETF. Obrigada XP Money.',
+    quote:  'Os cursos da Academia valem sozinhos o valor do plano. Passei o de investimento, tirei o certificado e finalmente comecei o meu DCA num ETF. Obrigada XP-Money.',
   },
   {
     name:   'Tiago L.',

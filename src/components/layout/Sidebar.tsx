@@ -32,7 +32,7 @@ export function Sidebar() {
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-3 px-6 py-5 border-b border-white/5 hover:bg-white/3 transition-colors">
         <Logo size={32} />
-        <span className="font-bold text-lg text-white tracking-tight">XP Money</span>
+        <span className="font-bold text-lg text-white tracking-tight">XP-Money</span>
       </Link>
 
       {/* Nav */}

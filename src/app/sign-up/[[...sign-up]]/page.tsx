@@ -51,7 +51,7 @@ export default function SignUpPage() {
       <div className="mb-6 text-center">
         <Link href="/" className="inline-flex items-center gap-2 mb-5">
           <Logo size={36} />
-          <span className="font-bold text-xl text-white tracking-tight">XP Money</span>
+          <span className="font-bold text-xl text-white tracking-tight">XP-Money</span>
         </Link>
         <h1 className="text-2xl font-bold text-white">Cria a tua conta grátis</h1>
         <p className="text-white/50 mt-1 text-sm">Sem cartão de crédito. Sempre grátis no plano base.</p>

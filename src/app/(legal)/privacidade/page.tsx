@@ -1,5 +1,5 @@
 export const metadata = {
-  title:       'Política de Privacidade · XP Money',
+  title:       'Política de Privacidade · XP-Money',
   description: 'Como tratamos os teus dados pessoais e financeiros. GDPR-compliant.',
 }
 
@@ -29,10 +29,10 @@ export default function PrivacidadePage() {
 
       <h2>1. Quem somos</h2>
       <p>
-        O <strong>XP Money</strong> é um serviço de finanças pessoais gamificadas operado
-        pela entidade responsável identificada abaixo (&quot;nós&quot;, &quot;XP Money&quot;). Esta
+        O <strong>XP-Money</strong> é um serviço de finanças pessoais gamificadas operado
+        pela entidade responsável identificada abaixo (&quot;nós&quot;, &quot;XP-Money&quot;). Esta
         Política explica como recolhemos, usamos e protegemos os teus dados
-        pessoais quando utilizas o website <strong>xp-money.vercel.app</strong> ou
+        pessoais quando utilizas o website <strong>xp-money.com</strong> ou
         qualquer versão instalada como PWA.
       </p>
       <p>

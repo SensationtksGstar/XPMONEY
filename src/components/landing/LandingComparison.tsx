@@ -55,7 +55,7 @@ export function LandingComparison() {
                 <th className="px-3 py-4 text-center min-w-[110px]">
                   <div className="flex flex-col items-center gap-1">
                     <span className="inline-block w-2 h-2 rounded-full bg-green-400" />
-                    <span className="font-bold text-white">XP Money</span>
+                    <span className="font-bold text-white">XP-Money</span>
                   </div>
                 </th>
                 <th className="px-3 py-4 text-center text-white/60 min-w-[100px] font-medium">Excel / Sheets</th>

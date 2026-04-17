@@ -39,7 +39,7 @@ export default function CursosPage() {
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <BookOpen className="w-6 h-6 text-green-400" />
-          Academia XP Money
+          Academia XP-Money
         </h1>
         <p className="text-white/50 text-sm mt-0.5">
           Cursos de gestão financeira com certificado oficial

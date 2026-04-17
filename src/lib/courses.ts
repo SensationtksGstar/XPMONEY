@@ -1,4 +1,4 @@
-// ── XP Money — Course Catalog ────────────────────────────────────────────────
+// ── XP-Money — Course Catalog ────────────────────────────────────────────────
 // Static course data. Progress tracked in localStorage.
 
 export interface QuizQuestion {
@@ -59,9 +59,9 @@ export const COURSES: Course[] = [
 → **Proteção** — Seguros, fundo de emergência, sem dívidas de alto risco
 
 **Por que é que a maioria falha?**
-Não é falta de conhecimento — é falta de sistema. Sem um método claro, o dinheiro "desaparece" sem explicação. A XP Money resolve exatamente isso: torna a gestão financeira num jogo que queres ganhar.
+Não é falta de conhecimento — é falta de sistema. Sem um método claro, o dinheiro "desaparece" sem explicação. A XP-Money resolve exatamente isso: torna a gestão financeira num jogo que queres ganhar.
 
-**O Score XP Money** mede estes 4 pilares e dá-te um número entre 0 e 100. O teu objetivo é subir esse número, semana após semana. É simples, mensurável e motivante.`,
+**O Score XP-Money** mede estes 4 pilares e dá-te um número entre 0 e 100. O teu objetivo é subir esse número, semana após semana. É simples, mensurável e motivante.`,
       },
       {
         id:       'l2',
@@ -84,7 +84,7 @@ Este é o valor que vai construir o teu futuro: fundo de emergência, poupança 
 → Desejos: €360 (saídas €150 + streaming €30 + roupas €80 + outros €100)
 → Poupança: €240 (fundo emergência €100 + objetivo férias €80 + investimento €60)
 
-Na XP Money, categoriza cada transação e vê automaticamente em que percentagem estás. O Score ajusta-se em tempo real.`,
+Na XP-Money, categoriza cada transação e vê automaticamente em que percentagem estás. O Score ajusta-se em tempo real.`,
       },
       {
         id:       'l3',
@@ -106,7 +106,7 @@ O fundo de emergência deve estar **separado da conta corrente** (para não gast
 
 **Como construir rapidamente?**
 1. Define o valor-alvo (ex: €5.000 para 6 meses de €830/mês)
-2. Cria um Objetivo na XP Money com esse valor
+2. Cria um Objetivo na XP-Money com esse valor
 3. Automatiza uma transferência no início de cada mês (mesmo que pequena — €50 já conta)
 4. Trata como despesa obrigatória, não como opção
 
@@ -302,7 +302,7 @@ Investe um valor fixo todos os meses, independentemente do preço. Em meses de q
 
 A diferença entre 30 e 40 anos não é 33% mais — é 132% mais. O juro composto acelera exponencialmente.
 
-**A lição:** Começa hoje. Um ano de atraso não é uma pequena diferença — é décadas de crescimento composto perdido. Com a XP Money podes criar um Objetivo de investimento e ver a projeção de crescimento em tempo real.`,
+**A lição:** Começa hoje. Um ano de atraso não é uma pequena diferença — é décadas de crescimento composto perdido. Com a XP-Money podes criar um Objetivo de investimento e ver a projeção de crescimento em tempo real.`,
       },
     ],
     quiz: [
@@ -393,7 +393,7 @@ Sempre que o teu rendimento aumentar, aloca pelo menos 50% desse aumento extra p
 A ordem importa. Se poupas o que sobra, raramente sobra algo. Se gastas o que sobra após poupar, o estilo de vida adapta-se.
 
 **O que te motiva mais?**
-Identificar o teu "porquê" é essencial. Liberdade para trabalhar em projetos que amas? Nunca precisar de dizer sim a um chefe tóxico por necessidade financeira? Viagens? Aposentação antecipada? O XP Money ajuda-te a transformar esse objetivo abstrato num número concreto com prazo definido.`,
+Identificar o teu "porquê" é essencial. Liberdade para trabalhar em projetos que amas? Nunca precisar de dizer sim a um chefe tóxico por necessidade financeira? Viagens? Aposentação antecipada? O XP-Money ajuda-te a transformar esse objetivo abstrato num número concreto com prazo definido.`,
       },
       {
         id:       'l2',
@@ -426,7 +426,7 @@ Taxa de Poupança = (Poupança Mensal / Rendimento Líquido Mensal) × 100
 → Eliminar gastos inconscientes (subscrições esquecidas, compras impulsivas)
 → Renegociar contratos (seguros, internet, telemóvel)
 
-Na XP Money, a taxa de poupança aparece no teu Score financeiro. O objetivo: manter acima de 20% todos os meses.`,
+Na XP-Money, a taxa de poupança aparece no teu Score financeiro. O objetivo: manter acima de 20% todos os meses.`,
       },
       {
         id:       'l3',
@@ -481,7 +481,7 @@ Verificar a carteira todos os dias é ansiedade sem propósito. Revê trimestral
 **Ferramentas portuguesas úteis:**
 → MB Way ou homebanking — transferências automáticas agendadas
 → Aplicação do banco — notificações de saldo
-→ XP Money — acompanhar score, poupanças e missões em tempo real
+→ XP-Money — acompanhar score, poupanças e missões em tempo real
 
 **Regra final:** A configuração demora 2 horas. Depois funciona sozinha. Essa é a beleza da automatização — o esforço é feito uma vez, os benefícios duram décadas.`,
       },

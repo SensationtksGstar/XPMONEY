@@ -37,7 +37,7 @@ const FAQS: QA[] = [
   },
   {
     q: 'Como é que vocês competem com uma app do banco (Revolut, BPI)?',
-    a: 'Não competimos — complementamos. Apps de banco mostram o que aconteceu (extrato, saldo). A XP Money mostra o que deves mudar (score baixo em restaurantes → missão "cozinhar 3x esta semana"). E tem a camada motivacional (mascote, XP, streaks) que nenhum banco vai fazer, porque o negócio deles é que gastes mais, não menos.',
+    a: 'Não competimos — complementamos. Apps de banco mostram o que aconteceu (extrato, saldo). A XP-Money mostra o que deves mudar (score baixo em restaurantes → missão "cozinhar 3x esta semana"). E tem a camada motivacional (mascote, XP, streaks) que nenhum banco vai fazer, porque o negócio deles é que gastes mais, não menos.',
   },
   {
     q: 'Existe modo família ou posso partilhar com o meu parceiro/a?',
@@ -53,7 +53,7 @@ const FAQS: QA[] = [
   },
   {
     q: 'Posso usar só a parte gamificada e ignorar o financeiro?',
-    a: 'Podes, mas não é a ideia. O XP vem de ações financeiras reais (registar transações, atingir objetivos, completar missões). Sem transações, o mascote fica no nível 1 e o score em 0. Se só queres um Tamagotchi digital, há melhores apps para isso — a XP Money faz sentido quando usas o lado financeiro a sério.',
+    a: 'Podes, mas não é a ideia. O XP vem de ações financeiras reais (registar transações, atingir objetivos, completar missões). Sem transações, o mascote fica no nível 1 e o score em 0. Se só queres um Tamagotchi digital, há melhores apps para isso — a XP-Money faz sentido quando usas o lado financeiro a sério.',
   },
 ]
 
@@ -112,7 +112,7 @@ export function LandingFAQ() {
           <Sparkles className="w-3 h-3" />
           Não encontraste? Pergunta-nos.
         </div>
-        <h3 className="text-2xl md:text-3xl font-bold mb-2">Agente XP Money</h3>
+        <h3 className="text-2xl md:text-3xl font-bold mb-2">Agente XP-Money</h3>
         <p className="text-white/55 text-sm max-w-lg mx-auto">
           Pergunta o que quiseres sobre a app em linguagem natural.
           Respondemos em segundos.

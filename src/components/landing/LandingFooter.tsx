@@ -54,7 +54,7 @@ export function LandingFooter() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Logo size={32} />
-              <span className="font-bold text-lg text-white tracking-tight">XP Money</span>
+              <span className="font-bold text-lg text-white tracking-tight">XP-Money</span>
             </Link>
             <p className="text-sm text-white/55 leading-relaxed max-w-xs mb-4">
               Finanças pessoais gamificadas. Feito em Portugal para quem quer
@@ -99,7 +99,7 @@ export function LandingFooter() {
 
         {/* Bottom bar */}
         <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/30">
-          <p>© {year} XP Money · Todos os direitos reservados.</p>
+          <p>© {year} XP-Money · Todos os direitos reservados.</p>
           <div className="flex items-center gap-4">
             <span>🇵🇹 Feito em Portugal</span>
             <span>·</span>

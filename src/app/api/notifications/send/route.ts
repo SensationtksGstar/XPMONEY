@@ -7,7 +7,7 @@ import webpush                       from 'web-push'
 // the same message on the same day (feels curated, not random).
 const MESSAGES = [
   { title: '💰 Regista as tuas despesas hoje!', body: 'Cada euro conta. 2 minutos fazem a diferença.' },
-  { title: '📊 Como está o teu Score XP Money?', body: 'Verifica os teus hábitos e mantém o score a subir!' },
+  { title: '📊 Como está o teu Score XP-Money?', body: 'Verifica os teus hábitos e mantém o score a subir!' },
   { title: '🎯 Tens missões por completar!', body: 'Completa missões diárias e ganha XP para evoluir o Voltix.' },
   { title: '🔥 Mantém o teu streak hoje!', body: 'Não percas a sequência — regista pelo menos uma transação.' },
   { title: '🏆 Verifica as tuas poupanças', body: 'Estás perto dos teus objetivos? Faz um depósito hoje!' },
@@ -33,7 +33,7 @@ const MESSAGES = [
   { title: '💸 Despesas recorrentes', body: 'Netflix, Spotify, ginásio… já somaste quanto gastas?' },
   { title: '📅 Reviste a tua semana', body: 'Quanto gastaste em supérfluos? Vale a pena?' },
   { title: '🔔 Lembrete amigável', body: 'Não deixes para amanhã o registo que podes fazer hoje.' },
-  { title: '🌅 Começa o dia bem', body: 'Abre a XP Money e define o tom financeiro do dia.' },
+  { title: '🌅 Começa o dia bem', body: 'Abre a XP-Money e define o tom financeiro do dia.' },
   { title: '🎁 Dinheiro poupado é dinheiro ganho', body: 'Transfere já para a tua meta. O teu eu futuro agradece.' },
   { title: '⚔️ Guerreiro das finanças', body: 'Cada registo é uma batalha vencida. Continua assim!' },
 ]

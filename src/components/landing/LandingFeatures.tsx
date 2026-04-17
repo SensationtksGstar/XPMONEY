@@ -68,7 +68,7 @@ const FEATURES = [
     icon:  <GraduationCap className="w-5 h-5" />,
     color: 'text-pink-300',
     bg:    'bg-pink-500/10',
-    title: 'Academia XP Money',
+    title: 'Academia XP-Money',
     desc:  'Cursos de finanças com quiz. Passas → tiras certificado digital com código único.',
     proof: 'Orçamento, DCA, impostos',
   },
