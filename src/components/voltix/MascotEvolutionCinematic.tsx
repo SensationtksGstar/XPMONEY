@@ -1,22 +1,21 @@
 'use client'
 
 /**
- * MascotEvolutionCinematic — 5-second Digimon-style evolution reveal.
+ * MascotEvolutionCinematic — 9-second Digimon-style evolution reveal.
  *
- * Timeline (t=0..5s):
- *   0.00-0.80  Old pet rises, gentle halo forms
- *   0.80-1.80  Pet bleaches to white silhouette, energy rings expand
- *   1.80-3.00  Flash burst, rotating particle helix
- *   3.00-3.80  New silhouette emerges from white
- *   3.80-4.50  Color returns, screen-shake pose
- *   4.50-5.00  "Name → Name" title + confetti + +XP badge
+ * Timeline (t=0..9s):
+ *   0.0-1.2  Old pet rises, gentle halo forms (build-up)
+ *   1.2-2.6  Pet bleaches to white silhouette, energy rings expand
+ *   2.6-4.6  Flash burst, rotating particle helix (climax)
+ *   4.6-6.0  New silhouette emerges from white (suspense)
+ *   6.0-9.0  Celebrate — reveal + confetti + "+XP" — 3s to savour the new pet
  *
  * All layers are orchestrated with framer-motion `animate` + timed
  * `transitions`. No audio files — uses `playEvolutionSfx()` (Web Audio synth).
  *
  * Accessibility:
  *   - `role="alertdialog"` + focus trap on skip button
- *   - "Saltar →" always visible
+ *   - "Saltar →" always visible (users in a hurry are never forced to wait)
  *   - `prefers-reduced-motion` collapses to a static 400 ms fade to the final
  *     frame (message + new pet)
  */
@@ -36,8 +35,16 @@ interface Props {
   toEvo:    EvoStage
 }
 
-const TOTAL_DURATION_MS = 5000
+const TOTAL_DURATION_MS = 9000
 const SKIP_FADE_MS      = 400
+
+// Stage timings (ms from t=0). Keep in sync with the header comment.
+const STAGE_TIMES = {
+  bleach:    1200,
+  burst:     2600,
+  reveal:    4600,
+  celebrate: 6000,
+} as const
 
 /** Confetti pieces — pure CSS, fire at reveal (t≈4.5s). */
 interface ConfettiPiece {
@@ -69,7 +76,7 @@ function EnergyRing({ delay, color }: { delay: number; color: string }) {
       aria-hidden
       initial={{ scale: 0, opacity: 0.9 }}
       animate={{ scale: 6, opacity: 0 }}
-      transition={{ delay, duration: 1.4, ease: 'easeOut' }}
+      transition={{ delay, duration: 2.0, ease: 'easeOut' }}
       className="absolute top-1/2 left-1/2 w-40 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
       style={{ borderColor: color, boxShadow: `0 0 40px ${color}` }}
     />
@@ -85,8 +92,8 @@ function ParticleHelix({ visible, color }: { visible: boolean; color: string }) 
       aria-hidden
       className="absolute top-1/2 left-1/2 w-0 h-0"
       initial={{ opacity: 0, rotate: 0 }}
-      animate={{ opacity: [0, 1, 1, 0], rotate: 720 }}
-      transition={{ duration: 2.0, ease: 'easeInOut' }}
+      animate={{ opacity: [0, 1, 1, 0], rotate: 1080 }}
+      transition={{ duration: 2.6, ease: 'easeInOut' }}
     >
       {dots.map(i => {
         const angle = (i / dots.length) * Math.PI * 2
@@ -145,17 +152,17 @@ export function MascotEvolutionCinematic({
     if (reduced) {
       setStage('celebrate')
       setShowConfetti(true)
-      const end = setTimeout(onClose, SKIP_FADE_MS + 2000)
+      const end = setTimeout(onClose, SKIP_FADE_MS + 3500)
       return () => clearTimeout(end)
     }
 
-    const t1 = setTimeout(() => setStage('bleach'),    800)
-    const t2 = setTimeout(() => setStage('burst'),    1800)
-    const t3 = setTimeout(() => setStage('reveal'),   3000)
+    const t1 = setTimeout(() => setStage('bleach'),  STAGE_TIMES.bleach)
+    const t2 = setTimeout(() => setStage('burst'),   STAGE_TIMES.burst)
+    const t3 = setTimeout(() => setStage('reveal'),  STAGE_TIMES.reveal)
     const t4 = setTimeout(() => {
       setStage('celebrate')
       setShowConfetti(true)
-    }, 3800)
+    }, STAGE_TIMES.celebrate)
     const t5 = setTimeout(onClose, TOTAL_DURATION_MS)
 
     return () => {

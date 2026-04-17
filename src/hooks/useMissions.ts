@@ -12,8 +12,11 @@ export function useMissions(_userId?: string) {
   const query = useQuery({
     queryKey:             ['missions'],
     queryFn:              fetchMissions,
-    staleTime:            10 * 60 * 1000,  // 10 min
-    refetchOnWindowFocus: false,
+    // Missions tick from server side-effects (transactions, daily-checkin,
+    // score recalc). A short stale window keeps the progress bars live without
+    // hammering the API on every tab change.
+    staleTime:            30 * 1000,   // 30 s
+    refetchOnWindowFocus: true,
   })
 
   return {

@@ -7,6 +7,9 @@ import { ProfileEditForm }   from './ProfileEditForm'
 import { PushOptIn }         from '@/components/notifications/PushOptIn'
 import { ResetTransactionsCard } from '@/components/settings/ResetTransactionsCard'
 import { MascotPicker }      from '@/components/settings/MascotPicker'
+import { LanguageSwitcher }  from '@/components/settings/LanguageSwitcher'
+import { BugReportCard }     from '@/components/settings/BugReportCard'
+import { PDFReportCard }     from '@/components/settings/PDFReportCard'
 
 export const metadata = { title: 'Definições' }
 
@@ -32,9 +35,23 @@ export default async function SettingsPage() {
   const db = createSupabaseAdmin()
   const { data: profile } = await db
     .from('users')
-    .select('name, email, avatar_url, currency, mascot_gender')
+    .select('id, name, email, avatar_url, currency, mascot_gender')
     .eq('clerk_id', userId)
     .maybeSingle()
+
+  // Fetch the user's current mascot evolution so the MascotPicker can preview
+  // the mascots at THEIR stage (e.g. a user who's at evo 4 should see the
+  // picker show evo 4 art, not the default evo-3 baby form). Fresh users
+  // without a voltix_states row default to evo 1.
+  let currentEvo = 1
+  if (profile?.id) {
+    const { data: vx } = await db
+      .from('voltix_states')
+      .select('evolution_level')
+      .eq('user_id', profile.id)
+      .maybeSingle()
+    currentEvo = Math.max(1, Math.min(6, vx?.evolution_level ?? 1))
+  }
 
   // Challenge/goal from Clerk metadata (no DDL required)
   let challenge = ''
@@ -103,7 +120,10 @@ export default async function SettingsPage() {
       </div>
 
       {/* Mascote */}
-      <MascotPicker initialGender={mascotGender} />
+      <MascotPicker initialGender={mascotGender} currentEvo={currentEvo} />
+
+      {/* Idioma / Language */}
+      <LanguageSwitcher />
 
       {/* Formulário de edição de perfil */}
       <ProfileEditForm
@@ -114,6 +134,12 @@ export default async function SettingsPage() {
         email={profile?.email ?? ''}
         avatarUrl={profile?.avatar_url ?? null}
       />
+
+      {/* Relatório em PDF — Pro+ only, Free/Plus see upsell */}
+      <PDFReportCard />
+
+      {/* Report bug — user → admin (admin email never exposed) */}
+      <BugReportCard />
 
       {/* Zona de perigo — apagar todas as transações */}
       <ResetTransactionsCard />

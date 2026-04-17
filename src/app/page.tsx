@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, Zap, Shield, TrendingUp, Star, Target, Brain } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
+import { LandingReviews } from '@/components/landing/LandingReviews'
 
 export default function LandingPage() {
   return (
@@ -186,6 +187,9 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* REVIEWS / SOCIAL PROOF */}
+      <LandingReviews />
 
       {/* PRICING */}
       <section className="px-6 py-20 max-w-4xl mx-auto">

@@ -2,9 +2,11 @@
 
 import { useState }      from 'react'
 import { useRouter }     from 'next/navigation'
+import { useUser }       from '@clerk/nextjs'
 import { useQueryClient } from '@tanstack/react-query'
 import { Trash2, AlertTriangle } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { clearAllCourseProgress } from '@/lib/courses'
 
 /**
  * "Danger Zone" card that lets the user wipe all their transactions.
@@ -16,8 +18,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
  *      dashboard/transactions/score refetch automatically.
  */
 export function ResetTransactionsCard() {
-  const router = useRouter()
-  const qc     = useQueryClient()
+  const router   = useRouter()
+  const qc       = useQueryClient()
+  const { user } = useUser()
 
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading,     setLoading]     = useState(false)
@@ -43,10 +46,14 @@ export function ResetTransactionsCard() {
           : `${json.deleted} transaç${json.deleted === 1 ? 'ão apagada' : 'ões apagadas'}. Conta reposta.`,
       })
 
-      // Clear client-side gamification caches so the next Voltix refetch doesn't
-      // replay an evolution cinematic for the now-reset pet.
+      // Client-side cleanup — things the server can't touch because they live
+      // in localStorage:
+      //   1) Mascot-evolution cache (prevents a phantom cinematic after reset).
+      //   2) Course progress + certificates (user asked: reset should include
+      //      poupanças AND certificados so the account goes truly back to zero).
       try {
         window.localStorage.removeItem('xpmoney:mascot_last_evo')
+        if (user?.id) clearAllCourseProgress(user.id)
       } catch { /* storage disabled — non-critical */ }
 
       // Invalidate every cached query — safest bet since transactions feed
@@ -72,8 +79,10 @@ export function ResetTransactionsCard() {
           Zona de Perigo
         </h2>
         <p className="text-sm text-white/50 mb-4 leading-relaxed">
-          Apaga <strong className="text-white/80">todas as transações</strong> e repõe
-          o teu progresso (XP, nível, mascote, objetivos, missões activas) ao estado inicial.
+          Apaga <strong className="text-white/80">todas as transações</strong>, as tuas{' '}
+          <strong className="text-white/80">poupanças</strong> e os{' '}
+          <strong className="text-white/80">certificados de cursos</strong>, e repõe
+          todo o teu progresso (XP, nível, mascote, objetivos, missões activas) ao estado inicial.
           As tuas <strong className="text-white/80">conquistas históricas</strong> (badges
           já desbloqueados, missões concluídas) são mantidas.
         </p>
@@ -105,7 +114,7 @@ export function ResetTransactionsCard() {
         tone="danger"
         loading={loading}
         title="Repor conta ao estado inicial?"
-        description="Esta ação é irreversível. Todas as transações, XP, nível, progresso do mascote, objetivos e missões activas serão zerados. Badges e missões concluídas no passado são mantidos."
+        description="Esta ação é irreversível. Todas as transações, poupanças, certificados de cursos, XP, nível, progresso do mascote, objetivos e missões activas serão zerados. Badges e missões concluídas no passado são mantidos."
         confirmLabel="Sim, repor tudo"
         cancelLabel="Cancelar"
         onConfirm={handleConfirm}

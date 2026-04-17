@@ -12,15 +12,19 @@ import {
 import { cn }              from '@/lib/utils'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
 
+// 5-cell primary nav with the FAB at cell 3 → literally 50% of the width.
+// Any 6-cell layout puts the FAB's cell at ~42% which visually reads as
+// off-center (which is what the user flagged). Academia (cursos) is promoted
+// into the More sheet so the 5-cell grid holds: 2 links | FAB | 1 link | Mais.
 const PRIMARY_NAV = [
   { href: '/dashboard',    label: 'Início',    icon: LayoutDashboard },
   { href: '/transactions', label: 'Contas',    icon: ArrowLeftRight  },
-  null, // FAB
+  null, // FAB (centered)
   { href: '/goals',        label: 'Poupanças', icon: Target          },
-  { href: '/cursos',       label: 'Academia',  icon: BookOpen        },
 ]
 
 const MORE_ITEMS = [
+  { href: '/cursos',     label: 'Academia',   icon: BookOpen,    badge: null        },
   { href: '/missions',   label: 'Missões',    icon: Swords,      badge: null        },
   { href: '/voltix',     label: 'Voltix',     icon: Zap,         badge: null        },
   { href: '/badges',     label: 'Conquistas', icon: Trophy,      badge: null        },
@@ -43,20 +47,29 @@ export function MobileNav() {
         className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0a0f1e]/95 backdrop-blur-xl border-t border-white/5"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="flex items-center justify-around px-1 pt-2 pb-2">
-          {PRIMARY_NAV.map((item, i) => {
+        {/*
+          5 equal cells via grid: [Início][Contas][FAB][Poupanças][Mais].
+          Cell 3 is the centre column (40-60 %), so the FAB lands on the 50 %
+          mark pixel-perfect on every device width. The old `flex justify-
+          around` gave uneven spacing because label widths differed and the
+          FAB wasn't guaranteed to be the central element.
+        */}
+        <div className="grid grid-cols-5 items-center px-1 pt-2 pb-2">
+          {PRIMARY_NAV.map((item) => {
 
             /* ── FAB central ── */
             if (item === null) {
               return (
-                <button
-                  key="fab"
-                  onClick={() => setShowForm(true)}
-                  className="relative -top-5 w-14 h-14 bg-green-500 active:bg-green-400 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all"
-                  style={{ boxShadow: '0 0 24px rgba(34,197,94,0.45)' }}
-                >
-                  <Plus className="w-6 h-6 text-black" strokeWidth={3} />
-                </button>
+                <div key="fab" className="flex justify-center">
+                  <button
+                    onClick={() => setShowForm(true)}
+                    aria-label="Adicionar transação"
+                    className="relative -top-5 w-14 h-14 bg-green-500 active:bg-green-400 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all"
+                    style={{ boxShadow: '0 0 24px rgba(34,197,94,0.45)' }}
+                  >
+                    <Plus className="w-6 h-6 text-black" strokeWidth={3} />
+                  </button>
+                </div>
               )
             }
 
@@ -68,7 +81,7 @@ export function MobileNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors min-w-0 active:scale-90 relative',
+                  'flex flex-col items-center gap-1 px-1 py-1.5 rounded-xl transition-colors min-w-0 active:scale-90 relative',
                   isActive ? 'text-green-400' : 'text-white/35',
                 )}
               >
@@ -85,7 +98,7 @@ export function MobileNav() {
           <button
             onClick={() => setShowMore(true)}
             className={cn(
-              'flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors min-w-0 active:scale-90 relative',
+              'flex flex-col items-center gap-1 px-1 py-1.5 rounded-xl transition-colors min-w-0 active:scale-90 relative',
               moreActive ? 'text-green-400' : 'text-white/35',
             )}
           >

@@ -66,7 +66,15 @@ export async function PATCH(req: NextRequest) {
   const body   = await req.json()
   const parsed = UpdateProfileSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+    // Zod's flatten() returns an object — if we pass that through as `error`,
+    // the client ends up with `new Error({...})` → "[object Object]". Serialise
+    // to the first readable field-level message so the user sees what's wrong.
+    const flat    = parsed.error.flatten()
+    const firstFld = Object.entries(flat.fieldErrors)[0]
+    const msg      = firstFld
+      ? `Campo "${firstFld[0]}": ${firstFld[1]?.[0] ?? 'inválido'}`
+      : flat.formErrors[0] ?? 'Dados inválidos.'
+    return NextResponse.json({ error: msg, details: flat }, { status: 400 })
   }
 
   const db = createSupabaseAdmin()

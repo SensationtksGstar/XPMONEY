@@ -18,7 +18,20 @@ import { readMascotGenderLocal, saveMascotGenderLocal } from '@/lib/mascotGender
  * last click on this device is more authoritative than whatever the DB
  * happened to have cached (see src/lib/mascotGender.ts).
  */
-export function MascotPicker({ initialGender }: { initialGender: MascotGender }) {
+/**
+ * `currentEvo` is the user's actual mascot evolution level (1-6). We preview
+ * both Voltix and Penny at THIS stage so the user sees the creature they'll
+ * actually get after switching — not a fixed baby form that misrepresents the
+ * choice. Defaults to 1 so brand-new users still see the starter mascot.
+ */
+interface MascotPickerProps {
+  initialGender: MascotGender
+  currentEvo?:   number
+}
+
+export function MascotPicker({ initialGender, currentEvo = 1 }: MascotPickerProps) {
+  // Clamp defensively — MascotCreature expects a valid 1-6 evo
+  const evo = Math.max(1, Math.min(6, Math.round(currentEvo))) as number
   const [gender, setGender] = useState<MascotGender>(initialGender)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [, startTransition] = useTransition()
@@ -94,7 +107,7 @@ export function MascotPicker({ initialGender }: { initialGender: MascotGender })
           <div className="w-24 h-24 flex items-center justify-center">
             <MascotCreature
               gender="voltix"
-              evo={3}
+              evo={evo}
               mood="happy"
               className="w-full h-full"
               animate={gender === 'voltix'}
@@ -126,7 +139,7 @@ export function MascotPicker({ initialGender }: { initialGender: MascotGender })
           <div className="w-24 h-24 flex items-center justify-center">
             <MascotCreature
               gender="penny"
-              evo={3}
+              evo={evo}
               mood="happy"
               className="w-full h-full"
               animate={gender === 'penny'}

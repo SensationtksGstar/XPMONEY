@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams }    from 'next/navigation'
 import { useUser }      from '@clerk/nextjs'
+import { useQueryClient } from '@tanstack/react-query'
 import { useUserPlan }  from '@/lib/contexts/UserPlanContext'
 import Link             from 'next/link'
 import {
@@ -469,13 +470,46 @@ export default function CourseDetailPage() {
     if (activeLesson < course!.lessons.length - 1) setActiveLesson(i => i + 1)
   }
 
-  function handleQuizComplete(_score: number) {
+  const [quizXpGained, setQuizXpGained] = useState<number | null>(null)
+  const qc = useQueryClient()
+
+  function handleQuizComplete(score: number) {
     loadProgress()
     setTimeout(() => setView('certificate'), 1500)
+    // Award course-completion XP server-side. Idempotent — safe if the user
+    // re-takes the quiz (the endpoint guards duplicates via xp_history).
+    if (score === 100 && course) {
+      fetch(`/api/courses/${course.id}/complete`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ quizScore: score }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(res => {
+          if (res && !res.already_awarded && res.xp_gained > 0) {
+            setQuizXpGained(res.xp_gained)
+            setTimeout(() => setQuizXpGained(null), 4500)
+            // Refresh the XP bar so the new total shows up next visit
+            qc.invalidateQueries({ queryKey: ['xp'] })
+          }
+        })
+        .catch(err => console.warn('[course] complete XP award failed:', err))
+    }
   }
 
   return (
     <div className="space-y-5 animate-fade-in-up pb-24 max-w-2xl mx-auto w-full overflow-x-hidden">
+
+      {/* Floating XP-gained toast — fires once when the user passes the quiz */}
+      {quizXpGained !== null && (
+        <div
+          role="status"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-green-500 text-black font-bold px-4 py-2.5 rounded-xl shadow-xl animate-fade-in-up"
+        >
+          <Sparkles className="w-4 h-4" />
+          +{quizXpGained} XP · Curso concluído!
+        </div>
+      )}
 
       {/* Back + header */}
       <div className="flex items-center gap-3">

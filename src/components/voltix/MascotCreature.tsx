@@ -131,6 +131,19 @@ function RasterWithFallback({ onFallback, ...props }: Props & { onFallback: () =
     applyTilt(tiltRef.current, 0, 0)
   }
 
+  // Mood-reactive motion for eggs (evo 1). Eggs are static rasters, so
+  // without this overlay they'd never express anything beyond colour — the
+  // user specifically called that out as feeling lifeless. We layer a
+  // subtle animation class onto the breathing wrapper based on mood, plus
+  // render a tear drop when sad and a sparkle halo when celebrating.
+  const eggMoodClass = evo === 1
+    ? mood === 'sad'         ? 'animate-egg-shiver'
+    : mood === 'happy'       ? 'animate-egg-wiggle'
+    : mood === 'excited'     ? 'animate-egg-wiggle-fast'
+    : mood === 'celebrating' ? 'animate-egg-bounce'
+    : '' // neutral — normal breathe is enough
+    : ''
+
   return (
     <div className={`relative ${className} animate-mascot-float`}>
       <div
@@ -154,14 +167,33 @@ function RasterWithFallback({ onFallback, ...props }: Props & { onFallback: () =
             transition: 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)',
           }}
         >
-          <div className="animate-mascot-breathe w-full h-full">{img}</div>
+          <div className={`animate-mascot-breathe w-full h-full ${eggMoodClass}`}>{img}</div>
         </div>
       </div>
-      {evo >= 3 && (
+
+      {/* ── Egg mood overlays ──
+          Tiny visual accents layered over the raster so the egg-form mascot
+          (evo 1) can show emotion even though the underlying image is
+          static. Invisible on evo ≥ 2 because those sprites already have
+          their own faces + accessories. */}
+      {evo === 1 && mood === 'sad' && (
+        <span
+          aria-hidden
+          className="absolute left-[34%] top-[48%] w-[6px] h-[9px] rounded-b-full bg-sky-300 animate-egg-tear"
+          style={{ filter: 'drop-shadow(0 1px 1px rgba(56,189,248,0.5))' }}
+        />
+      )}
+
+      {/* Sparkles — previously evo ≥ 3 only, but a celebrating egg should
+          fizz too. Keep the three-sparkle rhythm for evo ≥ 3, reduce to two
+          for celebrating eggs so the scale feels appropriate. */}
+      {(evo >= 3 || (evo === 1 && (mood === 'celebrating' || mood === 'excited'))) && (
         <>
           <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-yellow-300 animate-mascot-sparkle" aria-hidden />
           <span className="absolute top-6 left-3 w-1 h-1 rounded-full bg-white animate-mascot-sparkle delay-600" aria-hidden />
-          <span className="absolute bottom-10 right-5 w-1 h-1 rounded-full bg-yellow-200 animate-mascot-sparkle delay-1200" aria-hidden />
+          {evo >= 3 && (
+            <span className="absolute bottom-10 right-5 w-1 h-1 rounded-full bg-yellow-200 animate-mascot-sparkle delay-1200" aria-hidden />
+          )}
         </>
       )}
     </div>

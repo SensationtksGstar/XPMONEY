@@ -7,6 +7,7 @@ import { awardXP }                   from '@/lib/awardXP'
 import { parseBoundedInt }           from '@/lib/safeNumber'
 import { z }                         from 'zod'
 import { recalculateScore }          from '@/lib/recalculateScore'
+import { updateMissionProgress }     from '@/lib/updateMissionProgress'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
 import { DEMO_TRANSACTIONS }         from '@/lib/demo/mockData'
 import { XP_REWARDS }                from '@/types'
@@ -84,6 +85,10 @@ export async function POST(req: NextRequest) {
     awardXP(db, internalId, XP_REWARDS.TRANSACTION_REGISTERED, 'transaction_registered'),
     awardBadge(db, internalId, 'first_transaction'),
     recalculateScore(db, internalId),
+    // Bump the "log N transactions" mission. Other mission types depend on
+    // daily-checkin (streaks) and score recalc (score delta) so they tick
+    // from their own call sites.
+    updateMissionProgress(db, internalId, { type: 'register_transactions' }),
   ])
 
   return NextResponse.json({ data, error: null }, { status: 201 })

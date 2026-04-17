@@ -54,8 +54,11 @@ export default function DashboardPage() {
   const welcomeDone = useRef(false)
 
   const firstName = user?.firstName ?? 'explorador'
-  const hour      = new Date().getHours()
-  const greeting  = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
+  // Greeting: tried a time-based "Bom dia/tarde/noite" previously, but the
+  // client/server TZ mismatch (Vercel runs UTC; hydration re-runs in the user's
+  // TZ) caused the wrong greeting to flash on load. "Olá" is TZ-agnostic and
+  // works for every user at every hour — also easier to i18n later.
+  const greeting  = 'Olá'
 
   /* ── first-login welcome (once per user per device) ── */
   useEffect(() => {

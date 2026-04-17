@@ -6,6 +6,7 @@ import './globals.css'
 import { PostHogProvider } from '@/components/providers/PostHogProvider'
 import { QueryProvider }   from '@/components/providers/QueryProvider'
 import { Toaster }         from '@/components/ui/toaster'
+import { LocaleProvider }  from '@/lib/i18n/LocaleProvider'
 
 const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ''
 
@@ -77,9 +78,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           )}
           <PostHogProvider>
             <QueryProvider>
-              <Toaster>
-                {children}
-              </Toaster>
+              <LocaleProvider>
+                <Toaster>
+                  {children}
+                </Toaster>
+              </LocaleProvider>
             </QueryProvider>
           </PostHogProvider>
         </body>

@@ -1,45 +1,101 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="XP Money logo">
   <!--
-    XP Money — v2 (2026)
-    Minimalist monogram: rounded-square emerald token with a geometric
-    lightning bolt carved out as negative space. One shape, one gradient,
-    full contrast. Designed to stay crisp from 1024px down to 16px favicon.
+    XP Money — v3 (2026) · "Digivice" edition
+    A Digimon-style handheld device silhouette: emerald chassis with a dark
+    inner screen showing the lightning bolt. A subtle Bitcoin ₿ watermark in
+    the screen corner nods to crypto-aware finance without dominating the
+    identity. Side buttons and top antenna-dot are the digivice tells.
+    Still readable at 16px because the bolt stays the dominant shape.
   -->
   <defs>
-    <!-- Soft emerald gradient — subtle depth, not rainbow -->
-    <linearGradient id="xpm_token" x1="0" y1="0" x2="1" y2="1">
+    <!-- Chassis gradient (emerald, same family as v2) -->
+    <linearGradient id="xpm_chassis" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%"   stop-color="#10b981"/>
       <stop offset="100%" stop-color="#047857"/>
     </linearGradient>
-
-    <!-- Bolt cutout mask: white = keep, black = cut -->
-    <mask id="xpm_cut">
-      <rect width="512" height="512" fill="#fff"/>
-      <!--
-        Bolt geometry — 30° consistent angles.
-        Start top-right, cut down to mid, kick out, down to bottom-point,
-        up to mid again, kick in, close.
-      -->
-      <path d="M 296 116
-               L 172 272
-               L 232 272
-               L 216 396
-               L 340 240
-               L 280 240
-               L 296 116 Z" fill="#000"/>
-    </mask>
+    <!-- Dark screen gradient — deep navy/ink -->
+    <linearGradient id="xpm_screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#0a1220"/>
+      <stop offset="100%" stop-color="#050a14"/>
+    </linearGradient>
+    <!-- Bolt gradient — emerald-white for glow -->
+    <linearGradient id="xpm_bolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#6ee7b7"/>
+      <stop offset="60%"  stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <!-- Subtle screen scanline pattern (digivice retro feel) -->
+    <pattern id="xpm_scan" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+      <rect width="6" height="1" fill="#10b981" opacity="0.05"/>
+    </pattern>
   </defs>
 
-  <!-- Rounded-square token with bolt carved out -->
-  <rect x="32" y="32" width="448" height="448" rx="112" ry="112"
-        fill="url(#xpm_token)"
-        mask="url(#xpm_cut)"/>
+  <!-- ── Outer chassis ── -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96"
+        fill="url(#xpm_chassis)"/>
 
-  <!-- Single hairline inner stroke — adds crispness without clutter.
-       At favicon sizes this vanishes, which is exactly what we want. -->
-  <rect x="32" y="32" width="448" height="448" rx="112" ry="112"
-        fill="none"
-        stroke="#ffffff"
-        stroke-opacity="0.08"
-        stroke-width="2"/>
+  <!-- Chassis depth shadow ring (gives a bevelled/moulded feel) -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96"
+        fill="none" stroke="#064e3b" stroke-width="3" stroke-opacity="0.55"/>
+
+  <!-- ── Digivice tells: antenna dot (top-centre) ── -->
+  <circle cx="256" cy="64" r="6" fill="#d1fae5" opacity="0.55"/>
+
+  <!-- ── Side physical buttons (left + right edges) ── -->
+  <!-- Left: D-pad / menu buttons -->
+  <rect x="42" y="216" width="14" height="36" rx="7" fill="#064e3b" opacity="0.85"/>
+  <rect x="42" y="262" width="14" height="36" rx="7" fill="#064e3b" opacity="0.85"/>
+  <!-- Right: action button -->
+  <rect x="456" y="232" width="14" height="52" rx="7" fill="#064e3b" opacity="0.85"/>
+
+  <!-- ── Screen panel ── -->
+  <rect x="96" y="112" width="320" height="272" rx="40" ry="40"
+        fill="url(#xpm_screen)"/>
+  <!-- Screen inner glow rim -->
+  <rect x="96" y="112" width="320" height="272" rx="40" ry="40"
+        fill="none" stroke="#10b981" stroke-width="2" stroke-opacity="0.35"/>
+  <!-- Scanlines (subtle CRT/LCD texture) -->
+  <rect x="98" y="114" width="316" height="268" rx="38" ry="38" fill="url(#xpm_scan)"/>
+
+  <!-- ── Subtle Bitcoin ₿ watermark (top-right of screen) ── -->
+  <!-- Hand-drawn ₿ as a proper path so it renders the same on every device,
+       no font fallback quirks. Low opacity keeps it from fighting the bolt. -->
+  <g opacity="0.22" transform="translate(344, 140) scale(0.85)">
+    <!-- Coin disc with bitcoin orange -->
+    <circle cx="0" cy="0" r="24" fill="#f7931a"/>
+    <!-- ₿ glyph (vertical bar + two lobes) -->
+    <g fill="#0a1220">
+      <!-- Vertical bar -->
+      <rect x="-3" y="-16" width="6" height="32" rx="1"/>
+      <!-- Top horizontal stubs (descenders of ₿) -->
+      <rect x="-8" y="-18" width="3" height="4"/>
+      <rect x="-8" y="14"  width="3" height="4"/>
+      <!-- Top lobe (upper bump of B) -->
+      <path d="M -8 -11 L 4 -11 A 6 6 0 0 1 4 1 L -8 1 Z"/>
+      <!-- Bottom lobe (lower bump of B) -->
+      <path d="M -8 1 L 6 1 A 7 7 0 0 1 6 15 L -8 15 Z"/>
+      <!-- Cut-outs inside the lobes so the B reads -->
+      <path d="M -3 -8 L 1 -8 A 2.5 2.5 0 0 1 1 -3 L -3 -3 Z" fill="#f7931a"/>
+      <path d="M -3 4 L 2.5 4 A 3 3 0 0 1 2.5 12 L -3 12 Z" fill="#f7931a"/>
+    </g>
+  </g>
+
+  <!-- ── Main lightning bolt (screen centre) ──
+       Same geometry as v2 so brand memory carries over. -->
+  <path d="M 296 150
+           L 180 280
+           L 240 280
+           L 224 372
+           L 340 240
+           L 280 240
+           L 296 150 Z"
+        fill="url(#xpm_bolt)"/>
+
+  <!-- Bolt inner highlight (gives it dimensional glow) -->
+  <path d="M 296 150 L 280 240 L 240 280 L 228 340 Z"
+        fill="#d1fae5" opacity="0.28"/>
+
+  <!-- Outer highlight on chassis (top-left gloss) -->
+  <path d="M 32 128 Q 32 32 128 32 L 200 32"
+        fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round"/>
 </svg>

@@ -14,7 +14,7 @@
  * Assumes input is already background-removed PNG (use Leonardo Canvas
  * → Background Remover before dropping here).
  *
- * Input  : public/mascot/raw/<voltix|penny>/<1..6>.png
+ * Input  : public/mascot/raw-clean/<voltix|penny>/<1..6>.png  (alpha-matted)
  * Output : public/mascot/<voltix|penny>/<stage>.webp
  *
  * Usage:
@@ -65,8 +65,22 @@ async function processOne(inputPath, outputPath) {
     )
   }
 
-  const buffer = await sharp(raw)
-    // 1. Tight trim around opaque pixels
+  // 1a. Pre-process alpha: hard-clip low-alpha fringe pixels (halos left by
+  //     imperfect background removal — typically alpha ~15–35) before any
+  //     resize. We extract the alpha channel, threshold it to a crisp matte,
+  //     then re-join so edges stay solid through the downscale.
+  const cleanAlpha = await sharp(raw)
+    .extractChannel('alpha')
+    .threshold(40)                // alpha ≥40 → 255, else 0
+    .toBuffer()
+  const withCleanAlpha = await sharp(raw)
+    .removeAlpha()
+    .joinChannel(cleanAlpha)
+    .png()
+    .toBuffer()
+
+  const buffer = await sharp(withCleanAlpha)
+    // 1b. Tight trim around fully-opaque pixels (alpha now binary 0/255).
     .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 10 })
     // 2. Fit inside 480×480 preserving aspect, centered
     .resize(INNER, INNER, {
@@ -95,7 +109,14 @@ async function processOne(inputPath, outputPath) {
 }
 
 async function processGender(gender) {
-  const rawDir = join('public', 'mascot', 'raw', gender)
+  // Prefer the alpha-matted `raw-clean` (output of remove-bg-mascots.mjs).
+  // Fall back to `raw` so the script still works if the bg-removal pass
+  // hasn't been run. `raw/` is likely to have opaque backgrounds and will
+  // fail the hasAlpha check below — which is the correct loud failure mode.
+  const rawCleanDir = join('public', 'mascot', 'raw-clean', gender)
+  const rawDir = existsSync(rawCleanDir)
+    ? rawCleanDir
+    : join('public', 'mascot', 'raw', gender)
   const outDir = join('public', 'mascot', gender)
 
   if (!existsSync(rawDir)) {

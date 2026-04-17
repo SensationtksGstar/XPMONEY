@@ -569,3 +569,25 @@ export function markLessonComplete(userId: string, courseId: string, lessonId: s
   const lessons  = [...new Set([...current.completedLessons, lessonId])]
   saveCourseProgress(userId, courseId, { completedLessons: lessons })
 }
+
+/**
+ * Wipe every course progress entry for this user (all courses).
+ *
+ * Used by the "reset account" flow: the user asked that clicking "apagar
+ * todas as transações" also removes their certificates so the account is
+ * truly back to zero. Course progress lives in localStorage (not the DB),
+ * so the server-side reset endpoint can't touch it — we must sweep here,
+ * client-side, after the fetch succeeds.
+ */
+export function clearAllCourseProgress(userId: string) {
+  if (typeof window === 'undefined') return
+  try {
+    const prefix = `xpm_course_${userId}_`
+    const toRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(prefix)) toRemove.push(k)
+    }
+    toRemove.forEach(k => localStorage.removeItem(k))
+  } catch { /* storage disabled — non-critical */ }
+}

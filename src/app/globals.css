@@ -169,6 +169,38 @@
   50%       { opacity: 0.9;  transform: scale(1.2); }
 }
 
+/* ── Egg mood expressions (evo 1) ──
+   Eggs are static webp renders, so mood-reactivity is layered on via the
+   wrapping element. Three intensities map to the five moods:
+     sad        → eggShiver (tiny fearful tremble)
+     neutral    → no extra motion; the normal breathe/float cover it
+     happy      → eggWiggle (gentle side-to-side)
+     excited    → eggWiggle FAST
+     celebrating→ eggBounce (little hop + tiny rotation spike)                */
+@keyframes eggShiver {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-1.4px); }
+  40%       { transform: translateX( 1.4px); }
+  60%       { transform: translateX(-1px);   }
+  80%       { transform: translateX( 1px);   }
+}
+@keyframes eggWiggle {
+  0%, 100% { transform: rotate(-3.5deg); }
+  50%       { transform: rotate( 3.5deg); }
+}
+@keyframes eggBounce {
+  0%, 100% { transform: translateY(0)    rotate(0deg);   }
+  40%       { transform: translateY(-6px) rotate(-2.5deg); }
+  55%       { transform: translateY(-8px) rotate( 2.5deg); }
+  70%       { transform: translateY(0)    rotate(0deg);   }
+}
+/* Tear drop falling from a sad egg */
+@keyframes eggTear {
+  0%   { opacity: 0; transform: translateY(-4px) scale(0.7); }
+  20%  { opacity: 0.9; }
+  100% { opacity: 0;   transform: translateY(18px) scale(1.1); }
+}
+
 .animate-mascot-float    { animation: mascotFloat 4.5s ease-in-out infinite; }
 .animate-mascot-breathe  { animation: mascotBreathe 2.6s ease-in-out infinite; }
 .animate-mascot-blink    { animation: mascotBlink 5s ease-in-out infinite; }
@@ -176,6 +208,11 @@
 .animate-mascot-aura     { animation: mascotAuraPulse 3s ease-in-out infinite; }
 .animate-mascot-feather  { animation: mascotFeatherDrift 4s ease-in-out infinite; }
 .animate-mascot-sparkle  { animation: mascotSparkle 2.2s ease-in-out infinite; }
+.animate-egg-shiver      { animation: eggShiver 0.7s  ease-in-out infinite; transform-origin: center bottom; }
+.animate-egg-wiggle      { animation: eggWiggle 2.4s  ease-in-out infinite; transform-origin: center bottom; }
+.animate-egg-wiggle-fast { animation: eggWiggle 1.1s  ease-in-out infinite; transform-origin: center bottom; }
+.animate-egg-bounce      { animation: eggBounce 1.4s  ease-in-out infinite; transform-origin: center bottom; }
+.animate-egg-tear        { animation: eggTear   1.6s  ease-in-out infinite; }
 
 /* Stagger helpers for multiple particles */
 .delay-300  { animation-delay: 0.3s; }

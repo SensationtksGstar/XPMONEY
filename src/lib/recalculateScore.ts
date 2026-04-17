@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { calculateFinancialScore } from '@/lib/gamification'
 import { toNumber } from '@/lib/safeNumber'
 import { awardXP } from '@/lib/awardXP'
+import { updateMissionProgress } from '@/lib/updateMissionProgress'
 import { evoFromScore, evoBonusBetween, type EvoStage } from '@/lib/mascotEvolution'
 import type { FinancialScore } from '@/types'
 
@@ -122,6 +123,21 @@ export async function recalculateScore(
   } catch (err) {
     console.warn('[recalculateScore] mascot evolution check failed:', err)
   }
+
+  // ── Mission progress side-effects (all best-effort) ──────────────────────
+  // Compute inputs once, fire the three mission triggers in parallel.
+  const scoreDelta = prev ? Math.max(0, result.score - toNumber(prev.score, 0)) : 0
+  const uncategorized = txs.filter(t => !t.category_id).length
+  const savingsRate = income > 0 ? Math.max(0, (savings / income) * 100) : 0
+  await Promise.allSettled([
+    // Only tick `improve_score` when the score actually went UP vs the previous
+    // snapshot — otherwise a user could idle their way to completion.
+    scoreDelta > 0
+      ? updateMissionProgress(db, userId, { type: 'improve_score', score: scoreDelta })
+      : Promise.resolve(),
+    updateMissionProgress(db, userId, { type: 'categorize_all', uncategorized }),
+    updateMissionProgress(db, userId, { type: 'reach_savings_goal', savingsRate }),
+  ])
 
   return newScore as FinancialScore
 }

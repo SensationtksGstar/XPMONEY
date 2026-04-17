@@ -62,13 +62,29 @@ export function ProfileEditForm({
     setSaving(true)
     setError(null)
     try {
+      // Only send fields the user actually set — empty `name` would fail
+      // the server's min(1) validation and block saving goals/challenge.
+      const payload: Record<string, string> = {}
+      if (name.trim())  payload.name      = name.trim()
+      if (challenge)    payload.challenge = challenge
+      if (goal)         payload.goal      = goal
+      if (currency)     payload.currency  = currency
+
       const res = await fetch('/api/profile', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name, challenge, goal, currency }),
+        body:    JSON.stringify(payload),
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Erro ao guardar')
+      const json = await res.json().catch(() => ({ error: `Erro ${res.status}` }))
+      if (!res.ok) {
+        // Server may return a plain string or (legacy) an object — coerce safely
+        const msg = typeof json.error === 'string'
+          ? json.error
+          : typeof json.error === 'object' && json.error
+            ? JSON.stringify(json.error)
+            : 'Erro ao guardar'
+        throw new Error(msg)
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
       router.refresh()

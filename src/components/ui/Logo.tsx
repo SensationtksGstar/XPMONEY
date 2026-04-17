@@ -12,9 +12,15 @@ interface Props {
 }
 
 /**
- * XP Money logo — a rounded "coin" with emerald top half, dark bottom with
- * circuit grid, and a gold lightning bolt in the centre. Ties visually to the
- * Voltix mascot (electric/XP energy) and stays legible down to 16px.
+ * XP Money logo — v3 "Digivice" edition.
+ *
+ * An emerald handheld-device silhouette (Digimon Digivice-inspired): chassis
+ * with side buttons, a dark inner screen showing the signature lightning
+ * bolt, plus a subtle Bitcoin orange accent in the top-right corner of the
+ * screen to nod at crypto-aware finance without dominating the brand.
+ *
+ * Stays legible down to ~16px because the bolt + chassis silhouette remain
+ * the dominant shapes.
  */
 export function Logo({ size = 28, showText = false, textClass, className }: Props) {
   return (
@@ -26,50 +32,49 @@ export function Logo({ size = 28, showText = false, textClass, className }: Prop
         xmlns="http://www.w3.org/2000/svg"
         role="img"
         aria-label="XP Money"
-        className="flex-shrink-0 drop-shadow-[0_2px_8px_rgba(74,222,128,0.25)]"
+        className="flex-shrink-0 drop-shadow-[0_2px_8px_rgba(16,185,129,0.3)]"
       >
         <defs>
-          <linearGradient id="xpm-logo-ring" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%"   stopColor="#4ade80" />
-            <stop offset="100%" stopColor="#059669" />
-          </linearGradient>
-          <linearGradient id="xpm-logo-top" x1="0.5" y1="0" x2="0.5" y2="1">
-            <stop offset="0%"   stopColor="#34d399" />
-            <stop offset="100%" stopColor="#059669" />
+          <linearGradient id="xpm-logo-chassis" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stopColor="#10b981" />
+            <stop offset="100%" stopColor="#047857" />
           </linearGradient>
           <linearGradient id="xpm-logo-bolt" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#fde68a" />
-            <stop offset="50%"  stopColor="#facc15" />
-            <stop offset="100%" stopColor="#f59e0b" />
+            <stop offset="0%"   stopColor="#6ee7b7" />
+            <stop offset="100%" stopColor="#10b981" />
           </linearGradient>
         </defs>
 
-        {/* Coin body */}
-        <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#xpm-logo-ring)" />
-        <rect x="5" y="5" width="54" height="54" rx="13" fill="#060b14" />
+        {/* Chassis */}
+        <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#xpm-logo-chassis)" />
+        {/* Depth ring */}
+        <rect x="4" y="4" width="56" height="56" rx="12"
+          fill="none" stroke="#064e3b" strokeWidth="0.6" strokeOpacity="0.7" />
 
-        {/* Emerald top half */}
-        <path d="M 18 5 H 46 A 13 13 0 0 1 59 18 V 31 H 5 V 18 A 13 13 0 0 1 18 5 Z"
-          fill="url(#xpm-logo-top)" />
+        {/* Antenna dot */}
+        <circle cx="32" cy="8" r="1.2" fill="#d1fae5" opacity="0.6" />
 
-        {/* Divider */}
-        <rect x="5" y="30" width="54" height="1.5" fill="#060b14" />
+        {/* Side buttons */}
+        <rect x="5"  y="26" width="2" height="5" rx="1" fill="#064e3b" />
+        <rect x="5"  y="33" width="2" height="5" rx="1" fill="#064e3b" />
+        <rect x="57" y="29" width="2" height="7" rx="1" fill="#064e3b" />
 
-        {/* Circuit accents on bottom half */}
-        <g opacity="0.35" stroke="#22c55e" strokeWidth="0.6" fill="none">
-          <line x1="10" y1="42" x2="22" y2="42" />
-          <line x1="42" y1="42" x2="54" y2="42" />
-          <circle cx="11"  cy="42" r="0.8" fill="#22c55e" />
-          <circle cx="53"  cy="42" r="0.8" fill="#22c55e" />
-        </g>
+        {/* Screen */}
+        <rect x="12" y="14" width="40" height="34" rx="5" fill="#0a1220" />
+        <rect x="12" y="14" width="40" height="34" rx="5"
+          fill="none" stroke="#10b981" strokeOpacity="0.35" strokeWidth="0.7" />
 
-        {/* Central capsule */}
-        <rect x="22" y="20" width="20" height="24" rx="5"
-          fill="#060b14" stroke="url(#xpm-logo-ring)" strokeWidth="0.8" />
+        {/* Subtle BTC orange accent in top-right of screen */}
+        <circle cx="46" cy="20" r="2" fill="#f7931a" opacity="0.55" />
+        <text x="46" y="22" fontSize="3" fontWeight="900" textAnchor="middle"
+          fontFamily="Arial Black, sans-serif" fill="#0a1220" opacity="0.8">₿</text>
 
         {/* Lightning bolt */}
-        <path d="M 36 22 L 26 34 L 32 34 L 29 42 L 40 30 L 33 30 L 37 22 Z"
+        <path d="M 37 18 L 21 34 L 28.5 34 L 26 45 L 42 29 L 34.5 29 L 37 18 Z"
           fill="url(#xpm-logo-bolt)" />
+        {/* Bolt highlight */}
+        <path d="M 37 18 L 34.5 29 L 28.5 34 Z"
+          fill="#d1fae5" opacity="0.3" />
       </svg>
 
       {showText && (

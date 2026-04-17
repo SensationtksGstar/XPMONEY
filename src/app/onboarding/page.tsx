@@ -144,16 +144,22 @@ export default function OnboardingPage() {
                   }`}
                 >
                   <div className="w-28 h-28 flex items-center justify-center">
+                    {/*
+                      evo={1} — onboarding is literally the start of the
+                      journey, so the user should meet their mascot as an EGG
+                      (first evolution stage), not a mid-stage form. Evolves
+                      as they accumulate score.
+                    */}
                     <MascotCreature
                       gender="voltix"
-                      evo={3}
+                      evo={1}
                       mood="happy"
                       className="w-full h-full"
                     />
                   </div>
                   <div className="text-center">
                     <p className="text-white font-bold">Voltix</p>
-                    <p className="text-xs text-white/50 mt-0.5">Dragão-trovão azul</p>
+                    <p className="text-xs text-white/50 mt-0.5">Ovo de dragão-trovão</p>
                   </div>
                   {mascot === 'voltix' && (
                     <span className="text-xs text-green-400 font-semibold flex items-center gap-1">
@@ -174,14 +180,14 @@ export default function OnboardingPage() {
                   <div className="w-28 h-28 flex items-center justify-center">
                     <MascotCreature
                       gender="penny"
-                      evo={3}
+                      evo={1}
                       mood="happy"
                       className="w-full h-full"
                     />
                   </div>
                   <div className="text-center">
                     <p className="text-white font-bold">Penny</p>
-                    <p className="text-xs text-white/50 mt-0.5">Gata-anjo creme</p>
+                    <p className="text-xs text-white/50 mt-0.5">Ovo de gata-anjo</p>
                   </div>
                   {mascot === 'penny' && (
                     <span className="text-xs text-pink-300 font-semibold flex items-center gap-1">

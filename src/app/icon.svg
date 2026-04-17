@@ -1,21 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- XP Money favicon — matches /public/logo.svg at small scale. -->
+  <!--
+    XP Money favicon — Digivice v3, condensed for 16-64px rendering.
+    At this scale we keep chassis + screen + bolt. The BTC watermark is
+    reduced to a single orange dot (still reads as a "crypto" accent, no
+    glyph because it disappears below 24px anyway).
+  -->
   <defs>
-    <linearGradient id="t" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="c" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%"   stop-color="#10b981"/>
       <stop offset="100%" stop-color="#047857"/>
     </linearGradient>
-    <mask id="c">
-      <rect width="64" height="64" fill="#fff"/>
-      <path d="M 37 14.5
-               L 21.5 34
-               L 29 34
-               L 27 49.5
-               L 42.5 30
-               L 35 30
-               L 37 14.5 Z" fill="#000"/>
-    </mask>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#6ee7b7"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="14" ry="14"
-        fill="url(#t)" mask="url(#c)"/>
+  <!-- Chassis -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#c)"/>
+  <!-- Screen -->
+  <rect x="12" y="14" width="40" height="34" rx="5" fill="#0a1220"/>
+  <rect x="12" y="14" width="40" height="34" rx="5" fill="none" stroke="#10b981" stroke-opacity="0.4" stroke-width="0.8"/>
+  <!-- Antenna dot -->
+  <circle cx="32" cy="8" r="1.2" fill="#d1fae5" opacity="0.6"/>
+  <!-- Side buttons -->
+  <rect x="5"  y="26" width="2" height="5" rx="1" fill="#064e3b"/>
+  <rect x="5"  y="33" width="2" height="5" rx="1" fill="#064e3b"/>
+  <rect x="57" y="29" width="2" height="7" rx="1" fill="#064e3b"/>
+  <!-- Tiny BTC orange dot in top-right of screen -->
+  <circle cx="46" cy="20" r="2" fill="#f7931a" opacity="0.55"/>
+  <!-- Bolt -->
+  <path d="M 37 18 L 21 34 L 28.5 34 L 26 45 L 42 29 L 34.5 29 L 37 18 Z"
+        fill="url(#b)"/>
 </svg>

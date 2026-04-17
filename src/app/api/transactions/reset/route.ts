@@ -15,8 +15,11 @@ import { isDemoMode }                from '@/lib/demo/demoGuard'
  *   - voltix_states         (evolution_level → 1, mood → neutral, streak → 0)
  *   - financial_scores      (history cleared; a fresh zero-score row is written)
  *   - missions progress     (current_value → 0 on active missions)
- *   - goal_deposits         (wiped — goals themselves are NOT deleted)
- *   - goals.current_amount  (reset to 0 on every active goal)
+ *   - goal_deposits         (wiped)
+ *   - goals                 (ALL deleted — user said "poupanças também devem
+ *                           resetar"; without this, stale goal rows with a
+ *                           zeroed amount still showed up on the goals page
+ *                           after a reset, which looked like a bug)
  *
  * Badges and completed missions are kept intentionally — those are historical
  * achievements, not derived state.
@@ -64,12 +67,23 @@ export async function DELETE(req: NextRequest) {
     .eq('user_id', internalId)
 
   // ── 1. Core wipe (parallel where safe) ─────────────────────────────────
+  // goal_deposits must be wiped BEFORE goals because deposits reference goals
+  // via FK. The other deletes are order-independent.
   const wipeResults = await Promise.allSettled([
     db.from('transactions').delete().eq('user_id', internalId),
     db.from('xp_history').delete().eq('user_id', internalId),
     db.from('financial_scores').delete().eq('user_id', internalId),
     db.from('goal_deposits').delete().eq('user_id', internalId),
   ])
+
+  // Goals last — FKs from goal_deposits must be cleared first. A plain delete
+  // on goals would fail with a FK violation on older schemas if any deposit
+  // row still referenced it.
+  const { error: goalsDeleteErr } = await db
+    .from('goals').delete().eq('user_id', internalId)
+  if (goalsDeleteErr) {
+    console.warn('[transactions/reset] goals delete error:', goalsDeleteErr.message)
+  }
 
   // The transaction delete is the only one we refuse to silently ignore —
   // if it fails the whole reset is meaningless.
@@ -113,11 +127,7 @@ export async function DELETE(req: NextRequest) {
     db.from('missions').update({
       current_value: 0,
     }).eq('user_id', internalId).eq('status', 'active'),
-
-    db.from('goals').update({
-      current_amount: 0,
-      updated_at:     now,
-    }).eq('user_id', internalId).eq('status', 'active'),
+    // (Goals are fully deleted in step 1 — no reset-in-place needed.)
   ])
 
   for (const r of resetResults) {
