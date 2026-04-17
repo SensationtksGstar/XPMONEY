@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { LandingChat } from '@/components/landing/LandingChat'
@@ -59,21 +60,32 @@ export function DragonCoinFAB() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Abrir Dragon Coin — assistente da XP-Money"
-          className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[90] w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(34,197,94,0.45)] active:scale-95 transition-transform bg-gradient-to-br from-emerald-500 via-green-400 to-emerald-500"
+          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[90] w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_28px_rgba(34,197,94,0.5),0_0_0_3px_rgba(16,185,129,0.25)] active:scale-95 transition-transform bg-gradient-to-br from-emerald-500 via-green-400 to-emerald-500 overflow-hidden"
         >
           {/* Pulse ring — subtle "alive" indicator, attention-getter without
-              being intrusive. Pauses on hover/focus via CSS. */}
+              being intrusive. Sits OUTSIDE the image so overflow-hidden on
+              the button doesn't clip it — we render it as an absolutely
+              positioned sibling OUTSIDE the button via a following span. */}
           <span
             aria-hidden
-            className="absolute inset-0 rounded-full border-2 border-green-300/60 animate-ping"
+            className="pointer-events-none absolute -inset-0.5 rounded-full border-2 border-green-300/60 animate-ping"
             style={{ animationDuration: '2.4s' }}
           />
-          {/* Dragon emoji as placeholder icon. When there's a proper Dragon
-              Coin asset in /public/mascot/dragoncoin.webp, swap this <span>
-              for an <Image /> call. Sized generously so it reads at 14px. */}
-          <span className="relative text-[26px] leading-none drop-shadow-sm" aria-hidden>
-            🐲
-          </span>
+
+          {/* Proper Dragon Coin portrait. `priority` = false because it sits
+              below the fold until the user scrolls; we don't want it to
+              compete with above-the-fold LCP. `sizes` matches the 64×64 box
+              so Next picks the smallest variant. */}
+          <Image
+            src="/dragon-coin.webp"
+            alt=""
+            aria-hidden
+            width={64}
+            height={64}
+            sizes="64px"
+            priority={false}
+            className="relative w-full h-full object-cover object-top scale-[1.35] group-hover:scale-[1.45] transition-transform duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]"
+          />
         </button>
       )}
 
