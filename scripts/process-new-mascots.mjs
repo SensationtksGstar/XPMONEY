@@ -123,6 +123,29 @@ async function main() {
     console.error(`  ✗ dragon-coin.webp — ${err.message}`)
   }
 
+  // 4. Evolution chart SVGs (full 6-stage lineups) → wide WebP banners
+  //    Used on landing to illustrate progression end-to-end.
+  const CHARTS = [
+    { svg: 'MASCULINO/SVG/EVOLUCOES VOLTINI SVG.svg', out: 'public/mascot/evolucoes-voltix.webp' },
+    { svg: 'FEMININO/SVG/EVOLUCOES PENNY SVG.svg',    out: 'public/mascot/evolucoes-penny.webp'  },
+  ]
+  for (const { svg, out } of CHARTS) {
+    const src    = path.join(SRC, svg.replace(/\//g, path.sep))
+    const outAbs = path.join(ROOT, out)
+    try {
+      await fs.mkdir(path.dirname(outAbs), { recursive: true })
+      // Wider aspect — these SVGs are horizontal line-ups of 6 mascots.
+      await sharp(src, { density: 192 })
+        .resize(1920, null, { fit: 'inside', withoutEnlargement: false })
+        .webp({ quality: 88, effort: 5 })
+        .toFile(outAbs)
+      const stat = await fs.stat(outAbs)
+      console.log(`  ✓ ${out} (${(stat.size / 1024).toFixed(0)} KB)`)
+    } catch (err) {
+      console.error(`  ✗ ${out} — ${err.message}`)
+    }
+  }
+
   console.log('✅ Done.')
 }
 

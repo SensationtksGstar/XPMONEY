@@ -4,6 +4,7 @@ import { Logo }                   from '@/components/ui/Logo'
 import { LandingHero }            from '@/components/landing/LandingHero'
 import { LandingHowItWorks }      from '@/components/landing/LandingHowItWorks'
 import { LandingFeatures }        from '@/components/landing/LandingFeatures'
+import { LandingAdvantages }      from '@/components/landing/LandingAdvantages'
 import { LandingMascotShowcase }  from '@/components/landing/LandingMascotShowcase'
 import { LandingOutcomes }        from '@/components/landing/LandingOutcomes'
 import { LandingComparison }      from '@/components/landing/LandingComparison'
@@ -84,6 +85,9 @@ export default function LandingPage() {
 
       {/* ── 4. MASCOT SHOWCASE ──────────────────────────────────────── */}
       <LandingMascotShowcase />
+
+      {/* ── 4.5. ADVANTAGES (NEW) ───────────────────────────────────── */}
+      <LandingAdvantages />
 
       {/* ── 5. OUTCOMES ─────────────────────────────────────────────── */}
       <LandingOutcomes />
