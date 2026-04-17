@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown, Sparkles } from 'lucide-react'
-import { LandingChat } from './LandingChat'
 
 /**
  * LandingFAQ — perguntas mais afiadas + agente IA + fallback humano.
@@ -28,8 +27,8 @@ const FAQS: QA[] = [
     a: 'Tecnicamente sim — estão na nossa base de dados para fazermos o score funcionar. Mas: (1) nunca as lemos manualmente, (2) nunca são partilhadas com terceiros, (3) qualquer acesso admin fica em log, (4) podes apagar tudo num clique em Definições e a eliminação é definitiva em 30 dias. Se isto te desconforta, o plano Grátis permite usar a app só com categorias agregadas.',
   },
   {
-    q: 'O que acontece se eu cancelar a subscrição Plus/Pro?',
-    a: 'A conta continua a funcionar até ao fim do período pago. Depois, as features premium desaparecem (missões ilimitadas, scan recibos, import PDF) mas os teus dados — transações, objetivos, XP, mascote, certificados — ficam intactos. Podes voltar a subscrever a qualquer momento e recuperas tudo.',
+    q: 'O que acontece se eu cancelar a subscrição Premium?',
+    a: 'A conta continua a funcionar até ao fim do período pago. Depois, as features Premium desaparecem (missões ilimitadas, scan recibos, import PDF, simulador, relatório PDF) mas os teus dados — transações, objetivos, XP, mascote, certificados — ficam intactos. Podes voltar a subscrever a qualquer momento e recuperas tudo.',
   },
   {
     q: 'Se abrir a app daqui a 6 meses, o meu mascote morreu?',
@@ -41,11 +40,11 @@ const FAQS: QA[] = [
   },
   {
     q: 'Existe modo família ou posso partilhar com o meu parceiro/a?',
-    a: 'Sim, no plano Pro (€5,99/mês). Partilhas a app com até 4 pessoas — cada uma com login próprio, transações próprias, score próprio, e uma vista de família agregada para objetivos conjuntos (ex. "renda da casa", "férias do ano"). No plano Grátis ou Plus é estritamente 1 conta por pessoa.',
+    a: 'No momento a app é 1 conta por pessoa — cada user tem o seu login, transações, score e mascote. Para objetivos partilhados (ex. "renda da casa", "férias do ano") a forma prática hoje é cada um criar o seu objetivo e alinharem o valor a depositar. Modo família multi-conta está no roadmap.',
   },
   {
     q: 'Quão bom é o scan de recibos? Vai ler um talão amarrotado?',
-    a: 'Usamos Gemini 2.5 Flash Vision da Google. Em testes internos lê ~92% dos talões portugueses à primeira (Continente, Pingo Doce, Lidl, restaurantes com impressora térmica). Talões muito amarrotados, ilegíveis, ou em cursivo dão erros — nesse caso a app deixa-te corrigir manualmente antes de gravar. Imagens não são guardadas depois do processamento.',
+    a: 'Em testes internos lemos ~92% dos talões portugueses à primeira (Continente, Pingo Doce, Lidl, restaurantes com impressora térmica). Talões muito amarrotados, ilegíveis, ou em cursivo dão erros — nesse caso a app deixa-te corrigir manualmente antes de gravar. Imagens não são guardadas depois do processamento.',
   },
   {
     q: 'Posso exportar os meus dados se decidir sair?',
@@ -106,20 +105,26 @@ export function LandingFAQ() {
         })}
       </div>
 
-      {/* ── AI Agent ─────────────────────────────────────────────── */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+      {/* ── Dragon Coin nudge ────────────────────────────────────────
+          The conversational chat used to live inline here. It was moved to
+          a persistent floating button (DragonCoinFAB) in April 2026 so
+          users don't have to scroll past the whole FAQ to find it. This
+          block now just points at the FAB that is visible on every page. */}
+      <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent border border-green-500/20 rounded-2xl p-6 text-center">
+        <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-500/30 text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
           <Sparkles className="w-3 h-3" />
           Não encontraste? Pergunta-nos.
         </div>
-        <h3 className="text-2xl md:text-3xl font-bold mb-2">Agente XP-Money</h3>
-        <p className="text-white/55 text-sm max-w-lg mx-auto">
-          Pergunta o que quiseres sobre a app em linguagem natural.
-          Respondemos em segundos.
+        <h3 className="text-xl md:text-2xl font-bold mb-2 flex items-center justify-center gap-2">
+          <span aria-hidden className="text-2xl">🐲</span>
+          Fala com o Dragon Coin
+        </h3>
+        <p className="text-white/55 text-sm max-w-md mx-auto">
+          O nosso assistente virtual está sempre no canto do ecrã — clica
+          no botão verde em baixo à direita e pergunta o que quiseres sobre
+          a app, preços ou privacidade.
         </p>
       </div>
-
-      <LandingChat />
 
       {/* ── Human fallback ───────────────────────────────────────── */}
       <div className="mt-10 bg-white/[0.03] border border-white/10 rounded-2xl p-6 text-center">

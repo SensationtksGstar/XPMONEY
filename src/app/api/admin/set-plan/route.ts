@@ -16,7 +16,7 @@ import { revalidateTag }             from 'next/cache'
  *     is removed; it was a plan-escalation hole if the hard-coded secret
  *     ever leaked.
  *
- * Body: { "plan": "free" | "plus" | "pro" | "family" }
+ * Body: { "plan": "free" | "premium" }  (legacy aliases plus/pro/family aceites)
  */
 export async function POST(req: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
@@ -33,11 +33,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
   }
 
-  const validPlans = ['free', 'plus', 'pro', 'family'] as const
-  const plan = body.plan
-  if (typeof plan !== 'string' || !validPlans.includes(plan as typeof validPlans[number])) {
+  // Novo modelo usa só `free`/`premium`. Aceitamos os aliases antigos
+  // (`plus`/`pro`/`family`) para não partir testes/migrações — mas
+  // normalizamos para `premium` antes de gravar.
+  const validPlans = ['free', 'premium', 'plus', 'pro', 'family'] as const
+  const raw = body.plan
+  if (typeof raw !== 'string' || !validPlans.includes(raw as typeof validPlans[number])) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
   }
+  const plan = raw === 'free' ? 'free' : 'premium'
 
   const db = createSupabaseAdmin()
   const { error } = await db

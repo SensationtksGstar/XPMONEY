@@ -186,7 +186,7 @@ export default function MissionsPage() {
         <Crown className="w-7 h-7 text-yellow-400/60 mx-auto mb-2" />
         <p className="text-white/50 text-sm mb-3">
           Missões premium com recompensas maiores.<br />
-          Disponíveis com o plano Plus.
+          Disponíveis com o plano Premium.
         </p>
         <Link
           href="/settings/billing"

@@ -16,7 +16,7 @@ import { PrintButton }       from '@/components/reports/PrintButton'
  * no @react-pdf, no wasm bundle — just the browser's print engine.
  *
  * Gating: checked here (not at the API edge) because this is a regular page
- * route. Free/Plus users get a friendly upsell card; Pro+ get the report.
+ * route. Free users get a friendly upsell card; Premium users get the report.
  *
  * Trade-offs vs server-side PDF:
  *   ✗ No cron-friendly automated PDF generation (needs a real browser)
@@ -27,7 +27,14 @@ import { PrintButton }       from '@/components/reports/PrintButton'
 
 export const metadata = { title: 'Relatório financeiro' }
 
-const PLAN_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, family: 3 }
+const PLAN_RANK: Record<string, number> = {
+  free:    0,
+  premium: 1,
+  // legacy aliases — antigos plus/pro/family continuam a poder exportar
+  plus:    1,
+  pro:     1,
+  family:  1,
+}
 
 function toDate(v: string | null | undefined): Date | null {
   if (!v) return null
@@ -43,15 +50,15 @@ export default async function ReportPrintPage() {
   const plan   = (cached?.plan ?? 'free') as keyof typeof PLAN_RANK
   const rank   = PLAN_RANK[plan] ?? 0
 
-  // Only Pro+ can view the full report. Free/Plus see an upsell pane.
-  if (rank < 2) {
+  // Só Premium pode ver o relatório completo. Free vê um upsell.
+  if (rank < 1) {
     return (
       <main className="min-h-screen bg-[#0a0f1e] text-white flex items-center justify-center p-6 print:hidden">
         <div className="max-w-md text-center space-y-4">
           <div className="text-5xl">👑</div>
-          <h1 className="text-2xl font-bold">Relatório PDF é uma funcionalidade Pro</h1>
+          <h1 className="text-2xl font-bold">Relatório PDF é uma funcionalidade Premium</h1>
           <p className="text-white/60">
-            Faz upgrade para o plano Pro ou Family para exportar o teu relatório financeiro completo em PDF,
+            Faz upgrade para o plano Premium para exportar o teu relatório financeiro completo em PDF,
             com histórico mensal, categorias, score e evolução do teu mascote.
           </p>
           <a

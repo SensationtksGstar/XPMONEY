@@ -1,9 +1,10 @@
 import { auth }               from '@clerk/nextjs/server'
 import { redirect }           from 'next/navigation'
 import { createSupabaseAdmin } from '@/lib/supabase'
-import { Crown }               from 'lucide-react'
-import Link                    from 'next/link'
+import { PremiumFeatureLock } from '@/components/common/PremiumFeatureLock'
 import PerspectivaClient       from './PerspectivaClient'
+
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
 export const metadata = { title: 'Perspetiva de Riqueza' }
 
@@ -12,38 +13,39 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function PerspectivaPage() {
-  const { userId } = await auth()
-  if (!userId) redirect('/sign-in')
+  const { userId } = DEMO_MODE ? { userId: null } : await auth()
+  if (!DEMO_MODE && !userId) redirect('/sign-in')
 
   const db = createSupabaseAdmin()
 
-  // Direct DB query — never cached — ensures paywall sees authoritative plan
-  const { data: profile } = await db
-    .from('users')
-    .select('id, plan')
-    .eq('clerk_id', userId)
-    .single()
+  // Direct DB query — never cached — ensures paywall sees authoritative plan.
+  // Demo visitors are always treated as free-plan so they hit the teaser.
+  const profile = DEMO_MODE
+    ? { id: null as string | null, plan: 'free' as const }
+    : (await db
+        .from('users')
+        .select('id, plan')
+        .eq('clerk_id', userId as string)
+        .single()).data
 
   if (!profile) redirect('/dashboard')
 
-  // Paywall for non-pro users
-  if (profile.plan !== 'pro' && profile.plan !== 'family') {
+  // Paywall: Perspetiva só para Premium (inclui antigos plus/pro/family)
+  const paidPlans = new Set(['premium', 'plus', 'pro', 'family'])
+  if (!paidPlans.has(profile.plan ?? 'free')) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <div className="text-6xl mb-4">👑</div>
-        <h1 className="text-2xl font-bold text-white mb-2">Funcionalidade Pro</h1>
-        <p className="text-white/50 max-w-md mb-6">
-          A <strong className="text-white">Perspetiva de Riqueza</strong> está disponível exclusivamente no plano Pro.
-          Compara o teu salário com celebridades e descobre o custo real das tuas despesas.
-        </p>
-        <Link
-          href="/settings/billing"
-          className="flex items-center gap-2 bg-purple-500 hover:bg-purple-400 text-white font-bold px-6 py-3 rounded-xl transition-all"
-        >
-          <Crown className="w-5 h-5" />
-          Fazer upgrade para Pro
-        </Link>
-      </div>
+      <PremiumFeatureLock
+        icon="crown"
+        title="Perspetiva de Riqueza"
+        description="Compara o teu salário com celebridades, CEOs e os rendimentos médios europeus. Descobre o custo real de cada despesa em horas de trabalho."
+        bullets={[
+          'Salário médio anual vs Ronaldo, Messi, Elon Musk',
+          'Quantas horas de trabalho custa cada despesa (€5 café = 12 min)',
+          'Tendências de 24 meses com análise preditiva',
+          'Rankings de gasto por categoria vs média nacional',
+        ]}
+        preview={<FauxPerspectivaPreview />}
+      />
     )
   }
 
@@ -90,5 +92,39 @@ export default async function PerspectivaPage() {
       salaryTotal={totalSalary}
       recentExpenses={(expenseRes.data ?? []) as any[]}
     />
+  )
+}
+
+/**
+ * FauxPerspectivaPreview — silhouetted leaderboard + stat card used as the
+ * blurred backdrop for the PremiumFeatureLock. Deliberately data-less.
+ */
+function FauxPerspectivaPreview() {
+  const rows = [
+    { name: 'Cristiano Ronaldo', v: '€ 200M' },
+    { name: 'Elon Musk',         v: '€ 2.4B' },
+    { name: 'Tu (previsão)',     v: '€ 28k'  },
+    { name: 'Média EU',          v: '€ 31k'  },
+  ]
+  return (
+    <div className="w-full h-full p-8">
+      <div className="w-full h-full rounded-2xl bg-gradient-to-br from-yellow-500/10 via-purple-500/10 to-transparent p-8 flex flex-col gap-6">
+        {/* Hero KPI */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Horas de trabalho</div>
+          <div className="text-4xl font-bold text-white">Esse iPhone = 62h</div>
+          <div className="text-sm text-white/50 mt-2">Uma semana e meia só para pagar o telefone.</div>
+        </div>
+        {/* Leaderboard */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex-1">
+          {rows.map((r, i) => (
+            <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+              <span className="text-sm text-white/70">{r.name}</span>
+              <span className="text-sm font-bold text-yellow-300 tabular-nums">{r.v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }

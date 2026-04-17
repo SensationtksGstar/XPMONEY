@@ -11,6 +11,7 @@ import { LandingReviews }         from '@/components/landing/LandingReviews'
 import { LandingFAQ }             from '@/components/landing/LandingFAQ'
 import { LandingPricing }         from '@/components/landing/LandingPricing'
 import { LandingFooter }          from '@/components/landing/LandingFooter'
+import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
 
 /**
  * Landing page — the face of XP-Money.
@@ -25,7 +26,7 @@ import { LandingFooter }          from '@/components/landing/LandingFooter'
  *   6. Comparison        — vs Excel / generic bank apps
  *   7. Reviews           — 6 testimonials with ratings
  *   8. FAQ               — 8 real objections, answered
- *   9. Pricing           — Free / Plus / Pro with honest features
+ *   9. Pricing           — Free / Premium with honest features
  *  10. Final CTA         — last push to /sign-up
  *  11. Footer            — product / company / legal
  *
@@ -132,6 +133,9 @@ export default function LandingPage() {
 
       {/* ── 11. FOOTER ──────────────────────────────────────────────── */}
       <LandingFooter />
+
+      {/* Persistent Dragon Coin chat FAB — visible on every landing section. */}
+      <DragonCoinFAB />
     </main>
   )
 }

@@ -41,6 +41,7 @@ export default function OnboardingPage() {
   const [goal, setGoal]             = useState<string>('')
   const [goalAmount, setGoalAmount] = useState<string>('')
   const [loading, setLoading]       = useState(false)
+  const [errorMsg, setErrorMsg]     = useState<string | null>(null)
 
   const firstName = user?.firstName ?? 'explorador'
 
@@ -64,6 +65,7 @@ export default function OnboardingPage() {
 
   async function handleComplete() {
     setLoading(true)
+    setErrorMsg(null)
     try {
       track.onboarding_step(4, { goal_amount: goalAmount })
 
@@ -78,7 +80,18 @@ export default function OnboardingPage() {
         }),
       })
 
-      if (!res.ok) throw new Error('Onboarding API failed')
+      if (!res.ok) {
+        // Surface the real server error to the UI so the user (and any log
+        // watcher) can see exactly what failed instead of a silent no-op.
+        let detail = `HTTP ${res.status}`
+        try {
+          const body = await res.json()
+          detail += ` — ${JSON.stringify(body).slice(0, 400)}`
+        } catch {
+          try { detail += ` — ${(await res.text()).slice(0, 400)}` } catch {}
+        }
+        throw new Error(detail)
+      }
 
       track.onboarding_completed(challenge)
 
@@ -90,6 +103,7 @@ export default function OnboardingPage() {
       window.location.href = '/dashboard'
     } catch (err) {
       console.error('Erro no onboarding:', err)
+      setErrorMsg(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
@@ -353,6 +367,13 @@ export default function OnboardingPage() {
                   </>
                 )}
               </button>
+
+              {errorMsg && (
+                <div className="mt-4 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 text-sm break-words">
+                  <p className="font-semibold mb-1">Não foi possível concluir o onboarding:</p>
+                  <p className="font-mono text-xs leading-relaxed opacity-90">{errorMsg}</p>
+                </div>
+              )}
             </div>
           )}
 

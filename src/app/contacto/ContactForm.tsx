@@ -153,7 +153,7 @@ export function ContactForm() {
           onChange={e => setSubject(e.target.value)}
           maxLength={120}
           required
-          placeholder="Ex: Como cancelar o plano Plus"
+          placeholder="Ex: Como cancelar o Premium"
           className="w-full bg-white/5 border border-white/10 focus:border-green-400/50 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors"
         />
       </div>

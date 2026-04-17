@@ -28,12 +28,12 @@ const MAX_HISTORY = 8
 
 const SEED_ASSISTANT: Message = {
   role: 'assistant',
-  content: 'Olá! Sou o assistente da XP-Money. Posso explicar como funciona, preços, privacidade… o que quiseres saber antes de criares conta. 🤖',
+  content: 'Olá! Sou o Dragon Coin 🐲 — o assistente da XP-Money. Pergunta-me sobre como funciona, preços, privacidade ou features Premium. Estou cá para te ajudar a decidir antes de criares conta.',
 }
 
 const QUICK_PROMPTS = [
   'Como funciona o score financeiro?',
-  'Qual a diferença entre Plus e Pro?',
+  'O que entra no plano Premium?',
   'Preciso ligar o meu banco?',
   'Como cancelo a subscrição?',
 ]
@@ -99,7 +99,7 @@ export function LandingChat() {
           <Sparkles className="w-4 h-4 text-black" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-white text-sm">Assistente XP-Money</p>
+          <p className="font-semibold text-white text-sm">Dragon Coin</p>
           <p className="text-[11px] text-white/50 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             Online · respostas em segundos

@@ -4,7 +4,7 @@
 
 // ---- USER ----
 
-export type Plan = 'free' | 'plus' | 'pro' | 'family'
+export type Plan = 'free' | 'premium'
 
 export interface UserProfile {
   id: string

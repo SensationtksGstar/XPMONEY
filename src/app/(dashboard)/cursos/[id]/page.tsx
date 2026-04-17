@@ -17,7 +17,13 @@ import {
 } from '@/lib/courses'
 import type { Course, CourseProgress } from '@/lib/courses'
 
-const PLAN_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, family: 3 }
+const PLAN_RANK: Record<string, number> = {
+  free:    0,
+  premium: 1,
+  plus:    1,
+  pro:     1,
+  family:  1,
+}
 
 // ── Certificate helpers ──────────────────────────────────────────────────────
 /** Deterministic certificate code (same inputs → same code). */
@@ -443,12 +449,12 @@ export default function CourseDetailPage() {
         </div>
         <div className="flex items-center gap-2 bg-purple-500/15 border border-purple-500/30 text-purple-300 px-4 py-2.5 rounded-xl font-semibold text-sm">
           <Lock className="w-4 h-4" />
-          Disponível no plano {course.plan === 'pro' ? 'Pro' : 'Plus'}
+          Disponível no plano Premium
         </div>
         <Link href="/settings/billing"
           className="flex items-center gap-2 bg-purple-500 hover:bg-purple-400 text-white font-bold px-6 py-3 rounded-xl transition-all">
           <Crown className="w-5 h-5" />
-          Fazer upgrade para {course.plan === 'pro' ? 'Pro' : 'Plus'}
+          Fazer upgrade para Premium
         </Link>
         <Link href="/cursos" className="text-white/40 hover:text-white text-sm">← Voltar à Academia</Link>
       </div>

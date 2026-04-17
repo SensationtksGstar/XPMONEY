@@ -107,6 +107,15 @@ function RasterWithFallback({ onFallback, ...props }: Props & { onFallback: () =
       alt={`${gender} evolution ${evo}`}
       onError={() => setFailed(true)}
       className="w-full h-full object-contain select-none pointer-events-none"
+      // Drop-shadow + soft coloured glow "lifts" the mascot off its container.
+      // Without it the pet reads as a rectangular sticker slapped on a card —
+      // with it, the alpha edges feather into the background and the figure
+      // feels like a 3D puppet casting its own light. The shadow colour picks
+      // up the mood palette so a sad mascot bleeds blue, a celebrating one
+      // bleeds gold, etc.
+      style={{
+        filter: `drop-shadow(0 10px 14px rgba(0,0,0,0.45)) drop-shadow(0 0 18px ${palette.aura}55)`,
+      }}
       draggable={false}
     />
   )
@@ -146,9 +155,23 @@ function RasterWithFallback({ onFallback, ...props }: Props & { onFallback: () =
 
   return (
     <div className={`relative ${className} animate-mascot-float`}>
+      {/* Ground-level aura puddle — keeps the mascot anchored to a "floor"
+          instead of hovering in a rectangular void. Slightly wider and
+          further from the body than before so small renders still read as
+          grounded; on big renders it becomes a proper spotlight. */}
       <div
-        className="absolute -bottom-2 left-1/2 w-3/5 h-6 blur-2xl rounded-full animate-mascot-aura transition-colors duration-700"
+        className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-3/4 h-8 blur-2xl rounded-full animate-mascot-aura transition-colors duration-700 opacity-80"
         style={{ backgroundColor: palette.aura }}
+      />
+      {/* Soft radial backdrop — a faint halo behind the mascot that bleeds
+          into the container so the pet doesn't look boxed in. Positioned
+          behind the pointer host so tilt/breathe doesn't move it. */}
+      <div
+        className="absolute inset-0 rounded-full opacity-60 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 50% 55%, ${palette.aura}22 0%, ${palette.aura}10 35%, transparent 70%)`,
+        }}
+        aria-hidden
       />
       {/* Perspective host — listens to pointer, anchors the 3D scene */}
       <div

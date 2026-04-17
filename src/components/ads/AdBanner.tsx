@@ -63,8 +63,8 @@ export function AdBanner({ variant = 'feed', className = '' }: Props) {
             <div className="text-xs text-white/20 mb-1 uppercase tracking-wider font-medium">Publicidade</div>
             <div className="text-xs text-white/40">
               Espaço reservado para anúncios · Remove anúncios com{' '}
-              <Link href="/settings/billing" className="text-green-400 hover:text-green-300 font-semibold">
-                Plus ou Pro
+              <Link href="/settings/billing" className="text-purple-400 hover:text-purple-300 font-semibold">
+                Premium
               </Link>
             </div>
           </div>
@@ -86,7 +86,7 @@ export function AdBanner({ variant = 'feed', className = '' }: Props) {
       <div className="text-[10px] text-white/20 text-right mb-1 uppercase tracking-wider">
         Publicidade ·{' '}
         <Link href="/settings/billing" className="hover:text-white/40 transition-colors">
-          Remover com Plus
+          Remover com Premium
         </Link>
       </div>
       <ins

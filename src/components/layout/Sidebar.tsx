@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   { href: '/perspetiva',   label: 'Perspetiva', icon: Star,            pro: true  },
   { href: '/simulador',    label: 'Simulador',  icon: TrendingUp,      pro: true  },
   { href: '/cursos',       label: 'Academia',   icon: BookOpen,        pro: true  },
-  { href: '/voltix',       label: 'Voltix',     icon: Zap,             pro: false },
+  { href: '/voltix',       label: 'Pet',        icon: Zap,             pro: false },
   { href: '/settings',     label: 'Definições', icon: Settings,        pro: false },
 ]
 
@@ -71,8 +71,8 @@ export function Sidebar() {
         >
           <Crown className="w-4 h-4 text-purple-400" />
           <div>
-            <div className="text-xs font-semibold text-purple-400">Ver planos</div>
-            <div className="text-xs text-white/40">Academia · Perspetiva · Pro</div>
+            <div className="text-xs font-semibold text-purple-400">Ver Premium</div>
+            <div className="text-xs text-white/40">Academia · Perspetiva · Scan</div>
           </div>
         </Link>
       </div>

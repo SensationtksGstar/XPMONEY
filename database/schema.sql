@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
   email           TEXT NOT NULL UNIQUE,
   name            TEXT NOT NULL,
   avatar_url      TEXT,
-  plan            TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'plus', 'pro', 'family')),
+  plan            TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'premium')),
   onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
   country         TEXT NOT NULL DEFAULT 'PT',
   currency        TEXT NOT NULL DEFAULT 'EUR',
@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   stripe_customer_id      TEXT NOT NULL UNIQUE,
   stripe_subscription_id  TEXT UNIQUE,
   plan                    TEXT NOT NULL DEFAULT 'free'
-                          CHECK (plan IN ('free', 'plus', 'pro', 'family')),
+                          CHECK (plan IN ('free', 'premium')),
   status                  TEXT NOT NULL DEFAULT 'active'
                           CHECK (status IN ('active', 'canceled', 'past_due', 'trialing')),
   current_period_end      TIMESTAMPTZ,

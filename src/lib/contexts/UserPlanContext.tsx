@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from 'react'
 
-type Plan = 'free' | 'plus' | 'pro' | 'family'
+type Plan = 'free' | 'premium'
 
 interface UserPlanContextValue {
   plan: Plan

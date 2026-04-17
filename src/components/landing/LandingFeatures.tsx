@@ -46,7 +46,7 @@ const FEATURES = [
     bg:    'bg-purple-500/10',
     title: 'Scan de recibos',
     desc:  'Tira foto, a IA lê valor, data e categoria. Adiciona a transação em 2 segundos.',
-    proof: 'Powered by Gemini Vision',
+    proof: 'Lê ~92% dos talões PT',
   },
   {
     icon:  <FileText   className="w-5 h-5" />,
@@ -62,7 +62,7 @@ const FEATURES = [
     bg:    'bg-orange-500/10',
     title: 'Objetivos de poupança',
     desc:  'Define metas, acompanha depósitos, recebe XP quando atinges. Fundo de emergência como missão.',
-    proof: 'Ilimitado no plano Plus',
+    proof: 'Ilimitado no Premium',
   },
   {
     icon:  <GraduationCap className="w-5 h-5" />,

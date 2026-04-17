@@ -21,8 +21,15 @@ export interface ImportStatementResult extends Omit<StatementParseResult, 'trans
 export const runtime     = 'nodejs'
 export const maxDuration = 60
 
-// ── Plan gating: Plus or higher can import statements ───────────────────────
-const PLAN_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, family: 3 }
+// ── Plan gating: Premium can import statements ──────────────────────────────
+const PLAN_RANK: Record<string, number> = {
+  free:    0,
+  premium: 1,
+  // legacy aliases — grandfathered accounts continue working
+  plus:    1,
+  pro:     1,
+  family:  1,
+}
 
 // Text (CSV/TSV/TXT) limits — small, parsed instantly
 const MAX_TEXT_BYTES = 200_000
@@ -75,7 +82,7 @@ export async function POST(req: NextRequest) {
   if (rank < 1) {
     return NextResponse.json(
       {
-        error: 'Importação de extratos disponível apenas nos planos Plus e superiores.',
+        error: 'Importação de extratos disponível apenas no plano Premium.',
         code:  'plan_required',
       },
       { status: 403 },

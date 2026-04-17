@@ -13,11 +13,14 @@ import { PDFReportCard }     from '@/components/settings/PDFReportCard'
 
 export const metadata = { title: 'Definições' }
 
+// Modelo 2-tier. Legacy plus/pro/family fazem fallback para premium para
+// contas ainda não migradas.
 const PLAN_LABELS: Record<string, { name: string; icon: string; color: string }> = {
-  free:   { name: 'Gratuito', icon: '🌱', color: 'text-white/60' },
-  plus:   { name: 'Plus',     icon: '⚡', color: 'text-green-400' },
-  pro:    { name: 'Pro',      icon: '👑', color: 'text-purple-400' },
-  family: { name: 'Family',   icon: '👨‍👩‍👧', color: 'text-blue-400' },
+  free:    { name: 'Gratuito', icon: '🌱', color: 'text-white/60' },
+  premium: { name: 'Premium',  icon: '👑', color: 'text-purple-400' },
+  plus:    { name: 'Premium',  icon: '👑', color: 'text-purple-400' },
+  pro:     { name: 'Premium',  icon: '👑', color: 'text-purple-400' },
+  family:  { name: 'Premium',  icon: '👑', color: 'text-purple-400' },
 }
 
 export default async function SettingsPage() {

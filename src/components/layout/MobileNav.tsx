@@ -26,10 +26,10 @@ const PRIMARY_NAV = [
 const MORE_ITEMS = [
   { href: '/cursos',     label: 'Academia',   icon: BookOpen,    badge: null        },
   { href: '/missions',   label: 'Missões',    icon: Swords,      badge: null        },
-  { href: '/voltix',     label: 'Voltix',     icon: Zap,         badge: null        },
+  { href: '/voltix',     label: 'Pet',        icon: Zap,         badge: null        },
   { href: '/badges',     label: 'Conquistas', icon: Trophy,      badge: null        },
-  { href: '/perspetiva', label: 'Perspetiva', icon: LineChart,   badge: '👑 PRO'   },
-  { href: '/simulador',  label: 'Simulador',  icon: TrendingUp,  badge: '👑 PRO'   },
+  { href: '/perspetiva', label: 'Perspetiva', icon: LineChart,   badge: '👑 PREMIUM' },
+  { href: '/simulador',  label: 'Simulador',  icon: TrendingUp,  badge: '👑 PREMIUM' },
   { href: '/settings',   label: 'Definições', icon: Settings,    badge: null        },
 ]
 

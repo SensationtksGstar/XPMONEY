@@ -7,6 +7,7 @@ import { TopBar }           from '@/components/layout/TopBar'
 import { MobileNav }        from '@/components/layout/MobileNav'
 import { UserPlanProvider } from '@/lib/contexts/UserPlanContext'
 import { MascotEvolutionWatcher } from '@/components/voltix/MascotEvolutionWatcher'
+import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
 
 // Force dynamic — plan must always be authoritative, never cached
 export const dynamic = 'force-dynamic'
@@ -19,7 +20,12 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  let plan: 'free' | 'plus' | 'pro' | 'family' = 'pro'
+  // Demo mode serves a Free-plan experience on purpose — visitors should
+  // get a taste of the free tier and see lockpalm on Premium features
+  // so the landing funnel makes sense. A "logged-in demo" that had full
+  // Premium access was confusing: visitors downloaded everything they'd
+  // otherwise pay for, with no nudge to convert.
+  let plan: 'free' | 'premium' = 'free'
 
   if (!DEMO_MODE) {
     const { userId } = await auth()
@@ -37,7 +43,9 @@ export default async function DashboardLayout({
       redirect('/onboarding')
     }
 
-    plan = (user.plan ?? 'free') as 'free' | 'plus' | 'pro' | 'family'
+    // Legacy tiers (plus/pro/family) mapeiam para 'premium' no novo modelo.
+    const raw = user.plan ?? 'free'
+    plan = raw === 'free' ? 'free' : 'premium'
   }
 
   return (
@@ -62,6 +70,9 @@ export default async function DashboardLayout({
         <Suspense fallback={null}>
           <MascotEvolutionWatcher />
         </Suspense>
+
+        {/* Persistent Dragon Coin chat FAB — available across the dashboard. */}
+        <DragonCoinFAB />
       </div>
     </UserPlanProvider>
   )

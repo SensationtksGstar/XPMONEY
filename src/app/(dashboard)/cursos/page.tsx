@@ -14,7 +14,14 @@ const LEVEL_COLOR: Record<string, string> = {
   'Avançado':    'text-purple-400 bg-purple-500/15 border-purple-500/20',
 }
 
-const PLAN_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, family: 3 }
+const PLAN_RANK: Record<string, number> = {
+  free:    0,
+  premium: 1,
+  // legacy aliases — manter cursos desbloqueados para contas antigas
+  plus:    1,
+  pro:     1,
+  family:  1,
+}
 
 export default function CursosPage() {
   const { user }         = useUser()
@@ -106,7 +113,7 @@ export default function CursosPage() {
                     <div className="flex-shrink-0 text-right">
                       <div className="flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold px-2.5 py-1.5 rounded-xl">
                         <Lock className="w-3 h-3" />
-                        {course.plan === 'pro' ? 'Pro' : 'Plus'}
+                        Premium
                       </div>
                     </div>
                   </div>
@@ -116,7 +123,7 @@ export default function CursosPage() {
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 font-bold text-sm rounded-xl transition-all"
                     >
                       <Crown className="w-4 h-4" />
-                      Fazer upgrade para {course.plan === 'pro' ? 'Pro' : 'Plus'}
+                      Fazer upgrade para Premium
                     </Link>
                   </div>
                 </div>

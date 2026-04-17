@@ -206,7 +206,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                 <div className="px-5 py-3 bg-purple-500/10 flex items-center gap-3">
                   <Crown className="w-4 h-4 text-purple-400 flex-shrink-0" />
                   <p className="text-xs text-white/70 flex-1">
-                    Scanner de faturas disponível a partir do <strong className="text-purple-300">plano Plus</strong>
+                    Scanner de faturas disponível no <strong className="text-purple-300">plano Premium</strong>
                   </p>
                   <Link
                     href="/settings/billing"

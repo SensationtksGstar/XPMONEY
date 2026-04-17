@@ -3,23 +3,26 @@
 import { FileText, Lock } from 'lucide-react'
 import { useUserPlan } from '@/lib/contexts/UserPlanContext'
 
+const IS_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+
 /**
- * PDFReportCard — settings entry point for the Pro+ PDF financial report.
+ * PDFReportCard — settings entry point for the Premium PDF financial report.
  *
  * Design decision: we link to `/reports/print` in a NEW TAB (target="_blank")
  * so the user's current settings context isn't blown away by the print page.
  * The print page auto-opens the browser's Save-as-PDF dialog via PrintButton.
  *
- * Plan gating mirrors what the server route does: Free/Plus see a muted
+ * Plan gating mirrors what the server route does: Free users see a muted
  * "upgrade to unlock" state. We still render a disabled button rather than
  * hiding the card — users need to know the feature exists so they know what
  * they'd get by upgrading.
  */
 export function PDFReportCard() {
-  const { plan } = useUserPlan()
+  const { isPaid } = useUserPlan()
 
-  // Pro / Family unlock the feature. Matches rank ≥ 2 at /reports/print.
-  const unlocked = plan === 'pro' || plan === 'family'
+  // Premium (ou legacy plus/pro/family) desbloqueia a feature.
+  // `isPaid` == plan !== 'free' — o layout já coerce legacy → premium.
+  const unlocked = isPaid
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl p-5">
@@ -29,7 +32,7 @@ export function PDFReportCard() {
         {!unlocked && (
           <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 inline-flex items-center gap-1">
             <Lock className="w-2.5 h-2.5" />
-            PRO
+            PREMIUM
           </span>
         )}
       </h2>
@@ -51,11 +54,11 @@ export function PDFReportCard() {
         </a>
       ) : (
         <a
-          href="/settings/billing"
-          className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.98]"
+          href={IS_DEMO ? '/sign-up' : '/settings/billing'}
+          className="w-full flex items-center justify-center gap-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-200 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.98]"
         >
           <Lock className="w-4 h-4" />
-          Desbloquear com Pro
+          {IS_DEMO ? 'Criar conta para gerar relatório' : 'Desbloquear com Premium'}
         </a>
       )}
 

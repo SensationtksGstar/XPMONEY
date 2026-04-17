@@ -9,7 +9,9 @@ export default async function BillingPage() {
   if (!userId) return null
 
   const profile = await getUserProfile(userId)
-  const currentPlan = (profile?.plan ?? 'free') as 'free' | 'plus' | 'pro' | 'family'
+  // Normaliza legacy plus/pro/family -> premium no novo modelo 2-tier.
+  const raw = profile?.plan ?? 'free'
+  const currentPlan: 'free' | 'premium' = raw === 'free' ? 'free' : 'premium'
 
   return <BillingClient currentPlan={currentPlan} />
 }

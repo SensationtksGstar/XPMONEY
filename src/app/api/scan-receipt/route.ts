@@ -6,7 +6,14 @@ import { scanReceipt, AIProvidersError, type ReceiptScanResult } from '@/lib/ai'
 // Re-export for clients
 export type { ReceiptScanResult }
 
-const PLAN_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, family: 3 }
+const PLAN_RANK: Record<string, number> = {
+  free:    0,
+  premium: 1,
+  // legacy aliases — utilizadores migrados de tiers antigos continuam premium
+  plus:    1,
+  pro:     1,
+  family:  1,
+}
 
 export async function POST(req: NextRequest) {
   const demo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -23,7 +30,7 @@ export async function POST(req: NextRequest) {
     const rank = PLAN_RANK[user.plan ?? 'free'] ?? 0
     if (rank < 1) {
       return NextResponse.json(
-        { error: 'Funcionalidade exclusiva do plano Plus ou superior.' },
+        { error: 'Funcionalidade exclusiva do plano Premium.' },
         { status: 403 },
       )
     }

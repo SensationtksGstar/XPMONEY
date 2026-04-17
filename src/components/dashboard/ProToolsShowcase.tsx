@@ -4,7 +4,14 @@ import Link           from 'next/link'
 import { LineChart, TrendingUp, BookOpen, Lock, Crown } from 'lucide-react'
 import { useUserPlan } from '@/lib/contexts/UserPlanContext'
 
-const PLAN_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, family: 3 }
+const PLAN_RANK: Record<string, number> = {
+  free:    0,
+  premium: 1,
+  // legacy
+  plus:    1,
+  pro:     1,
+  family:  1,
+}
 
 interface Tool {
   href:     string
@@ -13,9 +20,10 @@ interface Tool {
   icon:     typeof LineChart
   emoji:    string
   gradient: string
-  minPlan:  'plus' | 'pro'
 }
 
+// Com o modelo 2-tier, todas as Premium tools requerem o mesmo plano —
+// removemos o `minPlan` granular para evitar copy inconsistente.
 const TOOLS: Tool[] = [
   {
     href:     '/perspetiva',
@@ -24,7 +32,6 @@ const TOOLS: Tool[] = [
     icon:     LineChart,
     emoji:    '👁️',
     gradient: 'from-purple-600 to-indigo-500',
-    minPlan:  'pro',
   },
   {
     href:     '/simulador',
@@ -33,7 +40,6 @@ const TOOLS: Tool[] = [
     icon:     TrendingUp,
     emoji:    '📈',
     gradient: 'from-blue-600 to-cyan-500',
-    minPlan:  'pro',
   },
   {
     href:     '/cursos',
@@ -42,31 +48,30 @@ const TOOLS: Tool[] = [
     icon:     BookOpen,
     emoji:    '🎓',
     gradient: 'from-emerald-600 to-green-500',
-    minPlan:  'plus',
   },
 ]
 
 export function ProToolsShowcase() {
   const { plan } = useUserPlan()
   const userRank = PLAN_RANK[plan] ?? 0
+  const premiumRequired = 1
 
   return (
-    <section aria-label="Ferramentas Pro">
+    <section aria-label="Ferramentas Premium">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-semibold text-white flex items-center gap-1.5">
           <Crown className="w-4 h-4 text-purple-400" />
-          Ferramentas Pro
+          Ferramentas Premium
         </h2>
         <Link href="/settings/billing" className="text-xs text-purple-300 hover:text-purple-200">
-          Ver planos →
+          Ver plano →
         </Link>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
         {TOOLS.map(tool => {
           const Icon     = tool.icon
-          const required = PLAN_RANK[tool.minPlan]
-          const locked   = userRank < required
+          const locked   = userRank < premiumRequired
 
           const href = locked ? '/settings/billing' : tool.href
 
@@ -95,7 +100,7 @@ export function ProToolsShowcase() {
               {locked && (
                 <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 bg-purple-500/25 text-purple-200 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-purple-500/30">
                   <Lock className="w-2 h-2" />
-                  {tool.minPlan === 'pro' ? 'PRO' : 'PLUS'}
+                  PREMIUM
                 </span>
               )}
               <Icon className="hidden" aria-hidden />

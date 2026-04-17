@@ -27,7 +27,12 @@ export interface Course {
   lessons:     Lesson[]
   quiz:        QuizQuestion[]
   certificate: { title: string; description: string }
-  plan:        'plus' | 'pro'
+  /**
+   * Plan gate. No modelo 2-tier só existe `premium`.
+   * `plus`/`pro` são aliases legacy para dados antigos — quem tiver
+   * `plus` ou `pro` no DB é tratado como premium no runtime.
+   */
+  plan:        'premium' | 'plus' | 'pro'
 }
 
 export const COURSES: Course[] = [
@@ -39,7 +44,7 @@ export const COURSES: Course[] = [
     color:    'from-green-600 to-emerald-500',
     level:    'Iniciante',
     duration: 30,
-    plan:     'plus',
+    plan:     'premium',
     certificate: {
       title:       'Certificado em Gestão Financeira Básica',
       description: 'Dominou os fundamentos de orçamento pessoal, fundo de emergência e eliminação de dívidas.',
@@ -186,7 +191,7 @@ Com Bola de Neve: foca o cartão (€400) → pessoal → carro
     color:    'from-blue-600 to-indigo-500',
     level:    'Intermédio',
     duration: 35,
-    plan:     'pro',
+    plan:     'premium',
     certificate: {
       title:       'Certificado em Investimento Básico',
       description: 'Compreendeu os princípios de risco/retorno, ETFs, juro composto e construção de carteira diversificada.',
@@ -367,7 +372,7 @@ A diferença entre 30 e 40 anos não é 33% mais — é 132% mais. O juro compos
     color:    'from-purple-600 to-violet-500',
     level:    'Avançado',
     duration: 40,
-    plan:     'pro',
+    plan:     'premium',
     certificate: {
       title:       'Certificado em Independência Financeira',
       description: 'Dominou os conceitos de taxa de poupança, movimento FIRE e automatização financeira.',
