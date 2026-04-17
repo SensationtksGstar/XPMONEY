@@ -56,6 +56,31 @@ DO $$ BEGIN
       );
   END IF;
 END $$;
+
+-- ── bug_reports ── user-submitted bug reports (admin-only reads) ──────────
+CREATE TABLE IF NOT EXISTS public.bug_reports (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID        REFERENCES public.users(id) ON DELETE SET NULL,
+  clerk_id    TEXT,
+  email       TEXT,
+  title       TEXT        NOT NULL,
+  description TEXT        NOT NULL,
+  page_url    TEXT,
+  user_agent  TEXT,
+  app_version TEXT,
+  status      TEXT        NOT NULL DEFAULT 'new'
+    CHECK (status IN ('new','triaged','resolved','wontfix')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS bug_reports_status_idx     ON public.bug_reports (status);
+CREATE INDEX IF NOT EXISTS bug_reports_user_idx       ON public.bug_reports (user_id);
+CREATE INDEX IF NOT EXISTS bug_reports_created_at_idx ON public.bug_reports (created_at DESC);
+
+ALTER TABLE public.bug_reports ENABLE ROW LEVEL SECURITY;
+-- No policies — the service role (our admin client) bypasses RLS and is the
+-- only path that writes / reads this table.
 `
 
 export async function POST(req: NextRequest) {
