@@ -16,6 +16,10 @@ create table if not exists bug_reports (
   clerk_id    text,                -- raw Clerk id so we can reach the user even if users row is gone
   email       text,                -- best-known email at submission time
 
+  -- Distinguishes where the message came from: 'bug' (Settings → Reportar um bug)
+  -- or 'contact' (public /contacto form). Admin dashboard filters by this.
+  type        text not null default 'bug' check (type in ('bug','contact')),
+
   title       text not null,
   description text not null,
 
@@ -33,7 +37,22 @@ create table if not exists bug_reports (
 
 create index if not exists bug_reports_status_idx     on bug_reports (status);
 create index if not exists bug_reports_user_idx       on bug_reports (user_id);
+create index if not exists bug_reports_type_idx       on bug_reports (type);
 create index if not exists bug_reports_created_at_idx on bug_reports (created_at desc);
+
+-- ── If the table already exists (older migration), retro-add the column.
+alter table bug_reports add column if not exists type text not null default 'bug';
+-- Guard the CHECK constraint separately so older rows with NULL survive.
+do $$ begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where constraint_name = 'bug_reports_type_check'
+      and table_name = 'bug_reports'
+  ) then
+    alter table bug_reports add constraint bug_reports_type_check
+      check (type in ('bug','contact'));
+  end if;
+end $$;
 
 -- RLS: off. The table is admin-only — all writes go through the service role.
 alter table bug_reports enable row level security;

@@ -31,6 +31,7 @@ interface BugReport {
   user_agent:  string | null
   app_version: string | null
   status:      'new' | 'triaged' | 'resolved' | 'wontfix'
+  type?:       'bug' | 'contact'
   created_at:  string
   resolved_at: string | null
 }
@@ -147,7 +148,19 @@ ALTER TABLE public.bug_reports ENABLE ROW LEVEL SECURITY;`}</pre>
             >
               <header className="flex items-start justify-between gap-3 mb-2 flex-wrap">
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-white truncate">{r.title}</h3>
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    {r.type === 'contact' && (
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-blue-300 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded">
+                        Contacto
+                      </span>
+                    )}
+                    {(!r.type || r.type === 'bug') && (
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-orange-300 bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 rounded">
+                        Bug
+                      </span>
+                    )}
+                    <h3 className="font-semibold text-white truncate">{r.title}</h3>
+                  </div>
                   <p className="text-xs text-white/40 mt-0.5">
                     {formatWhen(r.created_at)}
                     {r.email && <> · <a href={`mailto:${r.email}`} className="underline hover:text-white/60">{r.email}</a></>}

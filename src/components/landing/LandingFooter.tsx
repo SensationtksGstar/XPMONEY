@@ -28,18 +28,17 @@ const COLUMNS = [
   {
     title: 'Empresa',
     links: [
-      { label: 'Sobre nós',        href: '/sobre',   soon: true },
-      { label: 'Blog',             href: '/blog',    soon: true },
-      { label: 'Contacto',         href: 'mailto:ola@xpmoney.app' },
+      { label: 'Sobre nós',        href: '/sobre',    soon: true },
+      { label: 'Blog',             href: '/blog',     soon: true },
+      { label: 'Contacto',         href: '/contacto' },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Termos de serviço', href: '/termos',       soon: true },
-      { label: 'Privacidade',       href: '/privacidade',  soon: true },
-      { label: 'Cookies',           href: '/cookies',      soon: true },
-      { label: 'GDPR',              href: '/gdpr',         soon: true },
+      { label: 'Termos de serviço', href: '/termos'       },
+      { label: 'Privacidade',       href: '/privacidade'  },
+      { label: 'Cookies',           href: '/cookies'      },
     ],
   },
 ]

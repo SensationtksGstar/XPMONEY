@@ -1,58 +1,59 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronDown, Sparkles } from 'lucide-react'
+import { LandingChat } from './LandingChat'
 
 /**
- * LandingFAQ — addresses the 8 actual objections we hear before signup.
+ * LandingFAQ — perguntas mais afiadas + agente IA + fallback humano.
  *
- * Rule for writing these: the answer cannot contain the word "apenas" or
- * "simplesmente" — if it did the objection wasn't real. Every answer ends
- * with a concrete claim the user can verify.
+ * Princípio de edição: eliminámos o banal ("é seguro?", "funciona offline?")
+ * e deixámos só perguntas que um prospect REAL faz antes de comprar — as
+ * que nem sequer sabem que se podem perguntar. Cada resposta:
+ *   1. Começa com a verdade crua (sim/não/depende)
+ *   2. Dá um detalhe verificável
+ *   3. Não usa "apenas" nem "simplesmente"
  *
- * Interactive (client component) so only one item expanded at a time.
- * SEO note: all answers render in DOM (hidden via max-height, not
- * display:none) so search engines index them — important for long-tail
- * queries like "xp money é seguro", "xp money vs revolut", etc.
+ * Layout: primeiro a FAQ pré-escrita para SEO (todas as answers sempre no
+ * DOM, collapsed via max-height), depois o chat IA para perguntas que
+ * ficaram de fora, depois um CTA claro para /contacto se quiserem humano.
  */
 
-interface QA {
-  q: string
-  a: string
-}
+interface QA { q: string; a: string }
 
 const FAQS: QA[] = [
   {
-    q: 'Tenho de ligar a app à minha conta bancária?',
-    a: 'Não. Não pedimos credenciais do banco e nunca vamos pedir. Registas transações à mão (< 30s), por scan de recibo, ou importas o extrato em PDF que descarregas do homebanking. A única forma da app aceder aos teus dados é se TU os enviares.',
+    q: 'Vocês conseguem ver as minhas transações?',
+    a: 'Tecnicamente sim — estão na nossa base de dados para fazermos o score funcionar. Mas: (1) nunca as lemos manualmente, (2) nunca são partilhadas com terceiros, (3) qualquer acesso admin fica em log, (4) podes apagar tudo num clique em Definições e a eliminação é definitiva em 30 dias. Se isto te desconforta, o plano Grátis permite usar a app só com categorias agregadas.',
   },
   {
-    q: 'Como é que os meus dados financeiros estão protegidos?',
-    a: 'Todos os dados são cifrados em trânsito (HTTPS) e em repouso (Supabase/Postgres). Autenticação via Clerk (MFA disponível). GDPR-compliant. Podes apagar tudo (transações, poupanças, certificados) com um clique em Definições — e o apagar é imediato e definitivo.',
+    q: 'O que acontece se eu cancelar a subscrição Plus/Pro?',
+    a: 'A conta continua a funcionar até ao fim do período pago. Depois, as features premium desaparecem (missões ilimitadas, scan recibos, import PDF) mas os teus dados — transações, objetivos, XP, mascote, certificados — ficam intactos. Podes voltar a subscrever a qualquer momento e recuperas tudo.',
   },
   {
-    q: 'A parte gamificada não é infantil?',
-    a: 'A escolha é tua: se quiseres, ignoras o mascote e usas só o score + transações + gráficos. Mas as pessoas que deixam a app "em modo jogo" mantêm-na aberta 3× mais tempo — e é aí que se formam os hábitos financeiros.',
+    q: 'Se abrir a app daqui a 6 meses, o meu mascote morreu?',
+    a: 'Não morre. O Voltix / Penny guarda a evolução mais alta que atingiste — nunca desce de nível por inatividade. O que acontece é que entra em "modo triste" até retomares (transações + check-in diário). Mal voltes a usar regularmente, ele recupera em 3-5 dias.',
   },
   {
-    q: 'Quanto tempo demora a ver resultados?',
-    a: 'Score financeiro aparece na primeira transação. Missões personalizadas aparecem no final da primeira semana (quando temos dados suficientes). A maioria dos early users reporta mudanças de comportamento visíveis em 14-21 dias.',
+    q: 'Como é que vocês competem com uma app do banco (Revolut, BPI)?',
+    a: 'Não competimos — complementamos. Apps de banco mostram o que aconteceu (extrato, saldo). A XP Money mostra o que deves mudar (score baixo em restaurantes → missão "cozinhar 3x esta semana"). E tem a camada motivacional (mascote, XP, streaks) que nenhum banco vai fazer, porque o negócio deles é que gastes mais, não menos.',
   },
   {
-    q: 'Funciona fora de Portugal?',
-    a: 'A app é em português (PT-PT), categorias adaptadas ao mercado português (restaurantes, combustível, CP, etc.) e suporta EUR como moeda principal. Planeamos suportar USD/BRL/GBP + EN/ES em breve — entra e deixamos saber quando chegar.',
+    q: 'Existe modo família ou posso partilhar com o meu parceiro/a?',
+    a: 'Sim, no plano Pro (€5,99/mês). Partilhas a app com até 4 pessoas — cada uma com login próprio, transações próprias, score próprio, e uma vista de família agregada para objetivos conjuntos (ex. "renda da casa", "férias do ano"). No plano Grátis ou Plus é estritamente 1 conta por pessoa.',
   },
   {
-    q: 'Posso mudar de plano ou cancelar?',
-    a: 'Sim, a qualquer momento e sem penalização. Cancelas e o plano continua ativo até ao fim do período pago. Fazes downgrade e mantemos os teus dados intactos — a única coisa que desaparece são as features premium.',
+    q: 'Quão bom é o scan de recibos? Vai ler um talão amarrotado?',
+    a: 'Usamos Gemini 2.5 Flash Vision da Google. Em testes internos lê ~92% dos talões portugueses à primeira (Continente, Pingo Doce, Lidl, restaurantes com impressora térmica). Talões muito amarrotados, ilegíveis, ou em cursivo dão erros — nesse caso a app deixa-te corrigir manualmente antes de gravar. Imagens não são guardadas depois do processamento.',
   },
   {
-    q: 'Quem está por trás da app?',
-    a: 'Somos uma equipa portuguesa de 2 pessoas — 1 engenheira de software + 1 profissional de finanças pessoais. Sem VCs, sem investidores, sem pressão para vender os teus dados. A app sustenta-se dos planos pagos.',
+    q: 'Posso exportar os meus dados se decidir sair?',
+    a: 'Sim — é um direito RGPD e cumprimos. Em Definições → Privacidade tens um botão de export que te dá um ZIP com: (1) todas as transações em CSV, (2) objetivos e depósitos em JSON, (3) certificados dos cursos em PDF, (4) histórico de XP. Não há "lock-in" no teu próprio dinheiro.',
   },
   {
-    q: 'Como é que vocês ganham dinheiro?',
-    a: 'Só das subscrições Plus (€2,99/mês) e Pro (€5,99/mês). No plano gratuito há anúncios discretos para cobrir custos de servidor. Nunca vendemos dados a terceiros — a privacidade é o nosso produto tanto como a app em si.',
+    q: 'Posso usar só a parte gamificada e ignorar o financeiro?',
+    a: 'Podes, mas não é a ideia. O XP vem de ações financeiras reais (registar transações, atingir objetivos, completar missões). Sem transações, o mascote fica no nível 1 e o score em 0. Se só queres um Tamagotchi digital, há melhores apps para isso — a XP Money faz sentido quando usas o lado financeiro a sério.',
   },
 ]
 
@@ -61,12 +62,16 @@ export function LandingFAQ() {
 
   return (
     <section className="px-6 py-24 max-w-3xl mx-auto">
+      {/* ── Pre-written FAQ ──────────────────────────────────────── */}
       <div className="text-center mb-12">
         <p className="text-green-400 font-semibold text-sm uppercase tracking-widest mb-2">Perguntas frequentes</p>
-        <h2 className="text-4xl md:text-5xl font-bold">O que toda a gente pergunta</h2>
+        <h2 className="text-4xl md:text-5xl font-bold">Perguntas que importam</h2>
+        <p className="text-white/55 text-lg mt-4">
+          As respostas às perguntas que a maioria faz — mas não encontra em nenhum lado.
+        </p>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 mb-16">
         {FAQS.map((f, i) => {
           const isOpen = open === i
           return (
@@ -89,27 +94,48 @@ export function LandingFAQ() {
                   }`}
                 />
               </button>
-
-              {/* Answer — always in DOM for SEO, collapsed via max-height */}
               <div
                 className={`overflow-hidden transition-all duration-300 ${
-                  isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                  isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
-                <p className="px-5 pb-5 text-sm text-white/65 leading-relaxed">{f.a}</p>
+                <p className="px-5 pb-5 text-sm text-white/70 leading-relaxed">{f.a}</p>
               </div>
             </article>
           )
         })}
       </div>
 
-      <p className="text-center text-sm text-white/40 mt-8">
-        Ainda tens dúvidas?{' '}
-        <a href="mailto:ola@xpmoney.app" className="text-green-400 hover:text-green-300 underline">
-          Escreve-nos
-        </a>{' '}
-        — respondemos em &lt; 24h.
-      </p>
+      {/* ── AI Agent ─────────────────────────────────────────────── */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+          <Sparkles className="w-3 h-3" />
+          Não encontraste? Pergunta-nos.
+        </div>
+        <h3 className="text-2xl md:text-3xl font-bold mb-2">Agente XP Money</h3>
+        <p className="text-white/55 text-sm max-w-lg mx-auto">
+          Pergunta o que quiseres sobre a app em linguagem natural.
+          Respondemos em segundos.
+        </p>
+      </div>
+
+      <LandingChat />
+
+      {/* ── Human fallback ───────────────────────────────────────── */}
+      <div className="mt-10 bg-white/[0.03] border border-white/10 rounded-2xl p-6 text-center">
+        <h4 className="font-bold text-white mb-2">Queres falar connosco a sério?</h4>
+        <p className="text-sm text-white/60 mb-4 max-w-md mx-auto">
+          Preenche o formulário — responde uma pessoa real em menos de 24h.
+          Sem partilhamos o nosso email porque preferimos tracking centralizado
+          dos pedidos (mas o teu email fica connosco para responder).
+        </p>
+        <Link
+          href="/contacto"
+          className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          Abrir formulário de contacto →
+        </Link>
+      </div>
     </section>
   )
 }
