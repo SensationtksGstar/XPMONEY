@@ -31,13 +31,29 @@ export function LandingHero() {
 
   return (
     <section className="relative pt-28 pb-16 md:pb-24 px-6 overflow-hidden">
-      {/* Ambient lighting — layered radial glows to suggest an energy field
-          around the mascot without a heavy hero image. */}
+      {/* Cinematic backdrop — hero art (Voltix egg cracking in a neon data
+          stream) layered behind the content at reduced opacity and with a
+          cool overlay so the text stays legible. This is the piece that
+          gives the landing its "real game" feel without drowning the UI. */}
       <div aria-hidden className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-green-500/10 rounded-full blur-3xl" />
+        <div
+          className="absolute inset-0 bg-center bg-cover opacity-[0.28]"
+          style={{ backgroundImage: 'url(/herobot.webp)' }}
+        />
+        {/* Dark gradient from top + bottom so the art is strongest mid-band */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#060b14] via-[#060b14]/60 to-[#060b14]" />
+        {/* Radial vignette so the edges fall off into true black */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse at center, transparent 40%, #060b14 85%)',
+          }}
+        />
+        {/* Accent glows — kept subtle now the photo carries the colour */}
         <div className="absolute top-40 right-[18%] w-[380px] h-[380px] bg-yellow-500/10 rounded-full blur-3xl" />
         <div className="absolute top-20 left-[10%] w-[320px] h-[320px] bg-purple-500/10 rounded-full blur-3xl" />
-        {/* Subtle grid — reads as "digital/data" without being literal HUD */}
+        {/* Faint grid on top for "data" reading */}
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
