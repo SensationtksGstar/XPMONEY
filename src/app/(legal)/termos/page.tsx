@@ -27,7 +27,7 @@ export default function TermosPage() {
       <p>
         Estes Termos regulam a utilização da aplicação <strong>XP-Money</strong>{' '}
         (&quot;Serviço&quot;) — uma plataforma de finanças pessoais gamificadas acessível
-        em <code>xp-money.com</code> e como PWA instalável.
+        em <code>xp-money.com</code> (e <code>xp-money.pt</code>, que redireciona para o principal) e como PWA instalável.
       </p>
       <p>
         Ao criar uma conta ou utilizar o Serviço, declaras ter <strong>16 anos ou mais</strong>{' '}

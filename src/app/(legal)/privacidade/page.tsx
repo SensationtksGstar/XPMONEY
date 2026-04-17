@@ -32,7 +32,8 @@ export default function PrivacidadePage() {
         O <strong>XP-Money</strong> é um serviço de finanças pessoais gamificadas operado
         pela entidade responsável identificada abaixo (&quot;nós&quot;, &quot;XP-Money&quot;). Esta
         Política explica como recolhemos, usamos e protegemos os teus dados
-        pessoais quando utilizas o website <strong>xp-money.com</strong> ou
+        pessoais quando utilizas os websites <strong>xp-money.com</strong> ou
+        <strong> xp-money.pt</strong> (que redireciona para o principal) ou
         qualquer versão instalada como PWA.
       </p>
       <p>
