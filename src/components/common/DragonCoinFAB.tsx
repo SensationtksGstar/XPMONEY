@@ -60,22 +60,20 @@ export function DragonCoinFAB() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Abrir Dragon Coin — assistente da XP-Money"
-          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[90] w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_28px_rgba(34,197,94,0.5),0_0_0_3px_rgba(16,185,129,0.25)] active:scale-95 transition-transform bg-gradient-to-br from-emerald-500 via-green-400 to-emerald-500 overflow-hidden"
+          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[90] w-16 h-16 flex items-center justify-center active:scale-95 transition-transform drop-shadow-[0_6px_18px_rgba(34,197,94,0.35)] drop-shadow-[0_0_18px_rgba(34,197,94,0.22)]"
         >
-          {/* Pulse ring — subtle "alive" indicator, attention-getter without
-              being intrusive. Sits OUTSIDE the image so overflow-hidden on
-              the button doesn't clip it — we render it as an absolutely
-              positioned sibling OUTSIDE the button via a following span. */}
+          {/* Pulse halo — glow verde delicado APENAS atrás da silhueta do
+              dragão (sem caixa/círculo sólido). A luz é feita com
+              drop-shadow no próprio Image + este halo blurrado. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute -inset-0.5 rounded-full border-2 border-green-300/60 animate-ping"
+            className="pointer-events-none absolute inset-1 rounded-full bg-green-400/30 blur-xl animate-ping"
             style={{ animationDuration: '2.4s' }}
           />
 
-          {/* Proper Dragon Coin portrait. `priority` = false because it sits
-              below the fold until the user scrolls; we don't want it to
-              compete with above-the-fold LCP. `sizes` matches the 64×64 box
-              so Next picks the smallest variant. */}
+          {/* Dragon Coin portrait. Sem moldura — apenas o animal com alfa
+              transparente + glow emerald. `priority` = false, sits below
+              the fold until the user scrolls. */}
           <Image
             src="/dragon-coin.webp"
             alt=""
@@ -84,7 +82,7 @@ export function DragonCoinFAB() {
             height={64}
             sizes="64px"
             priority={false}
-            className="relative w-full h-full object-cover object-top scale-[1.35] group-hover:scale-[1.45] transition-transform duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]"
+            className="relative w-full h-full object-contain scale-[1.1] group-hover:scale-[1.18] transition-transform duration-300"
           />
         </button>
       )}

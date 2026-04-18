@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronDown, Sparkles } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 /**
  * LandingFAQ — perguntas mais afiadas + agente IA + fallback humano.
@@ -111,12 +112,21 @@ export function LandingFAQ() {
           users don't have to scroll past the whole FAQ to find it. This
           block now just points at the FAB that is visible on every page. */}
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent border border-green-500/20 rounded-2xl p-6 text-center">
-        <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-500/30 text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-          <Sparkles className="w-3 h-3" />
-          Não encontraste? Pergunta-nos.
+        {/* Retrato do Dragon Coin — sem moldura, apenas o animal com um glow
+            emerald via drop-shadow. Serve de âncora visual do mascote que
+            vive no FAB flutuante. */}
+        <div className="flex items-center justify-center mb-4">
+          <Image
+            src="/dragon-coin.webp"
+            alt=""
+            aria-hidden
+            width={96}
+            height={96}
+            sizes="96px"
+            className="w-24 h-24 object-contain drop-shadow-[0_8px_24px_rgba(34,197,94,0.35)] drop-shadow-[0_0_28px_rgba(34,197,94,0.25)]"
+          />
         </div>
-        <h3 className="text-xl md:text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-          <span aria-hidden className="text-2xl">🐲</span>
+        <h3 className="text-xl md:text-2xl font-bold mb-2">
           Fala com o Dragon Coin
         </h3>
         <p className="text-white/55 text-sm max-w-md mx-auto">
