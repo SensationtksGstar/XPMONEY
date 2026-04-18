@@ -71,19 +71,22 @@ export function DragonCoinFAB() {
             style={{ animationDuration: '2.4s' }}
           />
 
-          {/* Dragon Coin portrait. O botão agora TEM moldura circular dark
-              com ring verde, mas o próprio dragão continua a flutuar sem
-              caixa à volta dele — o círculo é do container, não do
-              animal. */}
+          {/* Dragon Coin portrait. O botão tem moldura circular dark com
+              ring verde; o dragão (imagem 512×512 HQ trimada, sem fundo
+              branco) está escalado para ~1.2× e posicionado um pouco
+              acima do centro para compensar que a cauda sai para baixo
+              direita — assim o corpo/cabeça ficam centrados visualmente
+              dentro do círculo. */}
           <Image
             src="/dragon-coin.webp"
             alt=""
             aria-hidden
-            width={64}
-            height={64}
-            sizes="64px"
+            width={128}
+            height={128}
+            sizes="128px"
+            quality={95}
             priority={false}
-            className="relative w-full h-full object-contain scale-[1.08] group-hover:scale-[1.15] transition-transform duration-300 drop-shadow-[0_0_6px_rgba(34,197,94,0.4)]"
+            className="relative w-full h-full object-contain scale-[1.22] group-hover:scale-[1.3] -translate-y-[2px] transition-transform duration-300 drop-shadow-[0_0_6px_rgba(34,197,94,0.5)]"
           />
         </button>
       )}
