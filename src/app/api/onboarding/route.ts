@@ -23,9 +23,19 @@ export async function POST(req: NextRequest) {
 
   const db = createSupabaseAdmin()
 
-  // Buscar utilizador
-  let { data: user } = await db
-    .from('users').select('id').eq('clerk_id', userId).single()
+  // Buscar utilizador — maybeSingle() para não rebentar com PGRST116 em users frescos
+  const { data: existingUser, error: lookupErr } = await db
+    .from('users').select('id').eq('clerk_id', userId).maybeSingle()
+
+  if (lookupErr) {
+    console.warn('[onboarding] user lookup failed:', lookupErr)
+    return NextResponse.json(
+      { error: `Falha ao localizar utilizador: ${lookupErr.message}` },
+      { status: 500 },
+    )
+  }
+
+  let user = existingUser
 
   // Se não existe, criar
   if (!user) {
@@ -33,35 +43,76 @@ export async function POST(req: NextRequest) {
       headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
     }).then(r => r.json())
 
-    const { data: created } = await db
+    // Base payload — cada linha deste insert deve existir em produção. A coluna
+    // `mascot_gender` só foi adicionada em migração posterior, portanto se o
+    // insert falhar por coluna inexistente tentamos outra vez sem ela e
+    // delegamos a escolha ao localStorage (comportamento documentado no
+    // MascotPicker). Isto evita bloquear onboarding em deploys onde a
+    // migração ainda não foi aplicada.
+    const basePayload = {
+      clerk_id:             userId,
+      email:                clerkUser.email_addresses?.[0]?.email_address ?? '',
+      name:                 `${clerkUser.first_name ?? ''} ${clerkUser.last_name ?? ''}`.trim() || 'Utilizador',
+      avatar_url:           clerkUser.image_url ?? null,
+      onboarding_completed: true,
+    }
+
+    let { data: created, error: insertErr } = await db
       .from('users')
-      .insert({
-        clerk_id:             userId,
-        email:                clerkUser.email_addresses[0]?.email_address ?? '',
-        name:                 `${clerkUser.first_name ?? ''} ${clerkUser.last_name ?? ''}`.trim() || 'Utilizador',
-        avatar_url:           clerkUser.image_url ?? null,
-        onboarding_completed: true,
-        mascot_gender:        parsed.data.mascot_gender,
-      })
+      .insert({ ...basePayload, mascot_gender: parsed.data.mascot_gender })
       .select('id')
-      .single()
+      .maybeSingle()
+
+    if (insertErr && /mascot_gender/.test(insertErr.message ?? '')) {
+      // Retry sem a coluna em falta
+      const retry = await db
+        .from('users')
+        .insert(basePayload)
+        .select('id')
+        .maybeSingle()
+      created    = retry.data
+      insertErr  = retry.error
+    }
+
+    if (insertErr || !created) {
+      console.warn('[onboarding] user insert failed:', insertErr)
+      return NextResponse.json(
+        { error: `Falha ao criar utilizador: ${insertErr?.message ?? 'sem detalhe'}` },
+        { status: 500 },
+      )
+    }
 
     user = created
   } else {
-    // Marcar onboarding completo + gravar escolha de mascote
-    await db.from('users')
+    // Marcar onboarding completo + gravar escolha de mascote — ignorar falha
+    // silenciosa só se for coluna inexistente (graceful degrade)
+    const { error: updateErr } = await db.from('users')
       .update({
         onboarding_completed: true,
         mascot_gender:        parsed.data.mascot_gender,
       })
       .eq('id', user.id)
+
+    if (updateErr && /mascot_gender/.test(updateErr.message ?? '')) {
+      await db.from('users')
+        .update({ onboarding_completed: true })
+        .eq('id', user.id)
+    } else if (updateErr) {
+      console.warn('[onboarding] user update failed:', updateErr)
+      return NextResponse.json(
+        { error: `Falha ao actualizar utilizador: ${updateErr.message}` },
+        { status: 500 },
+      )
+    }
   }
 
-  if (!user) return NextResponse.json({ error: 'Falha ao criar utilizador' }, { status: 500 })
+  if (!user) {
+    return NextResponse.json({ error: 'Falha ao criar utilizador' }, { status: 500 })
+  }
 
   // Criar conta padrão — só se ainda não existir
   const { data: existingAccount } = await db
-    .from('accounts').select('id').eq('user_id', user.id).limit(1).single()
+    .from('accounts').select('id').eq('user_id', user.id).limit(1).maybeSingle()
 
   if (!existingAccount) {
     await db.from('accounts').insert({
@@ -75,7 +126,7 @@ export async function POST(req: NextRequest) {
 
   // Criar estado XP inicial — só se ainda não existir
   const { data: existingXP } = await db
-    .from('xp_progress').select('id').eq('user_id', user.id).single()
+    .from('xp_progress').select('id').eq('user_id', user.id).maybeSingle()
 
   if (!existingXP) {
     await db.from('xp_progress').insert({
@@ -92,7 +143,7 @@ export async function POST(req: NextRequest) {
 
   // Criar estado Voltix — só se ainda não existir
   const { data: existingVoltix } = await db
-    .from('voltix_states').select('id').eq('user_id', user.id).single()
+    .from('voltix_states').select('id').eq('user_id', user.id).maybeSingle()
 
   if (!existingVoltix) {
     await db.from('voltix_states').insert({
@@ -149,7 +200,7 @@ export async function POST(req: NextRequest) {
 
   // Dar badge Early Adopter
   const { data: badge } = await db
-    .from('badges').select('id').eq('code', 'early_adopter').single()
+    .from('badges').select('id').eq('code', 'early_adopter').maybeSingle()
   if (badge) {
     await db.from('user_badges').upsert({
       user_id:  user.id,

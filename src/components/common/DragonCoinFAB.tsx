@@ -72,10 +72,11 @@ export function DragonCoinFAB() {
             style={{ animationDuration: '2.4s' }}
           />
 
-          {/* Proper Dragon Coin portrait. `priority` = false because it sits
-              below the fold until the user scrolls; we don't want it to
-              compete with above-the-fold LCP. `sizes` matches the 64×64 box
-              so Next picks the smallest variant. */}
+          {/* Dragon Coin portrait. Image is pre-trimmed to a tight square, so
+              object-contain fills the circle naturally — no aggressive scaling
+              needed. A slight hover bump (1.08) gives life without cropping
+              limbs. `priority` = false because it sits below the fold until
+              the user scrolls. */}
           <Image
             src="/dragon-coin.webp"
             alt=""
@@ -84,7 +85,7 @@ export function DragonCoinFAB() {
             height={64}
             sizes="64px"
             priority={false}
-            className="relative w-full h-full object-cover object-top scale-[1.35] group-hover:scale-[1.45] transition-transform duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]"
+            className="relative w-full h-full object-contain scale-[1.05] group-hover:scale-[1.12] transition-transform duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
           />
         </button>
       )}
