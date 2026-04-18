@@ -1,8 +1,31 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
-import { Send, Sparkles, User, MessageSquare } from 'lucide-react'
+import { Send, User, MessageSquare } from 'lucide-react'
+
+/** Avatar redondo com o retrato do Dragon Coin — usado no header e em cada
+ *  mensagem do assistente para reforçar a identidade do agente em vez do
+ *  placeholder genérico de estrelas. */
+function DragonAvatar({ size = 36 }: { size?: number }) {
+  return (
+    <div
+      className="relative rounded-full overflow-hidden bg-gradient-to-br from-emerald-500 via-green-400 to-emerald-500 shadow-[0_0_20px_rgba(34,197,94,0.35)] flex-shrink-0"
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src="/dragon-coin.webp"
+        alt=""
+        aria-hidden
+        width={size}
+        height={size}
+        sizes={`${size}px`}
+        className="w-full h-full object-contain scale-[1.05]"
+      />
+    </div>
+  )
+}
 
 /**
  * LandingChat — agente IA inline na página de FAQ.
@@ -95,9 +118,7 @@ export function LandingChat() {
     <section className="bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 bg-white/[0.03]">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)]">
-          <Sparkles className="w-4 h-4 text-black" />
-        </div>
+        <DragonAvatar size={36} />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-white text-sm">Dragon Coin</p>
           <p className="text-[11px] text-white/50 flex items-center gap-1.5">
@@ -124,17 +145,13 @@ export function LandingChat() {
             key={i}
             className={`flex items-start gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
           >
-            <div
-              className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center ${
-                m.role === 'user'
-                  ? 'bg-white/10 text-white/70'
-                  : 'bg-green-500/20 text-green-300'
-              }`}
-            >
-              {m.role === 'user'
-                ? <User className="w-3.5 h-3.5" />
-                : <Sparkles className="w-3.5 h-3.5" />}
-            </div>
+            {m.role === 'user' ? (
+              <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center bg-white/10 text-white/70">
+                <User className="w-3.5 h-3.5" />
+              </div>
+            ) : (
+              <DragonAvatar size={28} />
+            )}
             <div
               className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                 m.role === 'user'
@@ -149,9 +166,7 @@ export function LandingChat() {
 
         {loading && (
           <div className="flex items-start gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-300 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5" />
-            </div>
+            <DragonAvatar size={28} />
             <div className="bg-white/5 rounded-2xl rounded-tl-sm px-3.5 py-3 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" />
               <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce [animation-delay:150ms]" />

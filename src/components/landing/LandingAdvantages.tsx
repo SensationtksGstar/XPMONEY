@@ -208,7 +208,12 @@ export function LandingAdvantages() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="relative rounded-2xl bg-[#060b14]/50 border border-white/5 overflow-hidden">
-              <div className="absolute top-3 left-3 z-10 text-[10px] font-bold text-green-300 bg-green-500/15 border border-green-500/30 px-2 py-0.5 rounded-full">
+              {/* Label posicionado no canto superior direito sobre o sprite —
+                  a evolução 1 (ovo) está no canto esquerdo, pelo que colocar
+                  o label aí cria sobreposição de cores. Mantemos um backdrop
+                  com blur + solid fill para legibilidade mesmo que a última
+                  evolução tenha tons fortes. */}
+              <div className="absolute top-3 right-3 z-10 text-[10px] font-bold text-green-300 bg-[#060b14]/80 backdrop-blur-sm border border-green-500/40 px-2.5 py-1 rounded-full shadow-lg shadow-black/40">
                 VOLTIX ⚡
               </div>
               <Image
@@ -221,7 +226,7 @@ export function LandingAdvantages() {
               />
             </div>
             <div className="relative rounded-2xl bg-[#060b14]/50 border border-white/5 overflow-hidden">
-              <div className="absolute top-3 left-3 z-10 text-[10px] font-bold text-pink-300 bg-pink-500/15 border border-pink-500/30 px-2 py-0.5 rounded-full">
+              <div className="absolute top-3 right-3 z-10 text-[10px] font-bold text-pink-300 bg-[#060b14]/80 backdrop-blur-sm border border-pink-500/40 px-2.5 py-1 rounded-full shadow-lg shadow-black/40">
                 PENNY ✨
               </div>
               <Image
