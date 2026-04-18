@@ -55,6 +55,57 @@ function isPdfFile(file: File): boolean {
   )
 }
 
+/**
+ * Painel de "a analisar..." com contador de tempo decorrido. PDFs grandes
+ * demoram 60-180s em Gemini — mostrar o tempo evita que o user pense que
+ * a app travou e o "palpite" de tempo contextual (10s → 60s → 120s) faz
+ * a espera parecer menos ansiosa.
+ */
+function ParsingPanel({ startedAt }: { startedAt: number | null }) {
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    if (!startedAt) return
+    const tick = () => setElapsed(Math.floor((Date.now() - startedAt) / 1000))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [startedAt])
+
+  const hint = elapsed < 15
+    ? 'A identificar o banco e extrair movimentos…'
+    : elapsed < 45
+    ? 'PDFs com muitas páginas demoram 1-2 min. Não feches a janela.'
+    : elapsed < 90
+    ? 'Ainda a processar — a IA está a categorizar cada linha.'
+    : 'Quase lá. Se passar dos 3 min, o teu PDF pode ser demasiado grande.'
+
+  // Barra de progresso visual: cresce com o tempo mas nunca chega aos 100%
+  // até a resposta voltar. Mapeia 0-180s → 0-90%.
+  const pct = Math.min(90, Math.round((elapsed / 180) * 90))
+
+  return (
+    <div className="p-8 flex flex-col items-center gap-5" role="status" aria-live="polite">
+      <div className="relative">
+        <div className="w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-blue-400" />
+        </div>
+        <Loader2 className="w-6 h-6 text-blue-400 absolute -top-1 -right-1 animate-spin" />
+      </div>
+      <div className="text-center max-w-xs">
+        <p className="text-white font-semibold">A IA está a analisar…</p>
+        <p className="text-white/50 text-sm mt-1">{hint}</p>
+        <p className="text-white/30 text-xs mt-2 tabular-nums">{elapsed}s decorridos</p>
+      </div>
+      <div className="w-full max-w-xs bg-white/5 rounded-full h-1.5 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
 export function StatementImporter({ onClose }: Props) {
   const { isFree, plan } = useUserPlan()
   const titleId          = useId()
@@ -66,6 +117,7 @@ export function StatementImporter({ onClose }: Props) {
   const [accountId, setAccountId]= useState('')
   const [errorMsg,  setErrorMsg] = useState('')
   const [doneMsg,   setDoneMsg]  = useState('')
+  const [parsingStart, setParsingStart] = useState<number | null>(null)
   const fileRef  = useRef<HTMLInputElement>(null)
   const qc       = useQueryClient()
 
@@ -103,10 +155,14 @@ export function StatementImporter({ onClose }: Props) {
     }
 
     setStep('parsing')
+    setParsingStart(Date.now())
 
-    // 60s timeout — PDFs can take a while on Gemini
+    // 4 min timeout (240s) — dá margem para PDFs grandes em Vercel Pro (300s
+    // server). Em Hobby o servidor clampa a 60s → o fetch dá erro 504 antes
+    // do aborter disparar, com mensagem específica. Em Pro o cliente é o
+    // último a desistir, o que é o que queremos.
     const abort = new AbortController()
-    const timer = setTimeout(() => abort.abort(), 60_000)
+    const timer = setTimeout(() => abort.abort(), 240_000)
 
     try {
       let body: { pdfBase64: string; filename: string } | { content: string; filename: string }
@@ -162,13 +218,17 @@ export function StatementImporter({ onClose }: Props) {
       setStep('preview')
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
-        setErrorMsg('A análise foi cancelada por demorar mais de 60 segundos. Tenta um PDF mais pequeno.')
+        setErrorMsg(
+          'A análise ultrapassou 4 minutos e foi cancelada. Divide o PDF em menos páginas ' +
+          '(ex: só o último mês) ou converte para CSV no site do teu banco.',
+        )
       } else {
         setErrorMsg(e instanceof Error ? e.message : 'Erro ao analisar ficheiro.')
       }
       setStep('error')
     } finally {
       clearTimeout(timer)
+      setParsingStart(null)
     }
   }, [])
 
@@ -420,21 +480,7 @@ export function StatementImporter({ onClose }: Props) {
 
         {/* ── PARSING step ── */}
         {step === 'parsing' && (
-          <div className="p-8 flex flex-col items-center gap-5" role="status" aria-live="polite">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-blue-400" />
-              </div>
-              <Loader2 className="w-6 h-6 text-blue-400 absolute -top-1 -right-1 animate-spin" />
-            </div>
-            <div className="text-center">
-              <p className="text-white font-semibold">A IA está a analisar...</p>
-              <p className="text-white/40 text-sm mt-1">A identificar o banco, extrair e categorizar movimentos</p>
-            </div>
-            <div className="w-full max-w-xs bg-white/5 rounded-full h-1.5 overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: '65%' }} />
-            </div>
-          </div>
+          <ParsingPanel startedAt={parsingStart} />
         )}
 
         {/* ── PREVIEW step ── */}

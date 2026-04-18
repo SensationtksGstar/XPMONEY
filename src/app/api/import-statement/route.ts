@@ -17,9 +17,13 @@ export interface ImportStatementResult extends Omit<StatementParseResult, 'trans
   transactions: ParsedTransaction[]
 }
 
-// PDFs can take 30-45s on Gemini for multi-page documents.
+// PDFs com muitas páginas chegam a demorar 90-120s no Gemini (especialmente
+// extratos de cartão com dezenas de movimentos). Vercel Hobby clampa a 60s,
+// Pro aceita até 300s — deixamos 300 para correr o máximo que o plano
+// permitir e a UI tem um timeout de cliente mais generoso (240s) com aviso
+// claro.
 export const runtime     = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300
 
 // ── Plan gating: Premium can import statements ──────────────────────────────
 const PLAN_RANK: Record<string, number> = {
