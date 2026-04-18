@@ -51,6 +51,9 @@ export async function createCheckoutSession({
   successUrl: string
   cancelUrl: string
 }) {
+  // Sem trial. Não enviar `trial_period_days: 0` — Stripe rejeita com
+  // "The minimum number of trial period days is 1". Omitir o campo é
+  // a forma correcta de dizer "pagamento imediato sem trial".
   return stripe.checkout.sessions.create({
     mode: 'subscription',
     customer_email: email,
@@ -60,7 +63,6 @@ export async function createCheckoutSession({
     metadata: { userId },
     subscription_data: {
       metadata: { userId },
-      trial_period_days: 0,
     },
     allow_promotion_codes: true,
   })
