@@ -93,8 +93,8 @@ const CARDS: Card[] = [
   },
   {
     icon: Award,
-    title: 'Certificado NFT · única',
-    body: 'Quando chegas à última evolução, o teu progresso é selado numa NFT cunhada na tua carteira. Prova pública de disciplina.',
+    title: 'Certificados por curso',
+    body: 'Cada curso concluído da Academia gera-te um certificado digital com código único. Prova pública de que dominas o tema.',
     tag: 'PREMIUM',
     accent: 'rose',
   },

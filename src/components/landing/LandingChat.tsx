@@ -5,13 +5,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Send, User, MessageSquare } from 'lucide-react'
 
-/** Avatar redondo com o retrato do Dragon Coin — usado no header e em cada
- *  mensagem do assistente para reforçar a identidade do agente em vez do
- *  placeholder genérico de estrelas. */
+/** Avatar do Dragon Coin — retrato sozinho, sem moldura verde, apenas com
+ *  glow delicado via drop-shadow. Usado no header e em cada mensagem do
+ *  assistente para reforçar a identidade do agente em vez do placeholder
+ *  genérico de estrelas. */
 function DragonAvatar({ size = 36 }: { size?: number }) {
   return (
     <div
-      className="relative rounded-full overflow-hidden bg-gradient-to-br from-emerald-500 via-green-400 to-emerald-500 shadow-[0_0_20px_rgba(34,197,94,0.35)] flex-shrink-0"
+      className="relative flex-shrink-0"
       style={{ width: size, height: size }}
     >
       <Image
@@ -21,7 +22,7 @@ function DragonAvatar({ size = 36 }: { size?: number }) {
         width={size}
         height={size}
         sizes={`${size}px`}
-        className="w-full h-full object-contain scale-[1.05]"
+        className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(34,197,94,0.45)]"
       />
     </div>
   )

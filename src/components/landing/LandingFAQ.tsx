@@ -112,22 +112,19 @@ export function LandingFAQ() {
           users don't have to scroll past the whole FAQ to find it. This
           block now just points at the FAB that is visible on every page. */}
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent border border-green-500/20 rounded-2xl p-6 text-center">
-        {/* Retrato real do Dragon Coin em vez do chip "Sparkles — pergunta-nos".
-            Serve como âncora visual do avatar que vive no FAB. Moldura circular
-            com o mesmo gradiente emerald do botão flutuante, para que o user
-            reconheça o mascote mesmo antes de clicar. */}
+        {/* Retrato do Dragon Coin — sem moldura, apenas o animal com um glow
+            emerald via drop-shadow. Serve de âncora visual do mascote que
+            vive no FAB flutuante. */}
         <div className="flex items-center justify-center mb-4">
-          <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500 via-green-400 to-emerald-500 shadow-[0_0_28px_rgba(34,197,94,0.35)] ring-2 ring-green-400/40">
-            <Image
-              src="/dragon-coin.webp"
-              alt=""
-              aria-hidden
-              width={64}
-              height={64}
-              sizes="64px"
-              className="w-full h-full object-contain scale-[1.05]"
-            />
-          </div>
+          <Image
+            src="/dragon-coin.webp"
+            alt=""
+            aria-hidden
+            width={96}
+            height={96}
+            sizes="96px"
+            className="w-24 h-24 object-contain drop-shadow-[0_8px_24px_rgba(34,197,94,0.35)] drop-shadow-[0_0_28px_rgba(34,197,94,0.25)]"
+          />
         </div>
         <h3 className="text-xl md:text-2xl font-bold mb-2">
           Fala com o Dragon Coin
