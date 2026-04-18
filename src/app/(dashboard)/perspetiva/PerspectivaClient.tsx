@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Clock, Coffee, Star, TrendingUp, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CategoryIcon } from '@/components/ui/CategoryIcon'
+import { SalaryCompare } from '@/components/perspetiva/SalaryCompare'
 
 /* ─── Celebrity data (annual gross income in EUR, approximate) ───────── */
 const CELEBRITIES = [
@@ -70,7 +71,7 @@ interface Props {
 /* ─── Component ───────────────────────────────────────────────────────── */
 export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryTotal, recentExpenses }: Props) {
   const [selectedCel, setSelectedCel] = useState(CELEBRITIES[0])
-  const [tab, setTab] = useState<'celebrities' | 'hourly' | 'equivalents'>('celebrities')
+  const [tab, setTab] = useState<'celebrities' | 'hourly' | 'equivalents' | 'countries'>('celebrities')
 
   // Derived values
   const hourlyRate    = monthlyIncome / (22 * 8)   // 22 working days × 8 h
@@ -132,8 +133,9 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {[
+          { id: 'countries',   label: '🌍 Países' },
           { id: 'celebrities', label: '⭐ Celebridades' },
           { id: 'hourly',      label: '⏱️ Custo em horas' },
           { id: 'equivalents', label: '☕ Equivalentes' },
@@ -142,7 +144,7 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
             key={t.id}
             onClick={() => setTab(t.id as typeof tab)}
             className={cn(
-              'px-3 py-2 rounded-xl text-xs font-medium transition-all',
+              'flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium transition-all',
               tab === t.id
                 ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300'
                 : 'bg-white/5 border border-white/10 text-white/50 hover:text-white'
@@ -152,6 +154,13 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
           </button>
         ))}
       </div>
+
+      {/* ── TAB: COUNTRIES ── */}
+      {tab === 'countries' && (
+        <div className="animate-fade-in-up">
+          <SalaryCompare initialMonthlyEUR={monthlyIncome} />
+        </div>
+      )}
 
       {/* ── TAB: CELEBRITIES ── */}
       {tab === 'celebrities' && (
