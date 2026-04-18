@@ -80,23 +80,47 @@ interface Props {
 }
 
 export default function BillingClient({ currentPlan }: Props) {
-  const [cycle, setCycle]   = useState<BillingCycle>('yearly')
+  const [cycle, setCycle]     = useState<BillingCycle>('yearly')
   const [loading, setLoading] = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
 
   async function handleUpgrade(planId: string) {
     if (planId === 'free') return
+    setError(null)
     setLoading(planId)
     track.upgrade_clicked('billing_page', planId)
+
     try {
       const res = await fetch('/api/billing/checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ plan: planId, cycle }),
       })
-      const { url } = await res.json()
-      if (url) window.location.href = url
+
+      // Antes engolíamos o erro com catch silencioso → o botão parava de
+      // spinnar e nada acontecia. Agora lemos sempre o body e mostramos
+      // o detalhe ao user (e no console) para o próximo utilizador saber
+      // o que aconteceu em vez de clicar em vão.
+      let payload: { url?: string; error?: string } = {}
+      try { payload = await res.json() } catch { /* non-JSON response */ }
+
+      if (!res.ok) {
+        const msg = payload.error ?? `Pedido falhou (HTTP ${res.status}).`
+        console.warn('[billing] checkout failed:', msg)
+        setError(msg)
+        return
+      }
+
+      if (!payload.url) {
+        setError('Stripe não devolveu URL de checkout. Tenta novamente ou contacta suporte.')
+        return
+      }
+
+      window.location.href = payload.url
     } catch (e) {
-      console.error(e)
+      const msg = e instanceof Error ? e.message : 'Sem ligação à internet.'
+      console.warn('[billing] network error:', e)
+      setError(`Falha na ligação: ${msg}`)
     } finally {
       setLoading(null)
     }
@@ -126,6 +150,32 @@ export default function BillingClient({ currentPlan }: Props) {
           <p className="text-sm text-purple-300 font-medium">
             Estás no plano <strong>👑 Premium</strong> — obrigado pelo apoio! 🎉
           </p>
+        </div>
+      )}
+
+      {/* Erro de checkout — visível. Antes o erro era silenciado em
+          console.error e o user clicava em "Ativar Premium" e nada
+          acontecia. Agora mostramos a causa real (Stripe price em
+          falta, supabase user não encontrado, etc.) */}
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3"
+        >
+          <span aria-hidden className="text-xl leading-none">⚠️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-300">Não foi possível iniciar o checkout</p>
+            <p className="text-xs text-red-200/80 mt-0.5 break-words">{error}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label="Fechar aviso"
+            className="text-red-300/60 hover:text-red-200 transition-colors flex-shrink-0 min-h-[28px] min-w-[28px]"
+          >
+            ✕
+          </button>
         </div>
       )}
 
