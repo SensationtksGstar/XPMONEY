@@ -141,8 +141,8 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
       >
         <div
           className="w-full sm:max-w-md bg-[#0f1623] border border-white/10 overflow-hidden
-                     rounded-t-3xl sm:rounded-2xl animate-slide-up"
-          style={{ maxHeight: '92dvh' }}
+                     rounded-t-3xl sm:rounded-2xl animate-slide-up
+                     flex flex-col max-h-[92dvh]"
           onClick={e => e.stopPropagation()}
         >
           {/* Handle bar */}
@@ -219,7 +219,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
               </div>
             )}
 
-          <div className="overflow-y-auto" style={{ maxHeight: 'calc(92dvh - 80px)' }}>
+          <div className="flex-1 min-h-0 overflow-y-auto">
 
             {/* ── SCANNER VIEW ── */}
             {showScanner ? (

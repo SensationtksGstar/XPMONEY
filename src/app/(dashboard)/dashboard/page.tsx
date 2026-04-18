@@ -30,6 +30,10 @@ const MonthlySummary = dynamic(
   () => import('@/components/dashboard/MonthlySummary').then(m => ({ default: m.MonthlySummary })),
   { ssr: false, loading: () => <div className="h-24 bg-white/5 rounded-2xl animate-pulse" /> },
 )
+const ExpenseBreakdown = dynamic(
+  () => import('@/components/dashboard/ExpenseBreakdown').then(m => ({ default: m.ExpenseBreakdown })),
+  { ssr: false, loading: () => <div className="h-56 bg-white/5 rounded-2xl animate-pulse" /> },
+)
 const RecentTransactions = dynamic(
   () => import('@/components/dashboard/RecentTransactions').then(m => ({ default: m.RecentTransactions })),
   { ssr: false, loading: () => <div className="h-40 bg-white/5 rounded-2xl animate-pulse" /> },
@@ -185,16 +189,17 @@ export default function DashboardPage() {
         </Link>
       )}
 
-      {/* Hero Pet + Score/XP side-by-side.
-          Layout (April 2026 redesign): em desktop o mascote passa a ser
-          o protagonista — ocupa 2/3 da largura em variant `hero`
-          (horizontal, com imagem grande 208px). Score e XP ficam
-          empilhados no 1/3 restante.
-          Em mobile tudo se empilha verticalmente, mascote primeiro
-          (estava a perder-se abaixo dos números). */}
+      {/* Hero Pet + Score/XP side-by-side + breakdown de despesas.
+          Layout (April 2026 redesign):
+          • Desktop: esquerda 2/3 (Pet hero + ExpenseBreakdown empilhados)
+            / direita 1/3 (Score + XP empilhados). Aproveita o espaço
+            vertical que antes ficava vazio debaixo do mascote quando
+            a coluna Score+XP era mais alta.
+          • Mobile: tudo empilhado: Pet, Score, XP, depois ExpenseBreakdown. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex flex-col gap-3">
           <VoltixWidget userId={user?.id ?? ''} variant="hero" />
+          <ExpenseBreakdown />
         </div>
         <div className="flex flex-col gap-3">
           <FinancialScoreCard userId={user?.id ?? ''} />

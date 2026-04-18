@@ -48,6 +48,39 @@ async function fileToBase64(file: File): Promise<string> {
   })
 }
 
+/**
+ * Lê um CSV/TXT com detecção de encoding. Bancos PT exportam frequentemente
+ * em Windows-1252 ou ISO-8859-1, não UTF-8. file.text() assume UTF-8 e
+ * devolve um substituto (U+FFFD) onde havia acentos — o que faz a IA ver
+ * "Descri��o" em vez de "Descrição" e nem sempre consegue extrair movimentos.
+ *
+ * Estratégia: ler como UTF-8 primeiro; se detectarmos mais de 3 caracteres
+ * de substituição, tentar de novo com Windows-1252 e devolver o melhor
+ * resultado (menos substituições).
+ */
+async function readTextWithEncoding(file: File): Promise<string> {
+  const readAs = (encoding: string) =>
+    new Promise<string>((resolve, reject) => {
+      const r = new FileReader()
+      r.onload  = () => resolve((r.result as string) ?? '')
+      r.onerror = () => reject(r.error)
+      r.readAsText(file, encoding)
+    })
+
+  const utf8 = await readAs('UTF-8')
+  const utf8Bad = (utf8.match(/\uFFFD/g) ?? []).length
+  if (utf8Bad <= 3) return utf8
+
+  // Tenta Windows-1252 (superset de ISO-8859-1 usado pelos bancos PT)
+  try {
+    const win1252 = await readAs('Windows-1252')
+    const win1252Bad = (win1252.match(/\uFFFD/g) ?? []).length
+    if (win1252Bad < utf8Bad) return win1252
+  } catch { /* fallback silencioso */ }
+
+  return utf8
+}
+
 function isPdfFile(file: File): boolean {
   return (
     file.type === 'application/pdf' ||
@@ -168,8 +201,8 @@ export function StatementImporter({ onClose }: Props) {
       let body: { pdfBase64: string; filename: string } | { content: string; filename: string }
       try {
         body = isPdf
-          ? { pdfBase64: await fileToBase64(file), filename: file.name }
-          : { content:   await file.text(),        filename: file.name }
+          ? { pdfBase64: await fileToBase64(file),     filename: file.name }
+          : { content:   await readTextWithEncoding(file), filename: file.name }
       } catch {
         throw new Error('Não foi possível ler o ficheiro. Verifica se não está corrompido.')
       }
@@ -208,7 +241,15 @@ export function StatementImporter({ onClose }: Props) {
 
       const data = json.data as ImportStatementResult | undefined
       if (!data?.transactions?.length) {
-        setErrorMsg('Nenhum movimento detectado neste ficheiro. Verifica se é um extrato bancário com transações visíveis.')
+        // Acontece tipicamente quando o CSV tem formato muito atípico ou
+        // o PDF é totalmente scan sem camada de texto. Damos uma mensagem
+        // mais útil com passos concretos.
+        setErrorMsg(
+          'Não consegui extrair movimentos deste ficheiro. Verifica:\n' +
+          '• CSV: o separador é ";" ou ","? tens cabeçalhos Data/Descrição/Valor?\n' +
+          '• PDF: é texto pesquisável (tenta Ctrl+F)? Se não, é um scan de imagem e precisa de OCR externo.\n' +
+          '• Se o banco exporta em Excel, usa "Guardar como CSV" no teu cliente de folha de cálculo.',
+        )
         setStep('error')
         return
       }

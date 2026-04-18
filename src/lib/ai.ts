@@ -137,6 +137,36 @@ ${content}`
 
 // ── Keys ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Extrai texto puro de um PDF codificado em base64, usando `unpdf` (wrapper
+ * serverless-friendly do pdfjs-dist).
+ *
+ * Usado como fallback quando o pipeline nativo do Gemini (vision) falha por
+ * quota — o texto extraído localmente é depois enviado para qualquer
+ * provider de texto (Gemini 2.5 text OU Groq Llama), cujo pool de quota é
+ * diferente do pool de vision.
+ *
+ * Limitações conhecidas:
+ *   - PDFs scanned/images (sem camada de texto) devolvem string vazia. Se
+ *     detectarmos <50 chars, registamos e deixamos o chain continuar
+ *     (eventualmente com erro claro ao user).
+ *   - Dynamic import — unpdf traz pdfjs-dist que é pesado. Não carregamos
+ *     no cold start dos outros endpoints.
+ */
+async function extractPdfText(pdfBase64: string): Promise<string> {
+  // Decodificar base64 → Uint8Array
+  const bin = Buffer.from(pdfBase64, 'base64')
+  const bytes = new Uint8Array(bin.buffer, bin.byteOffset, bin.byteLength)
+
+  // unpdf: importado dinamicamente para não inflar o cold start de outros endpoints
+  const { extractText } = await import('unpdf')
+  const result = await extractText(bytes, { mergePages: true })
+  const text = (result as { text?: unknown }).text
+  if (typeof text === 'string') return text
+  if (Array.isArray(text)) return text.join('\n')
+  return ''
+}
+
 function getGeminiKey(): string | null {
   const k =
     process.env.GOOGLE_GEMINI_API_KEY ??
@@ -496,29 +526,86 @@ export async function parseStatement(
     throw new AIProvidersError(['no-provider-configured'], 'auth')
   }
 
-  // ── PDF path: Gemini only (vision/document understanding) ──
+  // ── PDF path: tiered fallback (April 2026) ──
+  //
+  // Estratégia antes → depois:
+  //   antes: Gemini 2.5 vision → Gemini 2.0 vision → 503. Se o user esgotasse
+  //          a quota diária do Gemini, PDF era um beco sem saída.
+  //   agora: 1) Gemini 2.5 vision (ideal — lê tabelas complexas)
+  //          2) Gemini 2.0 vision (fallback de quota intra-Gemini)
+  //          3) unpdf extrai texto local + Gemini 2.5 text (quota diferente
+  //             na prática, vision tokens e text tokens têm pools distintos
+  //             no free tier)
+  //          4) unpdf + Groq Llama (key totalmente diferente — se Gemini
+  //             estiver fora, Groq entra)
+  //
+  // A extracção local com unpdf é feita UMA vez e o texto é reutilizado nas
+  // etapas 3-4, por isso só pagamos o custo da extracção quando Gemini
+  // vision falha.
   if (input.kind === 'pdf') {
-    if (!geminiKey) {
-      throw new AIProvidersError(['pdf-requires-gemini'], 'auth')
-    }
-    try {
-      const data = await withRetry(
-        () => geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions),
-        'gemini-2.5-flash-pdf',
-      )
-      return { data, provider: 'gemini-2.5-flash-pdf', cache_hit: false, attempts }
-    } catch (err) {
-      attempts.push(`gemini-2.5-flash-pdf: ${err instanceof Error ? err.message : err}`)
+    if (!geminiKey && !groqKey) {
+      throw new AIProvidersError(['pdf-no-providers'], 'auth')
     }
 
+    // Tentativa 1-2: Gemini vision (nativo)
+    if (geminiKey) {
+      try {
+        const data = await withRetry(
+          () => geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions),
+          'gemini-2.5-flash-pdf',
+        )
+        return { data, provider: 'gemini-2.5-flash-pdf', cache_hit: false, attempts }
+      } catch (err) {
+        attempts.push(`gemini-2.5-flash-pdf: ${err instanceof Error ? err.message : err}`)
+      }
+
+      try {
+        const data = await withRetry(
+          () => geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions),
+          'gemini-2.0-flash-pdf',
+        )
+        return { data, provider: 'gemini-2.0-flash-pdf', cache_hit: false, attempts }
+      } catch (err) {
+        attempts.push(`gemini-2.0-flash-pdf: ${err instanceof Error ? err.message : err}`)
+      }
+    }
+
+    // Tentativas 3-4: extrair texto local e ir pelo pipeline de texto
+    let extractedText: string | null = null
     try {
-      const data = await withRetry(
-        () => geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions),
-        'gemini-2.0-flash-pdf',
-      )
-      return { data, provider: 'gemini-2.0-flash-pdf', cache_hit: false, attempts }
+      extractedText = await extractPdfText(input.pdfBase64)
     } catch (err) {
-      attempts.push(`gemini-2.0-flash-pdf: ${err instanceof Error ? err.message : err}`)
+      attempts.push(`unpdf-extract: ${err instanceof Error ? err.message : err}`)
+    }
+
+    if (extractedText && extractedText.trim().length > 50) {
+      const textPrompt = buildStatementPromptWithContent(extractedText, input.filename, categoryNames)
+
+      if (geminiKey) {
+        try {
+          const data = await withRetry(
+            () => geminiText(geminiKey, 'gemini-2.5-flash', textPrompt),
+            'gemini-2.5-flash-text-fallback',
+          )
+          return { data, provider: 'gemini-2.5-flash-text-fallback', cache_hit: false, attempts }
+        } catch (err) {
+          attempts.push(`gemini-2.5-flash-text-fallback: ${err instanceof Error ? err.message : err}`)
+        }
+      }
+
+      if (groqKey) {
+        try {
+          const data = await withRetry(
+            () => groqText(groqKey, textPrompt),
+            'groq-llama-pdf-fallback',
+          )
+          return { data, provider: 'groq-llama-pdf-fallback', cache_hit: false, attempts }
+        } catch (err) {
+          attempts.push(`groq-llama-pdf-fallback: ${err instanceof Error ? err.message : err}`)
+        }
+      }
+    } else if (extractedText != null) {
+      attempts.push(`unpdf-extract: too-little-text (${extractedText.trim().length} chars) — scanned PDF?`)
     }
 
     const kind = classifyError(attempts.join(' | '))
@@ -528,13 +615,25 @@ export async function parseStatement(
   // ── Text path: Gemini → Gemini 2.0 → Groq ──
   const prompt = buildStatementPromptWithContent(input.content, input.filename, categoryNames)
 
+  // Se o conteúdo é grande (>500 chars) provavelmente há movimentos reais —
+  // um resultado com 0 transações indica que a IA falhou no parsing, não que
+  // o extrato está vazio. Nesse caso damos uma nova tentativa com o próximo
+  // provider. Para conteúdos muito curtos confiamos na resposta.
+  const contentLikelyHasData = input.content.length > 500
+  const EMPTY_RESULT_HINT = 'zero-transactions-despite-content'
+  let bestEmpty: StatementParseResult | null = null  // guardamos o último vazio caso nenhum provider dê resultado
+
   if (geminiKey) {
     try {
       const data = await withRetry(
         () => geminiText(geminiKey, 'gemini-2.5-flash', prompt),
         'gemini-2.5-flash',
       )
-      return { data, provider: 'gemini-2.5-flash', cache_hit: false, attempts }
+      if (data.transactions.length > 0 || !contentLikelyHasData) {
+        return { data, provider: 'gemini-2.5-flash', cache_hit: false, attempts }
+      }
+      bestEmpty = data
+      attempts.push(`gemini-2.5-flash: ${EMPTY_RESULT_HINT}`)
     } catch (err) {
       attempts.push(`gemini-2.5-flash: ${err instanceof Error ? err.message : err}`)
     }
@@ -544,7 +643,11 @@ export async function parseStatement(
         () => geminiText(geminiKey, 'gemini-2.0-flash', prompt),
         'gemini-2.0-flash',
       )
-      return { data, provider: 'gemini-2.0-flash', cache_hit: false, attempts }
+      if (data.transactions.length > 0 || !contentLikelyHasData) {
+        return { data, provider: 'gemini-2.0-flash', cache_hit: false, attempts }
+      }
+      bestEmpty = data
+      attempts.push(`gemini-2.0-flash: ${EMPTY_RESULT_HINT}`)
     } catch (err) {
       attempts.push(`gemini-2.0-flash: ${err instanceof Error ? err.message : err}`)
     }
@@ -556,10 +659,23 @@ export async function parseStatement(
         () => groqText(groqKey, prompt),
         'groq-llama-3.3',
       )
-      return { data, provider: 'groq-llama-3.3', cache_hit: false, attempts }
+      if (data.transactions.length > 0 || !contentLikelyHasData) {
+        return { data, provider: 'groq-llama-3.3', cache_hit: false, attempts }
+      }
+      bestEmpty = data
+      attempts.push(`groq-llama-3.3: ${EMPTY_RESULT_HINT}`)
     } catch (err) {
       attempts.push(`groq-llama-3.3: ${err instanceof Error ? err.message : err}`)
     }
+  }
+
+  // Se todos devolveram vazio, ainda é melhor retornar o melhor vazio (com
+  // o "bank" detectado) do que lançar erro — o frontend mostra mensagem
+  // específica. Só lança se houve erros reais em todos os providers.
+  if (bestEmpty && attempts.every(a => a.includes(EMPTY_RESULT_HINT))) {
+    console.warn('[ai:parseStatement] all providers returned 0 transactions — content preview:',
+      input.content.slice(0, 400))
+    return { data: bestEmpty, provider: 'all-empty', cache_hit: false, attempts }
   }
 
   const kind = classifyError(attempts.join(' | '))
