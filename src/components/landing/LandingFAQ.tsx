@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronDown, Sparkles } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 /**
  * LandingFAQ — perguntas mais afiadas + agente IA + fallback humano.
@@ -111,12 +112,24 @@ export function LandingFAQ() {
           users don't have to scroll past the whole FAQ to find it. This
           block now just points at the FAB that is visible on every page. */}
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent border border-green-500/20 rounded-2xl p-6 text-center">
-        <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-500/30 text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-          <Sparkles className="w-3 h-3" />
-          Não encontraste? Pergunta-nos.
+        {/* Retrato real do Dragon Coin em vez do chip "Sparkles — pergunta-nos".
+            Serve como âncora visual do avatar que vive no FAB. Moldura circular
+            com o mesmo gradiente emerald do botão flutuante, para que o user
+            reconheça o mascote mesmo antes de clicar. */}
+        <div className="flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500 via-green-400 to-emerald-500 shadow-[0_0_28px_rgba(34,197,94,0.35)] ring-2 ring-green-400/40">
+            <Image
+              src="/dragon-coin.webp"
+              alt=""
+              aria-hidden
+              width={64}
+              height={64}
+              sizes="64px"
+              className="w-full h-full object-contain scale-[1.05]"
+            />
+          </div>
         </div>
-        <h3 className="text-xl md:text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-          <span aria-hidden className="text-2xl">🐲</span>
+        <h3 className="text-xl md:text-2xl font-bold mb-2">
           Fala com o Dragon Coin
         </h3>
         <p className="text-white/55 text-sm max-w-md mx-auto">
