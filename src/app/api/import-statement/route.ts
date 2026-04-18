@@ -196,7 +196,7 @@ async function runParse(
     )
   } catch (err) {
     if (err instanceof AIProvidersError) {
-      // Loud internal log so missing env vars are obvious in Vercel logs
+      // Loud internal log so missing env vars são óbvios nos logs da Vercel
       console.error('[import-statement] all providers failed:', {
         kind:     err.kind,
         attempts: err.attempts,
@@ -207,8 +207,6 @@ async function runParse(
       if (err.kind === 'auth') {
         return NextResponse.json(
           {
-            // User-facing: don't expose "not configured" — sounds broken. Treat
-            // as temporary, suggest a workaround so they aren't blocked.
             error: 'Análise de extratos em manutenção. Volta dentro de momentos ou adiciona as transações manualmente.',
             code:  'ai_auth',
           },
@@ -216,10 +214,28 @@ async function runParse(
         )
       }
       if (err.kind === 'quota') {
+        // Distinguir "daily quota exhausted" de "per-minute rate limit"
+        // analisando os attempts. RESOURCE_EXHAUSTED tipicamente = diária;
+        // 429 isolado + "requests per minute" = minuto.
+        const attemptsStr = err.attempts.join(' ').toLowerCase()
+        const isDaily =
+          /resource[_ ]?exhausted|quota.*exceeded.*day|daily/.test(attemptsStr)
+        const isBilling =
+          /billing|credit|payment|subscription/.test(attemptsStr)
+
+        const message = isBilling
+          ? 'A conta da IA atingiu o limite de créditos. Contacta-nos pelo formulário — vamos resolver.'
+          : isDaily
+          ? 'A quota diária da IA foi atingida. Reinicia à meia-noite (Pacífico) ou converte o PDF em CSV no site do banco — CSVs não consomem IA e entram de imediato.'
+          : 'Muitos pedidos ao mesmo tempo — o plano gratuito da IA tem limite por minuto. Tenta novamente daqui a 60 segundos. Se persistir, usa CSV em vez de PDF.'
+
         return NextResponse.json(
           {
-            error: 'Serviço de análise de extratos temporariamente indisponível. Tenta novamente dentro de alguns minutos ou adiciona as transações manualmente.',
+            error: message,
             code:  'ai_quota',
+            // Detalhe técnico compacto — útil para suporte mas não para o
+            // user normal. Nunca expomos a API key; só o primeiro attempt.
+            detail: err.attempts[0]?.slice(0, 200),
           },
           { status: 503 },
         )
