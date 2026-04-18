@@ -6,22 +6,23 @@ import { UserButton }  from '@clerk/nextjs'
 import {
   LayoutDashboard, ArrowLeftRight, Crosshair,
   Zap, Target, Settings, Crown, Trophy,
-  Star, TrendingUp, BookOpen,
+  Star, TrendingUp, BookOpen, Sword,
 } from 'lucide-react'
 import { cn }   from '@/lib/utils'
 import { Logo } from '@/components/ui/Logo'
 
 const NAV_ITEMS = [
-  { href: '/dashboard',    label: 'Dashboard',  icon: LayoutDashboard, pro: false },
-  { href: '/transactions', label: 'Transações', icon: ArrowLeftRight,  pro: false },
-  { href: '/missions',     label: 'Missões',    icon: Crosshair,       pro: false },
-  { href: '/goals',        label: 'Poupanças',  icon: Target,          pro: false },
-  { href: '/badges',       label: 'Conquistas', icon: Trophy,          pro: false },
-  { href: '/perspetiva',   label: 'Perspetiva', icon: Star,            pro: true  },
-  { href: '/simulador',    label: 'Simulador',  icon: TrendingUp,      pro: true  },
-  { href: '/cursos',       label: 'Academia',   icon: BookOpen,        pro: true  },
-  { href: '/voltix',       label: 'Pet',        icon: Zap,             pro: false },
-  { href: '/settings',     label: 'Definições', icon: Settings,        pro: false },
+  { href: '/dashboard',    label: 'Dashboard',   icon: LayoutDashboard, pro: false },
+  { href: '/transactions', label: 'Transações',  icon: ArrowLeftRight,  pro: false },
+  { href: '/missions',     label: 'Missões',     icon: Crosshair,       pro: false },
+  { href: '/goals',        label: 'Poupanças',   icon: Target,          pro: false },
+  { href: '/dividas',      label: 'Mata-Dívidas', icon: Sword,          pro: true  },
+  { href: '/badges',       label: 'Conquistas',  icon: Trophy,          pro: false },
+  { href: '/perspetiva',   label: 'Perspetiva',  icon: Star,            pro: true  },
+  { href: '/simulador',    label: 'Simulador',   icon: TrendingUp,      pro: true  },
+  { href: '/cursos',       label: 'Academia',    icon: BookOpen,        pro: true  },
+  { href: '/voltix',       label: 'Pet',         icon: Zap,             pro: false },
+  { href: '/settings',     label: 'Definições',  icon: Settings,        pro: false },
 ]
 
 export function Sidebar() {
