@@ -60,20 +60,21 @@ export function DragonCoinFAB() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Abrir Dragon Coin — assistente da XP-Money"
-          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[90] w-16 h-16 flex items-center justify-center active:scale-95 transition-transform drop-shadow-[0_6px_18px_rgba(34,197,94,0.35)] drop-shadow-[0_0_18px_rgba(34,197,94,0.22)]"
+          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[90] w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform bg-[#060b14]/85 backdrop-blur-md ring-2 ring-green-400/50 hover:ring-green-300/70 shadow-[0_8px_24px_rgba(34,197,94,0.35),0_0_22px_rgba(34,197,94,0.25)]"
         >
-          {/* Pulse halo — glow verde delicado APENAS atrás da silhueta do
-              dragão (sem caixa/círculo sólido). A luz é feita com
-              drop-shadow no próprio Image + este halo blurrado. */}
+          {/* Pulse halo — anel verde pulsante por fora do botão para
+              indicar "estou vivo, clica". Fica atrás do botão via inset
+              negativo + rounded-full para um efeito de ondulação. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-1 rounded-full bg-green-400/30 blur-xl animate-ping"
+            className="pointer-events-none absolute -inset-1 rounded-full border-2 border-green-400/40 animate-ping"
             style={{ animationDuration: '2.4s' }}
           />
 
-          {/* Dragon Coin portrait. Sem moldura — apenas o animal com alfa
-              transparente + glow emerald. `priority` = false, sits below
-              the fold until the user scrolls. */}
+          {/* Dragon Coin portrait. O botão agora TEM moldura circular dark
+              com ring verde, mas o próprio dragão continua a flutuar sem
+              caixa à volta dele — o círculo é do container, não do
+              animal. */}
           <Image
             src="/dragon-coin.webp"
             alt=""
@@ -82,7 +83,7 @@ export function DragonCoinFAB() {
             height={64}
             sizes="64px"
             priority={false}
-            className="relative w-full h-full object-contain scale-[1.1] group-hover:scale-[1.18] transition-transform duration-300"
+            className="relative w-full h-full object-contain scale-[1.08] group-hover:scale-[1.15] transition-transform duration-300 drop-shadow-[0_0_6px_rgba(34,197,94,0.4)]"
           />
         </button>
       )}
