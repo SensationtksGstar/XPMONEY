@@ -185,14 +185,21 @@ export default function DashboardPage() {
         </Link>
       )}
 
-      {/* Score + XP + Voltix — single widget instance, reordered via CSS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {/* On mobile/sm: widget appears first (order-first); on lg: third column */}
-        <div className="order-first sm:col-span-2 lg:col-span-1 lg:order-last">
-          <VoltixWidget userId={user?.id ?? ''} />
+      {/* Hero Pet + Score/XP side-by-side.
+          Layout (April 2026 redesign): em desktop o mascote passa a ser
+          o protagonista — ocupa 2/3 da largura em variant `hero`
+          (horizontal, com imagem grande 208px). Score e XP ficam
+          empilhados no 1/3 restante.
+          Em mobile tudo se empilha verticalmente, mascote primeiro
+          (estava a perder-se abaixo dos números). */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="lg:col-span-2">
+          <VoltixWidget userId={user?.id ?? ''} variant="hero" />
         </div>
-        <FinancialScoreCard userId={user?.id ?? ''} />
-        <XPProgressBar     userId={user?.id ?? ''} />
+        <div className="flex flex-col gap-3">
+          <FinancialScoreCard userId={user?.id ?? ''} />
+          <XPProgressBar     userId={user?.id ?? ''} />
+        </div>
       </div>
 
       {/* Resumo mensal */}
