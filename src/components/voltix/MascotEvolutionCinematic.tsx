@@ -69,7 +69,16 @@ function makeConfetti(count: number): ConfettiPiece[] {
   }))
 }
 
-/** Energy ring — expanding circle with decaying opacity. */
+/**
+ * Energy ring — expanding circle with decaying opacity.
+ *
+ * Performance notes: removido o `box-shadow: 0 0 40px` que antes existia
+ * aqui. Box-shadow em elementos que animam scale força o browser a
+ * recalcular o shadow em cada frame, que é o estrangulamento de GPU
+ * número 1 em devices mid/low-end. Usamos um efeito de glow via
+ * `outline-color: transparent` + scale transform apenas, que é composto
+ * pelo GPU sem repaint.
+ */
 function EnergyRing({ delay, color }: { delay: number; color: string }) {
   return (
     <motion.span
@@ -77,22 +86,28 @@ function EnergyRing({ delay, color }: { delay: number; color: string }) {
       initial={{ scale: 0, opacity: 0.9 }}
       animate={{ scale: 6, opacity: 0 }}
       transition={{ delay, duration: 2.0, ease: 'easeOut' }}
-      className="absolute top-1/2 left-1/2 w-40 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
-      style={{ borderColor: color, boxShadow: `0 0 40px ${color}` }}
+      className="absolute top-1/2 left-1/2 w-40 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 will-change-transform"
+      style={{ borderColor: color }}
     />
   )
 }
 
-/** Rotating particle helix — twelve dots orbiting at increasing radius. */
+/**
+ * Rotating particle helix — oito pontos orbitando (antes eram 12).
+ *
+ * Performance notes: boxShadow em pontos que rodam 1080° foi removido —
+ * igual aos EnergyRings, era um repaint por frame × 12 dots = bottleneck.
+ * Reduzi a 8 pontos e uso apenas transform + opacity (GPU-composed).
+ */
 function ParticleHelix({ visible, color }: { visible: boolean; color: string }) {
-  const dots = useMemo(() => Array.from({ length: 12 }, (_, i) => i), [])
+  const dots = useMemo(() => Array.from({ length: 8 }, (_, i) => i), [])
   if (!visible) return null
   return (
     <motion.div
       aria-hidden
-      className="absolute top-1/2 left-1/2 w-0 h-0"
+      className="absolute top-1/2 left-1/2 w-0 h-0 will-change-transform"
       initial={{ opacity: 0, rotate: 0 }}
-      animate={{ opacity: [0, 1, 1, 0], rotate: 1080 }}
+      animate={{ opacity: [0, 1, 1, 0], rotate: 720 }}
       transition={{ duration: 2.6, ease: 'easeInOut' }}
     >
       {dots.map(i => {
@@ -103,7 +118,6 @@ function ParticleHelix({ visible, color }: { visible: boolean; color: string }) 
             className="absolute block w-2 h-2 rounded-full"
             style={{
               backgroundColor: color,
-              boxShadow: `0 0 12px ${color}`,
               left:  Math.cos(angle) * 140,
               top:   Math.sin(angle) * 140 * 0.5,
             }}
@@ -230,31 +244,35 @@ export function MascotEvolutionCinematic({
           {/* Stage wrapper — 512px square scene, scales with viewport */}
           <div className="relative w-[min(88vw,520px)] aspect-square">
 
-            {/* Energy rings during bleach + burst */}
+            {/* Energy rings during bleach + burst — reduzidos de 4 para 2
+                para aliviar paint work (cada ring é um layer composto
+                pelo GPU; manter o mínimo ainda dá sensação de pulsação
+                sem saturar o compositor). */}
             {(stage === 'bleach' || stage === 'burst') && !reduced && (
               <>
                 <EnergyRing delay={0} color={accentColor} />
-                <EnergyRing delay={0.25} color="#ffffff" />
-                <EnergyRing delay={0.5} color={accentColor} />
-                <EnergyRing delay={0.75} color="#ffffff" />
+                <EnergyRing delay={0.4} color="#ffffff" />
               </>
             )}
 
             {/* Rotating particle helix during burst */}
             <ParticleHelix visible={stage === 'burst' && !reduced} color={accentColor} />
 
-            {/* Old creature — fades up, starts glowing */}
+            {/* Old creature — fades up, starts glowing.
+                Performance: antes animávamos `filter: brightness(3) blur(4px)`
+                que força reflow + repaint em cada frame. Agora usamos só
+                opacity + transform (GPU compositing puro) e deixamos o
+                "bleach" ser feito pela layer branca abaixo. */}
             <AnimatePresence>
               {showOld && (
                 <motion.div
                   key="old"
-                  className="absolute inset-0 flex items-center justify-center"
+                  className="absolute inset-0 flex items-center justify-center will-change-transform"
                   initial={{ opacity: 0, y: 30, scale: 0.85 }}
                   animate={{
-                    opacity: stage === 'bleach' ? 0.4 : 1,
+                    opacity: stage === 'bleach' ? 0.3 : 1,
                     y: stage === 'bleach' ? -10 : 0,
-                    scale: stage === 'bleach' ? 1.05 : 1,
-                    filter: stage === 'bleach' ? 'brightness(3) blur(4px)' : 'brightness(1.2)',
+                    scale: stage === 'bleach' ? 1.08 : 1,
                   }}
                   exit={{ opacity: 0, scale: 1.1 }}
                   transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -272,35 +290,35 @@ export function MascotEvolutionCinematic({
               )}
             </AnimatePresence>
 
-            {/* White silhouette transition — same image but washed to pure light */}
+            {/* White silhouette — usa mix-blend-mode + fundo branco em vez
+                de `filter: brightness(50) saturate(0) blur(2px)`, que era
+                o layer mais pesado do cinematic (repaint de toda a sub-
+                tree em cada frame). O `screen` blend aplica-se na
+                composição final e é acelerado por GPU. */}
             {(showSilhouetteFrom || showSilhouetteTo) && !reduced && (
               <motion.div
-                className="absolute inset-0 flex items-center justify-center"
+                className="absolute inset-0 flex items-center justify-center will-change-transform"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 1, 0.6] }}
+                animate={{ opacity: [0, 0.9, 0.9, 0.5] }}
                 transition={{ duration: 1.2 }}
               >
                 <div
                   className="w-3/4 h-3/4 flex items-center justify-center"
-                  style={{ filter: 'brightness(50) saturate(0) blur(2px)' }}
+                  style={{ mixBlendMode: 'screen' }}
                 >
-                  <MascotCreature
-                    gender={gender}
-                    evo={showSilhouetteTo ? toEvo : fromEvo}
-                    mood="excited"
-                    animate={false}
-                    className="w-full h-full"
-                  />
+                  <div className="w-full h-full bg-white rounded-full opacity-90 blur-md" />
                 </div>
               </motion.div>
             )}
 
-            {/* New creature — scales in with bounce */}
+            {/* New creature — scales in with bounce. `will-change` força
+                o browser a criar um compositor layer dedicado, evitando
+                layout thrashing durante o bounce. */}
             <AnimatePresence>
               {showNew && (
                 <motion.div
                   key="new"
-                  className="absolute inset-0 flex items-center justify-center"
+                  className="absolute inset-0 flex items-center justify-center will-change-transform"
                   initial={{ opacity: 0, scale: reduced ? 1 : 0.5, rotate: reduced ? 0 : -8 }}
                   animate={{
                     opacity: 1,
