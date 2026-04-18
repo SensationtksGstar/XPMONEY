@@ -139,7 +139,7 @@ export function LandingAdvantages() {
           </h2>
           <p className="text-white/60 text-lg max-w-2xl mx-auto">
             Arranca grátis — já vale mais do que 80% dos apps pagos por aí.
-            O Premium tira o teto a tudo e adiciona certificado NFT no fim.
+            O Premium tira o teto a tudo e dá-te certificados digitais por cada curso concluído.
           </p>
         </div>
 
@@ -241,7 +241,7 @@ export function LandingAdvantages() {
           </div>
 
           <p className="text-center text-[11px] text-white/45 mt-4">
-            Última evolução desbloqueia o <strong className="text-rose-300">certificado NFT</strong> único — cunhado uma só vez por conta.
+            Evoluções sobem conforme o teu score financeiro sobe. Cada curso da Academia que concluis dá-te um <strong className="text-emerald-300">certificado digital</strong> próprio.
           </p>
         </div>
 
@@ -263,7 +263,7 @@ export function LandingAdvantages() {
               </h3>
               <p className="text-white/65 text-sm max-w-md">
                 Um café por mês compra-te: scanner de recibos, simulador, Perspetiva,
-                cursos completos e o <strong className="text-white">certificado NFT</strong> no fim.
+                <strong className="text-white"> 6 cursos completos</strong> e certificado digital por cada um.
               </p>
             </div>
             <a

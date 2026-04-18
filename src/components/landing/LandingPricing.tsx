@@ -39,7 +39,7 @@ const PREMIUM_FEATURES = [
   { text: 'Academia completa · todos os cursos' },
   { text: 'Categorias e objetivos ilimitados' },
   { text: 'Missões e badges exclusivos' },
-  { text: 'Certificado NFT ao chegar à 6ª evolução', highlight: true },
+  { text: 'Certificado digital ao concluíres cada curso da Academia', highlight: true },
   { text: 'Suporte prioritário · acesso antecipado' },
 ] as const
 

@@ -88,13 +88,14 @@ export function LandingHero() {
           <p className="text-lg text-white/70 max-w-xl mx-auto lg:mx-0 mb-7 leading-relaxed">
             Score financeiro, missões semanais, recibos por foto e um mascote que evolui
             contigo em <strong className="text-white">6 fases</strong>.
-            Quando chegares ao topo, o teu progresso é selado num{' '}
+            A Academia entrega-te um{' '}
             <span className="relative inline-block">
-              <strong className="text-white">certificado NFT</strong>
-              <span className="absolute -top-2 -right-10 text-[10px] font-bold bg-purple-500/20 border border-purple-500/40 text-purple-300 px-1.5 py-0.5 rounded-full rotate-3">
+              <strong className="text-white">certificado digital</strong>
+              <span className="absolute -top-2 -right-10 text-[10px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-1.5 py-0.5 rounded-full rotate-3">
                 NEW
               </span>
-            </span>.
+            </span>{' '}
+            por cada curso concluído.
           </p>
 
           {/* CTAs */}
