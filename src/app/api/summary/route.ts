@@ -6,11 +6,18 @@ import { toNumber }                    from '@/lib/safeNumber'
 import { isDemoMode, demoResponse }    from '@/lib/demo/demoGuard'
 
 export interface MonthlySummaryData {
-  income:   number
-  expense:  number
-  savings:  number
-  rate:     number   // savings / income * 100
-  month:    string   // YYYY-MM
+  income:       number
+  expense:      number
+  savings:      number
+  rate:         number   // savings / income * 100
+  month:        string   // YYYY-MM — mês REALMENTE apresentado
+  currentMonth: string   // YYYY-MM — mês real do calendário (hoje)
+  /**
+   * true quando o user pediu o mês corrente mas ele estava vazio e caímos
+   * automaticamente para o último mês com dados. UI mostra banner
+   * "A mostrar Março — Abril ainda não tem movimentos registados".
+   */
+  fallbackUsed: boolean
   /**
    * Top 6 categorias de despesa ordenadas por valor descendente.
    * Adicionado para o widget ExpenseBreakdown no dashboard.
@@ -28,20 +35,33 @@ function monthKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-export async function GET(_req: NextRequest) {
+/**
+ * Calcula os limites ISO ("YYYY-MM-01" … "YYYY-MM+1-01") para um YYYY-MM.
+ */
+function monthBoundaries(ym: string): { start: string; end: string } {
+  const [y, m] = ym.split('-').map(Number)
+  const start = `${ym}-01`
+  const end   = new Date(y, m, 1).toISOString().split('T')[0]
+  return { start, end }
+}
+
+export async function GET(req: NextRequest) {
   // Dates MUST be computed per-request. When they were module-scoped, a
   // serverless cold-start that happened on April 30 would keep returning
   // April data until the function was redeployed or cycled.
-  const now   = new Date()
-  const month = monthKey(now)
+  const now          = new Date()
+  const currentMonth = monthKey(now)
+  const requestedMonth = new URL(req.url).searchParams.get('month')
 
   if (isDemoMode()) {
     const DEMO_SUMMARY: MonthlySummaryData = {
-      income:  1850,
-      expense: 947.99,
-      savings: 902.01,
-      rate:    48.8,
-      month,
+      income:       1850,
+      expense:      947.99,
+      savings:      902.01,
+      rate:         48.8,
+      month:        currentMonth,
+      currentMonth,
+      fallbackUsed: false,
       top_categories: [
         { name: 'Alimentação',  icon: '🍽️', total: 345.40, pct: 36.4 },
         { name: 'Transportes',  icon: '🚗', total: 182.50, pct: 19.3 },
@@ -63,17 +83,54 @@ export async function GET(_req: NextRequest) {
 
   const db = createSupabaseAdmin()
 
-  // Server-side aggregation — only rows for current month
-  const startOfMonth = `${month}-01`
-  const startOfNext  = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    .toISOString().split('T')[0]
+  /**
+   * Decide qual mês vamos apresentar:
+   *   - Se `?month=YYYY-MM` foi passado, respeitamos (user navegação).
+   *   - Senão, preferimos o mês corrente. Se estiver VAZIO, caímos
+   *     automaticamente para o último mês com dados. Isto resolve o caso
+   *     em que o user importa um extrato de Março em dia 19 de Abril —
+   *     antes o dashboard ficava a 0€ porque Abril ainda não tinha
+   *     transações. Agora mostra os dados de Março com um banner.
+   */
+  let targetMonth = requestedMonth ?? currentMonth
+  let fallbackUsed = false
+
+  if (!requestedMonth) {
+    const { start, end } = monthBoundaries(currentMonth)
+    const { count } = await db
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', internalId)
+      .gte('date', start)
+      .lt('date', end)
+
+    if ((count ?? 0) === 0) {
+      // Buscar a data MAX das transações do user e usar esse mês
+      const { data: latest } = await db
+        .from('transactions')
+        .select('date')
+        .eq('user_id', internalId)
+        .order('date', { ascending: false })
+        .limit(1)
+
+      if (latest && latest.length > 0) {
+        const latestMonth = (latest[0].date as string).slice(0, 7)
+        if (latestMonth !== currentMonth) {
+          targetMonth = latestMonth
+          fallbackUsed = true
+        }
+      }
+    }
+  }
+
+  const { start, end } = monthBoundaries(targetMonth)
 
   const { data, error } = await db
     .from('transactions')
     .select('amount, type, category:category_id(name, icon)')
     .eq('user_id', internalId)
-    .gte('date', startOfMonth)
-    .lt('date', startOfNext)
+    .gte('date', start)
+    .lt('date', end)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -128,6 +185,15 @@ export async function GET(_req: NextRequest) {
     .sort((a, b) => b.total - a.total)
     .slice(0, 6)
 
-  const summary: MonthlySummaryData = { income, expense, savings, rate, month, top_categories }
+  const summary: MonthlySummaryData = {
+    income,
+    expense,
+    savings,
+    rate,
+    month:        targetMonth,
+    currentMonth,
+    fallbackUsed,
+    top_categories,
+  }
   return NextResponse.json({ data: summary })
 }

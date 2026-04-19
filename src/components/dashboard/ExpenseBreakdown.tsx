@@ -6,6 +6,11 @@ import { TrendingDown, ArrowRight } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import type { MonthlySummaryData } from '@/app/api/summary/route'
 
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+]
+
 /**
  * ExpenseBreakdown — widget do dashboard (abril 2026) que mostra as
  * top 6 categorias de despesa do mês corrente em barras horizontais.
@@ -93,7 +98,8 @@ export function ExpenseBreakdown() {
           <h3 className="font-semibold text-white text-sm">Onde vai o dinheiro</h3>
         </div>
         <span className="text-xs text-white/40">
-          {formatCurrency(summary.expense)} este mês
+          {formatCurrency(summary.expense)}
+          {' '}{summary.month === summary.currentMonth ? 'este mês' : `em ${MONTH_NAMES[Number(summary.month.slice(-2)) - 1]}`}
         </span>
       </div>
 
