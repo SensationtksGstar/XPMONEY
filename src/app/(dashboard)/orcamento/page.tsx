@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import {
   PiggyBank, Settings as SettingsIcon, Check, AlertTriangle,
   Info, Sparkles, ArrowRight, RotateCcw, Flame,
@@ -15,6 +16,13 @@ import { formatCurrency } from '@/lib/utils'
 import { parseAmountLocale } from '@/lib/safeNumber'
 import { Spinner } from '@/components/ui/Spinner'
 import { useToast } from '@/components/ui/toaster'
+
+// recharts é ~100 KB gz — carrega só quando o user chega à página
+// e o chart entra em vista (via dynamic).
+const BudgetHistory = dynamic(
+  () => import('@/components/budget/BudgetHistory').then(m => ({ default: m.BudgetHistory })),
+  { ssr: false, loading: () => <div className="h-64 bg-white/5 rounded-2xl animate-pulse" /> },
+)
 
 /**
  * /orcamento — Orçamento Pessoal 50/30/20 (feature FREE).
@@ -153,6 +161,9 @@ function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof use
       <div className="space-y-3">
         {status.buckets.map(b => <BucketCard key={b.bucket} bucket={b} />)}
       </div>
+
+      {/* Histórico — 6 meses de despesas empilhadas por bucket */}
+      <BudgetHistory />
 
       {/* CTA — transações */}
       <div className="flex items-center justify-between bg-white/3 border border-white/10 rounded-xl px-4 py-3">
