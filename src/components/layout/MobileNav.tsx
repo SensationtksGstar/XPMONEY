@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ArrowLeftRight,
   Target, BookOpen, Plus, MoreHorizontal,
   Swords, Trophy, Zap, LineChart, TrendingUp,
-  Settings, X,
+  Settings, X, PiggyBank,
 } from 'lucide-react'
 import { cn }              from '@/lib/utils'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
@@ -24,6 +24,7 @@ const PRIMARY_NAV = [
 ]
 
 const MORE_ITEMS = [
+  { href: '/orcamento',  label: 'Orçamento',   icon: PiggyBank,   badge: null        },
   { href: '/cursos',     label: 'Academia',    icon: BookOpen,    badge: null        },
   { href: '/missions',   label: 'Missões',     icon: Swords,      badge: null        },
   { href: '/dividas',    label: 'Mata-Dívidas', icon: Swords,     badge: '👑 PREMIUM' },
