@@ -17,6 +17,7 @@
 
 import { createHash }            from 'crypto'
 import { GoogleGenerativeAI }    from '@google/generative-ai'
+import { jsonrepair }            from 'jsonrepair'
 import { createSupabaseAdmin }   from '@/lib/supabase'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -240,10 +241,57 @@ function stripJsonFence(raw: string): string {
   return raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 }
 
-function normaliseReceipt(raw: string): ReceiptScanResult {
+/**
+ * Tenta fazer parse de JSON possivelmente malformado vindo dum LLM.
+ *
+ * Razão: os modelos de chat (especialmente Gemini 2.5) falham em escapar
+ * aspas dentro de descrições de transações, o que faz `JSON.parse` dar
+ * "Expected double-quoted property name at position X". O jsonrepair
+ * consegue recuperar destes casos (aspas não escapadas, trailing commas,
+ * comentários, chaves sem aspas, strings em single-quote, etc).
+ *
+ * Ordem:
+ *   1. Remove fences markdown (```json ... ```)
+ *   2. Corta lixo antes do primeiro { e depois do último }
+ *   3. JSON.parse directo (caminho rápido — LLM bem comportado)
+ *   4. jsonrepair + JSON.parse (fallback robusto)
+ *
+ * Atira a exceção original se ambos falharem.
+ */
+function safeJsonParse<T = unknown>(raw: string): T {
   const cleaned = stripJsonFence(raw)
+
+  // Crop a qualquer preâmbulo/epílogo textual do LLM — alguns modelos
+  // insistem em escrever "Aqui está o JSON:" antes, mesmo quando em
+  // JSON mode. Procuramos { ... } ou [ ... ] e ignoramos o resto.
+  const firstBrace = Math.min(
+    ...[cleaned.indexOf('{'), cleaned.indexOf('[')].filter(i => i >= 0),
+  )
+  const lastBrace = Math.max(
+    cleaned.lastIndexOf('}'),
+    cleaned.lastIndexOf(']'),
+  )
+  const trimmed = firstBrace >= 0 && lastBrace > firstBrace
+    ? cleaned.slice(firstBrace, lastBrace + 1)
+    : cleaned
+
   try {
-    const parsed = JSON.parse(cleaned) as Partial<ReceiptScanResult>
+    return JSON.parse(trimmed) as T
+  } catch (firstErr) {
+    try {
+      const repaired = jsonrepair(trimmed)
+      return JSON.parse(repaired) as T
+    } catch {
+      // Se jsonrepair também falhar, relança o erro original — mais
+      // informativo para o classifier.
+      throw firstErr
+    }
+  }
+}
+
+function normaliseReceipt(raw: string): ReceiptScanResult {
+  try {
+    const parsed = safeJsonParse<Partial<ReceiptScanResult>>(raw)
     const amount = parsed.amount == null ? null : Math.abs(Number(parsed.amount))
     return {
       amount:        amount != null && !isNaN(amount) ? amount : null,
@@ -264,8 +312,12 @@ function normaliseReceipt(raw: string): ReceiptScanResult {
 }
 
 function normaliseStatement(raw: string): StatementParseResult {
-  const cleaned = stripJsonFence(raw)
-  const obj = JSON.parse(cleaned)
+  const obj = safeJsonParse<{
+    bank?:         string
+    currency?:     string
+    total?:        number
+    transactions?: ParsedTransaction[]
+  }>(raw)
   return {
     bank:     obj.bank     ?? 'Banco desconhecido',
     currency: obj.currency ?? 'EUR',
@@ -386,26 +438,59 @@ async function groqVision(
 }
 
 async function groqText(apiKey: string, prompt: string): Promise<StatementParseResult> {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method:  'POST',
-    headers: {
-      Authorization:  `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model:           'llama-3.3-70b-versatile',
-      messages:        [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature:     0.1,
-      max_tokens:      8192,
-    }),
-  })
+  /**
+   * Groq é stricto em `response_format: json_object` — se o prompt for
+   * muito longo (extratos grandes geram prompts de ~15k tokens) ou se
+   * o modelo não estiver 100% confiante em produzir JSON válido,
+   * devolve 400 "Failed to generate JSON. Please adjust your prompt.".
+   *
+   * Estratégia: primeiro tentar com json_object (força o modelo a
+   * output estrito). Se falhar com 400, retry SEM json_object mas com
+   * instrução reforçada no prompt — o safeJsonParse vai recuperar o
+   * JSON mesmo que venha embrulhado em prosa.
+   */
+  const callGroq = async (useJsonMode: boolean): Promise<string> => {
+    const extraInstr = useJsonMode
+      ? ''
+      : '\n\n❗ Responde APENAS com o JSON válido, sem texto antes nem depois, sem blocos de código, sem explicações.'
+    const body: Record<string, unknown> = {
+      model:       'llama-3.3-70b-versatile',
+      messages:    [{ role: 'user', content: prompt + extraInstr }],
+      temperature: 0.1,
+      max_tokens:  8192,
+    }
+    if (useJsonMode) body.response_format = { type: 'json_object' }
 
-  const json = await res.json() as GroqResponse
-  if (!res.ok || json.error) {
-    throw new Error(`Groq ${res.status}: ${json.error?.message ?? 'unknown'}`)
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:  'POST',
+      headers: {
+        Authorization:  `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json() as GroqResponse
+    if (!res.ok || json.error) {
+      const msg = json.error?.message ?? 'unknown'
+      const err = new Error(`Groq ${res.status}: ${msg}`)
+      // Marcar erros de json_mode para distinguir de auth/quota no caller
+      if (res.status === 400 && /generate json|json.*failed/i.test(msg)) {
+        (err as Error & { isJsonModeError?: boolean }).isJsonModeError = true
+      }
+      throw err
+    }
+    return json.choices[0].message.content
   }
-  return normaliseStatement(json.choices[0].message.content)
+
+  try {
+    return normaliseStatement(await callGroq(true))
+  } catch (err) {
+    if ((err as Error & { isJsonModeError?: boolean }).isJsonModeError) {
+      console.warn('[ai:groq] json_object mode failed, retrying without it')
+      return normaliseStatement(await callGroq(false))
+    }
+    throw err
+  }
 }
 
 // ── Cache ────────────────────────────────────────────────────────────────────
