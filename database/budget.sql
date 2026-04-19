@@ -11,9 +11,17 @@
 --
 -- A tabela budgets tem um único row por user (UNIQUE constraint em user_id).
 -- Service role bypassa RLS; user autenticado só vê o seu próprio row.
+--
+-- ⚠️  Aviso: o schema.sql inicial do projecto tinha uma tabela `budgets`
+-- com outra estrutura (user_id, category_id, amount, month) que nunca foi
+-- implementada em código (a feature "orçamento por categoria por mês"
+-- foi descartada em favor deste 50/30/20). O DROP abaixo remove a versão
+-- antiga — é seguro porque nenhum endpoint lê/escreve nessas colunas.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create table if not exists public.budgets (
+drop table if exists public.budgets cascade;
+
+create table public.budgets (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null unique references public.users(id) on delete cascade,
   monthly_income  numeric(12, 2) not null default 0 check (monthly_income >= 0),
