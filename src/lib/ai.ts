@@ -356,22 +356,34 @@ async function geminiText(
   apiKey: string, model: string, prompt: string,
 ): Promise<StatementParseResult> {
   const genAI = new GoogleGenerativeAI(apiKey)
+  // Extratos reais podem ter 150-300 transações num único mês (conta
+  // activa com débitos frequentes). Cada transação em JSON ocupa ~100
+  // tokens → 300 × 100 = 30k tokens só de output. A 16k anterior
+  // truncava → jsonrepair recuperava apenas o fragmento inicial
+  // válido → user via "só 7 transações de 178". Gemini 2.5 Flash
+  // aceita até 65536 output tokens; 2.0 Flash clampa automaticamente
+  // a 8192 que é o seu máximo.
+  const maxTokens = model.startsWith('gemini-2.5') ? 65_536 : 8192
   const m = genAI.getGenerativeModel({
     model,
     generationConfig: {
       responseMimeType: 'application/json',
       temperature:      0.1,
-      // Statements can be long and 2.5 thinking tokens add overhead on top of
-      // the JSON output — budget generously so we never truncate the array.
-      maxOutputTokens:  16_384,
+      maxOutputTokens:  maxTokens,
     },
   })
-  const result = await m.generateContent(prompt)
+  const result    = await m.generateContent(prompt)
+  const finishReason = result.response.candidates?.[0]?.finishReason
+  if (finishReason === 'MAX_TOKENS') {
+    console.warn(`[ai:${model}] response truncated at MAX_TOKENS — PDF pode ter mais transações do que o modelo conseguiu listar`)
+  }
   return normaliseStatement(result.response.text())
 }
 
 /**
  * Gemini PDF statement parser — sends the PDF as inline binary data
+ * usando maxOutputTokens dinâmico: 65k para 2.5 Flash, 8k para 2.0. O
+ * PDF pode conter 150-300 transações que ultrapassam o budget antigo.
  * alongside the instructions. Both 2.5 Flash and 2.0 Flash can read PDFs
  * natively up to ~20 MB (we clamp at 8 MB server-side for speed/cost).
  */
@@ -379,19 +391,23 @@ async function geminiPdfStatement(
   apiKey: string, model: string, pdfBase64: string, instructions: string,
 ): Promise<StatementParseResult> {
   const genAI = new GoogleGenerativeAI(apiKey)
+  const maxTokens = model.startsWith('gemini-2.5') ? 65_536 : 8192
   const m = genAI.getGenerativeModel({
     model,
     generationConfig: {
       responseMimeType: 'application/json',
       temperature:      0.1,
-      // PDFs can have dozens of pages — keep a very generous budget.
-      maxOutputTokens:  16_384,
+      maxOutputTokens:  maxTokens,
     },
   })
   const result = await m.generateContent([
     instructions,
     { inlineData: { data: pdfBase64, mimeType: 'application/pdf' } },
   ])
+  const finishReason = result.response.candidates?.[0]?.finishReason
+  if (finishReason === 'MAX_TOKENS') {
+    console.warn(`[ai:${model}] PDF response truncated — muitas transações para caber na resposta. Considera dividir o PDF por quinzena.`)
+  }
   return normaliseStatement(result.response.text())
 }
 
@@ -457,7 +473,8 @@ async function groqText(apiKey: string, prompt: string): Promise<StatementParseR
       model:       'llama-3.3-70b-versatile',
       messages:    [{ role: 'user', content: prompt + extraInstr }],
       temperature: 0.1,
-      max_tokens:  8192,
+      // Extratos longos precisam de muito output — llama-3.3 aceita 32k
+      max_tokens:  32_768,
     }
     if (useJsonMode) body.response_format = { type: 'json_object' }
 
@@ -635,51 +652,32 @@ export async function parseStatement(
     throw new AIProvidersError(['no-provider-configured'], 'auth')
   }
 
-  // ── PDF path: tiered fallback (April 2026) ──
+  // ── PDF path: TEXT FIRST, vision só se texto falhar (April 2026) ──
   //
-  // Estratégia antes → depois:
-  //   antes: Gemini 2.5 vision → Gemini 2.0 vision → 503. Se o user esgotasse
-  //          a quota diária do Gemini, PDF era um beco sem saída.
-  //   agora: 1) Gemini 2.5 vision (ideal — lê tabelas complexas)
-  //          2) Gemini 2.0 vision (fallback de quota intra-Gemini)
-  //          3) unpdf extrai texto local + Gemini 2.5 text (quota diferente
-  //             na prática, vision tokens e text tokens têm pools distintos
-  //             no free tier)
-  //          4) unpdf + Groq Llama (key totalmente diferente — se Gemini
-  //             estiver fora, Groq entra)
+  // Reordenação (abril 2026): extratos bancários modernos são PDFs com
+  // camada de texto (pesquisáveis). Usar unpdf para extrair texto e
+  // depois enviar via texto é MUITO melhor do que vision porque:
+  //   1. Input muito menor (texto << base64 de imagem) → mais rápido
+  //   2. Output não compete com tokens de imagem → menos trunca em
+  //      extratos longos (150-300 transações)
+  //   3. Mais resiliente a tabelas mal formatadas — o texto já vem
+  //      linearizado pelo unpdf
+  //   4. Vision só é essencial para PDFs scanned (sem camada de texto)
   //
-  // A extracção local com unpdf é feita UMA vez e o texto é reutilizado nas
-  // etapas 3-4, por isso só pagamos o custo da extracção quando Gemini
-  // vision falha.
+  // Chain para PDFs com texto:
+  //   1) unpdf → Gemini 2.5 text (ideal — quality, 65k tokens)
+  //   2) unpdf → Gemini 2.0 text (mesmo quota pool, fallback de modelo)
+  //   3) unpdf → Groq Llama (quota totalmente diferente, 32k tokens)
+  //
+  // Fallback vision (se texto não for extraível):
+  //   4) Gemini 2.5 vision (para scanned PDFs)
+  //   5) Gemini 2.0 vision
   if (input.kind === 'pdf') {
     if (!geminiKey && !groqKey) {
       throw new AIProvidersError(['pdf-no-providers'], 'auth')
     }
 
-    // Tentativa 1-2: Gemini vision (nativo)
-    if (geminiKey) {
-      try {
-        const data = await withRetry(
-          () => geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions),
-          'gemini-2.5-flash-pdf',
-        )
-        return { data, provider: 'gemini-2.5-flash-pdf', cache_hit: false, attempts }
-      } catch (err) {
-        attempts.push(`gemini-2.5-flash-pdf: ${err instanceof Error ? err.message : err}`)
-      }
-
-      try {
-        const data = await withRetry(
-          () => geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions),
-          'gemini-2.0-flash-pdf',
-        )
-        return { data, provider: 'gemini-2.0-flash-pdf', cache_hit: false, attempts }
-      } catch (err) {
-        attempts.push(`gemini-2.0-flash-pdf: ${err instanceof Error ? err.message : err}`)
-      }
-    }
-
-    // Tentativas 3-4: extrair texto local e ir pelo pipeline de texto
+    // Tentar extracção de texto PRIMEIRO
     let extractedText: string | null = null
     try {
       extractedText = await extractPdfText(input.pdfBase64)
@@ -687,6 +685,7 @@ export async function parseStatement(
       attempts.push(`unpdf-extract: ${err instanceof Error ? err.message : err}`)
     }
 
+    // Caminho texto — preferido
     if (extractedText && extractedText.trim().length > 50) {
       const textPrompt = buildStatementPromptWithContent(extractedText, input.filename, categoryNames)
 
@@ -694,11 +693,21 @@ export async function parseStatement(
         try {
           const data = await withRetry(
             () => geminiText(geminiKey, 'gemini-2.5-flash', textPrompt),
-            'gemini-2.5-flash-text-fallback',
+            'gemini-2.5-flash-text',
           )
-          return { data, provider: 'gemini-2.5-flash-text-fallback', cache_hit: false, attempts }
+          return { data, provider: 'gemini-2.5-flash-text', cache_hit: false, attempts }
         } catch (err) {
-          attempts.push(`gemini-2.5-flash-text-fallback: ${err instanceof Error ? err.message : err}`)
+          attempts.push(`gemini-2.5-flash-text: ${err instanceof Error ? err.message : err}`)
+        }
+
+        try {
+          const data = await withRetry(
+            () => geminiText(geminiKey, 'gemini-2.0-flash', textPrompt),
+            'gemini-2.0-flash-text',
+          )
+          return { data, provider: 'gemini-2.0-flash-text', cache_hit: false, attempts }
+        } catch (err) {
+          attempts.push(`gemini-2.0-flash-text: ${err instanceof Error ? err.message : err}`)
         }
       }
 
@@ -706,15 +715,38 @@ export async function parseStatement(
         try {
           const data = await withRetry(
             () => groqText(groqKey, textPrompt),
-            'groq-llama-pdf-fallback',
+            'groq-llama-text',
           )
-          return { data, provider: 'groq-llama-pdf-fallback', cache_hit: false, attempts }
+          return { data, provider: 'groq-llama-text', cache_hit: false, attempts }
         } catch (err) {
-          attempts.push(`groq-llama-pdf-fallback: ${err instanceof Error ? err.message : err}`)
+          attempts.push(`groq-llama-text: ${err instanceof Error ? err.message : err}`)
         }
       }
     } else if (extractedText != null) {
       attempts.push(`unpdf-extract: too-little-text (${extractedText.trim().length} chars) — scanned PDF?`)
+    }
+
+    // Fallback vision — só se texto falhou ou PDF é scanned
+    if (geminiKey) {
+      try {
+        const data = await withRetry(
+          () => geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions),
+          'gemini-2.5-flash-vision',
+        )
+        return { data, provider: 'gemini-2.5-flash-vision', cache_hit: false, attempts }
+      } catch (err) {
+        attempts.push(`gemini-2.5-flash-vision: ${err instanceof Error ? err.message : err}`)
+      }
+
+      try {
+        const data = await withRetry(
+          () => geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions),
+          'gemini-2.0-flash-vision',
+        )
+        return { data, provider: 'gemini-2.0-flash-vision', cache_hit: false, attempts }
+      } catch (err) {
+        attempts.push(`gemini-2.0-flash-vision: ${err instanceof Error ? err.message : err}`)
+      }
     }
 
     const kind = classifyError(attempts.join(' | '))
