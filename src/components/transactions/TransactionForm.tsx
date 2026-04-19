@@ -137,12 +137,13 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
         aria-modal="true"
         aria-labelledby={titleId}
         className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm animate-fade-in
-                   flex items-end sm:items-center sm:justify-center sm:p-4"
+                   overflow-y-auto
+                   flex items-end sm:items-start sm:justify-center sm:py-8 sm:px-4"
       >
         <div
           className="w-full sm:max-w-md bg-[#0f1623] border border-white/10 overflow-hidden
                      rounded-t-3xl sm:rounded-2xl animate-slide-up
-                     flex flex-col max-h-[92dvh]"
+                     flex flex-col max-h-[92dvh] sm:max-h-none sm:my-auto"
           onClick={e => e.stopPropagation()}
         >
           {/* Handle bar */}
