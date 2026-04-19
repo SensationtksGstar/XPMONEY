@@ -342,10 +342,20 @@ export function StatementImporter({ onClose }: Props) {
       const msg = message
         ?? `${inserted} transações importadas! +${xp_gained} XP 🎉`
 
-      qc.invalidateQueries({ queryKey: ['transactions'] })
-      qc.invalidateQueries({ queryKey: ['score'] })
-      qc.invalidateQueries({ queryKey: ['xp'] })
-      qc.invalidateQueries({ queryKey: ['missions'] })
+      // Invalida TODAS as queries que agregam transações — antes só
+      // mexíamos em score/xp/missions e o user via: "importei 178 mas
+      // dashboard ainda em 0€". Agora o MonthlySummary, ExpenseBreakdown,
+      // orçamento (status + história) e widgets de pet/dívida também
+      // actualizam sem refresh manual.
+      qc.invalidateQueries({ queryKey: ['transactions']    })
+      qc.invalidateQueries({ queryKey: ['score']           })
+      qc.invalidateQueries({ queryKey: ['xp']              })
+      qc.invalidateQueries({ queryKey: ['missions']        })
+      qc.invalidateQueries({ queryKey: ['summary']         })  // MonthlySummary + ExpenseBreakdown
+      qc.invalidateQueries({ queryKey: ['budget-status']   })  // /orcamento dashboard
+      qc.invalidateQueries({ queryKey: ['budget-history']  })  // chart 6 meses
+      qc.invalidateQueries({ queryKey: ['voltix']          })  // Pet hero (mood pode mudar)
+      qc.invalidateQueries({ queryKey: ['debts']           })  // DebtWidget
 
       setDoneMsg(msg)
       setStep('done')

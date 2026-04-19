@@ -34,22 +34,31 @@ export function useTransactions(_userId?: string) {
     refetchOnWindowFocus: false,
   })
 
+  /**
+   * Invalidação em cascata — qualquer mutação de transação tem de
+   * actualizar também todas as vistas agregadas (summary, budget,
+   * voltix mood, widgets do dashboard), senão o user vê números
+   * stale após criar/eliminar. Centralizado aqui numa constante.
+   */
+  const invalidateAllTransactionViews = () => {
+    client.invalidateQueries({ queryKey: ['transactions']    })
+    client.invalidateQueries({ queryKey: ['score']           })
+    client.invalidateQueries({ queryKey: ['xp']              })
+    client.invalidateQueries({ queryKey: ['missions']        })
+    client.invalidateQueries({ queryKey: ['summary']         })
+    client.invalidateQueries({ queryKey: ['budget-status']   })
+    client.invalidateQueries({ queryKey: ['budget-history']  })
+    client.invalidateQueries({ queryKey: ['voltix']          })
+  }
+
   const mutation = useMutation({
     mutationFn: postTransaction,
-    onSuccess: () => {
-      client.invalidateQueries({ queryKey: ['transactions'] })
-      client.invalidateQueries({ queryKey: ['score'] })
-      client.invalidateQueries({ queryKey: ['xp'] })
-      client.invalidateQueries({ queryKey: ['missions'] })
-    },
+    onSuccess:  invalidateAllTransactionViews,
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteTransactionById,
-    onSuccess: () => {
-      client.invalidateQueries({ queryKey: ['transactions'] })
-      client.invalidateQueries({ queryKey: ['score'] })
-    },
+    onSuccess:  invalidateAllTransactionViews,
   })
 
   return {
