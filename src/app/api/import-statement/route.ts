@@ -207,21 +207,26 @@ async function runParse(
       if (err.kind === 'auth') {
         return NextResponse.json(
           {
-            error: 'Análise de extratos em manutenção. Volta dentro de momentos ou adiciona as transações manualmente.',
-            code:  'ai_auth',
+            // Mensagem explícita: a causa mais provável é env var mal
+            // configurada. Em vez da antiga "em manutenção" genérica,
+            // dizemos ao user que parece ser chave, com fallback para
+            // contacto se o user não for admin.
+            error: 'A autenticação com os providers de IA falhou. Se és admin, verifica GOOGLE_GEMINI_API_KEY e GROQ_API_KEY no Vercel. Entretanto, adiciona as transações manualmente.',
+            code:     'ai_auth',
+            attempts: err.attempts.map(a => a.slice(0, 240)),
           },
           { status: 503 },
         )
       }
       if (err.kind === 'quota') {
-        // Distinguir "daily quota exhausted" de "per-minute rate limit"
-        // analisando os attempts. RESOURCE_EXHAUSTED tipicamente = diária;
-        // 429 isolado + "requests per minute" = minuto.
+        // Distinguir daily quota vs per-minute rate vs billing usando
+        // FRASES completas (word boundaries), evitando falsos positivos
+        // como "credentials" a accionar billing.
         const attemptsStr = err.attempts.join(' ').toLowerCase()
         const isDaily =
-          /resource[_ ]?exhausted|quota.*exceeded.*day|daily/.test(attemptsStr)
+          /\bresource[_ ]?exhausted\b|quota.*exceeded.*day|\bdaily\s+limit\b/.test(attemptsStr)
         const isBilling =
-          /billing|credit|payment|subscription/.test(attemptsStr)
+          /\bbilling\b|\binsufficient\s+credits?\b|\bpayment\s+required\b|\bsubscription\s+(expired|required)\b/.test(attemptsStr)
 
         const message = isBilling
           ? 'A conta da IA atingiu o limite de créditos. Contacta-nos pelo formulário — vamos resolver.'
@@ -233,13 +238,26 @@ async function runParse(
           {
             error: message,
             code:  'ai_quota',
-            // Detalhe técnico compacto — útil para suporte mas não para o
-            // user normal. Nunca expomos a API key; só o primeiro attempt.
-            detail: err.attempts[0]?.slice(0, 200),
+            // Expomos os attempts truncados para debug. Cada attempt é do
+            // formato "<provider>: <error>", nunca contém a API key.
+            attempts: err.attempts.map(a => a.slice(0, 240)),
           },
           { status: 503 },
         )
       }
+
+      // Outros kinds (bad_input, unknown) — auth e quota já retornaram
+      // acima. Devolve mensagem + attempts para debugging.
+      return NextResponse.json(
+        {
+          error: err.kind === 'bad_input'
+            ? 'A IA bloqueou o conteúdo por política de segurança ou formato inválido. Verifica se o ficheiro é mesmo um extrato.'
+            : 'Não foi possível processar — todos os providers falharam. Expande "Detalhes técnicos" para ver o que cada um respondeu.',
+          code:     err.kind === 'bad_input' ? 'ai_bad_input' : 'ai_unknown',
+          attempts: err.attempts.map(a => a.slice(0, 240)),
+        },
+        { status: err.kind === 'bad_input' ? 422 : 503 },
+      )
     }
 
     if (err instanceof SyntaxError) {

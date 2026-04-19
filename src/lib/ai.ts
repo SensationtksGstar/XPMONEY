@@ -182,10 +182,34 @@ function getGroqKey(): string | null {
 
 // ── Error classification ─────────────────────────────────────────────────────
 
+/**
+ * Classifica um erro textual num dos quatro kinds. A ordem das verificações
+ * importa — auth vai primeiro porque mensagens como "invalid credentials"
+ * continham a substring "credit" e o regex antigo classificava-as como
+ * 'quota', mostrando ao user "limite de créditos atingido" quando na
+ * verdade era uma chave errada.
+ *
+ * Regras:
+ *   - Usa word boundaries (`\b`) onde a substring for ambígua (credit,
+ *     rate, etc). "Credentials" já não dispara 'quota'.
+ *   - Auth antes de quota: a maioria dos providers devolve 401/403 com
+ *     palavras que podiam ser confundidas com quota ("rate limiter auth
+ *     required", etc).
+ *   - "Insufficient credits" é legítimo de billing, mas só disparamos
+ *     billing com frase completa (não só "credit").
+ */
 function classifyError(msg: string): 'quota' | 'auth' | 'bad_input' | 'unknown' {
-  if (/quota|resource[_ ]?exhausted|429|rate|billing|credit/i.test(msg)) return 'quota'
-  if (/401|403|api[_ ]?key|unauthenticated|permission/i.test(msg))       return 'auth'
-  if (/invalid.*?image|unsupported.*?mime|safety|400/i.test(msg))         return 'bad_input'
+  // Auth PRIMEIRO — mensagens "invalid api key", "unauthenticated", 401/403
+  if (/\b(401|403)\b|\bapi[_ -]?key\b|unauthenticated|invalid[_ ]?(credential|api[_ -]?key)|\bpermission\s+denied\b/i.test(msg)) {
+    return 'auth'
+  }
+  // Quota / rate-limit — frases distintivas
+  if (/\bquota\b|resource[_ ]?exhausted|\b429\b|\brate[_ -]?limit|\bbilling\b|\binsufficient\s+(credits?|balance)\b|\bover\s+limit\b/i.test(msg)) {
+    return 'quota'
+  }
+  if (/invalid.*?image|unsupported.*?mime|\bsafety\b|\b400\b/i.test(msg)) {
+    return 'bad_input'
+  }
   return 'unknown'
 }
 

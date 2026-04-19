@@ -149,6 +149,7 @@ export function StatementImporter({ onClose }: Props) {
   const [rows,      setRows]     = useState<ParsedTransaction[]>([])
   const [accountId, setAccountId]= useState('')
   const [errorMsg,  setErrorMsg] = useState('')
+  const [errorAttempts, setErrorAttempts] = useState<string[]>([])
   const [doneMsg,   setDoneMsg]  = useState('')
   const [parsingStart, setParsingStart] = useState<number | null>(null)
   const fileRef  = useRef<HTMLInputElement>(null)
@@ -218,7 +219,7 @@ export function StatementImporter({ onClose }: Props) {
       // res.json() on those on Safari/WebKit throws the cryptic DOMException
       // "The string did not match the expected pattern". Read as text first.
       const raw  = await res.text()
-      let json: { error?: string; code?: string; data?: ImportStatementResult } = {}
+      let json: { error?: string; code?: string; data?: ImportStatementResult; attempts?: string[] } = {}
       try {
         json = raw ? JSON.parse(raw) : {}
       } catch {
@@ -237,7 +238,14 @@ export function StatementImporter({ onClose }: Props) {
         setStep('error')
         return
       }
-      if (!res.ok || json.error) throw new Error(json.error ?? `Erro ${res.status}`)
+      if (!res.ok || json.error) {
+        // Guardamos os attempts se o servidor os expôs — assim o user pode
+        // expandir "ver detalhes técnicos" e perceber qual provider falhou.
+        if (json.attempts && json.attempts.length > 0) {
+          setErrorAttempts(json.attempts)
+        }
+        throw new Error(json.error ?? `Erro ${res.status}`)
+      }
 
       const data = json.data as ImportStatementResult | undefined
       if (!data?.transactions?.length) {
@@ -685,14 +693,14 @@ export function StatementImporter({ onClose }: Props) {
               <p className="text-white font-bold">
                 {errorMsg.includes('Plano') || errorMsg.includes('plano') ? 'Plano insuficiente' : 'Ocorreu um erro'}
               </p>
-              <p className="text-white/50 text-sm mt-1">{errorMsg}</p>
+              <p className="text-white/50 text-sm mt-1 whitespace-pre-line">{errorMsg}</p>
             </div>
             <div className="flex gap-3 w-full max-w-xs">
               <button onClick={onClose}
                 className="flex-1 py-3 border border-white/10 text-white/60 rounded-xl text-sm hover:border-white/25 hover:text-white transition-all min-h-[44px]">
                 Fechar
               </button>
-              <button onClick={() => { setStep('upload'); setErrorMsg('') }}
+              <button onClick={() => { setStep('upload'); setErrorMsg(''); setErrorAttempts([]) }}
                 className="flex-1 py-3 bg-white/10 hover:bg-white/15 text-white rounded-xl text-sm font-medium transition-all min-h-[44px]">
                 Tentar de novo
               </button>
@@ -705,6 +713,22 @@ export function StatementImporter({ onClose }: Props) {
                   em poucos segundos — ainda assim ganhas XP.
                 </p>
               </div>
+            )}
+
+            {/* Detalhes técnicos — lista dos attempts falhados (útil para
+                diagnosticar se é uma chave inválida, quota diária, etc.
+                sem ter de abrir logs do servidor). */}
+            {errorAttempts.length > 0 && (
+              <details className="w-full text-left bg-white/3 border border-white/8 rounded-xl overflow-hidden">
+                <summary className="cursor-pointer px-3 py-2 text-[11px] text-white/50 hover:text-white transition-colors select-none">
+                  Detalhes técnicos ({errorAttempts.length} {errorAttempts.length === 1 ? 'tentativa' : 'tentativas'})
+                </summary>
+                <div className="border-t border-white/5 px-3 py-2 space-y-1.5 font-mono text-[10px] text-white/60 break-all">
+                  {errorAttempts.map((a, i) => (
+                    <div key={i} className="leading-relaxed">• {a}</div>
+                  ))}
+                </div>
+              </details>
             )}
           </div>
         )}
