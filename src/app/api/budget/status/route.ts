@@ -3,7 +3,7 @@ import { NextResponse }       from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { resolveUser }         from '@/lib/resolveUser'
 import { toNumber }            from '@/lib/safeNumber'
-import { buildBudgetStatus, type Budget } from '@/lib/budget'
+import { buildBudgetStatus, parseOverrides, type Budget } from '@/lib/budget'
 
 /**
  * GET /api/budget/status — estado do orçamento no mês corrente.
@@ -23,9 +23,15 @@ function monthKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const now   = new Date()
   const month = monthKey(now)
+
+  // Overrides vêm do localStorage do cliente via query param. Se o user
+  // ainda não recategorizou nada, é undefined e a heurística padrão
+  // decide os buckets.
+  const url       = new URL(req.url)
+  const overrides = parseOverrides(url.searchParams.get('overrides'))
 
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -90,7 +96,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    data: buildBudgetStatus(b, tx, month),
+    data: buildBudgetStatus(b, tx, month, overrides),
     error: null,
   })
 }

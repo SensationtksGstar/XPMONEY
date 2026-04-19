@@ -36,6 +36,17 @@ export interface BudgetStatus {
   totalSpent:     number
   totalRemaining: number   // pode ser negativo se ultrapassar o rendimento
   buckets:        BucketStatus[]
+  /**
+   * Todas as categorias que apareceram em transações este mês, com o
+   * bucket resolvido (heurística + overrides aplicados). Usado pela UI
+   * para permitir recategorização por categoria.
+   */
+  allCategories:  Array<{
+    name:   string
+    icon:   string | null
+    bucket: BudgetBucket
+    total:  number
+  }>
 }
 
 export const BUCKET_LABELS: Record<BudgetBucket, string> = {
@@ -74,13 +85,32 @@ export const BUCKET_COLORS: Record<BudgetBucket, {
 }
 
 /**
+ * Mapa de overrides { "NomeCategoria": bucket } — persistido em
+ * localStorage pelo cliente e enviado para o servidor via query param
+ * na rota de status.
+ */
+export type OverridesMap = Record<string, BudgetBucket>
+
+/**
  * Mapeia o nome de categoria para um bucket. Heurística por keywords —
  * cobre as categorias default de `schema.sql` (PT) e as variantes comuns
  * em inglês. Categorias desconhecidas caem em 'wants' (safety default —
  * assume gasto discricionário até o user saber melhor).
+ *
+ * Se for passado um mapa de overrides (configurado pelo user na UI),
+ * essa escolha manual tem prioridade absoluta sobre a heurística.
  */
-export function categoryToBucket(categoryName: string | null): BudgetBucket {
+export function categoryToBucket(
+  categoryName: string | null,
+  overrides?: OverridesMap,
+): BudgetBucket {
   if (!categoryName) return 'wants'
+
+  // Override explícito do user → prioridade máxima
+  if (overrides && overrides[categoryName]) {
+    return overrides[categoryName]
+  }
+
   const n = categoryName.toLowerCase().trim()
 
   // Necessidades — vivência básica
@@ -101,15 +131,42 @@ export function categoryToBucket(categoryName: string | null): BudgetBucket {
 }
 
 /**
+ * Valida + normaliza um mapa de overrides recebido por query string.
+ * Descarta entries com buckets inválidos e caps de tamanho para prevenir
+ * abuse (URL de 100KB, etc).
+ */
+export function parseOverrides(raw: string | null): OverridesMap {
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object') return {}
+    const out: OverridesMap = {}
+    let count = 0
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (count >= 100) break
+      if (typeof key !== 'string' || key.length > 80) continue
+      if (value !== 'needs' && value !== 'wants' && value !== 'savings') continue
+      out[key] = value
+      count++
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+/**
  * Constrói o estado do orçamento a partir da config + transações do mês.
  *
  * @param budget    config do user (income + percentagens)
  * @param tx        transações do mês corrente, apenas type='expense'
+ * @param overrides mapa opcional de recategorizações manuais do user
  */
 export function buildBudgetStatus(
   budget: Budget,
   tx: Array<{ amount: number; category: { name: string | null; icon: string | null } | null }>,
   month: string,
+  overrides?: OverridesMap,
 ): BudgetStatus {
   const income = Number(budget.monthly_income) || 0
 
@@ -126,11 +183,13 @@ export function buildBudgetStatus(
     wants:   new Map(),
     savings: new Map(),
   }
+  // Mapa flat de todas as categorias vistas (para a UI de recategorização)
+  const allCatsMap = new Map<string, { icon: string | null; bucket: BudgetBucket; total: number }>()
 
   for (const t of tx) {
     const name   = t.category?.name ?? 'Sem categoria'
     const icon   = t.category?.icon ?? null
-    const bucket = categoryToBucket(name)
+    const bucket = categoryToBucket(name, overrides)
     const amount = Number(t.amount) || 0
 
     spent[bucket] += amount
@@ -141,6 +200,13 @@ export function buildBudgetStatus(
       existing.total += amount
     } else {
       cats.set(name, { icon, total: amount })
+    }
+
+    const flat = allCatsMap.get(name)
+    if (flat) {
+      flat.total += amount
+    } else {
+      allCatsMap.set(name, { icon, bucket, total: amount })
     }
   }
 
@@ -170,12 +236,17 @@ export function buildBudgetStatus(
 
   const totalSpent = spent.needs + spent.wants + spent.savings
 
+  const allCategories = Array.from(allCatsMap.entries())
+    .map(([name, v]) => ({ name, icon: v.icon, bucket: v.bucket, total: v.total }))
+    .sort((a, b) => b.total - a.total)
+
   return {
     month,
     income,
     totalSpent,
     totalRemaining: income - totalSpent,
     buckets,
+    allCategories,
   }
 }
 

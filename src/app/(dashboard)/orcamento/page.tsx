@@ -23,6 +23,7 @@ const BudgetHistory = dynamic(
   () => import('@/components/budget/BudgetHistory').then(m => ({ default: m.BudgetHistory })),
   { ssr: false, loading: () => <div className="h-64 bg-white/5 rounded-2xl animate-pulse" /> },
 )
+import { CategoryOverrides } from '@/components/budget/CategoryOverrides'
 
 /**
  * /orcamento — Orçamento Pessoal 50/30/20 (feature FREE).
@@ -161,6 +162,9 @@ function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof use
       <div className="space-y-3">
         {status.buckets.map(b => <BucketCard key={b.bucket} bucket={b} />)}
       </div>
+
+      {/* Personalizar: user pode recategorizar qualquer categoria */}
+      <CategoryOverrides categories={status.allCategories ?? []} />
 
       {/* Histórico — 6 meses de despesas empilhadas por bucket */}
       <BudgetHistory />
