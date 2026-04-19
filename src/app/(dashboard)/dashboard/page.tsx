@@ -34,6 +34,10 @@ const ExpenseBreakdown = dynamic(
   () => import('@/components/dashboard/ExpenseBreakdown').then(m => ({ default: m.ExpenseBreakdown })),
   { ssr: false, loading: () => <div className="h-56 bg-white/5 rounded-2xl animate-pulse" /> },
 )
+const DebtWidget = dynamic(
+  () => import('@/components/dashboard/DebtWidget').then(m => ({ default: m.DebtWidget })),
+  { ssr: false, loading: () => null },
+)
 const RecentTransactions = dynamic(
   () => import('@/components/dashboard/RecentTransactions').then(m => ({ default: m.RecentTransactions })),
   { ssr: false, loading: () => <div className="h-40 bg-white/5 rounded-2xl animate-pulse" /> },
@@ -209,6 +213,10 @@ export default function DashboardPage() {
 
       {/* Resumo mensal */}
       <MonthlySummary userId={user?.id ?? ''} />
+
+      {/* Widget de Kill Debt — só renderiza se o user tiver dívidas
+          (devolve null caso contrário, sem ocupar espaço). */}
+      <DebtWidget />
 
       {/* AD */}
       <AdBanner variant="feed" />
