@@ -22,8 +22,12 @@ import { LandingChat } from '@/components/landing/LandingChat'
  *   - Panel is a bottom-anchored card (slides up) rather than a centered
  *     modal. This matches the WhatsApp-style convention and keeps the FAB
  *     visually connected to what it spawned.
- *   - z-index sits below the demo banner (z-200) but above the dashboard's
- *     nav (z-40) and transaction form FAB (z-40).
+ *   - z-index tiers:
+ *       closed FAB button: z-[45]  (above MobileNav z-40, BELOW the
+ *                                   "More" bottom-sheet z-50 so the sheet
+ *                                   never gets covered by the coin)
+ *       chat backdrop:     z-[95]
+ *       chat panel:        z-[100] (above every UI chrome when open)
  *
  * Accessibility:
  *   - Trap-free: closes on backdrop click and on Escape.
@@ -60,7 +64,11 @@ export function DragonCoinFAB() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Abrir Dragon Coin — assistente da XP-Money"
-          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[90] w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform bg-[#060b14]/85 backdrop-blur-md ring-2 ring-green-400/50 hover:ring-green-300/70 shadow-[0_8px_24px_rgba(34,197,94,0.35),0_0_22px_rgba(34,197,94,0.25)]"
+          // z-[45] intentionally sits BELOW the MobileNav "More" sheet
+          // (z-50) — otherwise the closed FAB floats on top of the sheet
+          // and covers the Settings icon on mobile. The chat panel when
+          // OPEN still lifts above everything via z-[100] below.
+          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[45] w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform bg-[#060b14]/85 backdrop-blur-md ring-2 ring-green-400/50 hover:ring-green-300/70 shadow-[0_8px_24px_rgba(34,197,94,0.35),0_0_22px_rgba(34,197,94,0.25)]"
         >
           {/* Pulse halo — anel verde pulsante por fora do botão para
               indicar "estou vivo, clica". Fica atrás do botão via inset
