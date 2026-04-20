@@ -8,6 +8,7 @@ import {
   Shield,
   Smartphone,
 } from 'lucide-react'
+import { getServerT } from '@/lib/i18n/server'
 
 /**
  * LandingFeatures — 8-card feature grid covering what actually exists today.
@@ -23,83 +24,85 @@ import {
  * "um número de 0-100" is what sticks.
  */
 
-const FEATURES = [
-  {
-    icon:  <Trophy     className="w-5 h-5" />,
-    color: 'text-yellow-300',
-    bg:    'bg-yellow-500/10',
-    title: 'Score financeiro 0-100',
-    desc:  'Um único número que resume a tua saúde financeira. Sabes onde estás em 3 segundos.',
-    proof: 'Recalculado a cada transação',
-  },
-  {
-    icon:  <Sparkles   className="w-5 h-5" />,
-    color: 'text-green-300',
-    bg:    'bg-green-500/10',
-    title: 'Missões + XP',
-    desc:  'Cada boa decisão dá XP. Missões semanais personalizadas. Badges que desbloqueias.',
-    proof: '12 badges · 40+ missões',
-  },
-  {
-    icon:  <ScanLine   className="w-5 h-5" />,
-    color: 'text-purple-300',
-    bg:    'bg-purple-500/10',
-    title: 'Scan de recibos',
-    desc:  'Tira foto, a IA lê valor, data e categoria. Adiciona a transação em 2 segundos.',
-    proof: 'Lê ~92% dos talões PT',
-  },
-  {
-    icon:  <FileText   className="w-5 h-5" />,
-    color: 'text-blue-300',
-    bg:    'bg-blue-500/10',
-    title: 'Importar extratos',
-    desc:  'Arrasta o extrato do teu banco (PDF ou CSV) e criamos as transações por ti.',
-    proof: 'Suporta todos os bancos PT',
-  },
-  {
-    icon:  <Target     className="w-5 h-5" />,
-    color: 'text-orange-300',
-    bg:    'bg-orange-500/10',
-    title: 'Objetivos de poupança',
-    desc:  'Define metas, acompanha depósitos, recebe XP quando atinges. Fundo de emergência como missão.',
-    proof: 'Ilimitado no Premium',
-  },
-  {
-    icon:  <GraduationCap className="w-5 h-5" />,
-    color: 'text-pink-300',
-    bg:    'bg-pink-500/10',
-    title: 'Academia XP-Money',
-    desc:  'Cursos de finanças com quiz. Passas → tiras certificado digital com código único.',
-    proof: 'Orçamento, DCA, impostos',
-  },
-  {
-    icon:  <Smartphone className="w-5 h-5" />,
-    color: 'text-cyan-300',
-    bg:    'bg-cyan-500/10',
-    title: 'PWA mobile-first',
-    desc:  'Instala no telemóvel como uma app nativa. Notificações diárias, offline-friendly.',
-    proof: 'iOS + Android + Desktop',
-  },
-  {
-    icon:  <Shield     className="w-5 h-5" />,
-    color: 'text-emerald-300',
-    bg:    'bg-emerald-500/10',
-    title: 'Privacidade a sério',
-    desc:  'Dados cifrados, GDPR, zero partilha com terceiros. Sem ligação obrigatória ao banco.',
-    proof: 'Apagas tudo num clique',
-  },
-]
+export async function LandingFeatures() {
+  const t = await getServerT()
 
-export function LandingFeatures() {
+  const FEATURES = [
+    {
+      icon:  <Trophy     className="w-5 h-5" />,
+      color: 'text-yellow-300',
+      bg:    'bg-yellow-500/10',
+      title: t('landing.features.c1_title'),
+      desc:  t('landing.features.c1_desc'),
+      proof: t('landing.features.c1_proof'),
+    },
+    {
+      icon:  <Sparkles   className="w-5 h-5" />,
+      color: 'text-green-300',
+      bg:    'bg-green-500/10',
+      title: t('landing.features.c2_title'),
+      desc:  t('landing.features.c2_desc'),
+      proof: t('landing.features.c2_proof'),
+    },
+    {
+      icon:  <ScanLine   className="w-5 h-5" />,
+      color: 'text-purple-300',
+      bg:    'bg-purple-500/10',
+      title: t('landing.features.c3_title'),
+      desc:  t('landing.features.c3_desc'),
+      proof: t('landing.features.c3_proof'),
+    },
+    {
+      icon:  <FileText   className="w-5 h-5" />,
+      color: 'text-blue-300',
+      bg:    'bg-blue-500/10',
+      title: t('landing.features.c4_title'),
+      desc:  t('landing.features.c4_desc'),
+      proof: t('landing.features.c4_proof'),
+    },
+    {
+      icon:  <Target     className="w-5 h-5" />,
+      color: 'text-orange-300',
+      bg:    'bg-orange-500/10',
+      title: t('landing.features.c5_title'),
+      desc:  t('landing.features.c5_desc'),
+      proof: t('landing.features.c5_proof'),
+    },
+    {
+      icon:  <GraduationCap className="w-5 h-5" />,
+      color: 'text-pink-300',
+      bg:    'bg-pink-500/10',
+      title: t('landing.features.c6_title'),
+      desc:  t('landing.features.c6_desc'),
+      proof: t('landing.features.c6_proof'),
+    },
+    {
+      icon:  <Smartphone className="w-5 h-5" />,
+      color: 'text-cyan-300',
+      bg:    'bg-cyan-500/10',
+      title: t('landing.features.c7_title'),
+      desc:  t('landing.features.c7_desc'),
+      proof: t('landing.features.c7_proof'),
+    },
+    {
+      icon:  <Shield     className="w-5 h-5" />,
+      color: 'text-emerald-300',
+      bg:    'bg-emerald-500/10',
+      title: t('landing.features.c8_title'),
+      desc:  t('landing.features.c8_desc'),
+      proof: t('landing.features.c8_proof'),
+    },
+  ]
+
   return (
     <section className="px-6 py-24 max-w-6xl mx-auto">
       <div className="text-center mb-14">
-        <p className="text-green-400 font-semibold text-sm uppercase tracking-widest mb-2">O que tens dentro</p>
-        <h2 className="text-4xl md:text-5xl font-bold">Tudo o que precisas. Nada a mais.</h2>
+        <p className="text-green-400 font-semibold text-sm uppercase tracking-widest mb-2">{t('landing.features.eyebrow')}</p>
+        <h2 className="text-4xl md:text-5xl font-bold">{t('landing.features.title')}</h2>
         <p className="text-white/55 text-lg mt-4 max-w-2xl mx-auto">
-          Construída à volta de 3 princípios: <strong className="text-white/80">registo rápido</strong>,{' '}
-          <strong className="text-white/80">feedback visual</strong> e{' '}
-          <strong className="text-white/80">hábito recompensado</strong>.
+          {t('landing.features.sub_a')} <strong className="text-white/80">{t('landing.features.sub_p1')}</strong>{t('landing.features.sub_sep1')}{' '}
+          <strong className="text-white/80">{t('landing.features.sub_p2')}</strong> {t('landing.features.sub_sep2')}{' '}
+          <strong className="text-white/80">{t('landing.features.sub_p3')}</strong>{t('landing.features.sub_end')}
         </p>
       </div>
 

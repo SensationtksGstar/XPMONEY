@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { Logo } from '@/components/ui/Logo'
+import { getServerT } from '@/lib/i18n/server'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 /**
  * LandingFooter — professional footer with proper IA columns.
@@ -15,35 +17,39 @@ import { Logo } from '@/components/ui/Logo'
  * credibility.
  */
 
-const COLUMNS = [
+type FooterLink = { labelKey: TranslationKey; href: string; soon?: boolean }
+type FooterColumn = { titleKey: TranslationKey; links: FooterLink[] }
+
+const COLUMNS: FooterColumn[] = [
   {
-    title: 'Produto',
+    titleKey: 'landing.footer.col1_title',
     links: [
-      { label: 'Funcionalidades',  href: '/#funcionalidades' },
-      { label: 'Preços',           href: '/#precos' },
-      { label: 'Demo interativa',  href: '/dashboard' },
-      { label: 'Academia',         href: '/cursos' },
+      { labelKey: 'landing.footer.col1_l1',  href: '/#funcionalidades' },
+      { labelKey: 'landing.footer.col1_l2',  href: '/#precos' },
+      { labelKey: 'landing.footer.col1_l3',  href: '/dashboard' },
+      { labelKey: 'landing.footer.col1_l4',  href: '/cursos' },
     ],
   },
   {
-    title: 'Empresa',
+    titleKey: 'landing.footer.col2_title',
     links: [
-      { label: 'Sobre nós',        href: '/sobre',    soon: true },
-      { label: 'Blog',             href: '/blog',     soon: true },
-      { label: 'Contacto',         href: '/contacto' },
+      { labelKey: 'landing.footer.col2_l1',  href: '/sobre',    soon: true },
+      { labelKey: 'landing.footer.col2_l2',  href: '/blog',     soon: true },
+      { labelKey: 'landing.footer.col2_l3',  href: '/contacto' },
     ],
   },
   {
-    title: 'Legal',
+    titleKey: 'landing.footer.col3_title',
     links: [
-      { label: 'Termos de serviço', href: '/termos'       },
-      { label: 'Privacidade',       href: '/privacidade'  },
-      { label: 'Cookies',           href: '/cookies'      },
+      { labelKey: 'landing.footer.col3_l1', href: '/termos'       },
+      { labelKey: 'landing.footer.col3_l2', href: '/privacidade'  },
+      { labelKey: 'landing.footer.col3_l3', href: '/cookies'      },
     ],
   },
 ]
 
-export function LandingFooter() {
+export async function LandingFooter() {
+  const t = await getServerT()
   const year = new Date().getFullYear()
 
   return (
@@ -57,41 +63,43 @@ export function LandingFooter() {
               <span className="font-bold text-lg text-white tracking-tight">XP-Money</span>
             </Link>
             <p className="text-sm text-white/55 leading-relaxed max-w-xs mb-4">
-              Finanças pessoais gamificadas. Feito em Portugal para quem quer
-              controlar o dinheiro sem se aborrecer.
+              {t('landing.footer.tagline')}
             </p>
             <div className="flex items-center gap-3 text-xs text-white/40">
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                Sistemas operacionais
+                {t('landing.footer.status')}
               </span>
             </div>
           </div>
 
           {/* Link columns */}
           {COLUMNS.map(col => (
-            <div key={col.title}>
+            <div key={col.titleKey}>
               <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">
-                {col.title}
+                {t(col.titleKey)}
               </h3>
               <ul className="space-y-2.5">
-                {col.links.map(l => (
-                  <li key={l.label}>
-                    {('soon' in l && l.soon) ? (
-                      <span className="text-sm text-white/30 cursor-not-allowed flex items-center gap-2">
-                        {l.label}
-                        <span className="text-[9px] bg-white/10 px-1.5 py-0.5 rounded uppercase">Em breve</span>
-                      </span>
-                    ) : (
-                      <Link
-                        href={l.href}
-                        className="text-sm text-white/60 hover:text-white transition-colors"
-                      >
-                        {l.label}
-                      </Link>
-                    )}
-                  </li>
-                ))}
+                {col.links.map(l => {
+                  const label = t(l.labelKey)
+                  return (
+                    <li key={l.labelKey}>
+                      {l.soon ? (
+                        <span className="text-sm text-white/30 cursor-not-allowed flex items-center gap-2">
+                          {label}
+                          <span className="text-[9px] bg-white/10 px-1.5 py-0.5 rounded uppercase">{t('landing.footer.soon')}</span>
+                        </span>
+                      ) : (
+                        <Link
+                          href={l.href}
+                          className="text-sm text-white/60 hover:text-white transition-colors"
+                        >
+                          {label}
+                        </Link>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           ))}
@@ -99,11 +107,11 @@ export function LandingFooter() {
 
         {/* Bottom bar */}
         <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/30">
-          <p>© {year} XP-Money · Todos os direitos reservados.</p>
+          <p>{t('landing.footer.rights', { year })}</p>
           <div className="flex items-center gap-4">
-            <span>🇵🇹 Feito em Portugal</span>
+            <span>{t('landing.footer.made_pt')}</span>
             <span>·</span>
-            <span>Pagamentos via Stripe</span>
+            <span>{t('landing.footer.stripe')}</span>
           </div>
         </div>
       </div>

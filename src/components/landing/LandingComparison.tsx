@@ -1,4 +1,6 @@
 import { Check, X, Minus } from 'lucide-react'
+import { getServerT } from '@/lib/i18n/server'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 /**
  * LandingComparison — side-by-side with alternatives the prospect is
@@ -15,18 +17,18 @@ import { Check, X, Minus } from 'lucide-react'
 
 type Cell = 'yes' | 'no' | 'partial'
 
-const ROWS: { feature: string; xp: Cell; excel: Cell; generic: Cell; note?: string }[] = [
-  { feature: 'Registo manual rápido (< 30s)',        xp: 'yes', excel: 'partial', generic: 'yes' },
-  { feature: 'Scan de recibos por IA',                xp: 'yes', excel: 'no',      generic: 'partial' },
-  { feature: 'Import de extratos bancários (PDF)',   xp: 'yes', excel: 'no',      generic: 'partial' },
-  { feature: 'Score financeiro único 0-100',         xp: 'yes', excel: 'no',      generic: 'no' },
-  { feature: 'Gamificação (XP, missões, badges)',    xp: 'yes', excel: 'no',      generic: 'no' },
-  { feature: 'Mascote que reage ao comportamento',   xp: 'yes', excel: 'no',      generic: 'no' },
-  { feature: 'Cursos + certificado digital',         xp: 'yes', excel: 'no',      generic: 'no' },
-  { feature: 'Categorias PT + IVA PT',               xp: 'yes', excel: 'partial', generic: 'partial' },
-  { feature: 'Relatório PDF mensal',                 xp: 'yes', excel: 'partial', generic: 'partial' },
-  { feature: 'Funciona offline (PWA)',               xp: 'yes', excel: 'yes',     generic: 'partial' },
-  { feature: 'Sem ligação ao banco obrigatória',     xp: 'yes', excel: 'yes',     generic: 'no' },
+const ROWS: { key: TranslationKey; xp: Cell; excel: Cell; generic: Cell }[] = [
+  { key: 'landing.cmp.r1',  xp: 'yes', excel: 'partial', generic: 'yes' },
+  { key: 'landing.cmp.r2',  xp: 'yes', excel: 'no',      generic: 'partial' },
+  { key: 'landing.cmp.r3',  xp: 'yes', excel: 'no',      generic: 'partial' },
+  { key: 'landing.cmp.r4',  xp: 'yes', excel: 'no',      generic: 'no' },
+  { key: 'landing.cmp.r5',  xp: 'yes', excel: 'no',      generic: 'no' },
+  { key: 'landing.cmp.r6',  xp: 'yes', excel: 'no',      generic: 'no' },
+  { key: 'landing.cmp.r7',  xp: 'yes', excel: 'no',      generic: 'no' },
+  { key: 'landing.cmp.r8',  xp: 'yes', excel: 'partial', generic: 'partial' },
+  { key: 'landing.cmp.r9',  xp: 'yes', excel: 'partial', generic: 'partial' },
+  { key: 'landing.cmp.r10', xp: 'yes', excel: 'yes',     generic: 'partial' },
+  { key: 'landing.cmp.r11', xp: 'yes', excel: 'yes',     generic: 'no' },
 ]
 
 function Mark({ v }: { v: Cell }) {
@@ -35,14 +37,16 @@ function Mark({ v }: { v: Cell }) {
   return <Minus className="w-4 h-4 text-yellow-400/70 mx-auto" />
 }
 
-export function LandingComparison() {
+export async function LandingComparison() {
+  const t = await getServerT()
+
   return (
     <section className="px-6 py-24 max-w-5xl mx-auto">
       <div className="text-center mb-14">
-        <p className="text-purple-400 font-semibold text-sm uppercase tracking-widest mb-2">Comparar</p>
-        <h2 className="text-4xl md:text-5xl font-bold">Porquê não outra app?</h2>
+        <p className="text-purple-400 font-semibold text-sm uppercase tracking-widest mb-2">{t('landing.cmp.eyebrow')}</p>
+        <h2 className="text-4xl md:text-5xl font-bold">{t('landing.cmp.title')}</h2>
         <p className="text-white/55 text-lg mt-4 max-w-xl mx-auto">
-          Somos honestos: para tudo o que é bancário, usa o teu banco. Nós fazemos o que eles nunca vão fazer.
+          {t('landing.cmp.subtitle')}
         </p>
       </div>
 
@@ -51,24 +55,24 @@ export function LandingComparison() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left px-5 py-4 text-white/55 font-medium w-[40%]">Funcionalidade</th>
+                <th className="text-left px-5 py-4 text-white/55 font-medium w-[40%]">{t('landing.cmp.col_feature')}</th>
                 <th className="px-3 py-4 text-center min-w-[110px]">
                   <div className="flex flex-col items-center gap-1">
                     <span className="inline-block w-2 h-2 rounded-full bg-green-400" />
-                    <span className="font-bold text-white">XP-Money</span>
+                    <span className="font-bold text-white">{t('landing.cmp.col_xp')}</span>
                   </div>
                 </th>
-                <th className="px-3 py-4 text-center text-white/60 min-w-[100px] font-medium">Excel / Sheets</th>
-                <th className="px-3 py-4 text-center text-white/60 min-w-[130px] font-medium">Apps de banco genéricas</th>
+                <th className="px-3 py-4 text-center text-white/60 min-w-[100px] font-medium">{t('landing.cmp.col_excel')}</th>
+                <th className="px-3 py-4 text-center text-white/60 min-w-[130px] font-medium">{t('landing.cmp.col_generic')}</th>
               </tr>
             </thead>
             <tbody>
               {ROWS.map((r, i) => (
                 <tr
-                  key={r.feature}
+                  key={r.key}
                   className={`border-b border-white/5 ${i % 2 === 0 ? 'bg-white/[0.015]' : ''}`}
                 >
-                  <td className="px-5 py-3 text-white/85">{r.feature}</td>
+                  <td className="px-5 py-3 text-white/85">{t(r.key)}</td>
                   <td className="px-3 py-3"><Mark v={r.xp} /></td>
                   <td className="px-3 py-3"><Mark v={r.excel} /></td>
                   <td className="px-3 py-3"><Mark v={r.generic} /></td>
@@ -79,9 +83,9 @@ export function LandingComparison() {
         </div>
 
         <div className="flex items-center justify-center gap-5 text-[10px] text-white/40 py-3 border-t border-white/5 flex-wrap">
-          <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-green-400" /> Incluído</span>
-          <span className="flex items-center gap-1.5"><Minus className="w-3 h-3 text-yellow-400/70" /> Parcial</span>
-          <span className="flex items-center gap-1.5"><X className="w-3 h-3 text-white/25" /> Não disponível</span>
+          <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-green-400" /> {t('landing.cmp.legend_yes')}</span>
+          <span className="flex items-center gap-1.5"><Minus className="w-3 h-3 text-yellow-400/70" /> {t('landing.cmp.legend_part')}</span>
+          <span className="flex items-center gap-1.5"><X className="w-3 h-3 text-white/25" /> {t('landing.cmp.legend_no')}</span>
         </div>
       </div>
     </section>

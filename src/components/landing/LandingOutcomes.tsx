@@ -1,3 +1,5 @@
+import { getServerT } from '@/lib/i18n/server'
+
 /**
  * LandingOutcomes — concrete numeric wins the user cares about.
  *
@@ -10,37 +12,39 @@
  * "what do I get", not "how does it work". This answers "get" in 3 numbers.
  */
 
-const OUTCOMES = [
-  {
-    stat:  '€180',
-    unit:  '/ mês',
-    label: 'Poupança média após 60 dias',
-    desc:  'O score + missões semanais obrigam-te a olhar para o que gastas. A maioria dos early users reduz gastos invisíveis (subscrições, delivery, takeaway) em 2 meses.',
-    color: 'from-green-400 to-emerald-300',
-  },
-  {
-    stat:  '23',
-    unit:  'dias',
-    label: 'Streak média de daily check-in',
-    desc:  'Outras apps abres uma vez e esqueces. O mascote + XP + missões criam um hábito real — a streak mediana depois de um mês é 3 semanas seguidas.',
-    color: 'from-yellow-400 to-orange-400',
-  },
-  {
-    stat:  '4,9',
-    unit:  '/5',
-    label: 'Satisfação em reviews internas',
-    desc:  'Classificação média de 1.200+ early users. O que mais ouvimos: "finalmente uma app de finanças em que volto todos os dias".',
-    color: 'from-purple-400 to-pink-400',
-  },
-]
+export async function LandingOutcomes() {
+  const t = await getServerT()
 
-export function LandingOutcomes() {
+  const OUTCOMES = [
+    {
+      stat:  t('landing.outcomes.o1_stat'),
+      unit:  t('landing.outcomes.o1_unit'),
+      label: t('landing.outcomes.o1_label'),
+      desc:  t('landing.outcomes.o1_desc'),
+      color: 'from-green-400 to-emerald-300',
+    },
+    {
+      stat:  t('landing.outcomes.o2_stat'),
+      unit:  t('landing.outcomes.o2_unit'),
+      label: t('landing.outcomes.o2_label'),
+      desc:  t('landing.outcomes.o2_desc'),
+      color: 'from-yellow-400 to-orange-400',
+    },
+    {
+      stat:  t('landing.outcomes.o3_stat'),
+      unit:  t('landing.outcomes.o3_unit'),
+      label: t('landing.outcomes.o3_label'),
+      desc:  t('landing.outcomes.o3_desc'),
+      color: 'from-purple-400 to-pink-400',
+    },
+  ]
+
   return (
     <section className="px-6 py-24 max-w-5xl mx-auto">
       <div className="text-center mb-14">
-        <p className="text-green-400 font-semibold text-sm uppercase tracking-widest mb-2">Resultados reais</p>
-        <h2 className="text-4xl md:text-5xl font-bold">O que ganhas ao usar diariamente</h2>
-        <p className="text-white/55 text-lg mt-4">Baseado em 60 dias de uso pelos nossos early-access.</p>
+        <p className="text-green-400 font-semibold text-sm uppercase tracking-widest mb-2">{t('landing.outcomes.eyebrow')}</p>
+        <h2 className="text-4xl md:text-5xl font-bold">{t('landing.outcomes.title')}</h2>
+        <p className="text-white/55 text-lg mt-4">{t('landing.outcomes.subtitle')}</p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4">
@@ -62,8 +66,7 @@ export function LandingOutcomes() {
       </div>
 
       <p className="text-[10px] text-white/35 text-center mt-6 italic">
-        * Indicadores agregados de utilizadores ativos entre Dez/2025 e Mar/2026.
-        Não constituem garantia de resultados individuais.
+        {t('landing.outcomes.footnote')}
       </p>
     </section>
   )

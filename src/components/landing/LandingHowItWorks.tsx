@@ -1,3 +1,5 @@
+import { getServerT } from '@/lib/i18n/server'
+
 /**
  * LandingHowItWorks — 3-step "what do I do first" section.
  *
@@ -7,35 +9,37 @@
  * not product jargon.
  */
 
-const STEPS = [
-  {
-    num:   '1',
-    title: 'Regista as tuas transações',
-    desc:  'Adiciona à mão em 5 segundos, tira foto ao recibo ou importa o extrato do banco em PDF. A IA categoriza por ti.',
-    pill:  'Em < 30s por dia',
-  },
-  {
-    num:   '2',
-    title: 'Vê o teu score subir',
-    desc:  'Um número de 0 a 100 que resume a tua saúde financeira. Missões semanais dizem-te exatamente o que mudar para subir.',
-    pill:  'Feedback instantâneo',
-  },
-  {
-    num:   '3',
-    title: 'Evolui o teu mascote',
-    desc:  'Voltix ou Penny crescem contigo — do ovo à forma lendária. Ganhas XP, desbloqueias badges, fazes streaks. Poupar vira hábito.',
-    pill:  '6 evoluções · 12 badges',
-  },
-]
+export async function LandingHowItWorks() {
+  const t = await getServerT()
 
-export function LandingHowItWorks() {
+  const STEPS = [
+    {
+      num:   '1',
+      title: t('landing.how.step1_title'),
+      desc:  t('landing.how.step1_desc'),
+      pill:  t('landing.how.step1_pill'),
+    },
+    {
+      num:   '2',
+      title: t('landing.how.step2_title'),
+      desc:  t('landing.how.step2_desc'),
+      pill:  t('landing.how.step2_pill'),
+    },
+    {
+      num:   '3',
+      title: t('landing.how.step3_title'),
+      desc:  t('landing.how.step3_desc'),
+      pill:  t('landing.how.step3_pill'),
+    },
+  ]
+
   return (
     <section className="px-6 py-24 max-w-5xl mx-auto">
       <div className="text-center mb-14">
-        <p className="text-green-400 font-semibold text-sm uppercase tracking-widest mb-2">Como funciona</p>
-        <h2 className="text-4xl md:text-5xl font-bold">Três passos. Zero complicação.</h2>
+        <p className="text-green-400 font-semibold text-sm uppercase tracking-widest mb-2">{t('landing.how.eyebrow')}</p>
+        <h2 className="text-4xl md:text-5xl font-bold">{t('landing.how.title')}</h2>
         <p className="text-white/55 text-lg mt-4 max-w-xl mx-auto">
-          A primeira vez que abres a app, sabes exatamente o que fazer.
+          {t('landing.how.subtitle')}
         </p>
       </div>
 

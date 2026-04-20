@@ -3,6 +3,7 @@ import {
   ScanLine, FileText, Zap, Trophy, Target, Award,
   BarChart3, Crown, Bot, Shield, BookOpen, Sparkles,
 } from 'lucide-react'
+import { getServerT } from '@/lib/i18n/server'
 
 /**
  * LandingAdvantages — master feature grid surfaced after the mascot showcase.
@@ -30,83 +31,6 @@ type Card = {
   accent: 'green' | 'purple' | 'yellow' | 'emerald' | 'rose'
 }
 
-// Shared feature set. `tag` = which plan unlocks. Card order is a story:
-// start with the AI pillars (scan + import), move to gamification
-// (mascot/missions), then the heavier Premium-only analytics, end on the
-// NFT certificate which is the "why this is different" kicker.
-const CARDS: Card[] = [
-  {
-    icon: ScanLine,
-    title: 'Scan de recibos por foto',
-    body: 'Tira foto ao talão e a IA extrai valor, data e categoria em segundos. ~92% de precisão em talões PT.',
-    tag: 'PREMIUM',
-    accent: 'purple',
-  },
-  {
-    icon: FileText,
-    title: 'Importa extratos PDF e CSV',
-    body: 'Largas o extrato do banco e deixas a IA categorizar. Meses de histórico tratados em segundos.',
-    tag: 'PREMIUM',
-    accent: 'purple',
-  },
-  {
-    icon: Trophy,
-    title: 'Missões semanais e badges',
-    body: 'Cada boa decisão vira XP. Sobes de nível, desbloqueias badges, competes contigo.',
-    tag: 'FREE',
-    accent: 'yellow',
-  },
-  {
-    icon: Target,
-    title: 'Objetivos com progresso',
-    body: 'Fundo de emergência, viagem, casa própria. Acompanhas a barra a subir — Free até 2, Premium ilimitado.',
-    tag: 'FREE',
-    accent: 'emerald',
-  },
-  {
-    icon: BarChart3,
-    title: 'Perspetiva de Riqueza',
-    body: 'Compara o teu salário com CEOs, celebridades e média EU. Vê cada despesa traduzida em horas de trabalho.',
-    tag: 'PREMIUM',
-    accent: 'purple',
-  },
-  {
-    icon: Sparkles,
-    title: 'Simulador de investimento',
-    body: 'Vê em 5 segundos quanto valem €100/mês em ETFs durante 10, 20 ou 30 anos. Juros compostos reais.',
-    tag: 'PREMIUM',
-    accent: 'purple',
-  },
-  {
-    icon: FileText,
-    title: 'Relatórios PDF profissionais',
-    body: 'Gera um relatório mensal com score, balanço e top categorias. Pronto a imprimir ou enviar ao contabilista.',
-    tag: 'PREMIUM',
-    accent: 'purple',
-  },
-  {
-    icon: BookOpen,
-    title: 'Academia — cursos interativos',
-    body: 'Orçamento, dívida, investimento, imobiliário. Quizzes com nota mínima e certificados ao fim.',
-    tag: 'PREMIUM',
-    accent: 'purple',
-  },
-  {
-    icon: Award,
-    title: 'Certificados por curso',
-    body: 'Cada curso concluído da Academia gera-te um certificado digital com código único. Prova pública de que dominas o tema.',
-    tag: 'PREMIUM',
-    accent: 'rose',
-  },
-]
-
-const FREE_PILLARS = [
-  { icon: Zap,    label: 'Transações ilimitadas' },
-  { icon: Crown,  label: 'Mascote 6 evoluções' },
-  { icon: Shield, label: 'GDPR · dados cifrados' },
-  { icon: Bot,    label: 'Dragon Coin · assistente' },
-]
-
 const ACCENT_CLASSES: Record<Card['accent'], { border: string; bg: string; icon: string; tag: string }> = {
   green:   { border: 'border-green-500/25',   bg: 'bg-green-500/5',   icon: 'text-green-300',   tag: 'bg-green-500/10 text-green-300 border-green-500/30' },
   purple:  { border: 'border-purple-500/25',  bg: 'bg-purple-500/5',  icon: 'text-purple-300',  tag: 'bg-purple-500/15 text-purple-200 border-purple-500/40' },
@@ -115,7 +39,86 @@ const ACCENT_CLASSES: Record<Card['accent'], { border: string; bg: string; icon:
   rose:    { border: 'border-rose-500/30',    bg: 'bg-rose-500/5',    icon: 'text-rose-300',    tag: 'bg-rose-500/15 text-rose-200 border-rose-500/40' },
 }
 
-export function LandingAdvantages() {
+export async function LandingAdvantages() {
+  const t = await getServerT()
+
+  // Shared feature set. `tag` = which plan unlocks. Card order is a story:
+  // start with the AI pillars (scan + import), move to gamification
+  // (mascot/missions), then the heavier Premium-only analytics, end on the
+  // NFT certificate which is the "why this is different" kicker.
+  const CARDS: Card[] = [
+    {
+      icon: ScanLine,
+      title: t('landing.adv.c1_title'),
+      body: t('landing.adv.c1_body'),
+      tag: 'PREMIUM',
+      accent: 'purple',
+    },
+    {
+      icon: FileText,
+      title: t('landing.adv.c2_title'),
+      body: t('landing.adv.c2_body'),
+      tag: 'PREMIUM',
+      accent: 'purple',
+    },
+    {
+      icon: Trophy,
+      title: t('landing.adv.c3_title'),
+      body: t('landing.adv.c3_body'),
+      tag: 'FREE',
+      accent: 'yellow',
+    },
+    {
+      icon: Target,
+      title: t('landing.adv.c4_title'),
+      body: t('landing.adv.c4_body'),
+      tag: 'FREE',
+      accent: 'emerald',
+    },
+    {
+      icon: BarChart3,
+      title: t('landing.adv.c5_title'),
+      body: t('landing.adv.c5_body'),
+      tag: 'PREMIUM',
+      accent: 'purple',
+    },
+    {
+      icon: Sparkles,
+      title: t('landing.adv.c6_title'),
+      body: t('landing.adv.c6_body'),
+      tag: 'PREMIUM',
+      accent: 'purple',
+    },
+    {
+      icon: FileText,
+      title: t('landing.adv.c7_title'),
+      body: t('landing.adv.c7_body'),
+      tag: 'PREMIUM',
+      accent: 'purple',
+    },
+    {
+      icon: BookOpen,
+      title: t('landing.adv.c8_title'),
+      body: t('landing.adv.c8_body'),
+      tag: 'PREMIUM',
+      accent: 'purple',
+    },
+    {
+      icon: Award,
+      title: t('landing.adv.c9_title'),
+      body: t('landing.adv.c9_body'),
+      tag: 'PREMIUM',
+      accent: 'rose',
+    },
+  ]
+
+  const FREE_PILLARS = [
+    { icon: Zap,    label: t('landing.adv.pillar1') },
+    { icon: Crown,  label: t('landing.adv.pillar2') },
+    { icon: Shield, label: t('landing.adv.pillar3') },
+    { icon: Bot,    label: t('landing.adv.pillar4') },
+  ]
+
   return (
     <section className="relative px-6 py-24 overflow-hidden">
       {/* Ambient glow */}
@@ -128,18 +131,17 @@ export function LandingAdvantages() {
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-emerald-400 font-semibold text-sm uppercase tracking-widest mb-2">
-            Todas as vantagens
+            {t('landing.adv.eyebrow')}
           </p>
           <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-[1.1]">
-            Feito para quem quer{' '}
+            {t('landing.adv.title_a')}{' '}
             <span className="bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent">
-              resultados reais
+              {t('landing.adv.title_emph')}
             </span>
-            , não apenas gráficos bonitos.
+            {t('landing.adv.title_b')}
           </h2>
           <p className="text-white/60 text-lg max-w-2xl mx-auto">
-            Arranca grátis — já vale mais do que 80% dos apps pagos por aí.
-            O Premium tira o teto a tudo e dá-te certificados digitais por cada curso concluído.
+            {t('landing.adv.subtitle')}
           </p>
         </div>
 
@@ -179,7 +181,7 @@ export function LandingAdvantages() {
                   </div>
                   {card.tag && (
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${accent.tag}`}>
-                      {card.tag === 'PREMIUM' ? '👑 PREMIUM' : 'FREE'}
+                      {card.tag === 'PREMIUM' ? t('landing.adv.tag_premium') : t('landing.adv.tag_free')}
                     </span>
                   )}
                 </div>
@@ -197,12 +199,13 @@ export function LandingAdvantages() {
         <div className="relative rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent p-6 overflow-hidden mb-12">
           <div className="text-center mb-4">
             <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-300 font-bold mb-1">
-              Evolução completa
+              {t('landing.adv.evo_eyebrow')}
             </p>
             <h3 className="text-xl md:text-2xl font-bold text-white">
-              Escolhe o teu — e cresce de{' '}
-              <span className="text-emerald-300">ovo</span> a{' '}
-              <span className="text-yellow-300">lenda</span>
+              {t('landing.adv.evo_title_a')}{' '}
+              <span className="text-emerald-300">{t('landing.adv.evo_title_egg')}</span>{' '}
+              {t('landing.adv.evo_title_sep')}{' '}
+              <span className="text-yellow-300">{t('landing.adv.evo_title_leg')}</span>
             </h3>
           </div>
 
@@ -218,7 +221,7 @@ export function LandingAdvantages() {
               </div>
               <Image
                 src="/mascot/evolucoes-voltix.webp"
-                alt="Voltix — 6 evoluções"
+                alt={t('landing.adv.evo_voltix_alt')}
                 width={1920}
                 height={600}
                 sizes="(max-width: 768px) 100vw, 50vw"
@@ -231,7 +234,7 @@ export function LandingAdvantages() {
               </div>
               <Image
                 src="/mascot/evolucoes-penny.webp"
-                alt="Penny — 6 evoluções"
+                alt={t('landing.adv.evo_penny_alt')}
                 width={1920}
                 height={600}
                 sizes="(max-width: 768px) 100vw, 50vw"
@@ -241,7 +244,7 @@ export function LandingAdvantages() {
           </div>
 
           <p className="text-center text-[11px] text-white/45 mt-4">
-            Evoluções sobem conforme o teu score financeiro sobe. Cada curso da Academia que concluis dá-te um <strong className="text-emerald-300">certificado digital</strong> próprio.
+            {t('landing.adv.evo_caption_a')} <strong className="text-emerald-300">{t('landing.adv.evo_caption_em')}</strong> {t('landing.adv.evo_caption_b')}
           </p>
         </div>
 
@@ -253,24 +256,24 @@ export function LandingAdvantages() {
             <div>
               <div className="inline-flex items-center gap-1.5 bg-purple-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full mb-3">
                 <Sparkles className="w-3 h-3" />
-                POUPA 33% NO ANUAL
+                {t('landing.adv.annual_chip')}
               </div>
               <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-                €39,99/ano ={' '}
+                {t('landing.adv.annual_title_a')}{' '}
                 <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
-                  €3,33/mês
+                  {t('landing.adv.annual_title_em')}
                 </span>
               </h3>
               <p className="text-white/65 text-sm max-w-md">
-                Um café por mês compra-te: scanner de recibos, simulador, Perspetiva,
-                <strong className="text-white"> 6 cursos completos</strong> e certificado digital por cada um.
+                {t('landing.adv.annual_desc_a')}
+                <strong className="text-white"> {t('landing.adv.annual_desc_em')}</strong> {t('landing.adv.annual_desc_b')}
               </p>
             </div>
             <a
               href="/sign-up?plan=premium&period=yearly"
               className="group self-start md:self-auto inline-flex items-center gap-2 bg-purple-500 hover:bg-purple-400 text-white font-bold px-6 py-3.5 rounded-xl text-sm transition-all shadow-[0_10px_36px_-8px_rgba(168,85,247,0.6)] hover:scale-[1.02] whitespace-nowrap"
             >
-              Quero o anual
+              {t('landing.adv.annual_cta')}
               <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                 <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 11-1.414-1.414L11.586 10 7.05 5.464a1 1 0 010-1.414z" />
               </svg>

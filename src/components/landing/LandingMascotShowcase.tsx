@@ -1,4 +1,6 @@
 import Image from 'next/image'
+import { getServerT } from '@/lib/i18n/server'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 /**
  * LandingMascotShowcase — the "wow" moment: shows the 6 evolutions side by
@@ -14,20 +16,23 @@ import Image from 'next/image'
  */
 
 const EVOS = [1, 2, 3, 4, 5, 6]
-const EVO_LABELS: Record<number, string> = {
-  1: 'Ovo',
-  2: 'Bebé',
-  3: 'Jovem',
-  4: 'Adulto',
-  5: 'Elite',
-  6: 'Lendário',
+const EVO_LABEL_KEYS: Record<number, TranslationKey> = {
+  1: 'landing.mascot.evo_1',
+  2: 'landing.mascot.evo_2',
+  3: 'landing.mascot.evo_3',
+  4: 'landing.mascot.evo_4',
+  5: 'landing.mascot.evo_5',
+  6: 'landing.mascot.evo_6',
 }
 
-function EvoRow({ gender, name, tagline, accent }: {
+function EvoRow({
+  gender, name, tagline, accent, t,
+}: {
   gender:  'voltix' | 'penny'
   name:    string
   tagline: string
   accent:  string
+  t:       (key: TranslationKey, vars?: Record<string, string | number>) => string
 }) {
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
@@ -37,64 +42,69 @@ function EvoRow({ gender, name, tagline, accent }: {
           <p className="text-sm text-white/55">{tagline}</p>
         </div>
         <span className={`text-[10px] font-bold uppercase tracking-widest ${accent}`}>
-          6 evoluções
+          {t('landing.mascot.evo_count')}
         </span>
       </div>
 
       <div className="grid grid-cols-6 gap-2">
-        {EVOS.map(evo => (
-          <div key={evo} className="text-center">
-            <div className="relative w-full aspect-square bg-gradient-to-b from-white/5 to-transparent rounded-xl flex items-center justify-center border border-white/5 overflow-hidden mb-1.5">
-              <Image
-                src={`/mascot/${gender}/${evo}.webp`}
-                alt={`${name} evolução ${evo} — ${EVO_LABELS[evo]}`}
-                width={96}
-                height={96}
-                className="w-full h-full object-contain p-1.5"
-              />
+        {EVOS.map(evo => {
+          const label = t(EVO_LABEL_KEYS[evo])
+          return (
+            <div key={evo} className="text-center">
+              <div className="relative w-full aspect-square bg-gradient-to-b from-white/5 to-transparent rounded-xl flex items-center justify-center border border-white/5 overflow-hidden mb-1.5">
+                <Image
+                  src={`/mascot/${gender}/${evo}.webp`}
+                  alt={t('landing.mascot.evo_alt', { name, evo, label })}
+                  width={96}
+                  height={96}
+                  className="w-full h-full object-contain p-1.5"
+                />
+              </div>
+              <p className="text-[9px] font-semibold text-white/45 uppercase tracking-wider">
+                {label}
+              </p>
             </div>
-            <p className="text-[9px] font-semibold text-white/45 uppercase tracking-wider">
-              {EVO_LABELS[evo]}
-            </p>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
 }
 
-export function LandingMascotShowcase() {
+export async function LandingMascotShowcase() {
+  const t = await getServerT()
+
   return (
     <section className="px-6 py-24 max-w-5xl mx-auto">
       <div className="text-center mb-14">
-        <p className="text-yellow-400 font-semibold text-sm uppercase tracking-widest mb-2">O que nos faz diferentes</p>
+        <p className="text-yellow-400 font-semibold text-sm uppercase tracking-widest mb-2">{t('landing.mascot.eyebrow')}</p>
         <h2 className="text-4xl md:text-5xl font-bold">
-          Escolhe o teu mascote.<br className="hidden sm:block" /> Ele cresce contigo.
+          {t('landing.mascot.title_l1')}<br className="hidden sm:block" /> {t('landing.mascot.title_l2')}
         </h2>
         <p className="text-white/55 text-lg mt-4 max-w-2xl mx-auto">
-          Começas no ovo. Cada melhoria do teu score financeiro evolui o teu mascote —
-          e ele reage em tempo real: feliz quando poupas, triste quando gastas demais,
-          eufórico em streaks de 7 dias.
+          {t('landing.mascot.subtitle')}
         </p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <EvoRow
           gender="voltix"
-          name="Voltix"
-          tagline="Dragão-trovão · o guardião do teu cofre"
+          name={t('landing.mascot.voltix_name')}
+          tagline={t('landing.mascot.voltix_tag')}
           accent="text-yellow-400"
+          t={t}
         />
         <EvoRow
           gender="penny"
-          name="Penny"
-          tagline="Gata-anjo · a protetora dos teus objetivos"
+          name={t('landing.mascot.penny_name')}
+          tagline={t('landing.mascot.penny_tag')}
           accent="text-pink-400"
+          t={t}
         />
       </div>
 
       <p className="text-center text-xs text-white/40 mt-6">
-        Todas as 12 formas desbloqueáveis a partir do plano gratuito.
+        {t('landing.mascot.footer')}
       </p>
     </section>
   )

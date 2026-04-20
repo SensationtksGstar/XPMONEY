@@ -1,4 +1,6 @@
 import { Star } from 'lucide-react'
+import { getServerT } from '@/lib/i18n/server'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 /**
  * LandingReviews — social-proof testimonials block for the marketing page.
@@ -16,127 +18,132 @@ import { Star } from 'lucide-react'
  */
 
 interface Review {
-  name:     string
-  handle:   string
-  avatar:   string   // emoji avatar — no stock photos, no uncanny valley
-  rating:   1 | 2 | 3 | 4 | 5
-  quote:    string
-  badge?:   string
+  nameKey:   TranslationKey
+  handleKey: TranslationKey
+  quoteKey:  TranslationKey
+  badgeKey?: TranslationKey
+  avatar:    string   // emoji avatar — no stock photos, no uncanny valley
+  rating:    1 | 2 | 3 | 4 | 5
 }
 
 const REVIEWS: Review[] = [
   {
-    name:   'Mariana S.',
-    handle: 'Lisboa · Plus',
-    avatar: '🦊',
-    rating: 5,
-    quote:  'Nunca pensei que ver a minha saúde financeira num score me fosse viciar. Em 3 semanas reduzi €180 de gastos em restaurantes sem esforço — o Voltix "ficou triste" e eu não quis que ficasse.',
-    badge:  'Nível 12',
+    nameKey:   'landing.reviews.t1_name',
+    handleKey: 'landing.reviews.t1_handle',
+    avatar:    '🦊',
+    rating:    5,
+    quoteKey:  'landing.reviews.t1_quote',
+    badgeKey:  'landing.reviews.t1_badge',
   },
   {
-    name:   'Ricardo P.',
-    handle: 'Porto · Pro',
-    avatar: '🧑‍💻',
-    rating: 5,
-    quote:  'A scan de recibos é mágica. Tiro foto ao talão, categoria automática, XP a entrar. Finalmente uma app de finanças que não parece folha de Excel vestida de roxo.',
-    badge:  'Streak 47 dias',
+    nameKey:   'landing.reviews.t2_name',
+    handleKey: 'landing.reviews.t2_handle',
+    avatar:    '🧑‍💻',
+    rating:    5,
+    quoteKey:  'landing.reviews.t2_quote',
+    badgeKey:  'landing.reviews.t2_badge',
   },
   {
-    name:   'Sofia C.',
-    handle: 'Coimbra · Free',
-    avatar: '🌱',
-    rating: 5,
-    quote:  'Usei o fundo de emergência como objetivo — a Penny foi crescendo comigo até ao Level 5. Parece tolice, mas ver o bichinho evoluir é o que me fez manter o hábito 4 meses seguidos.',
+    nameKey:   'landing.reviews.t3_name',
+    handleKey: 'landing.reviews.t3_handle',
+    avatar:    '🌱',
+    rating:    5,
+    quoteKey:  'landing.reviews.t3_quote',
   },
   {
-    name:   'João M.',
-    handle: 'Braga · Plus',
-    avatar: '🎯',
-    rating: 4,
-    quote:  'As missões semanais mantêm-me focado. Importei extrato bancário em PDF, confirmei as categorias e ganhei um badge na hora. Simples e intuitivo.',
-    badge:  'Desafio 30d',
+    nameKey:   'landing.reviews.t4_name',
+    handleKey: 'landing.reviews.t4_handle',
+    avatar:    '🎯',
+    rating:    4,
+    quoteKey:  'landing.reviews.t4_quote',
+    badgeKey:  'landing.reviews.t4_badge',
   },
   {
-    name:   'Beatriz F.',
-    handle: 'Aveiro · Pro',
-    avatar: '👩‍🏫',
-    rating: 5,
-    quote:  'Os cursos da Academia valem sozinhos o valor do plano. Passei o de investimento, tirei o certificado e finalmente comecei o meu DCA num ETF. Obrigada XP-Money.',
+    nameKey:   'landing.reviews.t5_name',
+    handleKey: 'landing.reviews.t5_handle',
+    avatar:    '👩‍🏫',
+    rating:    5,
+    quoteKey:  'landing.reviews.t5_quote',
   },
   {
-    name:   'Tiago L.',
-    handle: 'Faro · Plus',
-    avatar: '⚡',
-    rating: 5,
-    quote:  'Experimentei 4 apps antes. Esta é a única em que volto todos os dias. O daily check-in mais os +XP são dopamina honesta — sem dark patterns.',
-    badge:  'Top 5% score',
+    nameKey:   'landing.reviews.t6_name',
+    handleKey: 'landing.reviews.t6_handle',
+    avatar:    '⚡',
+    rating:    5,
+    quoteKey:  'landing.reviews.t6_quote',
+    badgeKey:  'landing.reviews.t6_badge',
   },
 ]
 
-export function LandingReviews() {
+export async function LandingReviews() {
+  const t = await getServerT()
+
   return (
     <section className="px-6 py-20 max-w-5xl mx-auto">
       <div className="text-center mb-14">
-        <div className="inline-flex items-center gap-1 text-yellow-400 mb-3" aria-label="Classificação média 4.9 em 5">
+        <div className="inline-flex items-center gap-1 text-yellow-400 mb-3" aria-label={t('landing.reviews.avg_aria')}>
           {[...Array(5)].map((_, i) => (
             <Star key={i} className="w-4 h-4 fill-current" />
           ))}
-          <span className="text-white/70 ml-2 text-sm font-semibold">4,9 / 5</span>
-          <span className="text-white/40 ml-1 text-sm">· 1.200+ early adopters</span>
+          <span className="text-white/70 ml-2 text-sm font-semibold">{t('landing.reviews.avg')}</span>
+          <span className="text-white/40 ml-1 text-sm">{t('landing.reviews.avg_count')}</span>
         </div>
-        <h2 className="text-4xl font-bold mb-3">O que dizem os nossos jogadores</h2>
-        <p className="text-white/60 text-lg">Utilizadores reais, jornadas reais.</p>
+        <h2 className="text-4xl font-bold mb-3">{t('landing.reviews.title')}</h2>
+        <p className="text-white/60 text-lg">{t('landing.reviews.subtitle')}</p>
       </div>
 
       {/* Grid of review cards — 1 col mobile, 2 tablet, 3 desktop */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {REVIEWS.map((r, i) => (
-          <article
-            key={r.name + i}
-            className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-3 hover:border-green-500/30 transition-colors"
-          >
-            {/* Stars */}
-            <div className="flex items-center gap-0.5" aria-label={`${r.rating} de 5 estrelas`}>
-              {[...Array(5)].map((_, idx) => (
-                <Star
-                  key={idx}
-                  className={`w-3.5 h-3.5 ${idx < r.rating ? 'text-yellow-400 fill-current' : 'text-white/15'}`}
-                />
-              ))}
-            </div>
-
-            {/* Quote */}
-            <p className="text-white/80 text-sm leading-relaxed">“{r.quote}”</p>
-
-            {/* Author row */}
-            <div className="flex items-center gap-3 mt-auto pt-3 border-t border-white/5">
-              <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-lg flex-shrink-0">
-                {r.avatar}
+        {REVIEWS.map((r, i) => {
+          const name = t(r.nameKey)
+          return (
+            <article
+              key={name + i}
+              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-3 hover:border-green-500/30 transition-colors"
+            >
+              {/* Stars */}
+              <div className="flex items-center gap-0.5" aria-label={t('landing.reviews.stars_aria', { rating: r.rating })}>
+                {[...Array(5)].map((_, idx) => (
+                  <Star
+                    key={idx}
+                    className={`w-3.5 h-3.5 ${idx < r.rating ? 'text-yellow-400 fill-current' : 'text-white/15'}`}
+                  />
+                ))}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{r.name}</p>
-                <p className="text-[11px] text-white/40 truncate">{r.handle}</p>
+
+              {/* Quote */}
+              <p className="text-white/80 text-sm leading-relaxed">“{t(r.quoteKey)}”</p>
+
+              {/* Author row */}
+              <div className="flex items-center gap-3 mt-auto pt-3 border-t border-white/5">
+                <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-lg flex-shrink-0">
+                  {r.avatar}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{name}</p>
+                  <p className="text-[11px] text-white/40 truncate">{t(r.handleKey)}</p>
+                </div>
+                {r.badgeKey && (
+                  <span className="text-[10px] font-bold text-green-300 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full flex-shrink-0">
+                    {t(r.badgeKey)}
+                  </span>
+                )}
               </div>
-              {r.badge && (
-                <span className="text-[10px] font-bold text-green-300 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full flex-shrink-0">
-                  {r.badge}
-                </span>
-              )}
-            </div>
-          </article>
-        ))}
+            </article>
+          )
+        })}
       </div>
 
       {/* Trust strip */}
       <div className="flex items-center justify-center gap-6 mt-10 text-xs text-white/40 flex-wrap">
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          +1.200 utilizadores ativos
+          {t('landing.reviews.trust_active')}
         </span>
         <span>·</span>
-        <span>🇵🇹 Feito em Portugal</span>
+        <span>{t('landing.reviews.trust_pt')}</span>
         <span>·</span>
-        <span>🔒 Dados encriptados</span>
+        <span>{t('landing.reviews.trust_enc')}</span>
       </div>
     </section>
   )
