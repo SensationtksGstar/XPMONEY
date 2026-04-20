@@ -37,8 +37,16 @@ interface Props {
   fragment:   string
   /** If false, renders one frame on mount and pauses (cheap for previews). */
   animate?:   boolean
-  /** Attach pointer listener; false = static UV of mouse (0.5, 0.5). */
-  interactive?: boolean
+  /**
+   * Pointer source:
+   *   - true  (default) → canvas pointermove (element-local tracking)
+   *   - false           → static UV (0.5, 0.5)
+   *   - 'window'        → window pointermove, mapped to canvas rect.
+   *     Use this when the canvas is a fullscreen fixed background behind
+   *     interactive content (`pointer-events: none`) and you still want
+   *     the whole site to drive the shader.
+   */
+  interactive?: boolean | 'window'
   className?: string
   ariaLabel?: string
 }
@@ -138,7 +146,13 @@ export function ShaderCanvas({
       mouse.x =       (e.clientX - r.left) / r.width
       mouse.y = 1.0 - (e.clientY - r.top ) / r.height
     }
-    if (interactive) canvas.addEventListener('pointermove', onMove, { passive: true })
+    // `interactive === 'window'` lets a fullscreen-background canvas with
+    // pointer-events:none still react to the whole page's cursor motion.
+    const pointerTarget: HTMLCanvasElement | Window | null =
+      interactive === 'window' ? window :
+      interactive === true     ? canvas :
+      null
+    pointerTarget?.addEventListener('pointermove', onMove as EventListener, { passive: true })
 
     // ── Render loop ────────────────────────────────────────────────
     let raf = 0
@@ -189,7 +203,7 @@ export function ShaderCanvas({
     return () => {
       running = false
       cancelAnimationFrame(raf)
-      if (interactive) canvas.removeEventListener('pointermove', onMove)
+      pointerTarget?.removeEventListener('pointermove', onMove as EventListener)
       io?.disconnect()
       ro.disconnect()
       gl.deleteProgram(prog)

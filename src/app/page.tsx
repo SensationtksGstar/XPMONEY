@@ -6,7 +6,6 @@ import { LandingHowItWorks }      from '@/components/landing/LandingHowItWorks'
 import { LandingFeatures }        from '@/components/landing/LandingFeatures'
 import { LandingAdvantages }      from '@/components/landing/LandingAdvantages'
 import { LandingMascotShowcase }    from '@/components/landing/LandingMascotShowcase'
-import { LandingWallpaperShowcase } from '@/components/landing/LandingWallpaperShowcase'
 import { LandingOutcomes }          from '@/components/landing/LandingOutcomes'
 import { LandingComparison }      from '@/components/landing/LandingComparison'
 import { LandingReviews }         from '@/components/landing/LandingReviews'
@@ -41,7 +40,7 @@ export default async function LandingPage() {
   const t = await getServerT()
 
   return (
-    <main className="min-h-screen bg-[#060b14] text-white overflow-x-hidden">
+    <main className="min-h-screen text-white overflow-x-hidden">
 
       {/* ── NAV ─────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3.5 border-b border-white/5 bg-[#060b14]/85 backdrop-blur-md">
@@ -89,9 +88,6 @@ export default async function LandingPage() {
 
       {/* ── 4. MASCOT SHOWCASE ──────────────────────────────────────── */}
       <LandingMascotShowcase />
-
-      {/* ── 4.3. WALLPAPER SHOWCASE (interactive shader fidget) ─────── */}
-      <LandingWallpaperShowcase />
 
       {/* ── 4.5. ADVANTAGES (NEW) ───────────────────────────────────── */}
       <LandingAdvantages />

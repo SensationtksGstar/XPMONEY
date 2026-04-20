@@ -7,6 +7,7 @@ import { PostHogProvider } from '@/components/providers/PostHogProvider'
 import { QueryProvider }   from '@/components/providers/QueryProvider'
 import { Toaster }         from '@/components/ui/toaster'
 import { LocaleProvider }  from '@/lib/i18n/LocaleProvider'
+import { SiteBackground }  from '@/components/wallpaper/SiteBackground'
 
 const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ''
 
@@ -81,6 +82,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PostHogProvider>
             <QueryProvider>
               <LocaleProvider>
+                {/* Site-wide Neon Grid wallpaper — single WebGL context
+                    mounted once here, behind every route. Respects
+                    prefers-reduced-motion and pauses when the tab is
+                    hidden (see ShaderCanvas). */}
+                <SiteBackground />
                 <Toaster>
                   {children}
                 </Toaster>

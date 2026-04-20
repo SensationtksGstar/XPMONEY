@@ -110,7 +110,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#060b14] flex flex-col items-center justify-center px-4 py-12">
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
 
       {/* Progress bar */}
       <div className="w-full max-w-md mb-8">

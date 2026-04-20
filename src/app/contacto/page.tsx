@@ -18,7 +18,7 @@ export const metadata = {
  */
 export default function ContactoPage() {
   return (
-    <main className="min-h-screen bg-[#060b14] text-white">
+    <main className="min-h-screen text-white">
       <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#060b14]/85 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2">
           <Logo size={28} />
