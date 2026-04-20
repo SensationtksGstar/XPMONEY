@@ -32,14 +32,23 @@
     @apply border-border;
   }
 
-  html, body {
+  /* `html` keeps the solid base colour as flash-of-unstyled protection
+     before the SiteBackground canvas paints. `body` is intentionally
+     transparent so the fixed Neon Grid behind it is visible — if we
+     apply bg-background to body too, it covers the canvas. */
+  html {
     @apply bg-background text-foreground;
+  }
+  html, body {
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Prevent any horizontal page scrolling on mobile */
     overflow-x: hidden;
     max-width: 100vw;
+  }
+  body {
+    @apply text-foreground;
+    background: transparent;
   }
 
   /* Scrollbar customizada */

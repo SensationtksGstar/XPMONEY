@@ -87,9 +87,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     prefers-reduced-motion and pauses when the tab is
                     hidden (see ShaderCanvas). */}
                 <SiteBackground />
-                <Toaster>
-                  {children}
-                </Toaster>
+                {/* `relative z-10` guarantees every page content sits
+                    above the fixed z-0 background, regardless of what
+                    stacking contexts the page's own wrappers create. */}
+                <div className="relative z-10">
+                  <Toaster>
+                    {children}
+                  </Toaster>
+                </div>
               </LocaleProvider>
             </QueryProvider>
           </PostHogProvider>
