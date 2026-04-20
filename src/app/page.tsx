@@ -13,6 +13,7 @@ import { LandingFAQ }             from '@/components/landing/LandingFAQ'
 import { LandingPricing }         from '@/components/landing/LandingPricing'
 import { LandingFooter }          from '@/components/landing/LandingFooter'
 import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
+import { getServerT }             from '@/lib/i18n/server'
 
 /**
  * Landing page — the face of XP-Money.
@@ -35,7 +36,9 @@ import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
  * FAQ accordion is client. Mascot assets are actual /mascot/*.webp that
  * the app uses — we're literally showing the product.
  */
-export default function LandingPage() {
+export default async function LandingPage() {
+  const t = await getServerT()
+
   return (
     <main className="min-h-screen bg-[#060b14] text-white overflow-x-hidden">
 
@@ -48,10 +51,10 @@ export default function LandingPage() {
 
         {/* Middle nav (desktop only) */}
         <div className="hidden md:flex items-center gap-7 text-sm text-white/60">
-          <a href="#como-funciona"    className="hover:text-white transition-colors">Como funciona</a>
-          <a href="#funcionalidades"  className="hover:text-white transition-colors">Funcionalidades</a>
-          <a href="#precos"           className="hover:text-white transition-colors">Preços</a>
-          <a href="#faq"              className="hover:text-white transition-colors">FAQ</a>
+          <a href="#como-funciona"    className="hover:text-white transition-colors">{t('landing.nav.how_it_works')}</a>
+          <a href="#funcionalidades"  className="hover:text-white transition-colors">{t('landing.nav.features')}</a>
+          <a href="#precos"           className="hover:text-white transition-colors">{t('landing.nav.pricing')}</a>
+          <a href="#faq"              className="hover:text-white transition-colors">{t('landing.nav.faq')}</a>
         </div>
 
         <div className="flex items-center gap-2">
@@ -59,13 +62,13 @@ export default function LandingPage() {
             href="/sign-in"
             className="text-sm text-white/70 hover:text-white transition-colors px-3 py-2 hidden sm:inline-block"
           >
-            Entrar
+            {t('landing.nav.sign_in')}
           </Link>
           <Link
             href="/sign-up"
             className="text-sm bg-green-500 hover:bg-green-400 text-black font-semibold px-4 py-2 rounded-lg transition-colors"
           >
-            Começar grátis
+            {t('landing.nav.cta')}
           </Link>
         </div>
       </nav>
@@ -113,24 +116,23 @@ export default function LandingPage() {
         </div>
         <div className="relative max-w-2xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
-            O teu mascote está{' '}
+            {t('landing.cta.title_a')}{' '}
             <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
-              à tua espera
+              {t('landing.cta.title_emph')}
             </span>
           </h2>
           <p className="text-white/60 text-lg mb-8 max-w-xl mx-auto">
-            Junta-te aos +1.200 early-access que estão a reescrever a relação com o dinheiro —
-            sem folhas de Excel, sem culpa, sem apps a pedirem o login do banco.
+            {t('landing.cta.subtitle')}
           </p>
           <Link
             href="/sign-up"
             className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-10 py-4 rounded-xl text-lg transition-all shadow-[0_12px_40px_-15px_rgba(34,197,94,0.6)] hover:scale-[1.02]"
           >
-            Criar conta grátis
+            {t('landing.cta.button')}
             <ArrowRight className="w-5 h-5" />
           </Link>
           <p className="text-xs text-white/35 mt-5">
-            Menos de 30 segundos · Sem cartão de crédito · Cancela a qualquer momento
+            {t('landing.cta.footer')}
           </p>
         </div>
       </section>

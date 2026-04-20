@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import {
-  DEFAULT_LOCALE, LOCALES, TABLES,
+  DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES, TABLES,
   type Locale, type TranslationKey,
 } from './translations'
 
@@ -60,12 +60,16 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Persist + update <html lang> when the user flips the switch
+  // Persist + update <html lang> when the user flips the switch.
+  // ALSO writes a cookie so server components (landing page, metadata) pick
+  // up the choice on next navigation without a round-trip via client JS.
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l)
     try {
       window.localStorage.setItem(STORAGE_KEY, l)
       document.documentElement.lang = l
+      // 1y cookie; SameSite=Lax is fine — locale isn't a secret.
+      document.cookie = `${LOCALE_COOKIE}=${l}; Path=/; Max-Age=31536000; SameSite=Lax`
     } catch { /* storage blocked — choice still applies in-memory */ }
   }, [])
 

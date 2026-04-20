@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Sparkles, Star, Zap, Shield } from 'lucide-react'
+import { getServerT } from '@/lib/i18n/server'
 
 /**
  * LandingHero — above-the-fold, v3.
@@ -21,13 +22,21 @@ import { ArrowRight, Sparkles, Star, Zap, Shield } from 'lucide-react'
  * `priority` is set on the mascot image because it *is* the LCP on
  * desktop — pre-loading it keeps CLS at zero and LCP under 2s.
  */
-export function LandingHero() {
+export async function LandingHero() {
+  const t = await getServerT()
+
   // Six evolution stages used in the rail under the device card. We render
   // all of them so visitors instantly grok "my pet grows". The current
   // stage (4) is highlighted; the rest sit at reduced opacity with a
   // grayscale filter so the progression reads as an aspirational arc.
   const EVO_RAIL = [1, 2, 3, 4, 5, 6] as const
   const CURRENT_EVO = 4
+
+  const missions = [
+    { label: t('landing.hero.card_m1'), pct: 80,  color: 'bg-green-400'   },
+    { label: t('landing.hero.card_m2'), pct: 55,  color: 'bg-yellow-400'  },
+    { label: t('landing.hero.card_m3'), pct: 100, color: 'bg-emerald-400' },
+  ]
 
   return (
     <section className="relative pt-28 pb-16 md:pb-24 px-6 overflow-hidden">
@@ -40,9 +49,7 @@ export function LandingHero() {
           className="absolute inset-0 bg-center bg-cover opacity-[0.28]"
           style={{ backgroundImage: 'url(/herobot.webp)' }}
         />
-        {/* Dark gradient from top + bottom so the art is strongest mid-band */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#060b14] via-[#060b14]/60 to-[#060b14]" />
-        {/* Radial vignette so the edges fall off into true black */}
         <div
           className="absolute inset-0"
           style={{
@@ -50,10 +57,8 @@ export function LandingHero() {
               'radial-gradient(ellipse at center, transparent 40%, #060b14 85%)',
           }}
         />
-        {/* Accent glows — kept subtle now the photo carries the colour */}
         <div className="absolute top-40 right-[18%] w-[380px] h-[380px] bg-yellow-500/10 rounded-full blur-3xl" />
         <div className="absolute top-20 left-[10%] w-[320px] h-[320px] bg-purple-500/10 rounded-full blur-3xl" />
-        {/* Faint grid on top for "data" reading */}
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
@@ -69,33 +74,32 @@ export function LandingHero() {
         <div className="text-center lg:text-left">
           <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
             <Sparkles className="w-3 h-3" />
-            Early Access · Grátis para sempre
+            {t('landing.hero.badge')}
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-[4rem] font-bold leading-[1.02] tracking-tight mb-6">
-            Poupa mais,{' '}
+            {t('landing.hero.title_l1_a')}{' '}
             <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
-              sem tortura
+              {t('landing.hero.title_l1_emph')}
             </span>
-            .<br />
-            <span className="text-white/95">Finanças em </span>
+            {t('landing.hero.title_l1_b')}<br />
+            <span className="text-white/95">{t('landing.hero.title_l2_a')} </span>
             <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-              modo RPG
+              {t('landing.hero.title_l2_emph')}
             </span>
-            .
+            {t('landing.hero.title_l2_b')}
           </h1>
 
           <p className="text-lg text-white/70 max-w-xl mx-auto lg:mx-0 mb-7 leading-relaxed">
-            Score financeiro, missões semanais, recibos por foto e um mascote que evolui
-            contigo em <strong className="text-white">6 fases</strong>.
-            A Academia entrega-te um{' '}
+            {t('landing.hero.sub_a')} <strong className="text-white">{t('landing.hero.sub_evo')}</strong>
+            {t('landing.hero.sub_b')}{' '}
             <span className="relative inline-block">
-              <strong className="text-white">certificado digital</strong>
+              <strong className="text-white">{t('landing.hero.sub_cert')}</strong>
               <span className="absolute -top-2 -right-10 text-[10px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-1.5 py-0.5 rounded-full rotate-3">
-                NEW
+                {t('landing.hero.sub_new')}
               </span>
             </span>{' '}
-            por cada curso concluído.
+            {t('landing.hero.sub_c')}
           </p>
 
           {/* CTAs */}
@@ -104,7 +108,7 @@ export function LandingHero() {
               href="/sign-up"
               className="group inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-7 py-3.5 rounded-xl text-base transition-all shadow-[0_10px_36px_-8px_rgba(34,197,94,0.7)] hover:scale-[1.02] active:scale-95"
             >
-              Criar conta grátis
+              {t('landing.hero.cta_primary')}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <Link
@@ -112,24 +116,22 @@ export function LandingHero() {
               className="inline-flex items-center gap-2 text-white/85 hover:text-white px-6 py-3.5 rounded-xl border border-white/15 hover:border-purple-400/50 hover:bg-purple-500/5 transition-all text-base font-semibold"
             >
               <Zap className="w-4 h-4 text-purple-300" />
-              Ver Premium · €3,33/mês
+              {t('landing.hero.cta_secondary')}
             </Link>
           </div>
 
-          {/* Annual savings callout — primary conversion nudge. It shows
-              BOTH numbers so the user doesn't have to compute; the €/mês
-              effective is the click-worthy hook. */}
+          {/* Annual savings callout */}
           <div className="inline-flex items-center gap-3 mb-5 p-3 pr-5 rounded-xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-transparent">
             <div className="flex-shrink-0 w-9 h-9 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-purple-300" />
             </div>
             <div className="text-left">
               <p className="text-[13px] text-white/85 font-semibold leading-tight">
-                Anual <span className="text-purple-300">€39,99</span> ≈{' '}
-                <span className="text-purple-300 font-bold">€3,33/mês</span>
-                <span className="text-white/50"> · poupas <strong className="text-purple-300">€20</strong>/ano</span>
+                {t('landing.hero.annual_title')}{' '}
+                <span className="text-purple-300 font-bold">{t('landing.hero.annual_month')}</span>
+                <span className="text-white/50"> {t('landing.hero.annual_savings')}</span>
               </p>
-              <p className="text-[11px] text-white/50 mt-0.5">Comparado com o plano mensal a €4,99</p>
+              <p className="text-[11px] text-white/50 mt-0.5">{t('landing.hero.annual_compare')}</p>
             </div>
           </div>
 
@@ -142,19 +144,19 @@ export function LandingHero() {
                 ))}
               </div>
               <span className="font-semibold text-white/75">4,9</span>
-              <span className="text-white/50">· 1.200+ early users</span>
+              <span className="text-white/50">{t('landing.hero.trust_reviews')}</span>
             </span>
             <span className="hidden sm:inline text-white/20">·</span>
-            <span className="flex items-center gap-1">🇵🇹 Feito em Portugal</span>
+            <span className="flex items-center gap-1">{t('landing.hero.trust_country')}</span>
             <span className="hidden sm:inline text-white/20">·</span>
             <span className="flex items-center gap-1">
               <Shield className="w-3 h-3 text-emerald-400" />
-              GDPR · dados cifrados
+              {t('landing.hero.trust_gdpr')}
             </span>
           </div>
 
           <p className="text-[11px] text-white/35 mt-3 lg:text-left text-center">
-            Sem cartão · Cancela quando quiseres · Sem ligação obrigatória ao banco
+            {t('landing.hero.no_card')}
           </p>
         </div>
 
@@ -166,13 +168,11 @@ export function LandingHero() {
             <div className="absolute w-[320px] h-[320px] rounded-full bg-yellow-500/10 blur-2xl" />
           </div>
 
-          {/* Main mascot — dominant, NOT clipped inside a card. Sits IN
-              FRONT of the device card so it reads as "alive on top of the
-              UI", which is literally how the app feels. */}
+          {/* Main mascot */}
           <div className="relative z-20 -mb-10 pointer-events-none">
             <Image
               src="/mascot/voltix/4.webp"
-              alt="Voltix — mascote na 4ª evolução"
+              alt={t('landing.hero.voltix_alt')}
               width={380}
               height={380}
               priority
@@ -186,33 +186,32 @@ export function LandingHero() {
               {/* Top stats row */}
               <div className="grid grid-cols-3 gap-2 mb-5">
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-white/40">Score</p>
+                  <p className="text-[9px] uppercase tracking-wider text-white/40">{t('landing.hero.card_score')}</p>
                   <p className="text-xl font-bold text-yellow-300 mt-0.5">74<span className="text-xs text-white/40">/100</span></p>
                 </div>
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-white/40">Nível</p>
+                  <p className="text-[9px] uppercase tracking-wider text-white/40">{t('landing.hero.card_level')}</p>
                   <p className="text-xl font-bold text-green-400 mt-0.5">7</p>
                 </div>
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-white/40">Streak</p>
-                  <p className="text-xl font-bold text-orange-400 mt-0.5">23d</p>
+                  <p className="text-[9px] uppercase tracking-wider text-white/40">{t('landing.hero.card_streak')}</p>
+                  <p className="text-xl font-bold text-orange-400 mt-0.5">{t('landing.hero.card_streak_val')}</p>
                 </div>
               </div>
 
               {/* Mascot dialogue */}
               <div className="relative bg-gradient-to-b from-emerald-500/10 to-transparent rounded-2xl p-4 mb-4 border border-emerald-500/15">
-                <p className="text-[10px] uppercase tracking-wider text-green-300 font-bold mb-1">Voltix diz</p>
+                <p className="text-[10px] uppercase tracking-wider text-green-300 font-bold mb-1">{t('landing.hero.card_says')}</p>
                 <p className="text-[13px] text-white/90 leading-snug">
-                  Boa! Poupaste <strong className="text-green-300">€180</strong> este mês.
-                  Mais 2 missões e subes para a <strong className="text-yellow-300">5ª evolução</strong>.
+                  {t('landing.hero.card_dialogue')}
                 </p>
               </div>
 
               {/* XP bar */}
               <div className="mb-3">
                 <div className="flex items-center justify-between text-[10px] text-white/50 mb-1.5">
-                  <span>XP · Nível 7</span>
-                  <span>1.240 / 1.500</span>
+                  <span>{t('landing.hero.card_xp_label')}</span>
+                  <span>{t('landing.hero.card_xp_val')}</span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                   <div className="h-full w-[82%] bg-gradient-to-r from-green-400 to-emerald-300 rounded-full" />
@@ -221,11 +220,7 @@ export function LandingHero() {
 
               {/* Mini missions */}
               <div className="space-y-1.5">
-                {[
-                  { label: 'Registar 15 transações', pct: 80, color: 'bg-green-400' },
-                  { label: 'Ficar abaixo de €200 em restaurantes', pct: 55, color: 'bg-yellow-400' },
-                  { label: 'Poupar €100 este mês', pct: 100, color: 'bg-emerald-400' },
-                ].map(m => (
+                {missions.map(m => (
                   <div key={m.label} className="flex items-center gap-3 text-xs">
                     <div className="flex-1 min-w-0 truncate text-white/70">{m.label}</div>
                     <div className="flex items-center gap-2">
@@ -245,13 +240,10 @@ export function LandingHero() {
             </div>
           </div>
 
-          {/* Evolution rail — the aspirational promise underneath the device.
-              Tells the story "your pet will look like that one day" without
-              a wall of copy. Current stage (4) stays full colour; the rest
-              are dimmed so the progression reads at a glance. */}
+          {/* Evolution rail */}
           <div className="relative z-10 w-full max-w-md mt-5 px-2">
             <p className="text-center text-[10px] uppercase tracking-[0.22em] text-white/40 mb-2">
-              6 evoluções conforme a tua vida financeira sobe
+              {t('landing.hero.evo_rail_label')}
             </p>
             <div className="flex items-end justify-between gap-2">
               {EVO_RAIL.map(n => {
@@ -267,7 +259,7 @@ export function LandingHero() {
                     >
                       <Image
                         src={`/mascot/voltix/${n}.webp`}
-                        alt={`Voltix evolução ${n}`}
+                        alt={t('landing.hero.evo_alt', { n })}
                         width={80}
                         height={80}
                         className={`w-10 h-10 sm:w-12 sm:h-12 object-contain ${

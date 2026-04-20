@@ -8,26 +8,36 @@ import {
   Zap, Target, Settings, Crown, Trophy,
   Star, TrendingUp, BookOpen, Sword, PiggyBank,
 } from 'lucide-react'
-import { cn }   from '@/lib/utils'
-import { Logo } from '@/components/ui/Logo'
+import { cn }    from '@/lib/utils'
+import { Logo }  from '@/components/ui/Logo'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
-const NAV_ITEMS = [
-  { href: '/dashboard',    label: 'Dashboard',   icon: LayoutDashboard, pro: false },
-  { href: '/transactions', label: 'Transações',  icon: ArrowLeftRight,  pro: false },
-  { href: '/missions',     label: 'Missões',     icon: Crosshair,       pro: false },
-  { href: '/goals',        label: 'Poupanças',   icon: Target,          pro: false },
-  { href: '/orcamento',    label: 'Orçamento',   icon: PiggyBank,       pro: false },
-  { href: '/dividas',      label: 'Mata-Dívidas', icon: Sword,          pro: true  },
-  { href: '/badges',       label: 'Conquistas',  icon: Trophy,          pro: false },
-  { href: '/perspetiva',   label: 'Perspetiva',  icon: Star,            pro: true  },
-  { href: '/simulador',    label: 'Simulador',   icon: TrendingUp,      pro: true  },
-  { href: '/cursos',       label: 'Academia',    icon: BookOpen,        pro: true  },
-  { href: '/voltix',       label: 'Pet',         icon: Zap,             pro: false },
-  { href: '/settings',     label: 'Definições',  icon: Settings,        pro: false },
+interface NavItem {
+  href:      string
+  labelKey:  TranslationKey
+  icon:      typeof LayoutDashboard
+  pro:       boolean
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { href: '/dashboard',    labelKey: 'nav.dashboard',    icon: LayoutDashboard, pro: false },
+  { href: '/transactions', labelKey: 'nav.transactions', icon: ArrowLeftRight,  pro: false },
+  { href: '/missions',     labelKey: 'nav.missions',     icon: Crosshair,       pro: false },
+  { href: '/goals',        labelKey: 'nav.goals',        icon: Target,          pro: false },
+  { href: '/orcamento',    labelKey: 'nav.budget',       icon: PiggyBank,       pro: false },
+  { href: '/dividas',      labelKey: 'nav.debt_killer',  icon: Sword,           pro: true  },
+  { href: '/badges',       labelKey: 'nav.badges',       icon: Trophy,          pro: false },
+  { href: '/perspetiva',   labelKey: 'nav.perspective',  icon: Star,            pro: true  },
+  { href: '/simulador',    labelKey: 'nav.simulator',    icon: TrendingUp,      pro: true  },
+  { href: '/cursos',       labelKey: 'nav.academy',      icon: BookOpen,        pro: true  },
+  { href: '/voltix',       labelKey: 'nav.pet',          icon: Zap,             pro: false },
+  { href: '/settings',     labelKey: 'nav.settings',     icon: Settings,        pro: false },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const t        = useT()
 
   return (
     <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-full w-64 bg-white/3 border-r border-white/5 z-40">
@@ -56,7 +66,7 @@ export function Sidebar() {
               )}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1">{item.label}</span>
+              <span className="flex-1">{t(item.labelKey)}</span>
               {item.pro && (
                 <span className="text-[9px] font-bold bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full">PRO</span>
               )}
@@ -73,8 +83,8 @@ export function Sidebar() {
         >
           <Crown className="w-4 h-4 text-purple-400" />
           <div>
-            <div className="text-xs font-semibold text-purple-400">Ver Premium</div>
-            <div className="text-xs text-white/40">Academia · Perspetiva · Scan</div>
+            <div className="text-xs font-semibold text-purple-400">{t('nav.premium_cta')}</div>
+            <div className="text-xs text-white/40">{t('nav.premium_sub')}</div>
           </div>
         </Link>
       </div>
@@ -99,7 +109,7 @@ export function Sidebar() {
           }}
         />
         <div className="flex-1 min-w-0">
-          <div className="text-xs text-white/40 truncate">Conta</div>
+          <div className="text-xs text-white/40 truncate">{t('nav.account_label')}</div>
         </div>
       </div>
     </aside>

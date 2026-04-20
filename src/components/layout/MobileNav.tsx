@@ -11,32 +11,48 @@ import {
 } from 'lucide-react'
 import { cn }              from '@/lib/utils'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
+import { useT }            from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 // 5-cell primary nav with the FAB at cell 3 → literally 50% of the width.
 // Any 6-cell layout puts the FAB's cell at ~42% which visually reads as
 // off-center (which is what the user flagged). Academia (cursos) is promoted
 // into the More sheet so the 5-cell grid holds: 2 links | FAB | 1 link | Mais.
-const PRIMARY_NAV = [
-  { href: '/dashboard',    label: 'Início',    icon: LayoutDashboard },
-  { href: '/transactions', label: 'Contas',    icon: ArrowLeftRight  },
+interface PrimaryItem {
+  href:     string
+  labelKey: TranslationKey
+  icon:     typeof LayoutDashboard
+}
+
+const PRIMARY_NAV: (PrimaryItem | null)[] = [
+  { href: '/dashboard',    labelKey: 'nav.home',              icon: LayoutDashboard },
+  { href: '/transactions', labelKey: 'nav.transactions_short', icon: ArrowLeftRight  },
   null, // FAB (centered)
-  { href: '/goals',        label: 'Poupanças', icon: Target          },
+  { href: '/goals',        labelKey: 'nav.goals',             icon: Target          },
 ]
 
-const MORE_ITEMS = [
-  { href: '/orcamento',  label: 'Orçamento',   icon: PiggyBank,   badge: null        },
-  { href: '/cursos',     label: 'Academia',    icon: BookOpen,    badge: null        },
-  { href: '/missions',   label: 'Missões',     icon: Swords,      badge: null        },
-  { href: '/dividas',    label: 'Mata-Dívidas', icon: Swords,     badge: '👑 PREMIUM' },
-  { href: '/voltix',     label: 'Pet',         icon: Zap,         badge: null        },
-  { href: '/badges',     label: 'Conquistas',  icon: Trophy,      badge: null        },
-  { href: '/perspetiva', label: 'Perspetiva',  icon: LineChart,   badge: '👑 PREMIUM' },
-  { href: '/simulador',  label: 'Simulador',   icon: TrendingUp,  badge: '👑 PREMIUM' },
-  { href: '/settings',   label: 'Definições',  icon: Settings,    badge: null        },
+interface MoreItem {
+  href:     string
+  labelKey: TranslationKey
+  icon:     typeof LayoutDashboard
+  badge:    TranslationKey | null
+}
+
+const MORE_ITEMS: MoreItem[] = [
+  { href: '/orcamento',  labelKey: 'nav.budget',      icon: PiggyBank,  badge: null                 },
+  { href: '/cursos',     labelKey: 'nav.academy',     icon: BookOpen,   badge: null                 },
+  { href: '/missions',   labelKey: 'nav.missions',    icon: Swords,     badge: null                 },
+  { href: '/dividas',    labelKey: 'nav.debt_killer', icon: Swords,     badge: 'nav.badge_premium' },
+  { href: '/voltix',     labelKey: 'nav.pet',         icon: Zap,        badge: null                 },
+  { href: '/badges',     labelKey: 'nav.badges',      icon: Trophy,     badge: null                 },
+  { href: '/perspetiva', labelKey: 'nav.perspective', icon: LineChart,  badge: 'nav.badge_premium' },
+  { href: '/simulador',  labelKey: 'nav.simulator',   icon: TrendingUp, badge: 'nav.badge_premium' },
+  { href: '/settings',   labelKey: 'nav.settings',    icon: Settings,   badge: null                 },
 ]
 
 export function MobileNav() {
   const pathname                = usePathname()
+  const t                       = useT()
   const [showForm, setShowForm] = useState(false)
   const [showMore, setShowMore] = useState(false)
 
@@ -65,7 +81,7 @@ export function MobileNav() {
                 <div key="fab" className="flex justify-center">
                   <button
                     onClick={() => setShowForm(true)}
-                    aria-label="Adicionar transação"
+                    aria-label={t('nav.add_tx_aria')}
                     className="relative -top-5 w-14 h-14 bg-green-500 active:bg-green-400 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all"
                     style={{ boxShadow: '0 0 24px rgba(34,197,94,0.45)' }}
                   >
@@ -88,7 +104,7 @@ export function MobileNav() {
                 )}
               >
                 <Icon className={cn('w-5 h-5', isActive && 'drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]')} />
-                <span className="text-[10px] font-medium truncate">{item.label}</span>
+                <span className="text-[10px] font-medium truncate">{t(item.labelKey)}</span>
                 {isActive && (
                   <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full" />
                 )}
@@ -105,7 +121,7 @@ export function MobileNav() {
             )}
           >
             <MoreHorizontal className={cn('w-5 h-5', moreActive && 'drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]')} />
-            <span className="text-[10px] font-medium">Mais</span>
+            <span className="text-[10px] font-medium">{t('nav.more')}</span>
             {moreActive && (
               <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full" />
             )}
@@ -130,10 +146,10 @@ export function MobileNav() {
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
           >
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
-              <h3 id="mobile-more-title" className="text-white font-semibold text-base">Mais páginas</h3>
+              <h3 id="mobile-more-title" className="text-white font-semibold text-base">{t('nav.more_title')}</h3>
               <button
                 onClick={() => setShowMore(false)}
-                aria-label="Fechar menu"
+                aria-label={t('nav.close_menu')}
                 className="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 active:bg-white/20"
               >
                 <X className="w-4 h-4 text-white/70" />
@@ -157,10 +173,10 @@ export function MobileNav() {
                     )}
                   >
                     <Icon className="w-6 h-6" />
-                    <span className="text-xs font-medium text-center leading-tight">{item.label}</span>
+                    <span className="text-xs font-medium text-center leading-tight">{t(item.labelKey)}</span>
                     {item.badge && (
                       <span className="text-[9px] font-bold text-yellow-400/80 bg-yellow-400/10 px-1.5 py-0.5 rounded-full">
-                        {item.badge}
+                        {t(item.badge)}
                       </span>
                     )}
                   </Link>
