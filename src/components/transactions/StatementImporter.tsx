@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect, useId } from 'react'
 import Link from 'next/link'
 import {
   X, Upload, FileText, Loader2, CheckCircle2, AlertCircle,
-  ChevronDown, Sparkles, Download, TriangleAlert, Info, Crown, Lock,
+  ChevronDown, Sparkles, Download, TriangleAlert, Info, Crown, Lock, ArrowRight,
 } from 'lucide-react'
 import { useCategories }    from '@/hooks/useCategories'
 import { useAccounts }      from '@/hooks/useAccounts'
@@ -390,30 +390,68 @@ export function StatementImporter({ onClose }: Props) {
             </button>
           </div>
           <div className="p-6 text-center space-y-4">
-            <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-yellow-500/15 to-purple-500/15 border border-yellow-500/25 flex items-center justify-center">
-              <Sparkles className="w-10 h-10 text-yellow-400" />
+            {/* Hero icon with upgraded glow — signals "this is a Premium
+                moment", not a generic info card. */}
+            <div className="relative w-20 h-20 mx-auto">
+              <div aria-hidden className="absolute inset-0 rounded-2xl bg-gradient-to-br from-yellow-400/30 to-purple-500/30 blur-xl" />
+              <div className="relative w-full h-full rounded-2xl bg-gradient-to-br from-yellow-500/20 to-purple-500/20 border border-yellow-400/40 flex items-center justify-center">
+                <Sparkles className="w-10 h-10 text-yellow-300" />
+              </div>
             </div>
+
             <div>
-              <p className="text-white font-bold text-lg">Funcionalidade Plus</p>
-              <p className="text-white/50 text-sm mt-2 leading-relaxed">
-                Envia o teu extrato bancário (CSV ou PDF) e a IA extrai e categoriza
-                automaticamente todos os movimentos — sem digitar nada à mão.
+              {/* Premium chip — sets expectation before the body. */}
+              <div className="inline-flex items-center gap-1.5 bg-yellow-400/15 border border-yellow-400/30 text-yellow-300 text-[10px] font-bold px-2.5 py-1 rounded-full mb-2">
+                <Crown className="w-2.5 h-2.5" /> PREMIUM
+              </div>
+              <p className="text-white font-bold text-lg">Importa extratos com IA</p>
+              <p className="text-white/55 text-sm mt-2 leading-relaxed">
+                Arrasta o PDF do banco — a IA extrai e categoriza tudo em
+                segundos. <strong className="text-white">Zero digitação.</strong>
               </p>
             </div>
-            <ul className="text-left space-y-1.5 text-white/60 text-xs mx-auto max-w-xs">
-              <li>✓ Suporta CGD, Millennium, BPI, Santander, Revolut, Wise</li>
-              <li>✓ Categorização automática com IA</li>
+
+            <ul className="text-left space-y-1.5 text-white/65 text-xs mx-auto max-w-xs">
+              <li>✓ CGD, Millennium, BPI, Santander, Revolut, Wise</li>
+              <li>✓ Categorização automática por IA</li>
               <li>✓ Deteta receitas e despesas</li>
               <li>✓ Ignora saldos e cabeçalhos</li>
             </ul>
+
+            {/* Primary CTA — outcome + price in a single line. "Fazer
+                upgrade" was vague; "Desbloquear por €3,33/mês" leaves no
+                mental dead-end between intent and action. */}
             <Link
-              href="/settings/billing"
+              href="/settings/billing?period=yearly"
               onClick={onClose}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold px-5 py-3 rounded-xl transition-all min-h-[44px]"
+              className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-400 hover:from-yellow-400 hover:to-amber-300 text-black font-bold px-5 py-3.5 rounded-xl transition-all min-h-[48px] shadow-[0_10px_32px_-10px_rgba(234,179,8,0.6)] hover:scale-[1.02]"
             >
-              <Crown className="w-4 h-4" /> Fazer upgrade para Plus
+              <Crown className="w-4 h-4" />
+              Desbloquear por €3,33/mês
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <p className="text-white/30 text-xs">Plano actual: <span className="uppercase">{plan}</span></p>
+
+            {/* Price anchor + no-risk row under the button. */}
+            <p className="text-[11px] text-white/55 leading-relaxed">
+              €3,33/mês no anual · menos que um café · cancelas quando quiseres
+            </p>
+
+            {/* Social proof + secondary link (the "hesitant" exit). */}
+            <div className="pt-3 border-t border-white/10 space-y-2">
+              <p className="text-[11px] text-white/55 flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-emerald-400" />
+                +1.200 utilizadores já fizeram upgrade
+              </p>
+              <Link
+                href="/#precos"
+                onClick={onClose}
+                className="inline-block text-[11px] font-semibold text-yellow-300 hover:text-yellow-200 transition-colors"
+              >
+                Ver tudo o que incluo no Premium →
+              </Link>
+            </div>
+
+            <p className="text-white/30 text-[10px] pt-1">Plano actual: <span className="uppercase">{plan}</span></p>
           </div>
         </div>
       </div>

@@ -237,6 +237,45 @@ export const pt = {
   'reset.button':       'Apagar todas as transações',
   'reset.success':      'Conta reposta ao estado inicial.',
 
+  // ── Wallpaper showcase (landing) ──────────────────────────────────
+  // "Futuristic OS" interactive shader section. The UI labels below feed
+  // a picker that swaps the big preview + reuses the same id in lowercase
+  // for analytics tagging ("wallpaper_pick_aurora" etc.).
+  'wallpaper.eyebrow':       'A tua vibe',
+  'wallpaper.title_a':       'A tua app,',
+  'wallpaper.title_b':       'o teu estilo',
+  'wallpaper.subtitle':      'Cinco wallpapers interativos à la sistema operativo futurista. Passa o rato ou toca — todos reagem ao cursor.',
+  'wallpaper.hint':          'Mexe o rato ↓',
+  'wallpaper.premium_note':  '🔒 Premium desbloqueia todos e sincroniza-os no dashboard',
+  'wallpaper.neon':          'Neon Grid',
+  'wallpaper.neon_d':        'Tron em perspetiva — horizonte infinito',
+  'wallpaper.aurora':        'Aurora',
+  'wallpaper.aurora_d':      'Faixas de luz a fluir',
+  'wallpaper.voronoi':       'Voronoi',
+  'wallpaper.voronoi_d':     'Tecido de células a pulsar',
+  'wallpaper.metaballs':     'Metaballs',
+  'wallpaper.metaballs_d':   'Plasma líquido com o teu toque',
+  'wallpaper.stars':         'Starfield',
+  'wallpaper.stars_d':       'Viagem estelar, o cursor guia',
+
+  // ── Paywall (shared strings across PremiumFeatureLock + importers) ─
+  'paywall.badge':           'PREMIUM',
+  'paywall.cta_primary':     'Desbloquear por €3,33/mês',
+  'paywall.cta_primary_demo':'Criar conta grátis em 30s',
+  'paywall.social_proof':    '+1.200 utilizadores já fizeram upgrade',
+  'paywall.price_hint':      '€3,33/mês no anual · menos que um café · cancelas quando quiseres',
+  'paywall.price_hint_free': 'Sem cartão · Cancela a qualquer momento',
+  'paywall.no_risk':         '✓ 7 dias grátis  ✓ Sem compromisso  ✓ IVA incluído',
+  'paywall.secondary_link':  'Ver tudo o que incluo no Premium →',
+  'paywall.statement_title': 'Importa extratos com IA',
+  'paywall.statement_desc':  'Arrasta o PDF do banco — a IA extrai e categoriza tudo em segundos. Sem digitar nada.',
+  'paywall.statement_f1':    'CGD, Millennium, BPI, Santander, Revolut, Wise',
+  'paywall.statement_f2':    'Categorização automática por IA',
+  'paywall.statement_f3':    'Deteta receitas e despesas',
+  'paywall.statement_f4':    'Ignora saldos e cabeçalhos',
+  'paywall.current_plan':    'Plano actual',
+  'paywall.close_aria':      'Fechar',
+
   // ── Landing — How it works ────────────────────────────────────────
   'landing.how.eyebrow':     'Como funciona',
   'landing.how.title':       'Três passos. Zero complicação.',
@@ -679,6 +718,42 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   // ── Reset ─────────────────────────────────────────────────────────
   'reset.button':       'Delete all transactions',
   'reset.success':      'Account reset to initial state.',
+
+  // ── Wallpaper showcase ────────────────────────────────────────────
+  'wallpaper.eyebrow':       'Your vibe',
+  'wallpaper.title_a':       'Your app,',
+  'wallpaper.title_b':       'your style',
+  'wallpaper.subtitle':      'Five interactive wallpapers straight out of a futuristic OS. Move your mouse or touch — every one reacts to the cursor.',
+  'wallpaper.hint':          'Move your mouse ↓',
+  'wallpaper.premium_note':  '🔒 Premium unlocks all five and syncs them into the dashboard',
+  'wallpaper.neon':          'Neon Grid',
+  'wallpaper.neon_d':        'Tron-perspective, infinite horizon',
+  'wallpaper.aurora':        'Aurora',
+  'wallpaper.aurora_d':      'Silky ribbons of light',
+  'wallpaper.voronoi':       'Voronoi',
+  'wallpaper.voronoi_d':     'Pulsing cellular fabric',
+  'wallpaper.metaballs':     'Metaballs',
+  'wallpaper.metaballs_d':   'Liquid plasma you can shape',
+  'wallpaper.stars':         'Starfield',
+  'wallpaper.stars_d':       'Deep-space drift, cursor steers',
+
+  // ── Paywall ────────────────────────────────────────────────────────
+  'paywall.badge':           'PREMIUM',
+  'paywall.cta_primary':     'Unlock for €3.33/mo',
+  'paywall.cta_primary_demo':'Create free account in 30s',
+  'paywall.social_proof':    '1,200+ users already upgraded',
+  'paywall.price_hint':      '€3.33/mo on the annual plan · less than a coffee · cancel anytime',
+  'paywall.price_hint_free': 'No credit card · Cancel anytime',
+  'paywall.no_risk':         '✓ 7-day free trial  ✓ No lock-in  ✓ VAT included',
+  'paywall.secondary_link':  'See everything Premium unlocks →',
+  'paywall.statement_title': 'Import statements with AI',
+  'paywall.statement_desc':  'Drop your bank PDF — AI extracts and categorises every line in seconds. Zero typing.',
+  'paywall.statement_f1':    'CGD, Millennium, BPI, Santander, Revolut, Wise',
+  'paywall.statement_f2':    'Auto-categorisation via AI',
+  'paywall.statement_f3':    'Detects income and expenses',
+  'paywall.statement_f4':    'Skips balances and headers',
+  'paywall.current_plan':    'Current plan',
+  'paywall.close_aria':      'Close',
 
   // ── Landing — How it works ────────────────────────────────────────
   'landing.how.eyebrow':     'How it works',

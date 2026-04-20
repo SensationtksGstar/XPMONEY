@@ -5,8 +5,9 @@ import { LandingHero }            from '@/components/landing/LandingHero'
 import { LandingHowItWorks }      from '@/components/landing/LandingHowItWorks'
 import { LandingFeatures }        from '@/components/landing/LandingFeatures'
 import { LandingAdvantages }      from '@/components/landing/LandingAdvantages'
-import { LandingMascotShowcase }  from '@/components/landing/LandingMascotShowcase'
-import { LandingOutcomes }        from '@/components/landing/LandingOutcomes'
+import { LandingMascotShowcase }    from '@/components/landing/LandingMascotShowcase'
+import { LandingWallpaperShowcase } from '@/components/landing/LandingWallpaperShowcase'
+import { LandingOutcomes }          from '@/components/landing/LandingOutcomes'
 import { LandingComparison }      from '@/components/landing/LandingComparison'
 import { LandingReviews }         from '@/components/landing/LandingReviews'
 import { LandingFAQ }             from '@/components/landing/LandingFAQ'
@@ -88,6 +89,9 @@ export default async function LandingPage() {
 
       {/* ── 4. MASCOT SHOWCASE ──────────────────────────────────────── */}
       <LandingMascotShowcase />
+
+      {/* ── 4.3. WALLPAPER SHOWCASE (interactive shader fidget) ─────── */}
+      <LandingWallpaperShowcase />
 
       {/* ── 4.5. ADVANTAGES (NEW) ───────────────────────────────────── */}
       <LandingAdvantages />
