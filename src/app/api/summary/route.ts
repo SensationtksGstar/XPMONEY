@@ -94,6 +94,7 @@ export async function GET(req: NextRequest) {
    */
   let targetMonth = requestedMonth ?? currentMonth
   let fallbackUsed = false
+  const isAll = requestedMonth === 'all'
 
   if (!requestedMonth) {
     const { start, end } = monthBoundaries(currentMonth)
@@ -123,14 +124,18 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const { start, end } = monthBoundaries(targetMonth)
-
-  const { data, error } = await db
+  // Query: ou filtra por mês específico, ou pega em tudo se month=all
+  let queryBuilder = db
     .from('transactions')
     .select('amount, type, category:category_id(name, icon)')
     .eq('user_id', internalId)
-    .gte('date', start)
-    .lt('date', end)
+
+  if (!isAll) {
+    const { start, end } = monthBoundaries(targetMonth)
+    queryBuilder = queryBuilder.gte('date', start).lt('date', end)
+  }
+
+  const { data, error } = await queryBuilder
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -190,9 +195,9 @@ export async function GET(req: NextRequest) {
     expense,
     savings,
     rate,
-    month:        targetMonth,
+    month:        isAll ? 'all' : targetMonth,
     currentMonth,
-    fallbackUsed,
+    fallbackUsed: !isAll && fallbackUsed,
     top_categories,
   }
   return NextResponse.json({ data: summary })

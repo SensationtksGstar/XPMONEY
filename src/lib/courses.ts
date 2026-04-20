@@ -43,7 +43,7 @@ export const COURSES: Course[] = [
     emoji:    '💰',
     color:    'from-green-600 to-emerald-500',
     level:    'Iniciante',
-    duration: 30,
+    duration: 10,
     plan:     'premium',
     certificate: {
       title:       'Certificado em Gestão Financeira Básica',
@@ -54,7 +54,7 @@ export const COURSES: Course[] = [
         id:       'l1',
         emoji:    '🧭',
         title:    'O que é a saúde financeira?',
-        duration: 6,
+        duration: 2,
         content: `A saúde financeira é a capacidade de gerir o teu dinheiro de forma a garantir estabilidade, segurança e liberdade — agora e no futuro. Tal como a saúde física, não é um destino mas um percurso contínuo.
 
 **Os 4 pilares da saúde financeira:**
@@ -72,7 +72,7 @@ Não é falta de conhecimento — é falta de sistema. Sem um método claro, o d
         id:       'l2',
         emoji:    '📊',
         title:    'Orçamento Pessoal — Método 50/30/20',
-        duration: 8,
+        duration: 3,
         content: `O orçamento 50/30/20 é a regra de ouro das finanças pessoais. Divide o teu rendimento líquido mensal em 3 categorias simples:
 
 **50% — Necessidades**
@@ -95,7 +95,7 @@ Na XP-Money, categoriza cada transação e vê automaticamente em que percentage
         id:       'l3',
         emoji:    '🛡️',
         title:    'Fundo de Emergência',
-        duration: 7,
+        duration: 2,
         content: `O fundo de emergência é a base de qualquer plano financeiro sólido. Sem ele, uma despesa inesperada — carro avariado, problema de saúde, perda de emprego — pode destruir anos de poupança.
 
 **Quanto deves ter?**
@@ -121,7 +121,7 @@ A consistência é tudo. €100/mês durante 12 meses é muito melhor do que €
         id:       'l4',
         emoji:    '⛓️',
         title:    'Dívidas — Como Eliminá-las',
-        duration: 9,
+        duration: 3,
         content: `A dívida é o maior obstáculo à liberdade financeira. Mas nem todas as dívidas são iguais.
 
 **Dívida "boa" vs dívida "má":**
@@ -190,7 +190,7 @@ Com Bola de Neve: foca o cartão (€400) → pessoal → carro
     emoji:    '📈',
     color:    'from-blue-600 to-indigo-500',
     level:    'Intermédio',
-    duration: 35,
+    duration: 13,
     plan:     'premium',
     certificate: {
       title:       'Certificado em Investimento Básico',
@@ -201,7 +201,7 @@ Com Bola de Neve: foca o cartão (€400) → pessoal → carro
         id:       'l1',
         emoji:    '🚀',
         title:    'Por onde começar a investir',
-        duration: 7,
+        duration: 3,
         content: `Investir não é apenas para ricos. Com €50/mês e consistência, qualquer pessoa pode construir riqueza a longo prazo. A barreira não é o capital — é o conhecimento e o hábito.
 
 **Antes de investires, confirma:**
@@ -228,7 +228,7 @@ Quanto mais novo, mais tempo tens para recuperar de quedas — logo, podes assum
         id:       'l2',
         emoji:    '⚖️',
         title:    'Risco e Retorno',
-        duration: 8,
+        duration: 3,
         content: `A relação entre risco e retorno é a lei fundamental do investimento: **maior retorno potencial exige maior risco**. Não há almoços grátis nos mercados financeiros.
 
 **Tipos de risco:**
@@ -252,7 +252,7 @@ Sê honesto contigo. Se ao ver o teu investimento a cair 20% dormires mal e quis
         id:       'l3',
         emoji:    '🧺',
         title:    'ETFs — O Melhor Amigo do Investidor Passivo',
-        duration: 10,
+        duration: 4,
         content: `Um ETF (Exchange-Traded Fund) é um fundo que replica um índice de mercado (ex: S&P 500, MSCI World) e é negociado em bolsa como uma ação. É, de longe, a melhor forma de começar a investir.
 
 **Por que ETFs são ideais para iniciantes:**
@@ -280,7 +280,7 @@ Investe um valor fixo todos os meses, independentemente do preço. Em meses de q
         id:       'l4',
         emoji:    '✨',
         title:    'O Juro Composto — A 8ª Maravilha do Mundo',
-        duration: 10,
+        duration: 3,
         content: `"Aquele que compreende o juro composto, ganha-o. Aquele que não compreende, paga-o." — Albert Einstein (atribuído)
 
 **O que é o juro composto?**
@@ -371,7 +371,7 @@ A diferença entre 30 e 40 anos não é 33% mais — é 132% mais. O juro compos
     emoji:    '🏆',
     color:    'from-purple-600 to-violet-500',
     level:    'Avançado',
-    duration: 40,
+    duration: 12,
     plan:     'premium',
     certificate: {
       title:       'Certificado em Independência Financeira',
@@ -382,7 +382,7 @@ A diferença entre 30 e 40 anos não é 33% mais — é 132% mais. O juro compos
         id:       'l1',
         emoji:    '🧠',
         title:    'A Mentalidade do Poupador',
-        duration: 8,
+        duration: 3,
         content: `A maior barreira à poupança não é o rendimento — é a mentalidade. Pessoas com rendimentos altos podem viver no limite todos os meses. Pessoas com rendimentos modestos podem acumular riqueza. A diferença está na forma como pensam sobre o dinheiro.
 
 **A Inflação do Estilo de Vida:**
@@ -404,7 +404,7 @@ Identificar o teu "porquê" é essencial. Liberdade para trabalhar em projetos q
         id:       'l2',
         emoji:    '📐',
         title:    'Taxa de Poupança — O Número que Define Tudo',
-        duration: 10,
+        duration: 3,
         content: `A taxa de poupança é a percentagem do teu rendimento líquido que poupas e/ou investes mensalmente. É o indicador mais importante das tuas finanças pessoais.
 
 **Fórmula:**
@@ -437,7 +437,7 @@ Na XP-Money, a taxa de poupança aparece no teu Score financeiro. O objetivo: ma
         id:       'l3',
         emoji:    '🔥',
         title:    'Movimento FIRE — Independência Financeira',
-        duration: 12,
+        duration: 3,
         content: `FIRE significa Financial Independence, Retire Early — Independência Financeira, Reforma Antecipada. É um movimento crescente de pessoas que otimizam as suas finanças para alcançar a liberdade financeira décadas antes da reforma tradicional.
 
 **O Número Mágico — A Regra dos 4%:**
@@ -466,7 +466,7 @@ Alguns argumentam que "reformar" cedo é vazio. A resposta do movimento: FIRE n�
         id:       'l4',
         emoji:    '🤖',
         title:    'Automatizar as Poupanças',
-        duration: 10,
+        duration: 3,
         content: `A automatização é o segredo dos poupadores de sucesso. Remove a força de vontade da equação — e isso é bom, porque a força de vontade é um recurso limitado.
 
 **Sistema de automatização em 4 passos:**
@@ -547,7 +547,7 @@ Verificar a carteira todos os dias é ansiedade sem propósito. Revê trimestral
     emoji:    '🧾',
     color:    'from-orange-600 to-amber-500',
     level:    'Intermédio',
-    duration: 28,
+    duration: 11,
     plan:     'premium',
     certificate: {
       title:       'Certificado em Fiscalidade Pessoal',
@@ -558,7 +558,7 @@ Verificar a carteira todos os dias é ansiedade sem propósito. Revê trimestral
         id:       'l1',
         emoji:    '📐',
         title:    'Como funciona o IRS — escalões e taxas',
-        duration: 7,
+        duration: 3,
         content: `O IRS (Imposto sobre o Rendimento das Pessoas Singulares) é progressivo — quanto mais ganhas, maior a taxa marginal. Mas **a taxa marginal não se aplica a tudo**: só ao valor que cai dentro de cada escalão.
 
 **Escalões 2026 (indicativos, confirmar no Portal das Finanças):**
@@ -587,7 +587,7 @@ A taxa efectiva é sempre menor do que a marginal. É isto que faz sentido quand
         id:       'l2',
         emoji:    '🎯',
         title:    'Deduções, retenções e acerto anual',
-        duration: 7,
+        duration: 3,
         content: `Durante o ano, a tua entidade patronal retém IRS mensalmente com base numa tabela indicativa. Essa **retenção na fonte** é uma estimativa. O acerto real acontece na declaração anual (entre Abril e Junho do ano seguinte).
 
 **Principais deduções à colecta:**
@@ -610,7 +610,7 @@ A taxa efectiva é sempre menor do que a marginal. É isto que faz sentido quand
         id:       'l3',
         emoji:    '💼',
         title:    'Recibos verdes (trabalhador independente)',
-        duration: 7,
+        duration: 3,
         content: `Se és freelancer ou trabalhador independente passas recibos verdes. O IRS é **diferente** — calculado sobre rendimento líquido após aplicação do coeficiente.
 
 **Coeficientes por actividade:**
@@ -638,7 +638,7 @@ Na XP-Money categoriza transações recebidas como "rendimento" para veres a tax
         id:       'l4',
         emoji:    '✅',
         title:    'Declaração anual — erros comuns',
-        duration: 7,
+        duration: 2,
         content: `A declaração de IRS faz-se no Portal das Finanças entre **1 de Abril e 30 de Junho**. Para a maioria das pessoas é **pré-preenchida** — basta validar.
 
 **Erros que custam dinheiro:**
@@ -714,7 +714,7 @@ Se a retenção durante o ano foi superior ao IRS devido, recebes reembolso (nor
     emoji:    '🧠',
     color:    'from-rose-600 to-pink-500',
     level:    'Intermédio',
-    duration: 32,
+    duration: 11,
     plan:     'premium',
     certificate: {
       title:       'Certificado em Psicologia Financeira',
@@ -725,7 +725,7 @@ Se a retenção durante o ano foi superior ao IRS devido, recebes reembolso (nor
         id:       'l1',
         emoji:    '🎭',
         title:    'Dinheiro é emoção antes de ser matemática',
-        duration: 8,
+        duration: 3,
         content: `Livros de finanças tratam dinheiro como se fosse uma planilha. Mas decisões financeiras são feitas por humanos — e humanos são emocionais antes de serem racionais.
 
 **O cérebro tem dois sistemas (Kahneman):**
@@ -748,7 +748,7 @@ Não existe o orçamento óptimo universal. Existe o orçamento que **tu consegu
         id:       'l2',
         emoji:    '🎪',
         title:    'Os 8 vieses que te drenam a carteira',
-        duration: 9,
+        duration: 3,
         content: `Conhecer estes vieses não os elimina — mas permite detectá-los antes de decidirem por ti.
 
 **1. Aversão à perda (Prospect Theory)**
@@ -779,7 +779,7 @@ Procuras informação que confirma o que já decidiste. Queres comprar tesla? Va
         id:       'l3',
         emoji:    '🎯',
         title:    'Desenhar o ambiente para ganhar',
-        duration: 8,
+        duration: 3,
         content: `A força de vontade é um recurso limitado — esgota-se ao longo do dia. Os poupadores consistentes não usam mais força de vontade; **reduzem o número de vezes que precisam dela**.
 
 **Estratégias de arquitectura de escolha:**
@@ -810,7 +810,7 @@ A XP-Money aplica muitas destas ideias: o Score dá feedback imediato (reenquadr
         id:       'l4',
         emoji:    '🌱',
         title:    'Tolerância ao risco — conhece-te primeiro',
-        duration: 7,
+        duration: 2,
         content: `Tolerância ao risco tem **duas dimensões**:
 
 **1. Capacidade financeira de suportar risco**
@@ -904,7 +904,7 @@ O XP-Money reforça comportamento via o mascote: consistência ganha sempre. Peq
     emoji:    '🏠',
     color:    'from-cyan-600 to-teal-500',
     level:    'Intermédio',
-    duration: 30,
+    duration: 12,
     plan:     'premium',
     certificate: {
       title:       'Certificado em Crédito e Financiamento',
@@ -915,7 +915,7 @@ O XP-Money reforça comportamento via o mascote: consistência ganha sempre. Peq
         id:       'l1',
         emoji:    '📊',
         title:    'TAN, TAEG e spread — o que realmente estás a pagar',
-        duration: 7,
+        duration: 3,
         content: `Qualquer crédito tem três taxas. Confundi-las pode custar-te milhares de euros.
 
 **TAN — Taxa Anual Nominal**
@@ -943,7 +943,7 @@ Aparece em créditos variáveis. Simula o custo assumindo que o indexante sobe/d
         id:       'l2',
         emoji:    '🏡',
         title:    'Crédito habitação — negociar spread e seguros',
-        duration: 8,
+        duration: 3,
         content: `O crédito habitação é a maior decisão financeira da maioria das pessoas. 25-30 anos de compromisso. Cada 0,1% de spread × €200.000 × 30 anos custa **cerca de €3.000**.
 
 **Como negociar spread:**
@@ -975,7 +975,7 @@ A prestação mensal não deve ultrapassar **35%** do rendimento líquido. Acima
         id:       'l3',
         emoji:    '🚗',
         title:    'Compras a prestações — a armadilha escondida',
-        duration: 7,
+        duration: 3,
         content: `"Só €49/mês" soa acessível. Mas **€49/mês × 48 meses = €2.352** — para um telemóvel cujo PVP à vista é €1.500.
 
 **O custo real das prestações:**
@@ -1016,7 +1016,7 @@ Nunca uses o cartão como financiamento a longo prazo. Paga sempre o total mensa
         id:       'l4',
         emoji:    '✂️',
         title:    'Amortizar ou investir? A decisão crítica',
-        duration: 8,
+        duration: 3,
         content: `Tens €10.000 extras. Amortizas crédito habitação ou investes? É uma das decisões mais debatidas em finanças pessoais.
 
 **Análise matemática:**
@@ -1098,6 +1098,246 @@ Simula sempre no banco: "qual é a nova prestação se eu amortizar €10.000 e 
           'Quando o TAEG do crédito é superior ao retorno esperado dos investimentos',
           'Só depois dos 50 anos',
           'Nunca — investir é sempre melhor',
+        ],
+        correct: 1,
+      },
+    ],
+  },
+
+  {
+    id:       'cripto-avancado',
+    title:    'Cripto, Blockchain e DeFi',
+    subtitle: 'Bitcoin, auto-custódia, swaps e DeFi — domina o dinheiro descentralizado',
+    emoji:    '🔗',
+    color:    'from-amber-600 to-yellow-500',
+    level:    'Avançado',
+    duration: 18,
+    plan:     'premium',
+    certificate: {
+      title:       'Certificado em Cripto e DeFi',
+      description: 'Compreende blockchain, Bitcoin, auto-custódia com hardware wallets, DEXs, L2s e protocolos DeFi — com noção clara dos riscos e fiscalidade PT.',
+    },
+    lessons: [
+      {
+        id:       'l1',
+        emoji:    '₿',
+        title:    'Bitcoin e Blockchain — os fundamentos',
+        duration: 4,
+        content: `Blockchain é um livro-razão público e distribuído: milhares de computadores (nodes) mantêm a mesma cópia da história de transações, validam novas operações por consenso e tornam praticamente impossível reescrever o passado. Não precisa de intermediário — o acordo é matemático.
+
+**Bitcoin (BTC) — o primeiro caso de uso:**
+→ Criado em 2009 por Satoshi Nakamoto (pseudónimo, identidade desconhecida até hoje)
+→ Supply máximo fixo: **21 milhões** de BTC (~19,8M já minerados em 2026)
+→ **Proof of Work** — mineiros competem resolvendo hashes SHA-256; o vencedor valida o bloco e recebe BTC novo
+→ **Halving** a cada ~4 anos: recompensa dos mineiros reduz para metade. O último foi em 2024 (3,125 BTC/bloco). Próximo em 2028.
+
+**Porque lhe chamam "ouro digital":**
+→ Escassez programada (não pode ser inflacionado por decreto)
+→ Resistente a censura (nenhum governo pode apagar a tua carteira)
+→ Portátil (memorizas 12 palavras e atravessas fronteiras)
+→ Divisível (1 BTC = 100 milhões de satoshis)
+
+**O que Bitcoin NÃO é:**
+❌ "Investimento garantido" — caiu 80% em 2018 e 2022
+❌ "Rápido para pagamentos" — ~7 tx/segundo, confirmação 10-60 min (por isso existem L2s)
+❌ "Anónimo" — é *pseudónimo*. Toda a história é pública; só o nome real é que não aparece naturalmente
+
+**O resto do ecossistema:**
+→ **Ethereum (ETH)** — blockchain com smart contracts (programas auto-executáveis). Base do DeFi e NFTs. Passou para Proof of Stake em 2022
+→ **Stablecoins (USDC, USDT)** — tokens com preço fixo ao dólar. Úteis para guardar valor sem volatilidade
+→ **Solana, Avalanche, etc.** — blockchains rápidos alternativos, com trade-offs de descentralização
+
+**Regra prática:** não metas em cripto dinheiro que não podes perder. Uma alocação sensata na carteira total é **0–10%**, nunca mais.`,
+      },
+      {
+        id:       'l2',
+        emoji:    '🔐',
+        title:    'Carteiras e auto-custódia — "not your keys, not your coins"',
+        duration: 4,
+        content: `Em cripto, o dinheiro não está "numa conta" — está num endereço da blockchain, controlado por uma **chave privada**. Quem tem a chave, tem os fundos. Ponto final.
+
+**Custódia vs auto-custódia:**
+→ **Custodial (Binance, Coinbase, Kraken, exchanges)** — Eles guardam a chave. É como dinheiro no banco. Conveniente, mas **dependes deles** (ver FTX 2022 — milhões perderam tudo)
+→ **Non-custodial (auto-custódia)** — A chave está contigo. Tu és o banco. Sem terceiros, sem congelamentos — mas também sem "esqueci a password, recuperar"
+
+**Seed phrase — o backup que vale tudo:**
+Quando crias carteira, recebes 12 ou 24 palavras (padrão BIP-39). Esta frase **deriva** todas as chaves privadas e endereços. Quem tem a seed, tem a carteira.
+
+**Regras de ouro da seed phrase:**
+✅ Escreve-a em papel (ou aço, para fogo/água) em 2 cópias, guardadas em locais diferentes
+✅ Nunca a digites num computador online, foto, cloud, email ou notas do telemóvel
+✅ Nunca a partilhes com ninguém — nem suporte técnico "oficial" a pede
+❌ Phishing #1 em cripto: sites que pedem a seed phrase → **sempre scam**
+
+**Hot wallets (ligadas à internet):**
+→ MetaMask, Phantom, Rabby, Trust Wallet — apps de telemóvel/extensão de browser
+→ Ideal para: quantidades pequenas, uso diário, DeFi, NFTs
+→ Risco: malware, phishing, sites maliciosos
+
+**Cold wallets (hardware, offline):**
+→ **Ledger Nano S Plus / X** (~€80-150) — o mais popular
+→ **Trezor Safe 3 / 5** (~€80-180)
+→ **BitBox02**, **Coldcard** (Bitcoin-only)
+
+A chave privada nunca sai do dispositivo. Mesmo com um computador infectado, confirmas cada transacção fisicamente no botão/ecrã do hardware.
+
+**Regra dos 3 níveis:**
+→ **Exchange** — só o necessário para comprar/vender (trade activo)
+→ **Hot wallet** — dinheiro que usas em DeFi/NFTs (quantia pequena a média)
+→ **Cold wallet** — poupança a longo prazo ("cofre")
+
+Se tens mais de **€2.000 em cripto**, hardware wallet não é luxo — é obrigatório.`,
+      },
+      {
+        id:       'l3',
+        emoji:    '🔄',
+        title:    'Swaps, DEXs e Layer 2 — trocar sem intermediário',
+        duration: 5,
+        content: `Para trocar cripto por cripto, tens duas estradas: **CEX** (exchange centralizada) ou **DEX** (descentralizada).
+
+**CEX — Centralized Exchange:**
+→ Binance, Coinbase, Kraken, Kucoin
+→ Interface familiar (ordens limite, spot, margin)
+→ Rápido e barato em fees
+→ Mas: KYC obrigatório, custódia no exchange, pode congelar conta, risco de falência (FTX, Celsius)
+
+**DEX — Decentralized Exchange:**
+→ Uniswap, PancakeSwap, Jupiter (Solana), Curve (stables)
+→ Tu manténs custódia (ligas a wallet, nunca depositas)
+→ Sem KYC
+→ Preço via **liquidity pools** (AMM) — não livro de ordens
+
+**Conceitos-chave num swap DEX:**
+
+🔸 **Slippage** — diferença entre preço esperado e preço executado. Em pools pequenos ou trades grandes pode ser 1-5%+. Define tolerância (ex: 0,5%).
+
+🔸 **Gas fees** — paga-se ao blockchain para processar a tx. Em Ethereum L1 pode ser €5-50. Em L2s é €0,05-0,50.
+
+🔸 **MEV / front-running** — bots que detectam a tua tx e executam antes para lucrarem. Usa routers com protecção (1inch, CowSwap) ou private RPCs.
+
+🔸 **Aprovações (approvals)** — antes de trocar um token ERC-20 precisas "aprovar" o contrato a mexer nos teus tokens. Revoga aprovações antigas em **revoke.cash**.
+
+**Layer 2 — a solução à lentidão/custo do Ethereum:**
+L2 processa transacções fora da L1 e depois consolida-as em lote na L1. Resultado: mesma segurança de Ethereum, fracção do custo.
+
+→ **Arbitrum, Optimism, Base** (Optimistic Rollups) — mais maduros, withdraw para L1 demora ~7 dias
+→ **zkSync, Starknet, Linea** (ZK Rollups) — matematicamente provados, withdraw rápido
+→ **Lightning Network** — L2 de Bitcoin para micropagamentos instantâneos (cafés, tips)
+
+**Fluxo típico de um utilizador razoável:**
+1. Compra ETH/USDC numa CEX (Coinbase, Kraken)
+2. Levanta para hardware wallet (on-chain, L1)
+3. Bridge para L2 (Arbitrum/Base) via bridge oficial
+4. Usa DEX na L2 com gas baixo
+
+**Bridges — o ponto mais arriscado do ecossistema.** Já foram hackeados biliões (Ronin, Wormhole, Nomad). Usa só bridges oficiais, nunca links de Discord/Twitter.`,
+      },
+      {
+        id:       'l4',
+        emoji:    '🌾',
+        title:    'DeFi — oportunidades e riscos reais',
+        duration: 5,
+        content: `DeFi (Decentralized Finance) replica serviços bancários em smart contracts: empréstimos, juros, câmbios, derivados — tudo sem banco.
+
+**Categorias principais:**
+
+**1. Lending/Borrowing — Aave, Compound, Morpho**
+Depositas USDC e recebes juro (~3-8% APY). Outros utilizadores pedem emprestado com colateral sobre-garantido (ex: depositam €1.500 de ETH para pedir €1.000 USDC). Se o ETH cair muito, o sistema liquida automaticamente o colateral.
+
+**2. Staking — ETH, SOL, ATOM**
+Bloqueias cripto para validar o blockchain (PoS) e recebes recompensas (3-7% APY para ETH via Lido, Rocket Pool). Risco: lockup period, slashing (o validador pode ser penalizado).
+
+**3. Liquidity Providing (LP)**
+Depositas 2 tokens num pool (ex: ETH/USDC) e ganhas % das fees. Cuidado com **impermanent loss**: se o preço dos tokens divergir muito do momento do depósito, podes sair com menos valor do que se tivesses só mantido (HODL).
+
+**4. Yield aggregators — Yearn, Beefy, Pendle**
+Automatizam estratégias de rendimento. APY mais alto, complexidade e risco também mais altos.
+
+**5. Stablecoin yields**
+USDC/USDT em Aave, sUSDe, etc. — 4-10% APY. Mais "seguro" que LP mas não *sem* risco (ver UST/Luna em 2022 — stablecoin algorítmica colapsou para €0 em dias).
+
+**Os riscos reais (não abstractos):**
+
+🔴 **Smart contract exploits** — bugs no código. Poly Network €600M, Euler €200M, Curve, Multichain. Mesmo código auditado pode falhar.
+
+🔴 **Rug pulls** — projecto retira liquidez e desaparece. Muito comum em memecoins e pools novas. Verifica: contrato verificado? Liquidez bloqueada? Dev doxxed?
+
+🔴 **Oracle manipulation** — atacantes manipulam o preço que o protocolo lê e drenam fundos.
+
+🔴 **Governance attacks** — tomar controlo de votos DAO para passar propostas maliciosas.
+
+🔴 **Phishing avançado** — falsos sites idênticos a Uniswap/Aave, approvals maliciosas. Usa sempre bookmark, nunca Google Ads.
+
+**Red flags imediatos:**
+❌ APY "sustentável" acima de 20% em stablecoins → insustentável por definição
+❌ "Duplica o teu BTC" → scam, sempre
+❌ Equipa anónima + sem auditoria + TVL baixo → combo mortal
+❌ Pressão de tempo ("só hoje", "últimas vagas") → scam
+
+**Fiscalidade cripto em Portugal (desde 2023):**
+→ Mais-valias em cripto **detidas menos de 365 dias → tributadas a 28%**
+→ Detidas **mais de 365 dias → isentas** (desde que não seja actividade profissional)
+→ Swaps entre cripto **não geram facto tributário** até saíres para fiat
+→ Rendimentos de staking/lending → categoria E, 28% (ou englobar)
+→ Declaras no Anexo G (mais-valias) e Anexo J (rendimentos estrangeiros, se exchange fora de PT)
+
+**Conclusão pragmática:**
+DeFi é uma das áreas mais inovadoras da finança. Também é a mais hostil para amadores. Começa com stablecoins em protocolos top-5 por TVL, valores pequenos, e aumenta exposição só quando percebes cada risco. A melhor defesa não é diversificação — é **não pôr o que não podes perder**.`,
+      },
+    ],
+    quiz: [
+      {
+        id: 'q1',
+        text: 'O que significa "not your keys, not your coins"?',
+        options: [
+          'Se não tens as chaves privadas (ou seed phrase), não controlas realmente os teus fundos — dependes de um terceiro',
+          'Que tens de comprar várias carteiras diferentes',
+          'Que Bitcoin não tem valor real',
+          'Que só hardware wallets são seguras',
+        ],
+        correct: 0,
+      },
+      {
+        id: 'q2',
+        text: 'O que é o halving do Bitcoin?',
+        options: [
+          'Uma queda de 50% no preço que acontece todos os anos',
+          'A redução para metade da recompensa dos mineiros, a cada ~4 anos',
+          'Um bug no protocolo',
+          'Um upgrade da blockchain para ser mais rápida',
+        ],
+        correct: 1,
+      },
+      {
+        id: 'q3',
+        text: 'Qual é a principal vantagem de uma Layer 2 (Arbitrum, Optimism, Base)?',
+        options: [
+          'É uma blockchain completamente independente, sem relação com Ethereum',
+          'Transacções muito mais baratas e rápidas, herdando a segurança da L1',
+          'Permite fazer mining mesmo sem hardware especializado',
+          'Elimina a necessidade de carteira',
+        ],
+        correct: 1,
+      },
+      {
+        id: 'q4',
+        text: 'O que é "impermanent loss"?',
+        options: [
+          'Perder a seed phrase e não conseguir recuperar a carteira',
+          'Uma perda temporária que acontece quando o preço do Bitcoin cai',
+          'Perda de valor num liquidity pool quando os preços dos dois tokens divergem face ao momento do depósito',
+          'O custo das taxas de gas em períodos de congestão',
+        ],
+        correct: 2,
+      },
+      {
+        id: 'q5',
+        text: 'Em Portugal, mais-valias de cripto detidas há mais de 365 dias:',
+        options: [
+          'São tributadas a 28% como qualquer outra',
+          'São isentas de IRS (desde que não seja actividade profissional)',
+          'Pagam 48% no escalão máximo',
+          'Não precisam ser declaradas nunca',
         ],
         correct: 1,
       },

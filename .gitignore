@@ -55,3 +55,6 @@ VERCEL_ENV_VARS.txt
 seed-admin.mjs
 seed-bruno.mjs
 apply-schema.mjs
+
+# clerk configuration (can include secrets)
+/.clerk/
