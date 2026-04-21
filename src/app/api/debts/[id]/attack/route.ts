@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
 import { awardXP }                   from '@/lib/awardXP'
+import { checkAllBadges }            from '@/lib/checkAllBadges'
 import { xpForAttack }               from '@/lib/killDebt'
 import { z }                         from 'zod'
 
@@ -118,6 +119,17 @@ export async function POST(
     console.warn('[debts/attack] XP award failed (non-fatal):', err)
   }
 
+  // 6. Check badges — fires `debt_killed` when the attack zeroed the debt.
+  // Non-fatal: a missing badges row never breaks the user-visible flow.
+  let newBadges: Awaited<ReturnType<typeof checkAllBadges>> = []
+  if (isKillShot) {
+    try {
+      newBadges = await checkAllBadges(db, internalId)
+    } catch (err) {
+      console.warn('[debts/attack] badge check failed (non-fatal):', err)
+    }
+  }
+
   return NextResponse.json({
     data: {
       attack,
@@ -125,6 +137,7 @@ export async function POST(
       killed:      isKillShot,
       xp_earned:   xp,
       xp_result:   xpResult,
+      badges:      newBadges,
     },
     error: null,
   }, { status: 201 })

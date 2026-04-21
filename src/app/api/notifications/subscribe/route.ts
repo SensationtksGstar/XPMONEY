@@ -2,6 +2,7 @@ import { auth }                    from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
+import { getServerLocale }           from '@/lib/i18n/server'
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth()
@@ -15,16 +16,32 @@ export async function POST(req: NextRequest) {
   const internalId = await resolveUser(userId)
   if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
+  // Resolve locale from cookie so the subscriber gets push notifications
+  // in their chosen language. If the DB doesn't yet have the `locale`
+  // column (pre-migration install), the upsert below retries without it.
+  const locale = await getServerLocale()
+
   const db = createSupabaseAdmin()
 
-  const { error } = await db
+  const payload: Record<string, unknown> = {
+    user_id:  internalId,
+    endpoint: subscription.endpoint,
+    p256dh:   subscription.keys?.p256dh ?? '',
+    auth:     subscription.keys?.auth ?? '',
+    locale,
+  }
+
+  let { error } = await db
     .from('push_subscriptions')
-    .upsert({
-      user_id:  internalId,
-      endpoint: subscription.endpoint,
-      p256dh:   subscription.keys?.p256dh ?? '',
-      auth:     subscription.keys?.auth ?? '',
-    }, { onConflict: 'user_id,endpoint' })
+    .upsert(payload, { onConflict: 'user_id,endpoint' })
+
+  // Fallback: retry without `locale` if the column does not exist yet.
+  if (error && /locale/i.test(error.message)) {
+    delete payload.locale
+    ;({ error } = await db
+      .from('push_subscriptions')
+      .upsert(payload, { onConflict: 'user_id,endpoint' }))
+  }
 
   if (error) {
     console.error('[subscribe]', error.message)

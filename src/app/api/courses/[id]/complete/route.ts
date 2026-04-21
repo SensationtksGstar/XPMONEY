@@ -3,6 +3,7 @@ import { NextResponse, NextRequest } from 'next/server'
 import { createSupabaseAdmin }    from '@/lib/supabase'
 import { resolveUser }            from '@/lib/resolveUser'
 import { awardXP }                from '@/lib/awardXP'
+import { checkAllBadges }         from '@/lib/checkAllBadges'
 import { COURSES }                from '@/lib/courses'
 import { z }                      from 'zod'
 
@@ -87,10 +88,23 @@ export async function POST(
   }
 
   const result = await awardXP(db, internalId, COMPLETE_XP, reason)
+
+  // Finishing a course can unlock `academy_master` once the last course is
+  // done. Fire the full recheck here rather than coding an `allCompleted`
+  // condition inline — keeps the "what unlocks this badge" logic in one
+  // place (checkAllBadges.ts).
+  let newBadges: Awaited<ReturnType<typeof checkAllBadges>> = []
+  try {
+    newBadges = await checkAllBadges(db, internalId)
+  } catch (err) {
+    console.warn('[courses/complete] badge check failed (non-fatal):', err)
+  }
+
   return NextResponse.json({
     already_awarded: false,
     xp_gained:       result?.xp_gained ?? 0,
     leveled_up:      result?.leveled_up ?? false,
+    badges:          newBadges,
     error:           null,
   })
 }

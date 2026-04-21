@@ -264,7 +264,45 @@ export const BADGE_DEFINITIONS = [
     rarity:      'rare' as const,
     is_premium:  false,
   },
+
+  // ── Premium tier (April 2026) ─────────────────────────────────────
+  // These three are the "trophy wall" badges — hard-to-reach peaks the
+  // gamified funnel converges toward. Marked `is_premium` so the UI can
+  // render a crown overlay / gold frame distinct from the regular rarity
+  // scale. They coexist with the existing tier system (still carry a
+  // rarity so the XP reward math keeps working).
+  {
+    code:        'debt_killed',
+    name:        'Mata-Dívidas',
+    description: 'Eliminaste uma dívida por completo. Um peso a menos.',
+    icon:        '⚔️',
+    xp_reward:   500,
+    rarity:      'epic' as const,
+    is_premium:  true,
+  },
+  {
+    code:        'academy_master',
+    name:        'Mestre da Academia',
+    description: 'Concluíste TODOS os cursos. És oficialmente imparável.',
+    icon:        '🎓',
+    xp_reward:   1500,
+    rarity:      'legendary' as const,
+    is_premium:  true,
+  },
+  {
+    code:        'gold_saver',
+    name:        'Poupador de Ouro',
+    description: 'Acumulaste €5.000 em poupanças. Liberdade a ganhar forma.',
+    icon:        '💰',
+    xp_reward:   1000,
+    rarity:      'legendary' as const,
+    is_premium:  true,
+  },
 ]
+
+/** Threshold (EUR) for the gold_saver premium badge. Exported so the
+ *  server-side checker + client-side progress widgets share one number. */
+export const GOLD_SAVER_THRESHOLD = 5000
 
 // ---- Formatação de XP ----
 

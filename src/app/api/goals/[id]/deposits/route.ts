@@ -4,6 +4,7 @@ import { createSupabaseAdmin }       from '@/lib/supabase'
 import { z }                         from 'zod'
 import { resolveUser }               from '@/lib/resolveUser'
 import { awardXP }                   from '@/lib/awardXP'
+import { checkAllBadges }            from '@/lib/checkAllBadges'
 import { toNumber }                  from '@/lib/safeNumber'
 
 const DepositSchema = z.object({
@@ -133,9 +134,22 @@ export async function POST(
     xpEarned = total
   }
 
+  // A positive deposit can unlock `goal_reached` (first goal finished) OR
+  // `gold_saver` (€5.000 total across goals). Recheck both via the helper
+  // — awardBadge is idempotent so there's no risk of double-awarding.
+  let newBadges: Awaited<ReturnType<typeof checkAllBadges>> = []
+  if (parsed.data.amount > 0) {
+    try {
+      newBadges = await checkAllBadges(db, internalId)
+    } catch (err) {
+      console.warn('[goals/deposits] badge check failed (non-fatal):', err)
+    }
+  }
+
   return NextResponse.json({
     data: { deposit: deposit ?? null, goal: updatedGoal },
     isCompleted,
     xp_earned: xpEarned,
+    badges:    newBadges,
   }, { status: 201 })
 }
