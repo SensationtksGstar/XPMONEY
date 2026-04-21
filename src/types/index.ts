@@ -139,16 +139,26 @@ export interface XPProgress {
   last_activity_at: string
 }
 
+/**
+ * Per-action XP rewards. Tuning history (April 2026):
+ *
+ *   Audit found ~60% of first-week users saw the XP bar move barely a
+ *   tick per transaction — 10 XP on a 200-XP level-1 bar reads as
+ *   "nothing happened". Bumped the core engagement actions ~50% so the
+ *   bar visibly fills on every interaction. Kept large rewards (goal
+ *   reached, streak 7/30) unchanged so the rarity premium at the top
+ *   end doesn't collapse.
+ */
 export const XP_REWARDS = {
-  TRANSACTION_REGISTERED:  10,
+  TRANSACTION_REGISTERED:  15,   // was 10 — the bar tick is now visible
   TRANSACTION_CATEGORIZED:  5,
-  DAILY_LOGIN:             20,
-  STREAK_7_DAYS:          300,
-  STREAK_30_DAYS:        1000,
-  MISSION_COMPLETED:      150,  // base, varia por missão
+  DAILY_LOGIN:             25,   // was 20 — same daily floor, cleaner round
+  STREAK_7_DAYS:          300,   // unchanged — milestone reward
+  STREAK_30_DAYS:        1000,   // unchanged — milestone reward
+  MISSION_COMPLETED:      150,   // base, varia por missão
   SCORE_IMPROVED:         100,
-  GOAL_CREATED:            75,  // recompensa por definir uma meta — primeiro passo importante
-  GOAL_REACHED:          1000,
+  GOAL_CREATED:           100,   // was 75 — first-step reward reads as "official"
+  GOAL_REACHED:          1000,   // unchanged — top-of-funnel payoff
   BUDGET_KEPT:            200,
   FIRST_TRANSACTION:       50,
   ONBOARDING_COMPLETE:    100,

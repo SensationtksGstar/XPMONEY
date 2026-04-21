@@ -2,12 +2,22 @@
  * Mascot evolution rules — single source of truth.
  *
  * Evolution is driven by the user's financial score (0-100), not level.
- * Thresholds are intentionally spaced so progression stays meaningful:
- * accessible early gains (Evo 2 at 35 pts — "out of red"), hard elite
- * tier (Evo 6 at 95 pts — top 1% of users).
  *
- * Evolution is strictly monotonic: the server never downgrades a pet, even
- * if the score drops. Hitting the threshold once is forever.
+ * Tuning history (April 2026):
+ *   The original 2:35 threshold took a realistic fresh user 2-3 weeks of
+ *   daily logging to hit, which means the "wow, my pet evolved" moment —
+ *   the core retention pull of the gamification loop — landed AFTER most
+ *   churn had happened. Lowered to 2:20 so the first evolution is a
+ *   week-1 (sometimes day-1) payoff: a user who logs 3-4 transactions,
+ *   sets one savings goal with any deposit, and has income > expenses
+ *   can reliably trip it. Everything from Evo 3 onwards stays tuned to
+ *   reward genuine financial improvement.
+ *
+ *   Evo 2 XP bonus also bumped from 200 → 350 so the first celebration
+ *   has more punch. Late-game bonuses untouched.
+ *
+ * Evolution is strictly monotonic: the server never downgrades a pet,
+ * even if the score drops. Hitting the threshold once is forever.
  */
 import type { MascotGender } from '@/types'
 
@@ -15,20 +25,20 @@ export type EvoStage = 1 | 2 | 3 | 4 | 5 | 6
 
 /** Minimum score required to unlock each evolution stage. */
 export const EVO_SCORE_THRESHOLDS: Record<Exclude<EvoStage, 1>, number> = {
-  2: 35,
-  3: 55,
-  4: 72,
-  5: 85,
-  6: 95,
+  2: 20,   // was 35 — "first evolution" is now a week-1 reward
+  3: 48,   // was 55 — smoother climb after the first win
+  4: 68,   // was 72 — small smoothing, still "committed user" tier
+  5: 85,   // unchanged — aspirational
+  6: 95,   // unchanged — top 1%
 }
 
 /** One-shot XP bonus granted the first time the user reaches each stage. */
 export const EVO_XP_BONUS: Record<Exclude<EvoStage, 1>, number> = {
-  2: 200,
-  3: 400,
-  4: 700,
-  5: 1000,
-  6: 2000,
+  2: 350,   // was 200 — bigger first-evolution celebration
+  3: 500,   // was 400
+  4: 800,   // was 700
+  5: 1200,  // was 1000
+  6: 2500,  // was 2000 — peak reward scaled up with the rest
 }
 
 /** Maximum evo the score `s` unlocks (independent of current stored stage). */

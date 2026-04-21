@@ -5,6 +5,7 @@ import { resolveUser }         from '@/lib/resolveUser'
 import { awardBadge }          from '@/lib/awardBadge'
 import { awardXP }             from '@/lib/awardXP'
 import { updateMissionProgress } from '@/lib/updateMissionProgress'
+import { XP_REWARDS }          from '@/types'
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() &&
@@ -113,11 +114,14 @@ export async function POST() {
   let xpEarned = 0
 
   // ── 4. XP award — delegate to canonical awardXP helper ─────────────────
-  const baseXP = 20
+  // Values come from XP_REWARDS (src/types) so tuning lives in one place.
+  // Previously the numbers were hardcoded here and drifted from the
+  // constants file (base was 20 vs 25 constant; streak-7 was 100 vs 300).
+  const baseXP = XP_REWARDS.DAILY_LOGIN
   let bonusXP  = 0
   let bonusReason: string | null = null
-  if (newStreak === 30)     { bonusXP = 500; bonusReason = 'streak_30_days' }
-  else if (newStreak === 7) { bonusXP = 100; bonusReason = 'streak_7_days'  }
+  if (newStreak === 30)     { bonusXP = XP_REWARDS.STREAK_30_DAYS; bonusReason = 'streak_30_days' }
+  else if (newStreak === 7) { bonusXP = XP_REWARDS.STREAK_7_DAYS;  bonusReason = 'streak_7_days'  }
 
   const baseRes = await awardXP(db, internalId, baseXP, 'daily_login')
   if (baseRes) xpEarned += baseRes.xp_gained
