@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES, TABLES,
   type Locale, type TranslationKey,
@@ -50,6 +51,7 @@ function interpolate(str: string, vars?: Record<string, string | number>) {
 }
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   // Start with the SSR-safe default. useEffect below hydrates from storage.
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
 
@@ -61,8 +63,18 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // Persist + update <html lang> when the user flips the switch.
-  // ALSO writes a cookie so server components (landing page, metadata) pick
-  // up the choice on next navigation without a round-trip via client JS.
+  //
+  // WHY router.refresh(): after the cookie is written, any SERVER
+  // component (landing hero copy, feature cards, generateMetadata titles,
+  // the <html lang> attribute, the Clerk localization bundle passed from
+  // the root layout) still holds the OLD locale — they were rendered
+  // before the cookie change. `router.refresh()` re-fetches the RSC tree
+  // with the new cookie in place, so everything flips in one motion
+  // without losing client state (scroll, form fields, React Query cache).
+  //
+  // Without the refresh, clicking EN on the LanguageToggle made only
+  // client-rendered strings flip; the hero + ClerkProvider stayed PT,
+  // which felt like "the button does nothing" to the user.
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l)
     try {
@@ -71,7 +83,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       // 1y cookie; SameSite=Lax is fine — locale isn't a secret.
       document.cookie = `${LOCALE_COOKIE}=${l}; Path=/; Max-Age=31536000; SameSite=Lax`
     } catch { /* storage blocked — choice still applies in-memory */ }
-  }, [])
+    // Refresh server components with the new cookie in the same tick.
+    router.refresh()
+  }, [router])
 
   // Keep <html lang> in sync whenever the locale changes (incl. hydration)
   useEffect(() => {
