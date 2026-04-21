@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Check, Send } from 'lucide-react'
+import { TurnstileWidget } from '@/components/common/TurnstileWidget'
 
 /**
  * ContactForm — formulário público que encaminha a mensagem ao admin.
@@ -19,8 +20,15 @@ export function ContactForm() {
   const [subject,  setSubject]  = useState('')
   const [message,  setMessage]  = useState('')
   const [website,  setWebsite]  = useState('')  // honeypot
+  const [tsToken,  setTsToken]  = useState('')  // Turnstile token
   const [status,   setStatus]   = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  // Turnstile is optional — if NEXT_PUBLIC_TURNSTILE_SITE_KEY is unset the
+  // widget renders nothing and the server also skips verification.
+  const turnstileEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  // Stable callback so TurnstileWidget's effect doesn't re-mount the widget.
+  const onToken = useCallback((t: string) => setTsToken(t), [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,11 +42,12 @@ export function ContactForm() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email:   email.trim(),
-          name:    name.trim() || undefined,
-          subject: subject.trim(),
-          message: message.trim(),
+          email:          email.trim(),
+          name:           name.trim() || undefined,
+          subject:        subject.trim(),
+          message:        message.trim(),
           website,  // honeypot — should be ""
+          turnstileToken: tsToken || undefined,
         }),
       })
 
@@ -62,7 +71,9 @@ export function ContactForm() {
     status === 'sending' ||
     !email.includes('@') ||
     subject.trim().length < 3 ||
-    message.trim().length < 10
+    message.trim().length < 10 ||
+    // Block submit until Turnstile emits a token (if the widget is active).
+    (turnstileEnabled && !tsToken)
 
   if (status === 'sent') {
     return (
@@ -174,6 +185,9 @@ export function ContactForm() {
         />
         <p className="text-[10px] text-white/30 mt-1 text-right">{message.length}/4000</p>
       </div>
+
+      {/* Cloudflare Turnstile — renders nothing if site key isn't set. */}
+      <TurnstileWidget onToken={onToken} />
 
       {errorMsg && (
         <p role="alert" className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">

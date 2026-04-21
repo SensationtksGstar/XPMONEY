@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
   // Two-tier limit: 10 requests per 10 min (burst) + 150 per day (sustained).
   // A real attacker with rotating IPs can exceed this, but script kiddies
   // and accidental loops are stopped cold. Drop in Upstash for a fortress.
-  const limited = guardRequest(req, 'landing-chat', [
+  const limited = await guardRequest(req, 'landing-chat', [
     { limit: 10,  windowMs: 10 * 60 * 1000 },
     { limit: 150, windowMs: 24 * 60 * 60 * 1000 },
   ])

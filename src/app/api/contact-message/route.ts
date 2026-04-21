@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { z }                         from 'zod'
 import { guardRequest }              from '@/lib/rateLimit'
+import { verifyTurnstile }           from '@/lib/turnstile'
 
 /**
  * POST /api/contact-message
@@ -28,6 +29,11 @@ const Schema = z.object({
   // Simple honeypot field — bots fill visible fields + hidden ones. If
   // this is non-empty, pretend success but drop the message.
   website: z.string().max(0).optional(),
+  // Cloudflare Turnstile token emitted by the widget on the client.
+  // Optional at schema level so the endpoint keeps working locally
+  // without Turnstile configured; verifyTurnstile() enforces when the
+  // server secret is set.
+  turnstileToken: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -35,7 +41,7 @@ export async function POST(req: NextRequest) {
   // 3 messages / 5 min (burst) + 20 / day (sustained). The honeypot below
   // still catches the dumbest bots; this keeps the sophisticated ones
   // from writing 10k rows into bug_reports in a few seconds.
-  const limited = guardRequest(req, 'contact-message', [
+  const limited = await guardRequest(req, 'contact-message', [
     { limit: 3,  windowMs: 5  * 60 * 1000 },
     { limit: 20, windowMs: 24 * 60 * 60 * 1000 },
   ])
@@ -55,6 +61,17 @@ export async function POST(req: NextRequest) {
   // Honeypot filled → bot. Return 200 so they don't retry, but don't write.
   if (parsed.data.website && parsed.data.website.length > 0) {
     return NextResponse.json({ success: true }, { status: 201 })
+  }
+
+  // Cloudflare Turnstile verification. No-ops when TURNSTILE_SECRET_KEY
+  // is unset (local dev); enforces in production once configured.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  const ts = await verifyTurnstile(parsed.data.turnstileToken, ip)
+  if (!ts.ok) {
+    return NextResponse.json(
+      { error: 'Verificação de segurança falhou. Tenta novamente.' },
+      { status: 403 },
+    )
   }
 
   const db = createSupabaseAdmin()
