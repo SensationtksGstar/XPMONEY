@@ -13,6 +13,7 @@ import { LandingFAQ }             from '@/components/landing/LandingFAQ'
 import { LandingPricing }         from '@/components/landing/LandingPricing'
 import { LandingFooter }          from '@/components/landing/LandingFooter'
 import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
+import { LanguageToggle }         from '@/components/common/LanguageToggle'
 import { getServerT }             from '@/lib/i18n/server'
 
 /**
@@ -58,6 +59,9 @@ export default async function LandingPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Language toggle — EN visitors flip here without hunting through
+              the app. Persists via cookie + localStorage, reloads instantly. */}
+          <LanguageToggle className="mr-1" />
           <Link
             href="/sign-in"
             className="text-sm text-white/70 hover:text-white transition-colors px-3 py-2 hidden sm:inline-block"

@@ -6,6 +6,7 @@ import { Crown }             from 'lucide-react'
 import Link                  from 'next/link'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { Logo }              from '@/components/ui/Logo'
+import { LanguageToggle }    from '@/components/common/LanguageToggle'
 import { useT }              from '@/lib/i18n/LocaleProvider'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
@@ -51,6 +52,12 @@ export function TopBar() {
 
         {/* Ações direita */}
         <div className="flex items-center gap-2">
+          {/* Language toggle — compact PT/EN switch. Lives here on mobile
+              (TopBar only shows on lg:hidden) so users can flip without
+              digging into settings. Desktop users flip via the Sidebar or
+              settings card. */}
+          <LanguageToggle />
+
           {/* Badge upgrade */}
           <Link
             href="/settings/billing"
