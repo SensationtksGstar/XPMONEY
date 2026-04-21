@@ -58,19 +58,25 @@ export default async function LandingPage() {
           <a href="#faq"              className="hover:text-white transition-colors">{t('landing.nav.faq')}</a>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Language toggle — EN visitors flip here without hunting through
               the app. Persists via cookie + localStorage, reloads instantly. */}
-          <LanguageToggle className="mr-1" />
+          <LanguageToggle className="mr-0.5 sm:mr-1" />
+          {/* Sign-in ALWAYS visible — mobile users with existing accounts
+              had no way back in before (was `hidden sm:inline-block`).
+              Compact padding on mobile to keep the row balanced. */}
           <Link
             href="/sign-in"
-            className="text-sm text-white/70 hover:text-white transition-colors px-3 py-2 hidden sm:inline-block"
+            className="text-xs sm:text-sm text-white/70 hover:text-white transition-colors px-2 sm:px-3 py-1.5 sm:py-2"
           >
             {t('landing.nav.sign_in')}
           </Link>
+          {/* "Começar grátis" — mobile got a fatter rectangle than needed.
+              Tighter padding + smaller radius on mobile so the button no
+              longer dominates the nav strip. */}
           <Link
             href="/sign-up"
-            className="text-sm bg-green-500 hover:bg-green-400 text-black font-semibold px-4 py-2 rounded-lg transition-colors"
+            className="text-xs sm:text-sm bg-green-500 hover:bg-green-400 text-black font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg transition-colors"
           >
             {t('landing.nav.cta')}
           </Link>

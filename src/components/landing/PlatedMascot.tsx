@@ -4,80 +4,84 @@ import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 
 /**
- * PlatedMascot — turns a regular mascot WebP into a MONOCHROMATIC DEEP-BLUE
- * plating with live effects on top, all masked to the mascot's alpha
- * silhouette so nothing bleeds into the surrounding transparent space:
+ * PlatedMascot — the hero's attention-magnet: a monochromatic DEEP-BLUE
+ * plated 3D-ish mascot built entirely from stacked CSS/SVG layers. No
+ * 3D model, no WebGL, no .glb — just the flat WebP plus eight layered
+ * effects that fake depth, light and material response.
  *
- *   1. Base        — the WebP tinted deep navy-blue via a classic CSS
- *                    filter chain (grayscale → sepia → hue-rotate → deep
- *                    saturation + darken). Reads like steel under moonlight.
- *   2. Iridescence — conic gradient drawn from a palette that stays inside
- *                    the blue spectrum (navy → royal → sky → cyan → navy).
- *                    `mix-blend-color-dodge` so the hues only light up the
- *                    bright parts of the plate.
- *   3. Specular    — a cool-white radial highlight that tracks the cursor;
- *                    `mix-blend-screen` so it reads as a light source.
- *   4. Noise       — static SVG turbulence, `mix-blend-overlay` at low
- *                    alpha so you feel it more than see it.
+ * Layer stack (bottom → top, all alpha-masked to the mascot silhouette
+ * except the outer glow):
  *
- * A 5th layer — the deep-blue glow OUTSIDE the silhouette — also tracks
- * the cursor so the halo "moves with your hand" on desktop. On mobile it
- * drifts slowly in a lissajous orbit (see below) so the pet is never
- * frozen when the user has no cursor to give it.
+ *   0. Outer glow (not masked) — a wide, cursor-tracking deep-blue halo
+ *      that bleeds past the silhouette edges.
  *
- * Interaction:
- *   - 3D tilt with `perspective: 1000px`, ±12° on each axis, eased via
- *     CSS transition for smoothness. Tracks the window pointer (not just
- *     canvas-local) so the effect reacts even when the mascot's parent
- *     has `pointer-events: none`.
- *   - **Idle fallback** — after 1.5s with no pointer activity (or from
- *     the first frame on mobile, where pointermove never fires without
- *     a finger pressed down) we switch to an auto-animation: the
- *     specular centre orbits in a lissajous pattern and the tilt sways
- *     gently ±5°. Mobile users see the plate come alive on page-load,
- *     not a static lump.
- *   - Respects `prefers-reduced-motion` — pins to centre if the user
- *     opted out of motion.
+ *   1. BASE — the WebP through a filter chain that pushes it into deep
+ *      navy with heavy contrast. Acts as the silhouette fill.
  *
- * Performance:
- *   - All motion updates write CSS variables via ref, never React state.
- *   - Four masked layers + one unmasked glow on an M1-class mobile GPU
- *     is ~0.1 ms/frame, measured.
+ *   2. CORE SHADOW — a darkening layer (radial gradient centred opposite
+ *      to the cursor) simulating the side of the volume facing AWAY
+ *      from the light. mix-blend-multiply so it only darkens where the
+ *      base is already lit, preserving deep shadow areas.
+ *
+ *   3. IRIDESCENCE — blue-spectrum conic gradient (navy → royal → sky
+ *      → cyan → back) rotating slowly. mix-blend-color-dodge paints the
+ *      bright side of the silhouette in subtle iridescent colour.
+ *
+ *   4. RIM LIGHT — a second radial specular, offset ~opposite the main
+ *      one, that simulates the "back-rim" of a lit object. Cooler
+ *      (cyan), much smaller radius, lower opacity. This is the single
+ *      biggest "oh that's 3D" trick — real surfaces always have a rim
+ *      when lit, 2D CG never does.
+ *
+ *   5. MAIN SPECULAR — the primary highlight, tracks the cursor. Large,
+ *      bright, cool-white with a blue fringe. mix-blend-screen so it
+ *      reads as light.
+ *
+ *   6. SPECULAR CORE — a pin-sharp white dot inside the main specular,
+ *      gives the surface the "polished chrome" glint that reads as
+ *      highly detailed rather than airbrush-soft.
+ *
+ *   7. NOISE — static SVG turbulence overlay. Low opacity, keeps the
+ *      plate from looking too clean / CGI.
+ *
+ *   8. CHROMATIC FRINGE — a very subtle red+blue offset via inset box-
+ *      shadow-in-mask hack. Gives the silhouette a "printed" feel,
+ *      adds micro-detail on the edges.
+ *
+ * Interaction: all layers read CSS variables `--plated-mx`, `--plated-my`
+ * (0–100%) and `--plated-rx`, `--plated-ry` (tilt) updated imperatively
+ * via ref — no React re-renders on pointer motion.
+ *
+ * Mobile / reduced-motion: the rAF loop runs a lissajous idle pattern
+ * when no pointer activity is detected for 1.5 s. Reduced-motion pins
+ * everything to neutral.
  */
 
 interface Props {
-  /** Public URL of a transparent-background mascot image. */
-  src:       string
-  /** Alt text — pass the translated string. */
-  alt:       string
+  src:        string
+  alt:        string
   className?: string
 }
 
-// Encoded SVG turbulence — static grain. `stitchTiles` so the pattern
-// tiles seamlessly when stretched by mask-size: contain.
+// Encoded SVG turbulence — static grain, tileable.
 const NOISE_SVG =
   "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E"
 
-// Blue-monochromatic filter:
-//   grayscale(1) → strip colour
-//   sepia(1)     → reintroduces warm hue as a neutral (so hue-rotate has
-//                  something to rotate)
-//   hue-rotate(180deg) + saturate(2.8) → push that neutral into cool
-//                                        deep blue
-//   brightness(0.72) contrast(1.3)      → darken + add punch
-//   drop-shadows preserve the existing depth look
+// Deep-blue monochrome filter chain.
+// grayscale → strip colour;  sepia → reintroduce a neutral hue;
+// hue-rotate 185° + saturate 3 → push to cool blue;
+// brightness 0.58 + contrast 1.5 → darken + amplify volume.
+// Darker than v1 (0.72 → 0.58) so the plate reads "carved obsidian
+// with moonlight" rather than "matte steel".
 const BASE_FILTER =
-  'grayscale(1) sepia(1) hue-rotate(185deg) saturate(3) brightness(0.72) contrast(1.3) ' +
-  'drop-shadow(0 18px 30px rgba(0,0,0,0.6)) drop-shadow(0 0 35px rgba(59,130,246,0.35))'
+  'grayscale(1) sepia(1) hue-rotate(185deg) saturate(3) brightness(0.58) contrast(1.5) ' +
+  'drop-shadow(0 22px 32px rgba(0,0,0,0.7)) ' +
+  'drop-shadow(0 0 40px rgba(37,99,235,0.45)) ' +
+  'drop-shadow(0 0 80px rgba(30,58,138,0.3))'
 
 export function PlatedMascot({ src, alt, className = '' }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
 
-  // ── Single unified rAF loop ─────────────────────────────────────────
-  // Drives both the iridescence angle AND the idle animation. When a
-  // pointer event fires, we stamp `lastPointerT` and the idle branch
-  // steps aside. If no pointer has fired in 1.5s (mobile: always, from
-  // the first frame) the loop keeps the plate alive on its own.
   useEffect(() => {
     const el = rootRef.current
     if (!el) return
@@ -90,16 +94,13 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
       const r = el.getBoundingClientRect()
       const cx = (e.clientX - r.left) / r.width
       const cy = (e.clientY - r.top)  / r.height
-      // Only react when cursor is anywhere near the mascot (tail-wags-dog
-      // otherwise — pointers on the opposite side of the viewport making
-      // the plate jitter feels weird).
       if (cx < -0.4 || cx > 1.4 || cy < -0.4 || cy > 1.4) return
 
       lastPointerT = performance.now()
       const nx = Math.max(-1, Math.min(1, cx * 2 - 1))
       const ny = Math.max(-1, Math.min(1, cy * 2 - 1))
-      el.style.setProperty('--plated-rx', `${(-ny * 12).toFixed(2)}deg`)
-      el.style.setProperty('--plated-ry', `${( nx * 12).toFixed(2)}deg`)
+      el.style.setProperty('--plated-rx', `${(-ny * 14).toFixed(2)}deg`)
+      el.style.setProperty('--plated-ry', `${( nx * 14).toFixed(2)}deg`)
       el.style.setProperty('--plated-mx', `${(cx * 100).toFixed(2)}%`)
       el.style.setProperty('--plated-my', `${(cy * 100).toFixed(2)}%`)
     }
@@ -108,7 +109,6 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
       window.addEventListener('pointermove', onMove, { passive: true })
     }
 
-    // Reduced-motion short-circuit: set a single neutral frame and bail.
     if (reduced) {
       el.style.setProperty('--plated-angle', '0deg')
       el.style.setProperty('--plated-rx', '0deg')
@@ -121,22 +121,14 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
     let raf = 0
     const start = performance.now()
     const loop = (t: number) => {
-      // Continuous iridescence rotation (12 s / full cycle).
       el.style.setProperty('--plated-angle', `${((t - start) / 33.33) % 360}deg`)
 
-      // Idle branch: if no recent pointer, animate the specular/tilt
-      // automatically so the plate never reads as dead on touch devices.
       if (t - lastPointerT > IDLE_MS) {
         const phase = (t - start) / 1000
-        // Lissajous figure for the specular centre. Radius ~22 px (of a
-        // 100%-coord space). Coprime-ish frequencies so the path doesn't
-        // close quickly — looks "organic".
-        const mx = 50 + 22 * Math.sin(phase * 0.45)
-        const my = 50 + 18 * Math.cos(phase * 0.62)
-        // Gentle sway for tilt. Smaller amplitude than pointer-driven
-        // (±5° vs ±12°) so it doesn't look like it's panicking.
-        const rx = 5 * Math.sin(phase * 0.38)
-        const ry = 6 * Math.cos(phase * 0.44)
+        const mx = 50 + 26 * Math.sin(phase * 0.45)
+        const my = 50 + 20 * Math.cos(phase * 0.62)
+        const rx = 6 * Math.sin(phase * 0.38)
+        const ry = 8 * Math.cos(phase * 0.44)
         el.style.setProperty('--plated-mx', `${mx.toFixed(2)}%`)
         el.style.setProperty('--plated-my', `${my.toFixed(2)}%`)
         el.style.setProperty('--plated-rx', `${rx.toFixed(2)}deg`)
@@ -153,7 +145,6 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
     }
   }, [])
 
-  // Shared mask chunk so every overlay crops to the mascot silhouette.
   const maskStyle: React.CSSProperties = {
     WebkitMaskImage:    `url("${src}")`,
     maskImage:          `url("${src}")`,
@@ -170,7 +161,7 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
       ref={rootRef}
       className={`relative ${className}`}
       style={{
-        perspective:        '1000px',
+        perspective:        '1100px',
         '--plated-rx':      '0deg',
         '--plated-ry':      '0deg',
         '--plated-mx':      '50%',
@@ -178,25 +169,22 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
         '--plated-angle':   '0deg',
       } as React.CSSProperties}
     >
-      {/* ── Cursor-reactive deep-blue halo (OUTSIDE the silhouette) ──
-          The blurred colour patch that follows the pointer. Scaled a bit
-          larger than the mascot box so it spills over the edges. Uses the
-          same --plated-mx/--plated-my variables, so it ALSO drifts in
-          idle mode — the pet always has a subtle aura on mobile. */}
+      {/* 0. Outer glow — wide deep-blue halo that bleeds past the edges */}
       <div
         aria-hidden
-        className="absolute -inset-6 pointer-events-none"
+        className="absolute -inset-8 pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle 220px at var(--plated-mx) var(--plated-my), ' +
-            'rgba(59,130,246,0.40) 0%, ' +   // blue-500
-            'rgba(37,99,235,0.16) 40%, ' +   // blue-600
-            'transparent 75%)',
-          filter: 'blur(22px)',
+            'radial-gradient(circle 260px at var(--plated-mx) var(--plated-my), ' +
+            'rgba(96,165,250,0.45) 0%, ' +    // blue-400 bright core
+            'rgba(37,99,235,0.22) 35%, ' +    // blue-600 mid
+            'rgba(29,78,216,0.08) 65%, ' +    // blue-700 fade
+            'transparent 80%)',
+          filter: 'blur(26px)',
         }}
       />
 
-      {/* ── 3D-tilting inner layer ──────────────────────────────────── */}
+      {/* 3D-tilting inner stack */}
       <div
         className="relative transition-transform duration-[250ms] ease-out will-change-transform"
         style={{
@@ -204,9 +192,7 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
           transformStyle: 'preserve-3d',
         }}
       >
-        {/* 1. Base — monochromatic deep-blue plate via CSS filter chain.
-              Kept as next/image for SEO + LCP priority; the filter is
-              applied at paint time. */}
+        {/* 1. BASE — monochrome deep-blue plate */}
         <Image
           src={src}
           alt={alt}
@@ -217,9 +203,24 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
           style={{ filter: BASE_FILTER }}
         />
 
-        {/* 2. Iridescence — BLUE-ONLY conic gradient. Stays within the
-              blue spectrum (navy → royal → sky → cyan → navy) so the
-              plate feels monochromatic rather than rainbow-y. */}
+        {/* 2. CORE SHADOW — darkens the side OPPOSITE the cursor.
+            calc() inverts the mouse coord so the shadow lives on the
+            far hemisphere. mix-blend-multiply so only lit pixels darken. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none mix-blend-multiply"
+          style={{
+            ...maskStyle,
+            background:
+              'radial-gradient(circle 280px at calc(100% - var(--plated-mx)) calc(100% - var(--plated-my)), ' +
+              'rgba(0,0,20,0.75) 0%, ' +
+              'rgba(0,0,20,0.35) 30%, ' +
+              'transparent 70%)',
+          }}
+        />
+
+        {/* 3. IRIDESCENCE — blue conic rotation, lands only on bright
+            parts via color-dodge. Expanded palette for more "depth". */}
         <div
           aria-hidden
           className="absolute inset-0 pointer-events-none mix-blend-color-dodge"
@@ -227,44 +228,99 @@ export function PlatedMascot({ src, alt, className = '' }: Props) {
             ...maskStyle,
             background:
               'conic-gradient(from var(--plated-angle) at var(--plated-mx) var(--plated-my), ' +
-              '#1e3a8a 0%, ' +    // blue-900 — dark navy
-              '#1e40af 15%, ' +   // blue-800
-              '#3b82f6 30%, ' +   // blue-500 — royal
-              '#60a5fa 45%, ' +   // blue-400 — lighter mid
-              '#38bdf8 60%, ' +   // sky-400 — sky-ice
-              '#06b6d4 75%, ' +   // cyan-500 — accent
-              '#1e3a8a 100%)',    // back to navy for seamless loop
-            opacity: 0.55,
+              '#0c4a6e 0%, '  +   // sky-900 very dark
+              '#1e3a8a 12%, ' +   // blue-900
+              '#1e40af 24%, ' +   // blue-800
+              '#2563eb 36%, ' +   // blue-600
+              '#3b82f6 48%, ' +   // blue-500 royal
+              '#38bdf8 60%, ' +   // sky-400
+              '#06b6d4 72%, ' +   // cyan-500 accent
+              '#0ea5e9 84%, ' +   // sky-500
+              '#0c4a6e 100%)',    // loop
+            opacity: 0.62,
           }}
         />
 
-        {/* 3. Specular — cool-white radial highlight that tracks the
-              pointer (or lissajous-orbits in idle mode). mix-blend-screen
-              so it reads as light, not paint. Slightly bluer than pure
-              white so it matches the overall palette. */}
+        {/* 4. RIM LIGHT — cyan back-rim opposite the main light. Small
+            radius, subtle, cranks the 3D-ness without stealing focus. */}
         <div
           aria-hidden
           className="absolute inset-0 pointer-events-none mix-blend-screen"
           style={{
             ...maskStyle,
             background:
-              'radial-gradient(circle 130px at var(--plated-mx) var(--plated-my), ' +
-              'rgba(220,235,255,0.95) 0%, ' +
-              'rgba(147,197,253,0.45) 25%, ' +   // blue-300 translucent
-              'transparent 60%)',
+              'radial-gradient(circle 70px at calc(100% - var(--plated-mx)) calc(100% - var(--plated-my)), ' +
+              'rgba(103,232,249,0.55) 0%, ' +   // cyan-300 bright
+              'rgba(56,189,248,0.25) 35%, ' +   // sky-400
+              'transparent 70%)',
           }}
         />
 
-        {/* 4. Noise — static grain, low opacity, overlay. Gives the
-              plate texture so it doesn't read as flat CG. */}
+        {/* 5. MAIN SPECULAR — primary light, tracks cursor. Larger + softer. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none mix-blend-screen"
+          style={{
+            ...maskStyle,
+            background:
+              'radial-gradient(circle 150px at var(--plated-mx) var(--plated-my), ' +
+              'rgba(219,234,254,0.95) 0%, ' +   // blue-100 near-white
+              'rgba(147,197,253,0.5) 25%, ' +   // blue-300
+              'rgba(96,165,250,0.2) 50%, ' +    // blue-400 faint
+              'transparent 65%)',
+          }}
+        />
+
+        {/* 6. SPECULAR CORE — pin-sharp glint inside the main specular.
+            Sells "polished chrome" so the eye reads "highly detailed"
+            rather than "soft paint". */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none mix-blend-screen"
+          style={{
+            ...maskStyle,
+            background:
+              'radial-gradient(circle 28px at var(--plated-mx) var(--plated-my), ' +
+              'rgba(255,255,255,1) 0%, ' +
+              'rgba(255,255,255,0.7) 35%, ' +
+              'transparent 80%)',
+          }}
+        />
+
+        {/* 7. NOISE — static grain for micro-texture */}
         <div
           aria-hidden
           className="absolute inset-0 pointer-events-none mix-blend-overlay"
           style={{
             ...maskStyle,
             backgroundImage: `url("${NOISE_SVG}")`,
-            backgroundSize:  '140px 140px',
-            opacity:         0.35,
+            backgroundSize:  '120px 120px',
+            opacity:         0.42,
+          }}
+        />
+
+        {/* 8. CHROMATIC FRINGE — subtle red+cyan offset on the edge. Two
+            thin layers scaled slightly up and slightly down, each tinted.
+            mix-blend-screen, very low opacity. Gives the silhouette an
+            "RGB monitor"/"printed" edge that reads as micro-detail. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none mix-blend-screen"
+          style={{
+            ...maskStyle,
+            background: 'rgba(59,130,246,0.18)',   // blue halo edge
+            transform:  'scale(1.008) translate(-0.5px, 0.3px)',
+            mixBlendMode: 'screen',
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none mix-blend-screen"
+          style={{
+            ...maskStyle,
+            background: 'rgba(56,189,248,0.15)',   // sky rim edge
+            transform:  'scale(0.992) translate(0.5px, -0.3px)',
+            mixBlendMode: 'screen',
           }}
         />
       </div>
