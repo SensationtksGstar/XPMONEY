@@ -1,8 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isDemoMode } from '@/lib/demo/demoGuard'
 
 // ---- DEMO MODE — bypasses all auth ----
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+// Uses the SAFE helper that refuses to enable demo mode on production
+// unless `ALLOW_DEMO_IN_PROD='true'` is ALSO set (server-only, no
+// NEXT_PUBLIC_ prefix). See src/lib/demo/demoGuard.ts for rationale.
+const DEMO_MODE = isDemoMode()
 
 // Rotas públicas (não requerem autenticação)
 // NOTE: admin routes (setup-db, set-plan) are NOT public — they require a

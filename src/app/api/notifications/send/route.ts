@@ -199,9 +199,37 @@ function initVapid() {
 
 function authorised(req: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret) return false
-  const authHeader = req.headers.get('authorization')
-  return authHeader === `Bearer ${cronSecret}`
+  // Refuse undefined AND empty-string secrets. Empty string compared with
+  // `authHeader === "Bearer "` would let any request sending exactly
+  // "Bearer " through — a trivial mis-config turning the endpoint public.
+  // 20 chars is the floor because CRON_SECRET should be a UUID-class
+  // token; anything shorter is user error.
+  if (!cronSecret || cronSecret.length < 20) return false
+
+  const authHeader = req.headers.get('authorization') ?? ''
+  const expected   = `Bearer ${cronSecret}`
+
+  // Timing-safe compare — not strictly required here (network jitter
+  // dwarfs the signal in practice), but cheap to get right and it
+  // removes a `===` that static analysers flag on auth paths.
+  const a = Buffer.from(authHeader)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) return false
+
+  // Both buffers are short (< 200 bytes); timingSafeEqual is O(n).
+  // Dynamic import to avoid polluting the Edge runtime bundle if this
+  // file is ever migrated. Falls back to length+constant compare if
+  // the crypto module isn't available (won't happen on Node, but safe).
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { timingSafeEqual } = require('node:crypto')
+    return timingSafeEqual(a, b)
+  } catch {
+    // Last-resort constant-time-ish fallback
+    let diff = 0
+    for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+    return diff === 0
+  }
 }
 
 // ── Broadcast ────────────────────────────────────────────────────────────────

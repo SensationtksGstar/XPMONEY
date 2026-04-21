@@ -21,6 +21,7 @@ import { writeFile, mkdir } from 'node:fs/promises'
 import { existsSync }       from 'node:fs'
 import { join }             from 'node:path'
 import sharp                from 'sharp'
+import { auth }             from '@clerk/nextjs/server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -35,6 +36,16 @@ function isValidGender(g: string): g is 'voltix' | 'penny' {
 }
 
 export async function POST(req: NextRequest) {
+  // Auth: must be the admin Clerk user. 404 (not 403) so the endpoint is
+  // indistinguishable from a missing route to anyone without credentials.
+  // This matters because preview deploys otherwise expose the endpoint
+  // globally — prod-gate alone is not enough.
+  const { userId } = await auth()
+  const adminId = process.env.ADMIN_CLERK_ID
+  if (!adminId || !userId || userId !== adminId) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json(
       { error: 'Upload disabled in production — run this locally, commit assets to git.' },

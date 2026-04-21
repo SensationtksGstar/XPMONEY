@@ -6,6 +6,7 @@ import { awardBadge }          from '@/lib/awardBadge'
 import { awardXP }             from '@/lib/awardXP'
 import { updateMissionProgress } from '@/lib/updateMissionProgress'
 import { XP_REWARDS }          from '@/types'
+import { isDemoMode }          from '@/lib/demo/demoGuard'
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() &&
@@ -41,7 +42,9 @@ function isYesterday(candidate: Date, today: Date): boolean {
  * This makes the endpoint idempotent per day.
  */
 export async function POST() {
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+  // Safe demo check — refuses to short-circuit on production unless
+  // ALLOW_DEMO_IN_PROD is explicitly set (see demoGuard.ts).
+  if (isDemoMode()) {
     return NextResponse.json({ already_checked: false, streak: 4, xp_earned: 20, badges_awarded: [] })
   }
 

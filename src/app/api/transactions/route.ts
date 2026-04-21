@@ -72,6 +72,37 @@ export async function POST(req: NextRequest) {
 
   const db = createSupabaseAdmin()
 
+  // FK ownership check — don't trust client-supplied UUIDs.
+  // Without this, a malicious client could POST a transaction referencing
+  // another user's account_id or a non-default category_id belonging to
+  // someone else. Even if the insert sets user_id correctly, the cross-
+  // reference pollutes any view that joins by FK without re-applying the
+  // user_id filter — and it leaks UUID existence via success/fail status.
+  const accountId  = (parsed.data as { account_id?: string | null }).account_id
+  const categoryId = (parsed.data as { category_id?: string | null }).category_id
+
+  if (accountId) {
+    const { data: acc } = await db
+      .from('accounts')
+      .select('id')
+      .eq('id', accountId)
+      .eq('user_id', internalId)
+      .maybeSingle()
+    if (!acc) return NextResponse.json({ error: 'Invalid account' }, { status: 400 })
+  }
+  if (categoryId) {
+    // A category is OK if it's the caller's OR a default seeded category
+    // (is_default=true + user_id null) that every user can use.
+    const { data: cat } = await db
+      .from('categories')
+      .select('id, is_default, user_id')
+      .eq('id', categoryId)
+      .maybeSingle()
+    const ownsCategory =
+      !!cat && (cat.is_default === true || cat.user_id === internalId)
+    if (!ownsCategory) return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
+  }
+
   const { data, error } = await db
     .from('transactions')
     .insert({ ...parsed.data, user_id: internalId })

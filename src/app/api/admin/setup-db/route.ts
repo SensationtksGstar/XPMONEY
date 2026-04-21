@@ -84,12 +84,18 @@ ALTER TABLE public.bug_reports ENABLE ROW LEVEL SECURITY;
 `
 
 export async function POST(req: NextRequest) {
+  // Admin-only + prod-gated. Auth check first so non-admin callers get a
+  // 404 that's indistinguishable from a missing route — doesn't reveal
+  // the endpoint exists, doesn't help probing.
+  const { userId } = await auth()
+  const adminId = process.env.ADMIN_CLERK_ID
+  if (!adminId || !userId || userId !== adminId) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json({ error: 'Not available in production.' }, { status: 403 })
   }
-
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Get DB password from body
   let dbPassword: string

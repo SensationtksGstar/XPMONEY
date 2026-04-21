@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { scanReceipt, AIProvidersError, type ReceiptScanResult } from '@/lib/ai'
 import { getServerLocale }           from '@/lib/i18n/server'
+import { isDemoMode }                from '@/lib/demo/demoGuard'
 
 // Re-export for clients
 export type { ReceiptScanResult }
@@ -17,7 +18,9 @@ const PLAN_RANK: Record<string, number> = {
 }
 
 export async function POST(req: NextRequest) {
-  const demo   = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+  // Safe demo check — refuses to skip auth on production unless
+  // ALLOW_DEMO_IN_PROD is explicitly set (see demoGuard.ts).
+  const demo   = isDemoMode()
   const locale = await getServerLocale()
 
   if (!demo) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI }        from '@google/generative-ai'
 import { z }                         from 'zod'
 import { getServerLocale }           from '@/lib/i18n/server'
+import { guardRequest }              from '@/lib/rateLimit'
 
 /**
  * POST /api/landing-chat
@@ -147,6 +148,16 @@ There are no mid-tier "Plus" or "Pro" plans — that was the old model. Now it's
 Ready? Always reply in English, direct, useful, and in Dragon Coin's voice.`
 
 export async function POST(req: NextRequest) {
+  // Public, unauthenticated, Gemini-backed endpoint → prime abuse target.
+  // Two-tier limit: 10 requests per 10 min (burst) + 150 per day (sustained).
+  // A real attacker with rotating IPs can exceed this, but script kiddies
+  // and accidental loops are stopped cold. Drop in Upstash for a fortress.
+  const limited = guardRequest(req, 'landing-chat', [
+    { limit: 10,  windowMs: 10 * 60 * 1000 },
+    { limit: 150, windowMs: 24 * 60 * 60 * 1000 },
+  ])
+  if (limited) return limited
+
   const locale = await getServerLocale()
   const systemPrompt = locale === 'en' ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT_PT
   const apiKey =

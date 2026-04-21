@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { z }                         from 'zod'
+import { guardRequest }              from '@/lib/rateLimit'
 
 /**
  * POST /api/contact-message
@@ -30,6 +31,16 @@ const Schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  // Public endpoint → prime spam-flood target. Two-tier limit:
+  // 3 messages / 5 min (burst) + 20 / day (sustained). The honeypot below
+  // still catches the dumbest bots; this keeps the sophisticated ones
+  // from writing 10k rows into bug_reports in a few seconds.
+  const limited = guardRequest(req, 'contact-message', [
+    { limit: 3,  windowMs: 5  * 60 * 1000 },
+    { limit: 20, windowMs: 24 * 60 * 60 * 1000 },
+  ])
+  if (limited) return limited
+
   let body: unknown
   try { body = await req.json() } catch {
     return NextResponse.json({ error: 'Payload inválido.' }, { status: 400 })
