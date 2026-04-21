@@ -237,6 +237,15 @@ export const pt = {
   'reset.button':       'Apagar todas as transações',
   'reset.success':      'Conta reposta ao estado inicial.',
 
+  // ── SEO / metadata ────────────────────────────────────────────────
+  // Rendered via generateMetadata() in src/app/layout.tsx so <title>,
+  // <meta description> and OG cards change with the cookie-resolved
+  // locale. Social previews shared by EN visitors land in EN.
+  'meta.title_default':  'XP-Money — Controla as tuas finanças como um RPG',
+  'meta.title_og':       'XP-Money — Controla as tuas finanças como um RPG',
+  'meta.description':    'A app de finanças pessoais gamificada que te recompensa por controlares o teu dinheiro. Score de saúde financeira, missões, XP e o Voltix ao teu lado.',
+  'meta.description_og': 'A única app que te recompensa por controlares o teu dinheiro.',
+
   // ── Wallpaper showcase (landing) ──────────────────────────────────
   // "Futuristic OS" interactive shader section. The UI labels below feed
   // a picker that swaps the big preview + reuses the same id in lowercase
@@ -1243,6 +1252,12 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   // ── Reset ─────────────────────────────────────────────────────────
   'reset.button':       'Delete all transactions',
   'reset.success':      'Account reset to initial state.',
+
+  // ── SEO / metadata ────────────────────────────────────────────────
+  'meta.title_default':  'XP-Money — Control your money like an RPG',
+  'meta.title_og':       'XP-Money — Control your money like an RPG',
+  'meta.description':    'The gamified personal-finance app that rewards you for taking control of your money. Financial health score, missions, XP and Voltix by your side.',
+  'meta.description_og': 'The only app that rewards you for taking control of your money.',
 
   // ── Wallpaper showcase ────────────────────────────────────────────
   'wallpaper.eyebrow':       'Your vibe',
