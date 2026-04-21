@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Sparkles, Star, Zap, Shield } from 'lucide-react'
-import { getServerT } from '@/lib/i18n/server'
+import { getServerT }   from '@/lib/i18n/server'
+import { PlatedMascot } from './PlatedMascot'
 
 /**
  * LandingHero — above-the-fold, v3.
@@ -168,15 +169,15 @@ export async function LandingHero() {
             <div className="absolute w-[320px] h-[320px] rounded-full bg-yellow-500/10 blur-2xl" />
           </div>
 
-          {/* Main mascot */}
+          {/* Main mascot — monochromatic "plated" finish with iridescent
+              highlights, 3D perspective tilt, live specular and noise.
+              The inner card still needs clicks, so we keep pointer-events
+              off on the positional wrapper; PlatedMascot drives itself
+              from window pointer, which works through that. */}
           <div className="relative z-20 -mb-10 pointer-events-none">
-            <Image
+            <PlatedMascot
               src="/mascot/voltix/4.webp"
               alt={t('landing.hero.voltix_alt')}
-              width={380}
-              height={380}
-              priority
-              className="w-[240px] sm:w-[280px] lg:w-[320px] h-auto drop-shadow-[0_18px_30px_rgba(0,0,0,0.55)] drop-shadow-[0_0_35px_rgba(34,197,94,0.35)]"
             />
           </div>
 
