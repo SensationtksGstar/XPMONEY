@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Trash2, AlertTriangle } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { clearAllCourseProgress } from '@/lib/courses'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 /**
  * "Danger Zone" card that lets the user wipe all their transactions.
@@ -21,6 +22,7 @@ export function ResetTransactionsCard() {
   const router   = useRouter()
   const qc       = useQueryClient()
   const { user } = useUser()
+  const t        = useT()
 
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading,     setLoading]     = useState(false)
@@ -37,13 +39,15 @@ export function ResetTransactionsCard() {
       })
       const json = await res.json()
 
-      if (!res.ok) throw new Error(json.error ?? 'Erro ao apagar transações.')
+      if (!res.ok) throw new Error(json.error ?? t('settings.reset.err_default'))
 
       setResult({
         type: 'success',
         msg:  json.deleted === 0
-          ? 'Conta reposta ao estado inicial.'
-          : `${json.deleted} transaç${json.deleted === 1 ? 'ão apagada' : 'ões apagadas'}. Conta reposta.`,
+          ? t('settings.reset.empty_msg')
+          : json.deleted === 1
+            ? t('settings.reset.deleted_one',  { n: json.deleted })
+            : t('settings.reset.deleted_many', { n: json.deleted }),
       })
 
       // Client-side cleanup — things the server can't touch because they live
@@ -64,7 +68,7 @@ export function ResetTransactionsCard() {
     } catch (err: unknown) {
       setResult({
         type: 'error',
-        msg:  err instanceof Error ? err.message : 'Erro desconhecido.',
+        msg:  err instanceof Error ? err.message : t('settings.reset.err_unknown'),
       })
     } finally {
       setLoading(false)
@@ -76,15 +80,13 @@ export function ResetTransactionsCard() {
       <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-5">
         <h2 className="font-semibold text-white mb-1 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-red-400" />
-          Zona de Perigo
+          {t('settings.reset.title')}
         </h2>
         <p className="text-sm text-white/50 mb-4 leading-relaxed">
-          Apaga <strong className="text-white/80">todas as transações</strong>, as tuas{' '}
-          <strong className="text-white/80">poupanças</strong> e os{' '}
-          <strong className="text-white/80">certificados de cursos</strong>, e repõe
-          todo o teu progresso (XP, nível, mascote, objetivos, missões activas) ao estado inicial.
-          As tuas <strong className="text-white/80">conquistas históricas</strong> (badges
-          já desbloqueados, missões concluídas) são mantidas.
+          {t('settings.reset.desc_a')} <strong className="text-white/80">{t('settings.reset.desc_strong_a')}</strong>{t('settings.reset.desc_b')}{' '}
+          <strong className="text-white/80">{t('settings.reset.desc_strong_b')}</strong> {t('settings.reset.desc_c')}{' '}
+          <strong className="text-white/80">{t('settings.reset.desc_strong_c')}</strong>{t('settings.reset.desc_d')}{' '}
+          <strong className="text-white/80">{t('settings.reset.desc_strong_d')}</strong> {t('settings.reset.desc_e')}
         </p>
 
         {result && (
@@ -105,7 +107,7 @@ export function ResetTransactionsCard() {
           className="inline-flex items-center gap-2 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 font-semibold px-4 py-2.5 rounded-xl transition-colors min-h-[44px] text-sm active:scale-[0.98]"
         >
           <Trash2 className="w-4 h-4" />
-          Apagar todas as transações
+          {t('settings.reset.button')}
         </button>
       </div>
 
@@ -113,10 +115,10 @@ export function ResetTransactionsCard() {
         open={showConfirm}
         tone="danger"
         loading={loading}
-        title="Repor conta ao estado inicial?"
-        description="Esta ação é irreversível. Todas as transações, poupanças, certificados de cursos, XP, nível, progresso do mascote, objetivos e missões activas serão zerados. Badges e missões concluídas no passado são mantidos."
-        confirmLabel="Sim, repor tudo"
-        cancelLabel="Cancelar"
+        title={t('settings.reset.confirm_title')}
+        description={t('settings.reset.confirm_desc')}
+        confirmLabel={t('settings.reset.confirm_yes')}
+        cancelLabel={t('common.cancel')}
         onConfirm={handleConfirm}
         onClose={() => { if (!loading) setShowConfirm(false) }}
       />

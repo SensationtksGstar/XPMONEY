@@ -30,6 +30,7 @@ const GoalChart = dynamic(
 )
 import { CelebrationModal }    from '@/components/ui/CelebrationModal'
 import { formatCurrency, formatPercent } from '@/lib/utils'
+import { useT }                 from '@/lib/i18n/LocaleProvider'
 import type { Goal, GoalDeposit } from '@/types'
 
 const GOAL_ICONS = ['🏠', '🚗', '✈️', '📱', '💻', '🎓', '💍', '🏖️', '💰', '🎯', '🛡️', '🏋️', '🏦', '🎸', '🐕', '👶']
@@ -67,6 +68,7 @@ function buildChartData(deposits: GoalDeposit[], targetAmount: number) {
 
 function GoalHistoryPanel({ goal }: { goal: Goal }) {
   const { data: deposits = [], isLoading } = useGoalDeposits(goal.id)
+  const t = useT()
   const chartData = useMemo(() => buildChartData(deposits, goal.target_amount), [deposits, goal.target_amount])
 
   if (isLoading) {
@@ -81,7 +83,7 @@ function GoalHistoryPanel({ goal }: { goal: Goal }) {
     return (
       <div className="mt-4 pt-4 border-t border-white/10 text-center py-4">
         <PiggyBank className="w-8 h-8 text-white/20 mx-auto mb-2" />
-        <p className="text-white/40 text-sm">Ainda sem depósitos.<br />Faz o primeiro agora!</p>
+        <p className="text-white/40 text-sm">{t('goals.no_deposits')}<br />{t('goals.make_first')}</p>
       </div>
     )
   }
@@ -91,14 +93,14 @@ function GoalHistoryPanel({ goal }: { goal: Goal }) {
       {/* Evolution chart */}
       {chartData.length > 1 && (
         <div>
-          <p className="text-xs text-white/40 font-medium mb-2">Evolução da poupança</p>
+          <p className="text-xs text-white/40 font-medium mb-2">{t('goals.chart_title')}</p>
           <GoalChart data={chartData} gradId={`grad-${goal.id}`} />
         </div>
       )}
 
       {/* Deposit list */}
       <div>
-        <p className="text-xs text-white/40 font-medium mb-2">Histórico de movimentos</p>
+        <p className="text-xs text-white/40 font-medium mb-2">{t('goals.history_title')}</p>
         <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
           {deposits
             .slice()
@@ -111,7 +113,7 @@ function GoalHistoryPanel({ goal }: { goal: Goal }) {
                     : <ArrowUpCircle  className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
                   }
                   <div>
-                    <span className="text-xs text-white/70">{dep.note || 'Depósito'}</span>
+                    <span className="text-xs text-white/70">{dep.note || t('goals.deposit_fallback')}</span>
                     <span className="text-[10px] text-white/30 ml-2">{fmtDate(dep.date)}</span>
                   </div>
                 </div>
@@ -136,6 +138,7 @@ interface GoalCardProps {
 }
 
 function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
+  const t = useT()
   const [expanded, setExpanded] = useState(false)
   const progress   = goal.target_amount > 0
     ? Math.min(100, (goal.current_amount / goal.target_amount) * 100)
@@ -161,17 +164,17 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
             <h3 className="font-semibold text-white truncate">{goal.name}</h3>
             {isComplete && (
               <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded-full">
-                <Check className="w-2.5 h-2.5" /> Concluído
+                <Check className="w-2.5 h-2.5" /> {t('goals.completed_chip')}
               </span>
             )}
             {isUrgent && !isComplete && (
               <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-orange-400 bg-orange-500/15 px-1.5 py-0.5 rounded-full">
-                <Flame className="w-2.5 h-2.5" /> {days}d restantes
+                <Flame className="w-2.5 h-2.5" /> {t('goals.days_left', { days })}
               </span>
             )}
             {isOverdue && !isComplete && (
               <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-400 bg-red-500/15 px-1.5 py-0.5 rounded-full">
-                <Clock className="w-2.5 h-2.5" /> Prazo expirou
+                <Clock className="w-2.5 h-2.5" /> {t('goals.deadline_expired')}
               </span>
             )}
           </div>
@@ -186,7 +189,7 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
         {/* Amounts */}
         <div className="text-right flex-shrink-0">
           <div className="text-green-400 font-bold tabular-nums text-base">{formatCurrency(goal.current_amount)}</div>
-          <div className="text-white/35 text-xs">de {formatCurrency(goal.target_amount)}</div>
+          <div className="text-white/35 text-xs">{t('goals.of', { amount: formatCurrency(goal.target_amount) })}</div>
         </div>
       </div>
 
@@ -204,11 +207,11 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
       <div className="flex items-center justify-between mt-1.5">
         <span className="text-xs text-white/40">
           <TrendingUp className="w-3 h-3 inline mr-1" />
-          {formatPercent(progress)} concluído
+          {t('goals.pct_completed', { pct: formatPercent(progress) })}
         </span>
         {!isComplete && (
           <span className="text-xs text-white/40">
-            Falta {formatCurrency(goal.target_amount - goal.current_amount)}
+            {t('goals.missing', { amount: formatCurrency(goal.target_amount - goal.current_amount) })}
           </span>
         )}
       </div>
@@ -221,20 +224,20 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
             className="flex-1 flex items-center justify-center gap-1.5 bg-green-500 hover:bg-green-400 active:scale-95 text-black font-bold py-2 rounded-xl text-sm transition-all"
           >
             <ArrowDownCircle className="w-4 h-4" />
-            Depositar
+            {t('goals.deposit')}
           </button>
         )}
         <button
           onClick={() => setExpanded(p => !p)}
           className="flex items-center gap-1 text-xs text-white/50 hover:text-white/80 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all"
         >
-          Histórico
+          {t('goals.history')}
           {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
         <button
           onClick={() => onDelete(goal)}
           disabled={deletingId === goal.id}
-          aria-label={`Eliminar poupança ${goal.name}`}
+          aria-label={t('goals.delete_aria', { name: goal.name })}
           className="w-11 h-11 flex items-center justify-center text-white/30 hover:text-red-400 transition-colors rounded-xl hover:bg-red-500/10 disabled:opacity-50"
         >
           {deletingId === goal.id
@@ -282,6 +285,7 @@ export default function GoalsPage() {
   const { goals, loading, createGoal, isCreating, deleteGoal } = useGoals()
   const { mutateAsync: addDeposit, isPending: isDepositing }   = useAddDeposit()
   const { toast } = useToast()
+  const t = useT()
 
   // UI state
   const [showForm, setShowForm]             = useState(false)
@@ -319,11 +323,11 @@ export default function GoalsPage() {
     try {
       const res = await createGoal({ name, icon, target_amount: parseFloat(targetAmount), deadline: deadline || null })
       const xp  = res?.xp_gained ?? 0
-      toast(xp > 0 ? `Poupança criada! +${xp} XP 🎯` : 'Poupança criada! 🎯', 'success')
+      toast(xp > 0 ? t('goals.created_xp', { xp }) : t('goals.created'), 'success')
       setShowForm(false)
       resetCreateForm()
     } catch {
-      toast('Erro ao criar poupança', 'error')
+      toast(t('goals.create_error'), 'error')
     }
   }
 
@@ -331,10 +335,10 @@ export default function GoalsPage() {
     setDeletingId(id)
     try {
       await deleteGoal(id)
-      toast('Poupança eliminada', 'success')
+      toast(t('goals.deleted_toast'), 'success')
       setConfirmDeleteGoal(null)
     } catch {
-      toast('Erro ao eliminar', 'error')
+      toast(t('goals.delete_error'), 'error')
     } finally {
       setDeletingId(null)
     }
@@ -351,15 +355,21 @@ export default function GoalsPage() {
       if (res.isCompleted) {
         setCelebration({
           icon:     depositGoal.icon,
-          title:    'Objetivo alcançado! 🎉',
-          subtitle: `Parabéns! Atingiste a tua meta: ${depositGoal.name}`,
+          title:    t('goals.dep.achieved_title'),
+          subtitle: t('goals.dep.achieved_sub', { name: depositGoal.name }),
           xp:       res.xp_earned,
         })
       } else {
-        toast(`${isWithdraw ? 'Levantamento' : 'Depósito'} registado! ${res.xp_earned ? `+${res.xp_earned} XP` : ''}`, 'success')
+        toast(
+          t('goals.dep.registered', {
+            action: isWithdraw ? t('goals.withdraw_label') : t('goals.deposit_label'),
+            xp: res.xp_earned ? t('goals.dep.xp_inline', { xp: res.xp_earned }) : '',
+          }),
+          'success',
+        )
       }
     } catch {
-      toast('Erro ao registar depósito', 'error')
+      toast(t('goals.dep.error'), 'error')
     }
   }
 
@@ -371,17 +381,17 @@ export default function GoalsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <PiggyBank className="w-6 h-6 text-green-400" />
-            Poupanças
+            {t('goals.title')}
           </h1>
-          <p className="text-white/50 text-sm mt-0.5">Regista depósitos e acompanha a evolução</p>
+          <p className="text-white/50 text-sm mt-0.5">{t('goals.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
         >
           <PlusCircle className="w-4 h-4" />
-          <span className="hidden sm:inline">Nova poupança</span>
-          <span className="sm:hidden">Nova</span>
+          <span className="hidden sm:inline">{t('goals.new_long')}</span>
+          <span className="sm:hidden">{t('goals.new_short')}</span>
         </button>
       </div>
 
@@ -390,24 +400,24 @@ export default function GoalsPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
             <div className="text-green-400 font-bold text-lg tabular-nums">{formatCurrency(totalSaved)}</div>
-            <div className="text-white/40 text-xs mt-0.5">Total poupado</div>
+            <div className="text-white/40 text-xs mt-0.5">{t('goals.stat_total')}</div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
             <div className="text-white font-bold text-lg">{activeGoals}</div>
-            <div className="text-white/40 text-xs mt-0.5">Em curso</div>
+            <div className="text-white/40 text-xs mt-0.5">{t('goals.stat_active')}</div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
             {closestGoal && closestDays !== null ? (
               <>
                 <div className={`font-bold text-lg ${closestDays <= 30 ? 'text-orange-400' : 'text-white'}`}>
-                  {closestDays > 0 ? `${closestDays}d` : 'Expirou'}
+                  {closestDays > 0 ? `${closestDays}d` : t('goals.stat_expired')}
                 </div>
                 <div className="text-white/40 text-xs mt-0.5 truncate">{closestGoal.name}</div>
               </>
             ) : (
               <>
                 <div className="text-white/40 font-bold text-lg">—</div>
-                <div className="text-white/40 text-xs mt-0.5">Sem prazo</div>
+                <div className="text-white/40 text-xs mt-0.5">{t('goals.stat_no_deadline')}</div>
               </>
             )}
           </div>
@@ -425,10 +435,10 @@ export default function GoalsPage() {
       ) : goals.length === 0 ? (
         <EmptyState
           icon="🐷"
-          title="Começa a poupar hoje"
-          description="Cria a tua primeira poupança, define uma meta e acompanha cada depósito no caminho para o objetivo."
+          title={t('goals.empty_title')}
+          description={t('goals.empty_desc')}
           action={{
-            label: 'Criar primeira poupança',
+            label: t('goals.empty_cta'),
             onClick: () => setShowForm(true),
           }}
         />
@@ -451,14 +461,14 @@ export default function GoalsPage() {
         <BottomSheet onClose={() => { setShowForm(false); resetCreateForm() }}>
           <div className="px-5 pt-4 pb-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-white">Nova Poupança</h2>
+              <h2 className="text-lg font-bold text-white">{t('goals.new_title')}</h2>
               <button onClick={() => { setShowForm(false); resetCreateForm() }} className="p-2 text-white/40 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreateGoal} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Ícone</label>
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">{t('goals.form.icon')}</label>
                 <div className="grid grid-cols-8 gap-1.5 mt-2">
                   {GOAL_ICONS.map(e => (
                     <button key={e} type="button" onClick={() => setIcon(e)}
@@ -470,24 +480,24 @@ export default function GoalsPage() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Nome</label>
-                <input type="text" placeholder="Ex: Fundo de emergência" value={name} onChange={e => setName(e.target.value)}
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">{t('goals.form.name')}</label>
+                <input type="text" placeholder={t('goals.form.name_placeholder')} value={name} onChange={e => setName(e.target.value)}
                   className="mt-1.5 w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 outline-none focus:border-green-500/50 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Valor Alvo (€)</label>
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">{t('goals.form.target')}</label>
                 <input type="number" inputMode="decimal" placeholder="0.00" value={targetAmount} onChange={e => setTargetAmount(e.target.value)}
                   className="mt-1.5 w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 outline-none focus:border-green-500/50 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Prazo (opcional)</label>
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">{t('goals.form.deadline')}</label>
                 <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
                   className="mt-1.5 w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 outline-none focus:border-green-500/50 text-sm" />
               </div>
               <button type="submit" disabled={isCreating || !name || !targetAmount}
                 className="w-full py-3.5 min-h-[44px] bg-green-500 hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold rounded-xl transition-all active:scale-[0.98] text-sm flex items-center justify-center gap-2">
                 {isCreating && <Spinner size="sm" tone="dark" />}
-                {isCreating ? 'A criar...' : `Criar poupança ${icon}`}
+                {isCreating ? t('goals.form.creating') : t('goals.form.create_with_icon', { icon })}
               </button>
             </form>
           </div>
@@ -522,7 +532,7 @@ export default function GoalsPage() {
                   !isWithdraw ? 'bg-green-500 text-black shadow' : 'text-white/50 hover:text-white'
                 }`}
               >
-                <ArrowDownCircle className="w-4 h-4" /> Depositar
+                <ArrowDownCircle className="w-4 h-4" /> {t('goals.deposit_label')}
               </button>
               <button
                 type="button"
@@ -531,13 +541,13 @@ export default function GoalsPage() {
                   isWithdraw ? 'bg-red-500 text-white shadow' : 'text-white/50 hover:text-white'
                 }`}
               >
-                <ArrowUpCircle className="w-4 h-4" /> Levantar
+                <ArrowUpCircle className="w-4 h-4" /> {t('goals.withdraw_label')}
               </button>
             </div>
 
             <form onSubmit={handleDeposit} className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Valor (€)</label>
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">{t('goals.dep.value')}</label>
                 <input
                   type="number" inputMode="decimal" step="0.01" min="0.01"
                   placeholder="0.00" value={depAmount} onChange={e => setDepAmount(e.target.value)}
@@ -546,14 +556,14 @@ export default function GoalsPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Nota (opcional)</label>
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">{t('goals.dep.note')}</label>
                 <input
-                  type="text" placeholder="Ex: Salário de janeiro" value={depNote} onChange={e => setDepNote(e.target.value)}
+                  type="text" placeholder={t('goals.dep.note_placeholder')} value={depNote} onChange={e => setDepNote(e.target.value)}
                   className="mt-1.5 w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 outline-none focus:border-green-500/50 text-sm"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Data</label>
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">{t('goals.dep.date')}</label>
                 <input
                   type="date" value={depDate} onChange={e => setDepDate(e.target.value)}
                   className="mt-1.5 w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 outline-none focus:border-green-500/50 text-sm"
@@ -569,10 +579,10 @@ export default function GoalsPage() {
               >
                 {isDepositing && <Spinner size="sm" tone={isWithdraw ? 'light' : 'dark'} />}
                 {isDepositing
-                  ? 'A registar...'
+                  ? t('goals.dep.registering')
                   : isWithdraw
-                    ? `Registar levantamento`
-                    : `Depositar ${depAmount ? formatCurrency(parseFloat(depAmount) || 0) : ''}`
+                    ? t('goals.dep.withdraw_cta')
+                    : t('goals.dep.deposit_cta', { amount: depAmount ? formatCurrency(parseFloat(depAmount) || 0) : '' })
                 }
               </button>
             </form>
@@ -595,13 +605,13 @@ export default function GoalsPage() {
       {/* Confirm delete dialog */}
       <ConfirmDialog
         open={!!confirmDeleteGoal}
-        title="Eliminar poupança?"
+        title={t('goals.confirm_title')}
         description={
           confirmDeleteGoal
-            ? `Vais apagar "${confirmDeleteGoal.name}" e todos os seus depósitos. Esta ação não pode ser desfeita.`
+            ? t('goals.confirm_desc', { name: confirmDeleteGoal.name })
             : ''
         }
-        confirmLabel="Eliminar poupança"
+        confirmLabel={t('goals.confirm_delete')}
         tone="danger"
         loading={!!deletingId}
         onConfirm={() => confirmDeleteGoal && handleDelete(confirmDeleteGoal.id)}

@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Spinner } from './Spinner'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 interface Props {
   open:          boolean
@@ -40,10 +41,13 @@ const TONE_STYLES = {
  */
 export function ConfirmDialog({
   open, title, description,
-  confirmLabel = 'Confirmar', cancelLabel = 'Cancelar',
+  confirmLabel, cancelLabel,
   tone = 'danger', loading = false,
   onConfirm, onClose,
 }: Props) {
+  const t = useT()
+  const confirmText = confirmLabel ?? t('confirm.default_confirm')
+  const cancelText  = cancelLabel  ?? t('confirm.default_cancel')
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
@@ -95,7 +99,7 @@ export function ConfirmDialog({
               disabled={loading}
               className="flex-1 py-3 bg-white/5 hover:bg-white/10 disabled:opacity-40 text-white/70 font-semibold rounded-xl transition-colors text-sm min-h-[44px]"
             >
-              {cancelLabel}
+              {cancelText}
             </button>
             <button
               onClick={onConfirm}
@@ -104,7 +108,7 @@ export function ConfirmDialog({
               autoFocus
             >
               {loading && <Spinner size="sm" tone={tone === 'warning' || tone === 'info' ? 'dark' : 'light'} />}
-              {loading ? 'A processar...' : confirmLabel}
+              {loading ? t('confirm.processing') : confirmText}
             </button>
           </div>
         </div>

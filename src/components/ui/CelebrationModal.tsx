@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 interface Props {
   open:       boolean
@@ -31,6 +32,7 @@ const PIECES = Array.from({ length: 28 }, (_, i) => ({
 export function CelebrationModal({
   open, onClose, icon, title, subtitle, xp, autoClose = 4500,
 }: Props) {
+  const t = useT()
   const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [paused, setPaused] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -113,7 +115,7 @@ export function CelebrationModal({
           {/* Close — larger touch target */}
           <button
             onClick={onClose}
-            aria-label="Fechar celebração"
+            aria-label={t('celebration.close_aria')}
             className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center text-white/30 hover:text-white rounded-full hover:bg-white/5 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -148,7 +150,7 @@ export function CelebrationModal({
             className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-3.5 rounded-2xl transition-all active:scale-95 min-h-[44px]"
             autoFocus
           >
-            Continuar →
+            {t('celebration.continue')}
           </button>
 
           {/* Countdown progress bar — bottom of card, gives user spatial awareness */}

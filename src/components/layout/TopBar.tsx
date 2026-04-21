@@ -6,25 +6,29 @@ import { Crown }             from 'lucide-react'
 import Link                  from 'next/link'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { Logo }              from '@/components/ui/Logo'
+import { useT }              from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
-const PAGE_TITLES: Record<string, string> = {
-  '/dashboard':    'Dashboard',
-  '/transactions': 'Transações',
-  '/missions':     'Missões',
-  '/voltix':       'Voltix',
-  '/goals':        'Poupanças',
-  '/settings':     'Definições',
-  '/badges':       'Conquistas',
-  '/perspetiva':   'Perspetiva',
-  '/simulador':    'Simulador',
-  '/cursos':       'Academia',
+const PAGE_TITLE_KEYS: Record<string, TranslationKey> = {
+  '/dashboard':    'topbar.title.dashboard',
+  '/transactions': 'topbar.title.transactions',
+  '/missions':     'topbar.title.missions',
+  '/voltix':       'topbar.title.voltix',
+  '/goals':        'topbar.title.goals',
+  '/settings':     'topbar.title.settings',
+  '/badges':       'topbar.title.badges',
+  '/perspetiva':   'topbar.title.perspective',
+  '/simulador':    'topbar.title.simulator',
+  '/cursos':       'topbar.title.academy',
 }
 
 export function TopBar() {
   const pathname = usePathname()
-  const title    = Object.entries(PAGE_TITLES).find(([path]) =>
+  const t        = useT()
+  const matchedKey = Object.entries(PAGE_TITLE_KEYS).find(([path]) =>
     pathname.startsWith(path)
-  )?.[1] ?? 'XP-Money'
+  )?.[1]
+  const title    = matchedKey ? t(matchedKey) : 'XP-Money'
 
   const isDashboard = pathname === '/dashboard'
 
@@ -53,7 +57,7 @@ export function TopBar() {
             className="hidden xs:flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-green-500/20 transition-colors"
           >
             <Crown className="w-3 h-3" />
-            Plus
+            {t('topbar.upgrade_badge')}
           </Link>
 
           {/* Notificações — funcional */}

@@ -2,6 +2,7 @@ import { auth }               from '@clerk/nextjs/server'
 import { redirect }           from 'next/navigation'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { PremiumFeatureLock } from '@/components/common/PremiumFeatureLock'
+import { getServerT }          from '@/lib/i18n/server'
 import SimuladorClient         from './SimuladorClient'
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -34,16 +35,17 @@ export default async function SimuladorPage() {
   // Paywall: simulador só para Premium (inclui antigos plus/pro/family por compat)
   const paidPlans = new Set(['premium', 'plus', 'pro', 'family'])
   if (!paidPlans.has(profile.plan ?? 'free')) {
+    const t = await getServerT()
     return (
       <PremiumFeatureLock
         icon="sparkles"
-        title="Simulador de Investimento"
-        description="Vê em 5 segundos quanto vale investir o teu excedente mensal em ETFs do S&P 500 durante 5, 10 ou 30 anos."
+        title={t('simulator.lock.title')}
+        description={t('simulator.lock.desc')}
         bullets={[
-          'Simulação DCA (Dollar-Cost Averaging) com rendimento histórico real',
-          'Compara S&P 500, MSCI World e obrigações do tesouro',
-          'Gráfico interactivo com juros compostos e inflação',
-          'Sugestão automática baseada nas tuas poupanças dos últimos 3 meses',
+          t('simulator.lock.b1'),
+          t('simulator.lock.b2'),
+          t('simulator.lock.b3'),
+          t('simulator.lock.b4'),
         ]}
         preview={<FauxChartPreview />}
       />

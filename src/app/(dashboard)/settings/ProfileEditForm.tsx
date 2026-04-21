@@ -4,30 +4,32 @@ import { useState } from 'react'
 import { User, Target, TrendingUp, Save, Check, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
-const CHALLENGES = [
-  { id: 'overspend',   label: 'Gasto em excesso',        icon: '💸' },
-  { id: 'no_tracking', label: 'Falta de controlo',       icon: '📊' },
-  { id: 'no_savings',  label: 'Dificuldade em poupar',   icon: '🏦' },
-  { id: 'debts',       label: 'Gestão de dívidas',       icon: '⛓️' },
-  { id: 'planning',    label: 'Planeamento financeiro',  icon: '🗺️' },
+const CHALLENGES: { id: string; labelKey: TranslationKey; icon: string }[] = [
+  { id: 'overspend',   labelKey: 'settings.challenge.overspend',   icon: '💸' },
+  { id: 'no_tracking', labelKey: 'settings.challenge.no_tracking', icon: '📊' },
+  { id: 'no_savings',  labelKey: 'settings.challenge.no_savings',  icon: '🏦' },
+  { id: 'debts',       labelKey: 'settings.challenge.debts',       icon: '⛓️' },
+  { id: 'planning',    labelKey: 'settings.challenge.planning',    icon: '🗺️' },
 ]
 
-const GOALS = [
-  { id: 'emergency', label: 'Fundo de emergência', icon: '🛡️' },
-  { id: 'travel',    label: 'Viagem de sonho',     icon: '✈️' },
-  { id: 'house',     label: 'Casa própria',         icon: '🏠' },
-  { id: 'car',       label: 'Carro novo',           icon: '🚗' },
-  { id: 'invest',    label: 'Investimentos',        icon: '📈' },
-  { id: 'debt',      label: 'Pagar dívidas',        icon: '🔓' },
-  { id: 'other',     label: 'Objetivo pessoal',     icon: '🎯' },
+const GOALS: { id: string; labelKey: TranslationKey; icon: string }[] = [
+  { id: 'emergency', labelKey: 'settings.goal.emergency', icon: '🛡️' },
+  { id: 'travel',    labelKey: 'settings.goal.travel',    icon: '✈️' },
+  { id: 'house',     labelKey: 'settings.goal.house',     icon: '🏠' },
+  { id: 'car',       labelKey: 'settings.goal.car',       icon: '🚗' },
+  { id: 'invest',    labelKey: 'settings.goal.invest',    icon: '📈' },
+  { id: 'debt',      labelKey: 'settings.goal.debt',      icon: '🔓' },
+  { id: 'other',     labelKey: 'settings.goal.other',     icon: '🎯' },
 ]
 
-const CURRENCIES = [
-  { code: 'EUR', label: '€ Euro' },
-  { code: 'USD', label: '$ Dólar' },
-  { code: 'GBP', label: '£ Libra' },
-  { code: 'BRL', label: 'R$ Real' },
+const CURRENCIES: { code: string; labelKey: TranslationKey }[] = [
+  { code: 'EUR', labelKey: 'settings.currency.eur' },
+  { code: 'USD', labelKey: 'settings.currency.usd' },
+  { code: 'GBP', labelKey: 'settings.currency.gbp' },
+  { code: 'BRL', labelKey: 'settings.currency.brl' },
 ]
 
 interface Props {
@@ -43,6 +45,7 @@ export function ProfileEditForm({
   initialName, initialChallenge, initialGoal, initialCurrency, email, avatarUrl,
 }: Props) {
   const router = useRouter()
+  const t      = useT()
   const [name,      setName]      = useState(initialName)
   const [challenge, setChallenge] = useState(initialChallenge)
   const [goal,      setGoal]      = useState(initialGoal)
@@ -82,14 +85,14 @@ export function ProfileEditForm({
           ? json.error
           : typeof json.error === 'object' && json.error
             ? JSON.stringify(json.error)
-            : 'Erro ao guardar'
+            : t('settings.save_err_default')
         throw new Error(msg)
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao guardar')
+      setError(err instanceof Error ? err.message : t('settings.save_err_default'))
     } finally {
       setSaving(false)
     }
@@ -102,7 +105,7 @@ export function ProfileEditForm({
       <div className="bg-white/5 border border-white/10 rounded-xl p-5">
         <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
           <User className="w-4 h-4 text-green-400" />
-          Dados Pessoais
+          {t('settings.personal')}
         </h2>
 
         {/* Avatar + Email (read-only) */}
@@ -115,22 +118,22 @@ export function ProfileEditForm({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold truncate">{name || 'Utilizador'}</p>
+            <p className="text-white font-semibold truncate">{name || t('settings.user_fallback')}</p>
             <p className="text-white/40 text-sm truncate">{email}</p>
-            <p className="text-white/25 text-xs mt-0.5">Avatar e email geridos pelo Clerk</p>
+            <p className="text-white/25 text-xs mt-0.5">{t('settings.avatar_managed')}</p>
           </div>
         </div>
 
         {/* Nome editável */}
         <div className="space-y-1.5">
           <label className="text-xs text-white/50 font-medium uppercase tracking-wider">
-            Nome de exibição
+            {t('settings.display_name')}
           </label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="O teu nome"
+            placeholder={t('settings.display_name_placeholder')}
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/25 outline-none focus:border-green-500/50 transition-colors text-sm"
           />
         </div>
@@ -138,7 +141,7 @@ export function ProfileEditForm({
         {/* Moeda */}
         <div className="space-y-1.5 mt-4">
           <label className="text-xs text-white/50 font-medium uppercase tracking-wider">
-            Moeda
+            {t('settings.currency')}
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {CURRENCIES.map(c => (
@@ -153,7 +156,7 @@ export function ProfileEditForm({
                     : 'bg-white/4 border-white/10 text-white/60 hover:border-white/20 hover:text-white',
                 )}
               >
-                {c.label}
+                {t(c.labelKey)}
               </button>
             ))}
           </div>
@@ -164,7 +167,7 @@ export function ProfileEditForm({
       <div className="bg-white/5 border border-white/10 rounded-xl p-5">
         <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-orange-400" />
-          O meu maior desafio
+          {t('settings.challenge')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {CHALLENGES.map(c => (
@@ -180,7 +183,7 @@ export function ProfileEditForm({
               )}
             >
               <span className="text-xl flex-shrink-0">{c.icon}</span>
-              <span className="text-sm font-medium">{c.label}</span>
+              <span className="text-sm font-medium">{t(c.labelKey)}</span>
             </button>
           ))}
         </div>
@@ -190,7 +193,7 @@ export function ProfileEditForm({
       <div className="bg-white/5 border border-white/10 rounded-xl p-5">
         <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
           <Target className="w-4 h-4 text-blue-400" />
-          O meu objetivo principal
+          {t('settings.goal')}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {GOALS.map(g => (
@@ -206,7 +209,7 @@ export function ProfileEditForm({
               )}
             >
               <span className="text-2xl">{g.icon}</span>
-              <span className="text-xs font-medium text-center leading-tight">{g.label}</span>
+              <span className="text-xs font-medium text-center leading-tight">{t(g.labelKey)}</span>
             </button>
           ))}
         </div>
@@ -236,14 +239,14 @@ export function ProfileEditForm({
         {saved ? (
           <>
             <Check className="w-4 h-4" />
-            Guardado!
+            {t('settings.saved')}
           </>
         ) : saving ? (
-          '⚡ A guardar...'
+          t('settings.save_in_progress')
         ) : (
           <>
             <Save className="w-4 h-4" />
-            {isDirty ? 'Guardar alterações' : 'Sem alterações'}
+            {isDirty ? t('settings.save_cta') : t('settings.no_changes')}
           </>
         )}
       </button>

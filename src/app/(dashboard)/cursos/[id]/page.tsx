@@ -16,6 +16,7 @@ import {
   saveCourseProgress,
 } from '@/lib/courses'
 import type { Course, CourseProgress } from '@/lib/courses'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 const PLAN_RANK: Record<string, number> = {
   free:    0,
@@ -63,6 +64,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
   issuedAt:     string
   onMintClick?: () => void
 }) {
+  const t = useT()
   const code = certCode(course.id, userName, issuedAt)
   const dateLong = new Date(issuedAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
   const dateShort = new Date(issuedAt).toLocaleDateString('pt-PT')
@@ -110,7 +112,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-[#f5d97a]/15 via-[#f5d97a]/25 to-[#f5d97a]/15 border border-[#f5d97a]/30 mb-5">
                 <Shield className="w-3 h-3 text-[#f5d97a]" />
                 <span className="text-[10px] font-bold text-[#f5d97a] uppercase tracking-[0.3em]">
-                  XP-Money · Academia
+                  {t('academy.cert.eyebrow')}
                 </span>
                 <Shield className="w-3 h-3 text-[#f5d97a]" />
               </div>
@@ -125,10 +127,10 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
 
               {/* Main heading — serif, gold */}
               <h2 className="font-serif text-[11px] uppercase tracking-[0.4em] text-white/50 mb-1">
-                Certificado de Conclusão
+                {t('academy.cert.heading_small')}
               </h2>
               <h1 className="font-serif text-3xl sm:text-4xl font-bold bg-gradient-to-b from-[#fff3c4] via-[#f5d97a] to-[#b8842a] bg-clip-text text-transparent mb-1 leading-tight">
-                CERTIFIED
+                {t('academy.cert.heading_big')}
               </h1>
 
               {/* Divider with diamond */}
@@ -139,14 +141,14 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
               </div>
 
               {/* Recipient */}
-              <p className="text-white/40 text-[11px] uppercase tracking-[0.3em] mb-2">Atribuído a</p>
+              <p className="text-white/40 text-[11px] uppercase tracking-[0.3em] mb-2">{t('academy.cert.assigned_to')}</p>
               <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white mb-1 italic">
                 {userName}
               </h3>
               <div className="w-40 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent mx-auto mb-5" />
 
               <p className="text-white/60 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto mb-2">
-                Por ter concluído com distinção o curso
+                {t('academy.cert.by')}
               </p>
               <h4 className="font-serif text-lg sm:text-xl font-bold text-[#f5d97a] leading-snug mb-3 px-2">
                 {course.certificate.title}
@@ -156,7 +158,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
               </p>
 
               {/* 5-star excellence mark */}
-              <div className="flex items-center justify-center gap-1 mb-6" aria-label="Nível de excelência: 5 estrelas">
+              <div className="flex items-center justify-center gap-1 mb-6" aria-label={t('academy.cert.stars_aria')}>
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 text-[#f5d97a] fill-[#f5d97a]" />
                 ))}
@@ -168,7 +170,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
                 <div className="text-center">
                   <div className="font-serif italic text-[#f5d97a] text-sm mb-1">~ XP-Money ~</div>
                   <div className="h-px bg-white/20 mb-1" />
-                  <p className="text-[9px] text-white/40 uppercase tracking-wider">Academia</p>
+                  <p className="text-[9px] text-white/40 uppercase tracking-wider">{t('academy.cert.academy')}</p>
                 </div>
 
                 {/* Centre — official seal */}
@@ -178,7 +180,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
                       <div className="absolute inset-1 rounded-full border border-[#f5d97a]/40" />
                       <div className="relative flex flex-col items-center justify-center">
                         <Award className="w-5 h-5 text-[#f5d97a]" />
-                        <span className="text-[7px] font-bold text-[#f5d97a] tracking-wider mt-0.5">OFFICIAL</span>
+                        <span className="text-[7px] font-bold text-[#f5d97a] tracking-wider mt-0.5">{t('academy.cert.official')}</span>
                       </div>
                     </div>
                   </div>
@@ -188,7 +190,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
                 <div className="text-center">
                   <div className="font-serif text-white/80 text-sm mb-1">{dateShort}</div>
                   <div className="h-px bg-white/20 mb-1" />
-                  <p className="text-[9px] text-white/40 uppercase tracking-wider">Data emissão</p>
+                  <p className="text-[9px] text-white/40 uppercase tracking-wider">{t('academy.cert.issued')}</p>
                 </div>
               </div>
 
@@ -196,7 +198,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-[10px] text-white/35 font-mono">
                 <span className="flex items-center gap-1.5">
                   <Shield className="w-3 h-3" />
-                  Nº {code}
+                  {t('academy.cert.verify_n', { code })}
                 </span>
                 <span className="hidden sm:inline text-white/20">·</span>
                 <span>xpmoney.app/verify</span>
@@ -248,6 +250,7 @@ function Quiz({ course, userId, onComplete }: {
   userId:     string
   onComplete: (score: number) => void
 }) {
+  const t = useT()
   const [current,    setCurrent]    = useState(0)
   const [selected,   setSelected]   = useState<number | null>(null)
   const [answers,    setAnswers]    = useState<(number | null)[]>(Array(course.quiz.length).fill(null))
@@ -295,28 +298,28 @@ function Quiz({ course, userId, onComplete }: {
       <div className="animate-fade-in-up text-center py-8 space-y-4">
         <div className="text-6xl">{passed ? '🎉' : '💪'}</div>
         <h2 className="text-2xl font-bold text-white">
-          {passed ? 'Perfeito! 100%!' : 'Quase lá!'}
+          {passed ? t('academy.quiz.perfect') : t('academy.quiz.almost')}
         </h2>
         <p className="text-white/60">
-          Acertaste {correct} de {course.quiz.length} perguntas —{' '}
+          {t('academy.quiz.result', { correct, total: course.quiz.length })}
           <span className={passed ? 'text-green-400 font-bold' : 'text-orange-400 font-bold'}>{score}%</span>
         </p>
         {passed ? (
-          <p className="text-green-400 font-medium">Certificado desbloqueado! 🏆</p>
+          <p className="text-green-400 font-medium">{t('academy.quiz.cert_unlocked')}</p>
         ) : (
           <div className="space-y-3">
             <p className="text-white/50 text-sm leading-relaxed max-w-sm mx-auto">
-              O certificado só é emitido com <strong className="text-white">100% de acerto</strong>.
+              {t('academy.quiz.fail_rule')} <strong className="text-white">{t('academy.quiz.fail_rule_pct')}</strong>
               {wrongQuestions.length === 1
-                ? ' Falhaste 1 pergunta — revê a lição correspondente e tenta de novo.'
-                : ` Falhaste ${wrongQuestions.length} perguntas — revê as lições e tenta de novo.`
+                ? t('academy.quiz.fail_one')
+                : t('academy.quiz.fail_many', { n: wrongQuestions.length })
               }
             </p>
             <button
               onClick={() => { setCurrent(0); setSelected(null); setAnswers(Array(course.quiz.length).fill(null)); setShowResult(false) }}
               className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-sm transition-all"
             >
-              <RotateCcw className="w-4 h-4" /> Tentar de novo
+              <RotateCcw className="w-4 h-4" /> {t('academy.quiz.retry')}
             </button>
           </div>
         )}
@@ -329,7 +332,7 @@ function Quiz({ course, userId, onComplete }: {
       {/* Progress */}
       <div>
         <div className="flex justify-between text-xs text-white/40 mb-2">
-          <span>Pergunta {current + 1} de {course.quiz.length}</span>
+          <span>{t('academy.quiz.progress', { current: current + 1, total: course.quiz.length })}</span>
           <span>{Math.round((current / course.quiz.length) * 100)}%</span>
         </div>
         <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -384,7 +387,7 @@ function Quiz({ course, userId, onComplete }: {
           onClick={handleNext}
           className="w-full py-3 bg-green-500 hover:bg-green-400 active:bg-green-600 text-black font-bold rounded-xl text-sm transition-all animate-fade-in-up"
         >
-          {isLast ? 'Ver resultado' : 'Próxima pergunta'}
+          {isLast ? t('academy.quiz.see_result') : t('academy.quiz.next')}
         </button>
       )}
     </div>
@@ -397,6 +400,7 @@ export default function CourseDetailPage() {
   const id       = params.id
   const { user } = useUser()
   const { plan } = useUserPlan()
+  const t        = useT()
   const course   = COURSES.find(c => c.id === id)
 
   const [activeLesson, setActiveLesson] = useState(0)
@@ -427,8 +431,8 @@ export default function CourseDetailPage() {
   if (!course) {
     return (
       <div className="text-center py-16">
-        <p className="text-white/40">Curso não encontrado.</p>
-        <Link href="/cursos" className="text-green-400 text-sm mt-2 block">← Voltar aos cursos</Link>
+        <p className="text-white/40">{t('academy.detail.not_found')}</p>
+        <Link href="/cursos" className="text-green-400 text-sm mt-2 block">{t('academy.detail.back')}</Link>
       </div>
     )
   }
@@ -449,14 +453,14 @@ export default function CourseDetailPage() {
         </div>
         <div className="flex items-center gap-2 bg-purple-500/15 border border-purple-500/30 text-purple-300 px-4 py-2.5 rounded-xl font-semibold text-sm">
           <Lock className="w-4 h-4" />
-          Disponível no plano Premium
+          {t('academy.detail.locked_plan')}
         </div>
         <Link href="/settings/billing"
           className="flex items-center gap-2 bg-purple-500 hover:bg-purple-400 text-white font-bold px-6 py-3 rounded-xl transition-all">
           <Crown className="w-5 h-5" />
-          Fazer upgrade para Premium
+          {t('academy.detail.upgrade')}
         </Link>
-        <Link href="/cursos" className="text-white/40 hover:text-white text-sm">← Voltar à Academia</Link>
+        <Link href="/cursos" className="text-white/40 hover:text-white text-sm">{t('academy.detail.back_academy')}</Link>
       </div>
     )
   }
@@ -465,7 +469,7 @@ export default function CourseDetailPage() {
   const isLessonDone   = progress.completedLessons.includes(lesson.id)
   const allLessonsDone = course.lessons.every(l => progress.completedLessons.includes(l.id))
   const hasCertificate = !!progress.certificateAt
-  const userName       = user?.fullName ?? user?.firstName ?? 'Utilizador'
+  const userName       = user?.fullName ?? user?.firstName ?? t('academy.cert.user_fallback')
   const completedCount = progress.completedLessons.length
   const pct            = Math.round((completedCount / course.lessons.length) * 100)
 
@@ -513,7 +517,7 @@ export default function CourseDetailPage() {
           className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-green-500 text-black font-bold px-4 py-2.5 rounded-xl shadow-xl animate-fade-in-up"
         >
           <Sparkles className="w-4 h-4" />
-          +{quizXpGained} XP · Curso concluído!
+          {t('academy.xp.toast', { xp: quizXpGained })}
         </div>
       )}
 
@@ -526,10 +530,10 @@ export default function CourseDetailPage() {
           <h1 className="font-bold text-white text-base leading-tight truncate">{course.title}</h1>
           <div className="flex items-center gap-2 text-xs text-white/40 mt-0.5">
             <Clock className="w-3 h-3" />
-            {course.duration}min
+            {t('academy.duration', { min: course.duration })}
             <span>·</span>
             <BookOpen className="w-3 h-3" />
-            {completedCount}/{course.lessons.length} lições
+            {t('academy.lessons_progress', { done: completedCount, total: course.lessons.length })}
           </div>
         </div>
         {hasCertificate && (
@@ -537,7 +541,7 @@ export default function CourseDetailPage() {
             onClick={() => setView('certificate')}
             className="flex items-center gap-1 text-xs font-bold text-yellow-400 bg-yellow-500/15 border border-yellow-500/30 px-2.5 py-1.5 rounded-xl"
           >
-            <Trophy className="w-3.5 h-3.5" /> Certificado
+            <Trophy className="w-3.5 h-3.5" /> {t('academy.detail.cert_chip')}
           </button>
         )}
       </div>
@@ -551,8 +555,8 @@ export default function CourseDetailPage() {
           />
         </div>
         <div className="flex items-center justify-between mt-1 text-xs text-white/30">
-          <span>{pct}% concluído</span>
-          {allLessonsDone && !hasCertificate && <span className="text-green-400">Faz o quiz para obter o certificado!</span>}
+          <span>{t('academy.detail.pct_done', { pct })}</span>
+          {allLessonsDone && !hasCertificate && <span className="text-green-400">{t('academy.detail.quiz_hint')}</span>}
         </div>
       </div>
 
@@ -567,7 +571,7 @@ export default function CourseDetailPage() {
               view === tab ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/70'
             }`}
           >
-            {tab === 'lessons' ? '📚 Lições' : tab === 'quiz' ? '🧠 Quiz' : '🏆 Certificado'}
+            {tab === 'lessons' ? t('academy.detail.tab_lessons') : tab === 'quiz' ? t('academy.detail.tab_quiz') : t('academy.detail.tab_cert')}
           </button>
         ))}
       </div>
@@ -608,7 +612,7 @@ export default function CourseDetailPage() {
               <h2 className="text-lg font-bold text-white">{lesson.title}</h2>
               <div className="flex items-center gap-1.5 text-white/70 text-xs mt-1">
                 <Clock className="w-3 h-3" /> {lesson.duration} min
-                {isLessonDone && <span className="ml-2 flex items-center gap-0.5 text-white"><Check className="w-3 h-3" /> Concluída</span>}
+                {isLessonDone && <span className="ml-2 flex items-center gap-0.5 text-white"><Check className="w-3 h-3" /> {t('academy.detail.lesson_done')}</span>}
               </div>
             </div>
 
@@ -654,7 +658,7 @@ export default function CourseDetailPage() {
                     onClick={() => setActiveLesson(i => i - 1)}
                     className="flex items-center gap-1 px-4 py-2.5 bg-white/5 border border-white/10 text-white/60 font-semibold rounded-xl text-sm hover:bg-white/10 transition-all"
                   >
-                    <ChevronLeft className="w-4 h-4" /> Anterior
+                    <ChevronLeft className="w-4 h-4" /> {t('academy.detail.prev')}
                   </button>
                 )}
                 <button
@@ -666,10 +670,10 @@ export default function CourseDetailPage() {
                   }`}
                 >
                   {isLessonDone
-                    ? <><Check className="w-4 h-4" /> Concluída</>
+                    ? <><Check className="w-4 h-4" /> {t('academy.detail.lesson_done')}</>
                     : activeLesson < course.lessons.length - 1
-                      ? <><Check className="w-4 h-4" /> Concluir e avançar</>
-                      : <><Check className="w-4 h-4" /> Concluir lição</>
+                      ? <><Check className="w-4 h-4" /> {t('academy.detail.mark_advance')}</>
+                      : <><Check className="w-4 h-4" /> {t('academy.detail.mark_done')}</>
                   }
                 </button>
               </div>
@@ -680,7 +684,7 @@ export default function CourseDetailPage() {
                   className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 font-bold rounded-xl text-sm transition-all animate-fade-in-up"
                 >
                   <Star className="w-4 h-4" />
-                  Fazer o quiz e obter certificado →
+                  {t('academy.detail.quiz_cta')}
                 </button>
               )}
             </div>
@@ -693,16 +697,16 @@ export default function CourseDetailPage() {
         <div className="animate-fade-in-up bg-white/5 border border-white/10 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-5">
             <Star className="w-5 h-5 text-yellow-400" />
-            <h2 className="font-bold text-white">Quiz Final</h2>
-            <span className="text-xs text-white/40 ml-auto">{course.quiz.length} perguntas · 100% obrigatório</span>
+            <h2 className="font-bold text-white">{t('academy.quiz.title')}</h2>
+            <span className="text-xs text-white/40 ml-auto">{t('academy.quiz.meta', { count: course.quiz.length })}</span>
           </div>
           {progress.quizScore !== null && progress.quizScore === 100 ? (
             <div className="text-center py-4">
               <div className="text-4xl mb-3">🏆</div>
-              <p className="text-white font-bold text-lg">Já concluíste este quiz!</p>
-              <p className="text-green-400 font-medium">{progress.quizScore}% de acerto</p>
+              <p className="text-white font-bold text-lg">{t('academy.quiz.done')}</p>
+              <p className="text-green-400 font-medium">{t('academy.quiz.score', { pct: progress.quizScore })}</p>
               <button onClick={() => setView('certificate')} className="mt-4 px-6 py-2.5 bg-green-500 text-black font-bold rounded-xl text-sm">
-                Ver certificado
+                {t('academy.quiz.view_cert')}
               </button>
             </div>
           ) : (
@@ -724,16 +728,16 @@ export default function CourseDetailPage() {
           ) : (
             <div className="text-center py-12 space-y-4">
               <Trophy className="w-14 h-14 text-white/20 mx-auto" />
-              <h3 className="text-lg font-semibold text-white/60">Certificado ainda não desbloqueado</h3>
-              <p className="text-white/40 text-sm">Conclui todas as lições e acerta <strong className="text-white">todas as perguntas do quiz (100%)</strong> para obter o certificado.</p>
+              <h3 className="text-lg font-semibold text-white/60">{t('academy.cert.locked_title')}</h3>
+              <p className="text-white/40 text-sm">{t('academy.cert.locked_desc_a')} <strong className="text-white">{t('academy.cert.locked_desc_b')}</strong> {t('academy.cert.locked_desc_c')}</p>
               {!allLessonsDone && (
                 <button onClick={() => setView('lessons')} className="px-6 py-2.5 bg-green-500 text-black font-bold rounded-xl text-sm">
-                  Continuar lições
+                  {t('academy.cert.continue_lessons')}
                 </button>
               )}
               {allLessonsDone && (
                 <button onClick={() => setView('quiz')} className="px-6 py-2.5 bg-purple-500 text-white font-bold rounded-xl text-sm">
-                  Fazer quiz →
+                  {t('academy.cert.do_quiz')}
                 </button>
               )}
             </div>

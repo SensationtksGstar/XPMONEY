@@ -10,22 +10,26 @@ import { MascotPicker }      from '@/components/settings/MascotPicker'
 import { LanguageSwitcher }  from '@/components/settings/LanguageSwitcher'
 import { BugReportCard }     from '@/components/settings/BugReportCard'
 import { PDFReportCard }     from '@/components/settings/PDFReportCard'
+import { getServerT }        from '@/lib/i18n/server'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 export const metadata = { title: 'Definições' }
 
 // Modelo 2-tier. Legacy plus/pro/family fazem fallback para premium para
 // contas ainda não migradas.
-const PLAN_LABELS: Record<string, { name: string; icon: string; color: string }> = {
-  free:    { name: 'Gratuito', icon: '🌱', color: 'text-white/60' },
-  premium: { name: 'Premium',  icon: '👑', color: 'text-purple-400' },
-  plus:    { name: 'Premium',  icon: '👑', color: 'text-purple-400' },
-  pro:     { name: 'Premium',  icon: '👑', color: 'text-purple-400' },
-  family:  { name: 'Premium',  icon: '👑', color: 'text-purple-400' },
+const PLAN_LABELS: Record<string, { key: TranslationKey; icon: string; color: string }> = {
+  free:    { key: 'settings.plan.free',    icon: '🌱', color: 'text-white/60' },
+  premium: { key: 'settings.plan.premium', icon: '👑', color: 'text-purple-400' },
+  plus:    { key: 'settings.plan.premium', icon: '👑', color: 'text-purple-400' },
+  pro:     { key: 'settings.plan.premium', icon: '👑', color: 'text-purple-400' },
+  family:  { key: 'settings.plan.premium', icon: '👑', color: 'text-purple-400' },
 }
 
 export default async function SettingsPage() {
   const { userId } = await auth()
   if (!userId) return null
+
+  const t = await getServerT()
 
   // Plan from shared cache — no extra DB call
   const cached = await getUserProfile(userId)
@@ -74,8 +78,8 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6 animate-fade-in-up max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Definições</h1>
-        <p className="text-white/50 text-sm mt-0.5">Gere a tua conta e subscrição</p>
+        <h1 className="text-2xl font-bold text-white">{t('settings.title')}</h1>
+        <p className="text-white/50 text-sm mt-0.5">{t('settings.subtitle')}</p>
       </div>
 
       {/* Plano atual */}
@@ -84,19 +88,19 @@ export default async function SettingsPage() {
           <div>
             <h2 className="font-semibold text-white mb-1 flex items-center gap-2">
               <Zap className="w-4 h-4 text-green-400" />
-              Plano Atual
+              {t('settings.plan_current')}
             </h2>
             <p className="text-sm text-white/60">
-              Estás no plano{' '}
+              {t('settings.plan_on')}{' '}
               <strong className={planInfo.color}>
-                {planInfo.icon} {planInfo.name}
+                {planInfo.icon} {t(planInfo.key)}
               </strong>
             </p>
           </div>
           {isPaid ? (
             <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-lg">
               <Check className="w-4 h-4" />
-              Ativo
+              {t('settings.plan_active')}
             </div>
           ) : (
             <Link
@@ -104,7 +108,7 @@ export default async function SettingsPage() {
               className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-500/20 transition-colors"
             >
               <Crown className="w-4 h-4" />
-              Fazer upgrade
+              {t('settings.plan_upgrade')}
             </Link>
           )}
         </div>
@@ -113,11 +117,11 @@ export default async function SettingsPage() {
       {/* Notificações push */}
       <div className="bg-white/5 border border-white/10 rounded-xl p-5">
         <h2 className="font-semibold text-white mb-1 flex items-center gap-2">
-          <span className="text-base">🔔</span>
-          Notificações Diárias
+          <span className="text-base">{t('settings.notifications_icon')}</span>
+          {t('settings.notifications')}
         </h2>
         <p className="text-sm text-white/50 mb-4">
-          Recebe lembretes diários com frases motivacionais para manteres os bons hábitos financeiros.
+          {t('settings.notifications_desc')}
         </p>
         <PushOptIn />
       </div>

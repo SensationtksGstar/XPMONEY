@@ -12,6 +12,7 @@ import { ReceiptScanner }     from './ReceiptScanner'
 import type { Category, TransactionType } from '@/types'
 import type { ReceiptScanResult }         from '@/app/api/scan-receipt/route'
 import Link                   from 'next/link'
+import { useT }               from '@/lib/i18n/LocaleProvider'
 
 interface Props {
   onClose:       () => void
@@ -47,6 +48,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
   const { byType }                         = useCategories()
   const { isFree }                         = useUserPlan()
   const titleId                            = useId()
+  const t                                  = useT()
 
   const [type,              setType]             = useState<TransactionType>(initialType)
   const [amount,            setAmount]           = useState('')
@@ -171,7 +173,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                 </button>
               )}
               <h2 id={titleId} className="font-bold text-white text-lg">
-                {showScanner ? 'Digitalizar Fatura' : 'Nova transação'}
+                {showScanner ? t('txform.title_scan') : t('txform.title_new')}
               </h2>
             </div>
             <div className="flex items-center gap-2">
@@ -182,7 +184,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                     if (isFree) { setShowUpgradeTip(t => !t); return }
                     setShowScanner(true)
                   }}
-                  title="Digitalizar fatura com IA"
+                  title={t('txform.scan_title')}
                   className={cn(
                     'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all',
                     isFree
@@ -191,7 +193,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                   )}
                 >
                   {isFree ? <Lock className="w-3 h-3" /> : <ScanLine className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">Scan IA</span>
+                  <span className="hidden sm:inline">{t('txform.scan_label')}</span>
                   {isFree && <Crown className="w-3 h-3" />}
                 </button>
               )}
@@ -207,14 +209,14 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                 <div className="px-5 py-3 bg-purple-500/10 flex items-center gap-3">
                   <Crown className="w-4 h-4 text-purple-400 flex-shrink-0" />
                   <p className="text-xs text-white/70 flex-1">
-                    Scanner de faturas disponível no <strong className="text-purple-300">plano Premium</strong>
+                    {t('txform.scan_upgrade_msg')} <strong className="text-purple-300">{t('txform.scan_upgrade_plan')}</strong>
                   </p>
                   <Link
                     href="/settings/billing"
                     onClick={onClose}
                     className="text-[10px] font-bold text-black bg-purple-400 px-2.5 py-1 rounded-lg flex-shrink-0"
                   >
-                    Upgrade
+                    {t('txform.scan_upgrade_cta')}
                   </Link>
                 </div>
               </div>
@@ -238,26 +240,26 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                   {/* STEP 1: Type + Category */}
                   <div className={cn(step === 2 && 'hidden sm:block')}>
                     <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-2xl mb-4">
-                      {(['expense', 'income'] as TransactionType[]).map(t => (
+                      {(['expense', 'income'] as TransactionType[]).map(opt => (
                         <button
-                          key={t}
+                          key={opt}
                           type="button"
-                          onClick={() => handleTypeChange(t)}
+                          onClick={() => handleTypeChange(opt)}
                           className={cn(
                             'py-3 rounded-xl text-sm font-bold transition-all active:scale-95',
-                            type === t
-                              ? t === 'expense'
+                            type === opt
+                              ? opt === 'expense'
                                 ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                                 : 'bg-green-500/20 text-green-400 border border-green-500/30'
                               : 'text-white/50',
                           )}
                         >
-                          {t === 'expense' ? '− Despesa' : '+ Receita'}
+                          {opt === 'expense' ? t('txform.type_expense') : t('txform.type_income')}
                         </button>
                       ))}
                     </div>
 
-                    <p className="text-xs text-white/40 mb-3 font-medium uppercase tracking-wider">Categoria</p>
+                    <p className="text-xs text-white/40 mb-3 font-medium uppercase tracking-wider">{t('txform.category_label')}</p>
                     <div className="grid grid-cols-4 gap-2">
                       {categories.map(cat => (
                         <button
@@ -285,7 +287,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                         onClick={() => setStep(2)}
                         className="sm:hidden w-full mt-4 bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-2xl transition-all active:scale-95"
                       >
-                        Continuar →
+                        {t('txform.continue')}
                       </button>
                     )}
                   </div>
@@ -301,7 +303,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       >
                         <span className="text-2xl">{selectedCategory.icon}</span>
                         <div className="flex-1">
-                          <p className="text-xs text-white/40">Categoria</p>
+                          <p className="text-xs text-white/40">{t('txform.category_label')}</p>
                           <p className="text-sm font-semibold text-white">{selectedCategory.name}</p>
                         </div>
                         <ChevronDown className="w-4 h-4 text-white/30 -rotate-90" />
@@ -310,7 +312,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
 
                     {/* Amount */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus-within:border-green-500/50 transition-colors mb-4">
-                      <p className="text-xs text-white/40 mb-2">Valor</p>
+                      <p className="text-xs text-white/40 mb-2">{t('txform.amount_label')}</p>
                       <div className="flex items-center gap-2">
                         <span className="text-white/40 font-bold text-2xl">€</span>
                         <input
@@ -320,10 +322,10 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                           type="text"
                           inputMode="decimal"
                           pattern="[0-9.,]*"
-                          placeholder="0,00"
+                          placeholder={t('txform.amount_placeholder')}
                           value={amount}
                           onChange={e => setAmount(e.target.value.replace(/[^\d.,]/g, ''))}
-                          aria-label="Valor em euros"
+                          aria-label={t('txform.amount_aria')}
                           className="flex-1 bg-transparent text-white text-4xl font-bold placeholder-white/15 outline-none"
                           required
                           autoFocus={step === 2}
@@ -333,10 +335,10 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
 
                     {/* Description */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 focus-within:border-white/20 transition-colors mb-4">
-                      <p className="text-xs text-white/40 mb-1">Descrição <span className="text-white/20">(opcional)</span></p>
+                      <p className="text-xs text-white/40 mb-1">{t('txform.description_label')} <span className="text-white/20">{t('txform.description_optional')}</span></p>
                       <input
                         type="text"
-                        placeholder="Ex: Almoço, Netflix, Gasolina..."
+                        placeholder={t('txform.description_placeholder')}
                         value={description}
                         onChange={e => setDescription(e.target.value)}
                         className="w-full bg-transparent text-white placeholder-white/25 outline-none text-sm py-1"
@@ -345,7 +347,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
 
                     {/* Date */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 focus-within:border-white/20 transition-colors mb-4">
-                      <p className="text-xs text-white/40 mb-1">Data</p>
+                      <p className="text-xs text-white/40 mb-1">{t('txform.date_label')}</p>
                       <input
                         type="date"
                         value={date}
@@ -358,13 +360,13 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                     {xpGained && (
                       <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl py-3 mb-4 animate-fade-in-up">
                         <Zap className="w-4 h-4 text-yellow-400" />
-                        <span className="text-yellow-400 font-bold">+{xpGained} XP ganhos!</span>
+                        <span className="text-yellow-400 font-bold">{t('txform.xp_gained', { xp: xpGained })}</span>
                       </div>
                     )}
 
                     {!defaultAccount && (
                       <p className="text-xs text-yellow-400/80 text-center mb-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
-                        Nenhuma conta configurada. Completa o onboarding.
+                        {t('txform.no_account')}
                       </p>
                     )}
 
@@ -373,7 +375,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       disabled={loading || !amount || !selectedCategory || !defaultAccount}
                       className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold py-4 rounded-2xl transition-all text-base active:scale-95"
                     >
-                      {loading ? '⚡ A guardar...' : 'Guardar transação'}
+                      {loading ? t('txform.saving') : t('txform.save')}
                     </button>
                   </div>
 

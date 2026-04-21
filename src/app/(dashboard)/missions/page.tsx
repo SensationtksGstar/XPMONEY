@@ -9,10 +9,12 @@ import { CelebrationModal } from '@/components/ui/CelebrationModal'
 import { formatPercent }   from '@/lib/utils'
 import Link                from 'next/link'
 import { cn }              from '@/lib/utils'
+import { useT }            from '@/lib/i18n/LocaleProvider'
 
 export default function MissionsPage() {
   const { missions, loading } = useMissions()
   const client  = useQueryClient()
+  const t       = useT()
   const [completing, setCompleting] = useState<string | null>(null)
   const [celebration, setCelebration] = useState<{
     title: string; subtitle: string; xp: number
@@ -30,8 +32,8 @@ export default function MissionsPage() {
       client.invalidateQueries({ queryKey: ['xp'] })
       // Show celebration instead of plain toast
       setCelebration({
-        title:    `"${title}" concluída!`,
-        subtitle: 'Continua assim — o teu Voltix está a ficar mais forte! 💪',
+        title:    t('missions.completed_toast_title', { title }),
+        subtitle: t('missions.completed_toast_sub'),
         xp:       xpReward,
       })
     } catch {
@@ -45,8 +47,8 @@ export default function MissionsPage() {
     return (
       <div className="space-y-6 animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold text-white">Missões</h1>
-          <p className="text-white/50 text-sm mt-0.5">Completa missões, ganha XP, sobe de nível</p>
+          <h1 className="text-2xl font-bold text-white">{t('missions.title')}</h1>
+          <p className="text-white/50 text-sm mt-0.5">{t('missions.subtitle')}</p>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
@@ -60,15 +62,15 @@ export default function MissionsPage() {
   return (
     <div className="space-y-6 animate-fade-in-up pb-24">
       <div>
-        <h1 className="text-2xl font-bold text-white">Missões</h1>
-        <p className="text-white/50 text-sm mt-0.5">Completa missões, ganha XP, sobe de nível</p>
+        <h1 className="text-2xl font-bold text-white">{t('missions.title')}</h1>
+        <p className="text-white/50 text-sm mt-0.5">{t('missions.subtitle')}</p>
       </div>
 
       {/* Ativas */}
       {active.length > 0 ? (
         <div>
           <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">
-            Ativas ({active.length})
+            {t('missions.active_section', { count: active.length })}
           </h2>
           <div className="space-y-3">
             {active.map(mission => {
@@ -94,7 +96,7 @@ export default function MissionsPage() {
                         <h3 className="text-sm font-semibold text-white truncate">{mission.title}</h3>
                         {canComplete && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full flex-shrink-0 animate-pulse">
-                            PRONTO!
+                            {t('missions.ready')}
                           </span>
                         )}
                       </div>
@@ -131,7 +133,7 @@ export default function MissionsPage() {
                         ) : (
                           <CheckCircle2 className="w-3 h-3" />
                         )}
-                        Completar
+                        {t('missions.complete_cta')}
                       </button>
                     ) : (
                       <span className="text-xs text-white/40">{formatPercent(pct, 0)}</span>
@@ -146,13 +148,13 @@ export default function MissionsPage() {
         /* Empty state */
         <div className="glass-card p-10 text-center">
           <div className="text-5xl mb-4">🎯</div>
-          <p className="text-white font-bold text-lg mb-1">Todas concluídas!</p>
-          <p className="text-white/40 text-sm mb-4">Novas missões serão geradas em breve.</p>
+          <p className="text-white font-bold text-lg mb-1">{t('missions.empty_title')}</p>
+          <p className="text-white/40 text-sm mb-4">{t('missions.empty_desc')}</p>
           <Link
             href="/dashboard"
             className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-xl hover:bg-green-500/20 transition-colors"
           >
-            Voltar ao início
+            {t('missions.empty_back')}
           </Link>
         </div>
       )}
@@ -161,7 +163,7 @@ export default function MissionsPage() {
       {completed.length > 0 && (
         <div>
           <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">
-            Concluídas ({completed.length}) 🏆
+            {t('missions.done_section', { count: completed.length })}
           </h2>
           <div className="space-y-2">
             {completed.map(mission => (
@@ -185,14 +187,14 @@ export default function MissionsPage() {
       <div className="border border-dashed border-white/10 rounded-xl p-5 text-center">
         <Crown className="w-7 h-7 text-yellow-400/60 mx-auto mb-2" />
         <p className="text-white/50 text-sm mb-3">
-          Missões premium com recompensas maiores.<br />
-          Disponíveis com o plano Premium.
+          {t('missions.upsell_desc_a')}<br />
+          {t('missions.upsell_desc_b')}
         </p>
         <Link
           href="/settings/billing"
           className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-500/20 transition-colors"
         >
-          Ver planos
+          {t('missions.upsell_cta')}
         </Link>
       </div>
 

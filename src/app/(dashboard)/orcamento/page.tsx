@@ -16,6 +16,7 @@ import { formatCurrency } from '@/lib/utils'
 import { parseAmountLocale } from '@/lib/safeNumber'
 import { Spinner } from '@/components/ui/Spinner'
 import { useToast } from '@/components/ui/toaster'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 // recharts é ~100 KB gz — carrega só quando o user chega à página
 // e o chart entra em vista (via dynamic).
@@ -42,6 +43,7 @@ export default function OrcamentoPage() {
   const { budget, loading, save, isSaving } = useBudget()
   const { data: status, isLoading: statusLoading } = useBudgetStatus()
   const { toast } = useToast()
+  const t = useT()
 
   const [editing, setEditing] = useState(false)
 
@@ -67,10 +69,10 @@ export default function OrcamentoPage() {
         onSave={async input => {
           try {
             await save(input)
-            toast('Orçamento guardado', 'success')
+            toast(t('budget.saved_toast'), 'success')
             setEditing(false)
           } catch (err) {
-            toast(err instanceof Error ? err.message : 'Erro ao guardar', 'error')
+            toast(err instanceof Error ? err.message : t('budget.save_error'), 'error')
           }
         }}
         saving={isSaving}
@@ -85,10 +87,10 @@ export default function OrcamentoPage() {
         <div>
           <h1 className="text-2xl font-black text-white flex items-center gap-2">
             <PiggyBank className="w-6 h-6 text-emerald-400" />
-            Orçamento
+            {t('budget.title')}
           </h1>
           <p className="text-sm text-white/50">
-            Método 50/30/20 · {status?.month ?? '—'}
+            {t('budget.subtitle', { month: status?.month ?? '—' })}
           </p>
         </div>
         <button
@@ -97,7 +99,7 @@ export default function OrcamentoPage() {
           className="inline-flex items-center gap-2 text-xs text-white/60 hover:text-white bg-white/5 border border-white/10 px-3 py-2 rounded-lg font-semibold min-h-[40px]"
         >
           <SettingsIcon className="w-3.5 h-3.5" />
-          Editar
+          {t('budget.edit')}
         </button>
       </div>
 
@@ -113,6 +115,7 @@ export default function OrcamentoPage() {
 // ── Dashboard ─────────────────────────────────────────────────────────
 
 function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof useBudgetStatus>['data']> }) {
+  const t = useT()
   const pctTotal = status.income > 0 ? (status.totalSpent / status.income) * 100 : 0
   const overrun = status.totalRemaining < 0
   const hasAlert = status.buckets.some(b => b.severity !== 'ok')
@@ -122,10 +125,10 @@ function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof use
       {/* Resumo */}
       <div className="bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-transparent border border-emerald-500/20 rounded-2xl p-5">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-          <SummaryStat label="Rendimento" value={formatCurrency(status.income)} tone="neutral" />
-          <SummaryStat label="Já gasto"    value={formatCurrency(status.totalSpent)} tone="warn" />
+          <SummaryStat label={t('budget.stat_income')} value={formatCurrency(status.income)} tone="neutral" />
+          <SummaryStat label={t('budget.stat_spent')}  value={formatCurrency(status.totalSpent)} tone="warn" />
           <SummaryStat
-            label={overrun ? 'Em dívida' : 'Ainda disponível'}
+            label={overrun ? t('budget.stat_overdraft') : t('budget.stat_remaining')}
             value={formatCurrency(Math.abs(status.totalRemaining))}
             tone={overrun ? 'bad' : 'good'}
           />
@@ -143,7 +146,7 @@ function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof use
           />
         </div>
         <p className="text-xs text-white/50 mt-1.5 tabular-nums">
-          {pctTotal.toFixed(0)}% do rendimento
+          {t('budget.pct_of_income', { pct: pctTotal.toFixed(0) })}
         </p>
       </div>
 
@@ -152,8 +155,7 @@ function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof use
         <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/25 rounded-xl p-4">
           <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-amber-200/90 leading-relaxed">
-            Uma ou mais categorias passaram dos 80% do limite. Vê em baixo
-            quais — e considera reduzir antes do fim do mês.
+            {t('budget.alert')}
           </div>
         </div>
       )}
@@ -174,14 +176,14 @@ function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof use
         <div className="flex items-center gap-3">
           <Sparkles className="w-4 h-4 text-white/40" />
           <p className="text-xs text-white/60">
-            Regista as tuas despesas para ver o orçamento actualizar em tempo real.
+            {t('budget.cta_log')}
           </p>
         </div>
         <Link
           href="/transactions"
           className="text-xs font-bold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 whitespace-nowrap"
         >
-          Transações <ArrowRight className="w-3 h-3" />
+          {t('budget.cta_link')} <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
     </>
@@ -207,6 +209,7 @@ function SummaryStat({
 }
 
 function BucketCard({ bucket }: { bucket: BucketStatus }) {
+  const t = useT()
   const colors = BUCKET_COLORS[bucket.bucket]
   const sevIcon = bucket.severity === 'over'
     ? <Flame className="w-3.5 h-3.5" />
@@ -218,9 +221,9 @@ function BucketCard({ bucket }: { bucket: BucketStatus }) {
     bucket.severity === 'caution' ? 'text-amber-300 bg-amber-500/15 border-amber-500/30' :
                                     'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
   const pctText =
-    bucket.severity === 'over'    ? `${(bucket.pct - 100).toFixed(0)}% acima` :
-    bucket.severity === 'caution' ? `${bucket.pct.toFixed(0)}% usado`         :
-                                    `${bucket.pct.toFixed(0)}% usado`
+    bucket.severity === 'over'
+      ? t('budget.bucket_over', { pct: (bucket.pct - 100).toFixed(0) })
+      : t('budget.bucket_used', { pct: bucket.pct.toFixed(0) })
 
   return (
     <div className={`border ${colors.border} ${colors.bg} rounded-2xl p-5`}>
@@ -250,8 +253,8 @@ function BucketCard({ bucket }: { bucket: BucketStatus }) {
         </span>
         <span className="text-xs text-white/50 tabular-nums">
           {bucket.limit - bucket.spent >= 0
-            ? `${formatCurrency(bucket.limit - bucket.spent)} livre`
-            : `${formatCurrency(Math.abs(bucket.limit - bucket.spent))} acima`}
+            ? t('budget.bucket_free', { amount: formatCurrency(bucket.limit - bucket.spent) })
+            : t('budget.bucket_over_amt', { amount: formatCurrency(Math.abs(bucket.limit - bucket.spent)) })}
         </span>
       </div>
       <div className="h-2 bg-black/30 rounded-full overflow-hidden mb-3">
@@ -309,6 +312,7 @@ function BudgetSetup({
   onCancel?: () => void
   saving:  boolean
 }) {
+  const t = useT()
   const [income, setIncome]           = useState<string>(initial ? String(Math.round(initial.monthly_income)) : '')
   const [needs, setNeeds]             = useState<number>(initial?.pct_needs   ?? 50)
   const [wants, setWants]             = useState<number>(initial?.pct_wants   ?? 30)
@@ -346,18 +350,15 @@ function BudgetSetup({
       <div>
         <h1 className="text-2xl font-black text-white flex items-center gap-2">
           <PiggyBank className="w-6 h-6 text-emerald-400" />
-          {initial ? 'Editar orçamento' : 'Configurar orçamento'}
+          {initial ? t('budget.setup_edit') : t('budget.setup_new')}
         </h1>
-        <p className="text-sm text-white/50 mt-1">
-          Método <strong>50/30/20</strong> — 50% necessidades, 30% desejos, 20% poupança.
-          Podes ajustar as percentagens.
-        </p>
+        <p className="text-sm text-white/50 mt-1" dangerouslySetInnerHTML={{ __html: t('budget.setup_intro') }} />
       </div>
 
       {/* Income */}
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
         <label className="block text-sm font-semibold text-white mb-2">
-          Rendimento líquido mensal
+          {t('budget.income_label')}
         </label>
         <div className="flex items-center gap-2 bg-black/30 border border-white/10 rounded-lg px-3 py-3 focus-within:border-emerald-400/60">
           <span className="text-white/40">€</span>
@@ -367,21 +368,21 @@ function BudgetSetup({
             pattern="[0-9.,]*"
             value={income}
             onChange={e => setIncome(e.target.value)}
-            placeholder="1500"
+            placeholder={t('budget.income_placeholder')}
             required
             className="flex-1 bg-transparent text-white text-xl font-bold outline-none placeholder-white/25"
           />
-          <span className="text-xs text-white/40">/mês</span>
+          <span className="text-xs text-white/40">{t('budget.income_unit')}</span>
         </div>
         <p className="text-[11px] text-white/40 mt-2">
-          Usa o valor que recebes à conta depois de impostos (não o bruto).
+          {t('budget.income_hint')}
         </p>
       </div>
 
       {/* Percentagens */}
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-white text-sm">Distribuição</h3>
+          <h3 className="font-semibold text-white text-sm">{t('budget.distribution')}</h3>
           <button
             type="button"
             onClick={reset}
@@ -393,21 +394,21 @@ function BudgetSetup({
         </div>
 
         <PercentSlider
-          label="Necessidades"
+          label={t('budget.pct_needs')}
           value={needs}
           setValue={setNeeds}
           bucket="needs"
           preview={preview.needs}
         />
         <PercentSlider
-          label="Desejos"
+          label={t('budget.pct_wants')}
           value={wants}
           setValue={setWants}
           bucket="wants"
           preview={preview.wants}
         />
         <PercentSlider
-          label="Poupança"
+          label={t('budget.pct_savings')}
           value={savings}
           setValue={setSavings}
           bucket="savings"
@@ -421,9 +422,9 @@ function BudgetSetup({
         }`}>
           <Info className="w-3.5 h-3.5 flex-shrink-0" />
           <span>
-            Total: <strong className="tabular-nums">{sum.toFixed(1)}%</strong>
+            {t('budget.total', { pct: '' })}<strong className="tabular-nums">{sum.toFixed(1)}%</strong>
             {!validatePercentages(needs, wants, savings) &&
-              <> · <span className="text-rose-300">tem de ser 100%</span></>
+              <> · <span className="text-rose-300">{t('budget.total_must')}</span></>
             }
           </span>
         </div>
@@ -437,7 +438,7 @@ function BudgetSetup({
             onClick={onCancel}
             className="flex-1 py-3 rounded-xl text-sm font-semibold text-white/70 bg-white/5 border border-white/10 hover:bg-white/10 min-h-[44px]"
           >
-            Cancelar
+            {t('budget.cancel')}
           </button>
         )}
         <button
@@ -445,7 +446,7 @@ function BudgetSetup({
           disabled={!valid || saving}
           className="flex-1 py-3 rounded-xl text-sm font-bold text-black bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2"
         >
-          {saving ? <Spinner size="sm" /> : <><Check className="w-4 h-4" /> Guardar</>}
+          {saving ? <Spinner size="sm" /> : <><Check className="w-4 h-4" /> {t('budget.save')}</>}
         </button>
       </div>
     </form>
@@ -461,6 +462,7 @@ function PercentSlider({
   bucket: BudgetBucket
   preview: number
 }) {
+  const t = useT()
   const colors = BUCKET_COLORS[bucket]
   return (
     <div>
@@ -479,7 +481,7 @@ function PercentSlider({
         value={value}
         onChange={e => setValue(Number(e.target.value))}
         className={`w-full h-2 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-400`}
-        aria-label={`Percentagem para ${label}`}
+        aria-label={t('budget.slider_aria', { label })}
       />
     </div>
   )

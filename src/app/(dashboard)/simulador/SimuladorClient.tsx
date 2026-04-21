@@ -4,6 +4,8 @@ import { useState, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { TrendingUp, Info, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 // Dynamic-imported so recharts (~100 KB gz) never hits the initial bundle.
 const SimuladorChart = dynamic(
@@ -15,12 +17,15 @@ const SimuladorChart = dynamic(
 )
 
 /* ─── Strategies ──────────────────────────────────────────────────────── */
-const STRATEGIES = [
-  { id: 'savings',     name: 'Depósito a prazo', rate: 3,  color: '#60a5fa', bg: 'border-blue-500/30  bg-blue-500/5',  emoji: '🏦', desc: 'Baixo risco, retorno garantido' },
-  { id: 'bonds',       name: 'Obrigações',        rate: 5,  color: '#34d399', bg: 'border-emerald-500/30 bg-emerald-500/5', emoji: '📋', desc: 'Risco moderado, rendimento estável' },
-  { id: 'mixed',       name: 'Carteira mista',    rate: 7,  color: '#a78bfa', bg: 'border-purple-500/30 bg-purple-500/5', emoji: '⚖️', desc: 'Ações + obrigações equilibrado' },
-  { id: 'sp500',       name: 'S&P 500',           rate: 10, color: '#22c55e', bg: 'border-green-500/40 bg-green-500/8', emoji: '📈', desc: 'Média histórica últimas décadas' },
-  { id: 'aggressive',  name: 'Agressivo',          rate: 15, color: '#f59e0b', bg: 'border-yellow-500/30 bg-yellow-500/5', emoji: '🚀', desc: 'Alto risco, alto potencial' },
+const STRATEGIES: {
+  id: string; nameKey: TranslationKey; descKey: TranslationKey
+  rate: number; color: string; bg: string; emoji: string
+}[] = [
+  { id: 'savings',    nameKey: 'simulator.strategy.savings_name',    descKey: 'simulator.strategy.savings_desc',    rate: 3,  color: '#60a5fa', bg: 'border-blue-500/30  bg-blue-500/5',  emoji: '🏦' },
+  { id: 'bonds',      nameKey: 'simulator.strategy.bonds_name',      descKey: 'simulator.strategy.bonds_desc',      rate: 5,  color: '#34d399', bg: 'border-emerald-500/30 bg-emerald-500/5', emoji: '📋' },
+  { id: 'mixed',      nameKey: 'simulator.strategy.mixed_name',      descKey: 'simulator.strategy.mixed_desc',      rate: 7,  color: '#a78bfa', bg: 'border-purple-500/30 bg-purple-500/5', emoji: '⚖️' },
+  { id: 'sp500',      nameKey: 'simulator.strategy.sp500_name',      descKey: 'simulator.strategy.sp500_desc',      rate: 10, color: '#22c55e', bg: 'border-green-500/40 bg-green-500/8', emoji: '📈' },
+  { id: 'aggressive', nameKey: 'simulator.strategy.aggressive_name', descKey: 'simulator.strategy.aggressive_desc', rate: 15, color: '#f59e0b', bg: 'border-yellow-500/30 bg-yellow-500/5', emoji: '🚀' },
 ]
 
 /* ─── Helpers ─────────────────────────────────────────────────────────── */
@@ -55,6 +60,7 @@ function calcCompound(monthly: number, years: number, annualRate: number) {
 interface Props { suggestedMonthly: number }
 
 export default function SimuladorClient({ suggestedMonthly }: Props) {
+  const t = useT()
   const [monthly,   setMonthly]   = useState(suggestedMonthly > 50 ? suggestedMonthly : 200)
   const [years,     setYears]     = useState(20)
   const [stratId,   setStratId]   = useState('sp500')
@@ -77,10 +83,10 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
       <div>
         <div className="flex items-center gap-2 mb-1">
           <TrendingUp className="w-5 h-5 text-green-400" />
-          <h1 className="text-2xl font-bold text-white">Simulador de Investimento</h1>
-          <span className="text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full font-bold">PRO</span>
+          <h1 className="text-2xl font-bold text-white">{t('simulator.title')}</h1>
+          <span className="text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full font-bold">{t('simulator.badge_pro')}</span>
         </div>
-        <p className="text-white/50 text-sm">Simula o crescimento dos teus investimentos com juros compostos</p>
+        <p className="text-white/50 text-sm">{t('simulator.subtitle')}</p>
       </div>
 
       {/* Inputs */}
@@ -88,7 +94,7 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
         {/* Monthly amount */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm font-medium text-white/70">Poupança mensal</label>
+            <label className="text-sm font-medium text-white/70">{t('simulator.monthly')}</label>
             <span className="text-lg font-bold text-green-400">{fmt(monthly)}</span>
           </div>
           <input
@@ -105,7 +111,7 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
               onClick={() => setMonthly(suggestedMonthly)}
               className="text-xs text-green-400/70 hover:text-green-400 mt-1 transition-colors"
             >
-              ↩ Usar a tua poupança atual ({fmt(suggestedMonthly)}/mês)
+              {t('simulator.use_current', { amount: fmt(suggestedMonthly) })}
             </button>
           )}
         </div>
@@ -113,8 +119,8 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
         {/* Period */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm font-medium text-white/70">Período</label>
-            <span className="text-lg font-bold text-blue-400">{years} anos</span>
+            <label className="text-sm font-medium text-white/70">{t('simulator.period')}</label>
+            <span className="text-lg font-bold text-blue-400">{years === 1 ? t('simulator.years_one', { n: years }) : t('simulator.years_many', { n: years })}</span>
           </div>
           <input
             type="range" min={1} max={40} step={1}
@@ -123,13 +129,13 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
             className="w-full accent-blue-400"
           />
           <div className="flex justify-between text-xs text-white/30 mt-1">
-            <span>1 ano</span><span>40 anos</span>
+            <span>{t('simulator.years_one', { n: 1 })}</span><span>{t('simulator.years_many', { n: 40 })}</span>
           </div>
         </div>
 
         {/* Strategy */}
         <div>
-          <label className="text-sm font-medium text-white/70 mb-2 block">Estratégia de investimento</label>
+          <label className="text-sm font-medium text-white/70 mb-2 block">{t('simulator.strategy')}</label>
           <div className="grid grid-cols-1 gap-2">
             {STRATEGIES.map(s => (
               <button
@@ -142,11 +148,11 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
               >
                 <span className="text-xl w-8 text-center">{s.emoji}</span>
                 <div className="flex-1">
-                  <div className="text-sm font-semibold text-white">{s.name}</div>
-                  <div className="text-xs text-white/40">{s.desc}</div>
+                  <div className="text-sm font-semibold text-white">{t(s.nameKey)}</div>
+                  <div className="text-xs text-white/40">{t(s.descKey)}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold" style={{ color: s.color }}>{s.rate}%/ano</div>
+                  <div className="text-sm font-bold" style={{ color: s.color }}>{t('simulator.rate', { rate: s.rate })}</div>
                 </div>
               </button>
             ))}
@@ -157,15 +163,15 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
       {/* Results summary */}
       <div className="grid grid-cols-3 gap-3 animate-fade-in-up">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-          <div className="text-xs text-white/40 mb-1">Total investido</div>
+          <div className="text-xs text-white/40 mb-1">{t('simulator.invested')}</div>
           <div className="text-lg font-bold text-white">{fmt(result.invested)}</div>
         </div>
         <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
-          <div className="text-xs text-green-400/60 mb-1">Portfólio final</div>
+          <div className="text-xs text-green-400/60 mb-1">{t('simulator.final')}</div>
           <div className="text-lg font-bold text-green-400">{fmt(result.final)}</div>
         </div>
         <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 text-center">
-          <div className="text-xs text-purple-400/60 mb-1">Lucro ({gainPct}%)</div>
+          <div className="text-xs text-purple-400/60 mb-1">{t('simulator.gain', { pct: gainPct })}</div>
           <div className="text-lg font-bold text-purple-400">+{fmt(result.gains)}</div>
         </div>
       </div>
@@ -173,16 +179,16 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
       {/* Chart */}
       {years >= 2 && (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white mb-4">Crescimento ao longo do tempo</h3>
+          <h3 className="text-sm font-semibold text-white mb-4">{t('simulator.chart_title')}</h3>
           <SimuladorChart data={result.data} color={strat.color} />
           <div className="flex gap-4 justify-center mt-2">
             <div className="flex items-center gap-1.5 text-xs text-white/50">
               <div className="w-3 h-0.5 bg-gray-500 rounded" />
-              Investido
+              {t('simulator.invested_legend')}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-white/50">
               <div className="w-3 h-0.5 rounded" style={{ backgroundColor: strat.color }} />
-              Portfólio
+              {t('simulator.portfolio_legend')}
             </div>
           </div>
         </div>
@@ -192,14 +198,14 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
         <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
           <Zap className="w-4 h-4 text-yellow-400" />
-          Marcos do teu investimento
+          {t('simulator.milestones')}
         </h3>
         <div className="space-y-2">
           {[1, 5, 10, 20, years].filter((y, i, a) => y <= years && a.indexOf(y) === i).sort((a,b)=>a-b).map(y => {
             const r = calcCompound(monthly, y, strat.rate)
             return (
               <div key={y} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
-                <span className="text-sm text-white/60">{y} {y === 1 ? 'ano' : 'anos'}</span>
+                <span className="text-sm text-white/60">{y === 1 ? t('simulator.years_one', { n: y }) : t('simulator.years_many', { n: y })}</span>
                 <div className="text-right">
                   <span className="text-sm font-bold text-white">{fmt(r.final)}</span>
                   <span className="text-xs text-green-400 ml-2">(+{fmt(r.gains)})</span>
@@ -216,18 +222,18 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
           onClick={() => setCompare(!compare)}
           className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
         >
-          {compare ? '▲ Esconder' : '▼ Ver'} comparação entre todas as estratégias
+          {compare ? t('simulator.compare_hide') : t('simulator.compare_show')}
         </button>
 
         {compare && (
           <div className="mt-3 bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2 animate-fade-in-up">
-            <h3 className="text-sm font-semibold text-white mb-3">Após {years} anos com {fmt(monthly)}/mês</h3>
+            <h3 className="text-sm font-semibold text-white mb-3">{t('simulator.compare_title', { years, monthly: fmt(monthly) })}</h3>
             {allResults.sort((a,b) => b.final - a.final).map(s => (
               <div key={s.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
                 <span className="text-xl w-8 text-center">{s.emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-white">{s.name}</div>
-                  <div className="text-xs text-white/40">{s.rate}%/ano</div>
+                  <div className="text-sm font-medium text-white">{t(s.nameKey)}</div>
+                  <div className="text-xs text-white/40">{t('simulator.rate', { rate: s.rate })}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-bold text-white">{fmt(s.final)}</div>
@@ -242,11 +248,7 @@ export default function SimuladorClient({ suggestedMonthly }: Props) {
       {/* Disclaimer */}
       <div className="flex gap-2 text-xs text-white/30 bg-white/3 rounded-xl p-3">
         <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-        <span>
-          Simulação baseada em retornos históricos. Resultados passados não garantem retornos futuros.
-          O S&P 500 teve um retorno médio de ~10%/ano nos últimos 50 anos antes de inflação.
-          Consulta um consultor financeiro antes de investir.
-        </span>
+        <span>{t('simulator.disclaimer')}</span>
       </div>
     </div>
   )

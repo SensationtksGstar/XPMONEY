@@ -1,10 +1,13 @@
+'use client'
+
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 interface Props {
   size?:      'xs' | 'sm' | 'md' | 'lg'
   tone?:      'light' | 'dark' | 'brand'
   className?: string
-  /** Accessible label for screen readers. Default: "A carregar" */
+  /** Accessible label for screen readers. Default: translated "Loading". */
   label?:     string
 }
 
@@ -26,12 +29,13 @@ const TONE_MAP = {
  * Used inside submit buttons, loading overlays, and progress indicators.
  */
 export function Spinner({
-  size = 'sm', tone = 'light', className, label = 'A carregar',
+  size = 'sm', tone = 'light', className, label,
 }: Props) {
+  const t = useT()
   return (
     <span
       role="status"
-      aria-label={label}
+      aria-label={label ?? t('spinner.loading')}
       className={cn(
         'inline-block rounded-full animate-spin',
         SIZE_MAP[size],

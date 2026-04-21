@@ -2,6 +2,7 @@ import { auth }               from '@clerk/nextjs/server'
 import { redirect }           from 'next/navigation'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { PremiumFeatureLock } from '@/components/common/PremiumFeatureLock'
+import { getServerT }          from '@/lib/i18n/server'
 import PerspectivaClient       from './PerspectivaClient'
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -16,6 +17,7 @@ export default async function PerspectivaPage() {
   const { userId } = DEMO_MODE ? { userId: null } : await auth()
   if (!DEMO_MODE && !userId) redirect('/sign-in')
 
+  const t  = await getServerT()
   const db = createSupabaseAdmin()
 
   // Direct DB query — never cached — ensures paywall sees authoritative plan.
@@ -36,13 +38,13 @@ export default async function PerspectivaPage() {
     return (
       <PremiumFeatureLock
         icon="crown"
-        title="Perspetiva de Riqueza"
-        description="Compara o teu salário com celebridades, CEOs e os rendimentos médios europeus. Descobre o custo real de cada despesa em horas de trabalho."
+        title={t('perspective.lock.title')}
+        description={t('perspective.lock.desc')}
         bullets={[
-          'Salário médio anual vs Ronaldo, Messi, Elon Musk',
-          'Quantas horas de trabalho custa cada despesa (€5 café = 12 min)',
-          'Tendências de 24 meses com análise preditiva',
-          'Rankings de gasto por categoria vs média nacional',
+          t('perspective.lock.b1'),
+          t('perspective.lock.b2'),
+          t('perspective.lock.b3'),
+          t('perspective.lock.b4'),
         ]}
         preview={<FauxPerspectivaPreview />}
       />

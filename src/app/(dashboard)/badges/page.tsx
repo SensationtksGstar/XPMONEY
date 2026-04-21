@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useQuery }  from '@tanstack/react-query'
 import { cn }        from '@/lib/utils'
 import { BADGE_DEFINITIONS } from '@/lib/gamification'
+import { useT }        from '@/lib/i18n/LocaleProvider'
 import type { UserBadge } from '@/types'
 
 async function fetchUserBadges(): Promise<UserBadge[]> {
@@ -20,11 +21,11 @@ const RARITY_STYLE: Record<string, string> = {
   legendary: 'border-yellow-500/40 bg-yellow-500/8',
 }
 
-const RARITY_LABEL: Record<string, string> = {
-  common:    'Comum',
-  rare:      'Raro',
-  epic:      'Épico',
-  legendary: 'Lendário',
+const RARITY_LABEL_KEY: Record<string, 'badges.rarity.common' | 'badges.rarity.rare' | 'badges.rarity.epic' | 'badges.rarity.legendary'> = {
+  common:    'badges.rarity.common',
+  rare:      'badges.rarity.rare',
+  epic:      'badges.rarity.epic',
+  legendary: 'badges.rarity.legendary',
 }
 
 const RARITY_TEXT: Record<string, string> = {
@@ -35,6 +36,7 @@ const RARITY_TEXT: Record<string, string> = {
 }
 
 export default function BadgesPage() {
+  const t = useT()
   const { data: earned = [], isLoading } = useQuery({
     queryKey: ['badges'],
     queryFn:  fetchUserBadges,
@@ -52,16 +54,16 @@ export default function BadgesPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-white">Conquistas</h1>
+        <h1 className="text-xl font-bold text-white">{t('badges.title')}</h1>
         <p className="text-white/40 text-sm mt-0.5">
-          {earned.length} de {BADGE_DEFINITIONS.length} desbloqueadas
+          {t('badges.subtitle', { earned: earned.length, total: BADGE_DEFINITIONS.length })}
         </p>
       </div>
 
       {/* Progresso geral */}
       <div className="glass-card p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-white/50">Progresso total</span>
+          <span className="text-sm text-white/50">{t('badges.progress')}</span>
           <span className="text-sm font-bold text-green-400">
             {earned.length}/{BADGE_DEFINITIONS.length}
           </span>
@@ -102,7 +104,7 @@ export default function BadgesPage() {
                   </p>
                   {isEarned && (
                     <span className={cn('text-[10px] font-medium', RARITY_TEXT[badge.rarity])}>
-                      {RARITY_LABEL[badge.rarity]}
+                      {t(RARITY_LABEL_KEY[badge.rarity])}
                     </span>
                   )}
                 </div>

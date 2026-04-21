@@ -6,6 +6,7 @@ import { TransactionForm }     from '@/components/transactions/TransactionForm'
 import { TransactionList }     from '@/components/transactions/TransactionList'
 import { StatementImporter }   from '@/components/transactions/StatementImporter'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/LocaleProvider'
 import dynamic from 'next/dynamic'
 
 const AdBanner = dynamic(
@@ -13,15 +14,15 @@ const AdBanner = dynamic(
   { ssr: false },
 )
 
-const FILTERS = [
-  { value: 'all',     label: 'Todas' },
-  { value: 'expense', label: 'Despesas' },
-  { value: 'income',  label: 'Receitas' },
-]
-
 const IMPORT_HINT_KEY = 'xpmoney:import_hint_seen'
 
 export default function TransactionsPage() {
+  const t = useT()
+  const FILTERS = [
+    { value: 'all',     label: t('transactions.filter.all') },
+    { value: 'expense', label: t('transactions.filter.expense') },
+    { value: 'income',  label: t('transactions.filter.income') },
+  ]
   const [showForm,      setShowForm]     = useState(false)
   const [showImporter,  setShowImporter] = useState(false)
   const [search,        setSearch]       = useState('')
@@ -51,13 +52,13 @@ export default function TransactionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Transações</h1>
-          <p className="text-white/50 text-sm mt-0.5">Regista e gere os teus movimentos</p>
+          <h1 className="text-2xl font-bold text-white">{t('transactions.title')}</h1>
+          <p className="text-white/50 text-sm mt-0.5">{t('transactions.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowSearch(s => !s)}
-            aria-label={showSearch ? 'Fechar pesquisa' : 'Pesquisar transações'}
+            aria-label={showSearch ? t('transactions.search_close_aria') : t('transactions.search_open_aria')}
             aria-pressed={showSearch}
             className={cn(
               'w-11 h-11 flex items-center justify-center rounded-xl border transition-all',
@@ -71,7 +72,7 @@ export default function TransactionsPage() {
           {/* Import statement button — gradient + sparkle to make the feature discoverable */}
           <button
             onClick={openImporter}
-            aria-label="Importar extrato bancário com IA"
+            aria-label={t('transactions.import_aria')}
             className={cn(
               'relative flex items-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl',
               'bg-gradient-to-r from-blue-500/15 to-purple-500/15 hover:from-blue-500/25 hover:to-purple-500/25',
@@ -81,14 +82,14 @@ export default function TransactionsPage() {
             )}
           >
             <Sparkles className="w-3.5 h-3.5 text-blue-300" />
-            <span className="hidden sm:inline">Importar Extrato</span>
-            <span className="hidden sm:inline-block text-[10px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">IA</span>
+            <span className="hidden sm:inline">{t('transactions.import_cta')}</span>
+            <span className="hidden sm:inline-block text-[10px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">{t('transactions.import_ai_tag')}</span>
           </button>
           <button
             onClick={() => setShowForm(true)}
             className="hidden sm:flex items-center gap-2 min-h-[44px] bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
           >
-            + Nova
+            {t('transactions.new_cta')}
           </button>
         </div>
       </div>
@@ -97,12 +98,12 @@ export default function TransactionsPage() {
       {showHint && (
         <div
           role="region"
-          aria-label="Dica: importar extrato bancário"
+          aria-label={t('transactions.hint_region_aria')}
           className="relative mb-4 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 border border-blue-500/25 rounded-2xl p-4 animate-fade-in-up"
         >
           <button
             onClick={dismissHint}
-            aria-label="Fechar dica"
+            aria-label={t('transactions.hint_close_aria')}
             className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
           >
             <X className="w-4 h-4" />
@@ -113,19 +114,18 @@ export default function TransactionsPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-white font-bold text-sm">Importa o teu extrato bancário com IA</p>
-                <span className="text-[10px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">Plus</span>
+                <p className="text-white font-bold text-sm">{t('transactions.hint_title')}</p>
+                <span className="text-[10px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">{t('transactions.hint_plus_tag')}</span>
               </div>
               <p className="text-white/60 text-xs mt-1 leading-relaxed">
-                Carrega o CSV ou PDF do banco. A IA extrai os movimentos, categoriza
-                automaticamente e tu confirmas em 1 clique — sem digitar nada.
+                {t('transactions.hint_body')}
               </p>
               <button
                 onClick={openImporter}
                 className="mt-3 inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-400 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all active:scale-95 min-h-[36px]"
               >
                 <FileText className="w-3.5 h-3.5" />
-                Experimentar agora
+                {t('transactions.hint_try')}
               </button>
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function TransactionsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
             <input
               type="search"
-              placeholder="Pesquisar..."
+              placeholder={t('transactions.search_placeholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               autoFocus

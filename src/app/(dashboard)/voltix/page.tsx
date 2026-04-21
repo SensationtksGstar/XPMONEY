@@ -17,46 +17,32 @@ import {
   getMascotMaxEvo,
   type MascotGender,
 } from '@/components/voltix/MascotCreature'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 import type { VoltixMood } from '@/types'
 
 /* ── Mood config ─────────────────────────────────────────────────── */
-const MOOD_MESSAGES: Record<VoltixMood, string[]> = {
-  sad: [
-    'As finanças estão difíceis. Estou aqui para ajudar.',
-    'Cada euro registado é um passo na direção certa.',
-    'Não desistas! Os melhores investidores já passaram por aqui.',
-  ],
-  neutral: [
-    'Tudo estável. Que tal registares mais alguns movimentos?',
-    'Ainda não tenho dados suficientes. Adiciona transações!',
-    'Score médio: 50. Vamos tentar chegar aos 70?',
-  ],
-  happy: [
-    'Estás no bom caminho! Continua assim. 📈',
-    'O teu score melhorou esta semana. Excelente!',
-    'Bom controlo das despesas. E a poupança?',
-  ],
-  excited: [
-    'Incrível! O teu score está a disparar. Quase no elite! 🚀',
-    'Taxa de poupança excelente este mês. Continua!',
-    'As tuas missões estão quase concluídas. Vai lá! 💪',
-  ],
-  celebrating: [
-    'LENDÁRIO! Top 1% dos utilizadores. Extraordinário! 🏆',
-    'Parabéns! Atingiste a máxima saúde financeira.',
-    'O Legendrix nunca esteve tão poderoso. Inspiras todos!',
-  ],
+const MOOD_MESSAGE_KEYS: Record<VoltixMood, TranslationKey[]> = {
+  sad:         ['voltix.mood_sad_1',         'voltix.mood_sad_2',         'voltix.mood_sad_3'],
+  neutral:     ['voltix.mood_neutral_1',     'voltix.mood_neutral_2',     'voltix.mood_neutral_3'],
+  happy:       ['voltix.mood_happy_1',       'voltix.mood_happy_2',       'voltix.mood_happy_3'],
+  excited:     ['voltix.mood_excited_1',     'voltix.mood_excited_2',     'voltix.mood_excited_3'],
+  celebrating: ['voltix.mood_celebrating_1', 'voltix.mood_celebrating_2', 'voltix.mood_celebrating_3'],
 }
 
-const MOOD_LABELS: Record<VoltixMood, string> = {
-  sad: 'Triste', neutral: 'Neutro', happy: 'Contente',
-  excited: 'Animado!', celebrating: 'LENDÁRIO! 👑',
+const MOOD_LABEL_KEYS: Record<VoltixMood, TranslationKey> = {
+  sad: 'voltix.mood.sad',
+  neutral: 'voltix.mood.neutral',
+  happy: 'voltix.mood.happy',
+  excited: 'voltix.mood.excited',
+  celebrating: 'voltix.mood.celebrating',
 }
 
 export default function VoltixPage() {
   const { user }            = useUser()
   const { voltix, loading } = useVoltix(user?.id ?? '')
   const { xp }              = useXP(user?.id ?? '')
+  const t                   = useT()
   const [msgIdx, setMsgIdx] = useState(0)
   const [tapped, setTapped] = useState(false)
   const [preview, setPreview] = useState<number | null>(null)
@@ -72,12 +58,13 @@ export default function VoltixPage() {
       .then(res => {
         if (!res) return
         res.badges_awarded?.forEach((b: { name: string; icon: string }) =>
-          toast(`${b.icon} Badge desbloqueado: ${b.name}!`, 'xp')
+          toast(t('voltix.badge_toast', { icon: b.icon, name: b.name }), 'xp')
         )
       })
       .catch(err => {
         console.warn('[voltix] daily-checkin failed:', err)
       })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast])
 
   const mood    = (voltix?.mood ?? 'neutral') as VoltixMood
@@ -88,7 +75,7 @@ export default function VoltixPage() {
   const maxEvo  = getMascotMaxEvo(gender)
   const evoStages = Array.from({ length: maxEvo }, (_, i) => i + 1)
 
-  const msgs = MOOD_MESSAGES[mood]
+  const msgs = MOOD_MESSAGE_KEYS[mood]
 
   // Creature to display (real or preview)
   const displayEvo  = preview ?? evo
@@ -121,7 +108,7 @@ export default function VoltixPage() {
         <h1 className="text-2xl font-bold text-white">
           {getMascotEvoName(gender, evo)}
         </h1>
-        <p className="text-white/50 text-sm mt-0.5">O teu copiloto financeiro — evolui contigo</p>
+        <p className="text-white/50 text-sm mt-0.5">{t('voltix.subtitle')}</p>
       </div>
 
       {/* ── Main interactive card ── */}
@@ -152,7 +139,7 @@ export default function VoltixPage() {
         {/* Preview label */}
         {preview && (
           <div className="absolute top-4 right-4 bg-white/10 text-white/60 text-[10px] font-bold px-2 py-1 rounded-full">
-            PRÉVIA
+            {t('voltix.preview_chip')}
           </div>
         )}
 
@@ -169,7 +156,7 @@ export default function VoltixPage() {
 
         {/* Mood */}
         <p className="text-sm font-semibold mb-4 relative z-10" style={{ color: palette.accent }}>
-          {MOOD_LABELS[mood]}
+          {t(MOOD_LABEL_KEYS[mood])}
         </p>
 
         {/* Rotating message */}
@@ -177,11 +164,11 @@ export default function VoltixPage() {
           key={msgIdx}
           className="text-sm text-white/70 leading-relaxed px-2 mb-4 relative z-10 animate-fade-in-up"
         >
-          {msgs[msgIdx]}
+          {t(msgs[msgIdx])}
         </p>
 
         <p className="text-[11px] text-white/22 flex items-center gap-1 relative z-10">
-          <MessageCircle className="w-3 h-3" /> Toca para mudar mensagem
+          <MessageCircle className="w-3 h-3" /> {t('voltix.tap_hint')}
         </p>
       </div>
 
@@ -190,8 +177,8 @@ export default function VoltixPage() {
         <div className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/20 px-4 py-3 rounded-xl">
           <Flame className="w-6 h-6 text-orange-400 flex-shrink-0" />
           <div>
-            <p className="text-sm font-bold text-orange-400">{streak} dias consecutivos 🔥</p>
-            <p className="text-xs text-white/40">Mantém o streak para ganhar XP bónus e evoluir mais rápido</p>
+            <p className="text-sm font-bold text-orange-400">{t('voltix.streak_days', { days: streak })}</p>
+            <p className="text-xs text-white/40">{t('voltix.streak_sub')}</p>
           </div>
         </div>
       )}
@@ -200,31 +187,31 @@ export default function VoltixPage() {
       {xp && (
         <div className="glass-card p-5">
           <h2 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <TrendingUp className="w-3.5 h-3.5" /> Progresso XP
+            <TrendingUp className="w-3.5 h-3.5" /> {t('voltix.xp_section')}
           </h2>
           <div className="grid grid-cols-3 gap-3 text-center mb-4">
             <div className="bg-white/5 rounded-xl p-3">
               <div className="text-xl font-bold text-yellow-400 tabular-nums">{xp.xp_total ?? 0}</div>
-              <div className="text-[11px] text-white/40 mt-0.5">XP total</div>
+              <div className="text-[11px] text-white/40 mt-0.5">{t('voltix.xp_total')}</div>
             </div>
             <div className="bg-white/5 rounded-xl p-3">
               <div className="text-xl font-bold text-green-400 tabular-nums">{xp.level ?? 1}</div>
-              <div className="text-[11px] text-white/40 mt-0.5">Nível</div>
+              <div className="text-[11px] text-white/40 mt-0.5">{t('voltix.xp_level')}</div>
             </div>
             <div className="bg-white/5 rounded-xl p-3">
               <div className="text-xl font-bold text-white tabular-nums flex items-center justify-center gap-0.5">
                 <Zap className="w-4 h-4 text-yellow-400" />
                 {xp.xp_to_next_level ?? '—'}
               </div>
-              <div className="text-[11px] text-white/40 mt-0.5">P/ subir</div>
+              <div className="text-[11px] text-white/40 mt-0.5">{t('voltix.xp_to_next')}</div>
             </div>
           </div>
           {/* XP bar */}
           {xp.xp_total != null && xp.xp_to_next_level != null && (
             <div>
               <div className="flex justify-between text-xs text-white/30 mb-1">
-                <span>Nível {xp.level}</span>
-                <span>Nível {(xp.level ?? 1) + 1}</span>
+                <span>{t('voltix.level_n', { n: xp.level ?? 1 })}</span>
+                <span>{t('voltix.level_n', { n: (xp.level ?? 1) + 1 })}</span>
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <div
@@ -243,7 +230,7 @@ export default function VoltixPage() {
       {/* ── Evolution stages ── */}
       <div className="glass-card p-5">
         <h2 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Star className="w-3.5 h-3.5" /> Linha de evolução
+          <Star className="w-3.5 h-3.5" /> {t('voltix.evo_line')}
         </h2>
         <div className="space-y-3">
           {evoStages.map(stage => {
@@ -295,7 +282,7 @@ export default function VoltixPage() {
                         className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                         style={{ backgroundColor: `${palette.body}25`, color: palette.body }}
                       >
-                        ATUAL
+                        {t('voltix.current')}
                       </span>
                     )}
                     {isUnlocked && !isCurrent && (
@@ -327,22 +314,22 @@ export default function VoltixPage() {
           })}
         </div>
         <p className="text-xs text-white/25 text-center mt-3">
-          Passa o cursor sobre cada forma para pré-visualizar
+          {t('voltix.preview_footer')}
         </p>
       </div>
 
       {/* ── Tips ── */}
       <div className="glass-card p-5">
         <h2 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Zap className="w-3.5 h-3.5 text-yellow-400" /> Como evoluir mais rápido
+          <Zap className="w-3.5 h-3.5 text-yellow-400" /> {t('voltix.tips_title')}
         </h2>
         <div className="space-y-2.5">
           {[
-            { icon: '📝', text: 'Regista transações diariamente (+10 XP cada)' },
-            { icon: '🔥', text: 'Mantém o streak diário — 7 dias = +300 XP' },
-            { icon: '🎯', text: 'Conclui missões para XP bónus' },
-            { icon: '📈', text: 'Melhora o teu score de saúde financeira' },
-            { icon: '🏆', text: 'Desbloqueia badges para XP extra' },
+            { icon: '📝', text: t('voltix.tip1') },
+            { icon: '🔥', text: t('voltix.tip2') },
+            { icon: '🎯', text: t('voltix.tip3') },
+            { icon: '📈', text: t('voltix.tip4') },
+            { icon: '🏆', text: t('voltix.tip5') },
           ].map((tip, i) => (
             <div key={i} className="flex items-center gap-3 text-sm">
               <span className="text-base w-6 text-center flex-shrink-0">{tip.icon}</span>

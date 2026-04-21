@@ -5,6 +5,8 @@ import { Crown, Check, Zap, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { track } from '@/lib/posthog'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 type BillingCycle = 'monthly' | 'yearly'
 type Plan = 'free' | 'premium'
@@ -22,49 +24,58 @@ type Plan = 'free' | 'premium'
  * `src/lib/stripe.ts` e vários guards têm aliases legacy para que assinaturas
  * antigas continuem a funcionar até serem migradas (ver SQL migration).
  */
-const PLANS = [
+const PLANS: {
+  id: 'free' | 'premium'
+  nameKey: TranslationKey
+  icon: string
+  monthly: number
+  yearly: number
+  color: string
+  highlight: boolean
+  featureKeys: TranslationKey[]
+}[] = [
   {
     id:       'free',
-    name:     'Grátis',
+    nameKey:  'billing.plan_free',
     icon:     '🌱',
     monthly:  0,
     yearly:   0,
     color:    'border-white/10',
     highlight: false,
-    features: [
-      'Transações ilimitadas',
-      'Score de saúde financeira',
-      'XP, níveis e conquistas',
-      'Voltix ou Penny — 6 evoluções',
-      'Missões do plano grátis',
-      '2 objetivos de poupança',
-      'Histórico completo',
-      'Academia — cursos iniciais',
+    featureKeys: [
+      'billing.free_f1',
+      'billing.free_f2',
+      'billing.free_f3',
+      'billing.free_f4',
+      'billing.free_f5',
+      'billing.free_f6',
+      'billing.free_f7',
+      'billing.free_f8',
     ],
   },
   {
     id:       'premium',
-    name:     'Premium',
+    nameKey:  'billing.plan_premium',
     icon:     '👑',
     monthly:  4.99,
     yearly:   39.99,
     color:    'border-purple-500/40',
     highlight: true,
-    features: [
-      'Tudo do Grátis · sem publicidade',
-      'Missões e badges exclusivos',
-      'Categorias e objetivos ilimitados',
-      '📷 Scan de recibos com IA',
-      '📥 Import de extratos (PDF / CSV)',
-      '📊 Simulador de investimento (DCA)',
-      '💰 Perspetiva de Riqueza',
-      '📄 Relatório financeiro em PDF',
-      '🎓 Academia completa — todos os cursos',
-      '⭐ Badge Premium exclusivo',
-      'Suporte prioritário',
+    featureKeys: [
+      'billing.premium_f1',
+      'billing.premium_f2',
+      'billing.premium_f3',
+      'billing.premium_f4',
+      'billing.premium_f5',
+      'billing.premium_f6',
+      'billing.premium_f7',
+      'billing.premium_f8',
+      'billing.premium_f9',
+      'billing.premium_f10',
+      'billing.premium_f11',
     ],
   },
-] as const
+]
 
 const PLAN_RANK: Record<string, number> = {
   free:    0,
@@ -80,6 +91,7 @@ interface Props {
 }
 
 export default function BillingClient({ currentPlan }: Props) {
+  const t = useT()
   const [cycle, setCycle]     = useState<BillingCycle>('yearly')
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError]     = useState<string | null>(null)
@@ -105,22 +117,22 @@ export default function BillingClient({ currentPlan }: Props) {
       try { payload = await res.json() } catch { /* non-JSON response */ }
 
       if (!res.ok) {
-        const msg = payload.error ?? `Pedido falhou (HTTP ${res.status}).`
+        const msg = payload.error ?? t('billing.err_http', { status: res.status })
         console.warn('[billing] checkout failed:', msg)
         setError(msg)
         return
       }
 
       if (!payload.url) {
-        setError('Stripe não devolveu URL de checkout. Tenta novamente ou contacta suporte.')
+        setError(t('billing.err_no_url'))
         return
       }
 
       window.location.href = payload.url
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Sem ligação à internet.'
+      const msg = e instanceof Error ? e.message : t('billing.err_offline')
       console.warn('[billing] network error:', e)
-      setError(`Falha na ligação: ${msg}`)
+      setError(t('billing.err_network', { msg }))
     } finally {
       setLoading(null)
     }
@@ -134,12 +146,12 @@ export default function BillingClient({ currentPlan }: Props) {
 
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-white/40 hover:text-white transition-colors p-1 -ml-1" aria-label="Voltar às definições">
+        <Link href="/settings" className="text-white/40 hover:text-white transition-colors p-1 -ml-1" aria-label={t('billing.back_aria')}>
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-white">Escolhe o teu plano</h1>
-          <p className="text-white/40 text-sm">Sem compromisso. Cancela quando quiseres.</p>
+          <h1 className="text-xl font-bold text-white">{t('billing.choose_plan')}</h1>
+          <p className="text-white/40 text-sm">{t('billing.no_commitment')}</p>
         </div>
       </div>
 
@@ -147,9 +159,7 @@ export default function BillingClient({ currentPlan }: Props) {
       {currentPlan !== 'free' && (
         <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3">
           <Check className="w-5 h-5 text-purple-400 flex-shrink-0" />
-          <p className="text-sm text-purple-300 font-medium">
-            Estás no plano <strong>👑 Premium</strong> — obrigado pelo apoio! 🎉
-          </p>
+          <p className="text-sm text-purple-300 font-medium" dangerouslySetInnerHTML={{ __html: t('billing.current_premium') }} />
         </div>
       )}
 
@@ -165,13 +175,13 @@ export default function BillingClient({ currentPlan }: Props) {
         >
           <span aria-hidden className="text-xl leading-none">⚠️</span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-red-300">Não foi possível iniciar o checkout</p>
+            <p className="text-sm font-semibold text-red-300">{t('billing.error_title')}</p>
             <p className="text-xs text-red-200/80 mt-0.5 break-words">{error}</p>
           </div>
           <button
             type="button"
             onClick={() => setError(null)}
-            aria-label="Fechar aviso"
+            aria-label={t('billing.close_warn_aria')}
             className="text-red-300/60 hover:text-red-200 transition-colors flex-shrink-0 min-h-[28px] min-w-[28px]"
           >
             ✕
@@ -185,13 +195,13 @@ export default function BillingClient({ currentPlan }: Props) {
           onClick={() => setCycle('monthly')}
           className={cn('px-4 py-2 rounded-xl text-sm font-medium transition-all', cycle === 'monthly' ? 'bg-white/10 text-white' : 'text-white/40')}
         >
-          Mensal
+          {t('billing.cycle_monthly')}
         </button>
         <button
           onClick={() => setCycle('yearly')}
           className={cn('relative px-4 py-2 rounded-xl text-sm font-medium transition-all', cycle === 'yearly' ? 'bg-white/10 text-white' : 'text-white/40')}
         >
-          Anual
+          {t('billing.cycle_yearly')}
           <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
             -{yearlySaving}%
           </span>
@@ -230,14 +240,14 @@ export default function BillingClient({ currentPlan }: Props) {
                   <span className={cn('text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1',
                     plan.highlight ? 'bg-purple-500 text-white' : 'bg-green-500 text-black'
                   )}>
-                    <Check className="w-3 h-3" /> PLANO ATUAL
+                    <Check className="w-3 h-3" /> {t('billing.current_badge')}
                   </span>
                 </div>
               )}
               {!isCurrent && plan.highlight && (
                 <div className="flex justify-end mb-3">
                   <span className="bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    RECOMENDADO
+                    {t('billing.recommended')}
                   </span>
                 </div>
               )}
@@ -246,18 +256,18 @@ export default function BillingClient({ currentPlan }: Props) {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-2xl">{plan.icon}</span>
-                    <h2 className="text-lg font-bold text-white">{plan.name}</h2>
+                    <h2 className="text-lg font-bold text-white">{t(plan.nameKey)}</h2>
                   </div>
                   {isFree ? (
-                    <p className="text-2xl font-bold text-white">Grátis</p>
+                    <p className="text-2xl font-bold text-white">{t('billing.plan_free')}</p>
                   ) : (
                     <div>
                       <p className="text-2xl font-bold text-white">
                         €{price}
-                        <span className="text-sm text-white/40 font-normal">/mês</span>
+                        <span className="text-sm text-white/40 font-normal">{t('billing.monthly_price')}</span>
                       </p>
                       {cycle === 'yearly' && (
-                        <p className="text-xs text-white/40">€{plan.yearly}/ano · faturado anualmente</p>
+                        <p className="text-xs text-white/40">{t('billing.billed_yearly', { yearly: plan.yearly })}</p>
                       )}
                     </div>
                   )}
@@ -271,7 +281,7 @@ export default function BillingClient({ currentPlan }: Props) {
                       : 'bg-green-500/20 border border-green-500/40 text-green-400'
                   )}>
                     <Check className="w-4 h-4" />
-                    Ativo
+                    {t('billing.active')}
                   </div>
                 ) : !isFree && !isLower && (
                   <button
@@ -288,7 +298,7 @@ export default function BillingClient({ currentPlan }: Props) {
                     ) : (
                       <>
                         <Crown className="w-4 h-4" />
-                        Ativar Premium
+                        {t('billing.activate_premium')}
                       </>
                     )}
                   </button>
@@ -297,14 +307,14 @@ export default function BillingClient({ currentPlan }: Props) {
 
               {/* Features */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {plan.features.map(f => (
-                  <div key={f} className="flex items-center gap-2">
+                {plan.featureKeys.map(fk => (
+                  <div key={fk} className="flex items-center gap-2">
                     <Check className={cn('w-3.5 h-3.5 flex-shrink-0',
                       isCurrent && plan.highlight ? 'text-purple-300' :
                       isCurrent || plan.highlight ? 'text-purple-400' :
                       'text-white/30'
                     )} />
-                    <span className="text-xs text-white/60">{f}</span>
+                    <span className="text-xs text-white/60">{t(fk)}</span>
                   </div>
                 ))}
               </div>
@@ -316,7 +326,7 @@ export default function BillingClient({ currentPlan }: Props) {
       {/* Garantia */}
       <div className="flex items-center justify-center gap-2 text-white/30 text-xs">
         <Zap className="w-3.5 h-3.5" />
-        Cancela a qualquer momento · Sem taxa de cancelamento · Reembolso em 7 dias
+        {t('billing.guarantee')}
       </div>
     </div>
   )

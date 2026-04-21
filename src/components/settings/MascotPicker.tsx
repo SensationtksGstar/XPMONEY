@@ -5,6 +5,7 @@ import { Check, Sparkles } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { MascotCreature, type MascotGender } from '@/components/voltix/MascotCreature'
 import { readMascotGenderLocal, saveMascotGenderLocal } from '@/lib/mascotGender'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 /**
  * MascotPicker — settings card that lets any user switch their companion
@@ -30,6 +31,7 @@ interface MascotPickerProps {
 }
 
 export function MascotPicker({ initialGender, currentEvo = 1 }: MascotPickerProps) {
+  const t = useT()
   // Clamp defensively — MascotCreature expects a valid 1-6 evo
   const evo = Math.max(1, Math.min(6, Math.round(currentEvo))) as number
   const [gender, setGender] = useState<MascotGender>(initialGender)
@@ -85,10 +87,10 @@ export function MascotPicker({ initialGender, currentEvo = 1 }: MascotPickerProp
     <div className="bg-white/5 border border-white/10 rounded-xl p-5">
       <h2 className="font-semibold text-white mb-1 flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-yellow-400" />
-        Mascote
+        {t('settings.mascot')}
       </h2>
       <p className="text-sm text-white/50 mb-4">
-        Escolhe o companheiro que te acompanha na jornada financeira. Podes trocar sempre que quiseres.
+        {t('settings.mascot_desc')}
       </p>
 
       <div className="grid grid-cols-2 gap-3">
@@ -115,7 +117,7 @@ export function MascotPicker({ initialGender, currentEvo = 1 }: MascotPickerProp
           </div>
           <div className="text-center">
             <p className="text-white font-bold text-sm">Voltix</p>
-            <p className="text-[11px] text-white/50">Dragão-trovão azul</p>
+            <p className="text-[11px] text-white/50">{t('settings.mascot_voltix_desc')}</p>
           </div>
           {gender === 'voltix' && (
             <span className="absolute top-2 right-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-black">
@@ -147,7 +149,7 @@ export function MascotPicker({ initialGender, currentEvo = 1 }: MascotPickerProp
           </div>
           <div className="text-center">
             <p className="text-white font-bold text-sm">Penny</p>
-            <p className="text-[11px] text-white/50">Gata-anjo creme</p>
+            <p className="text-[11px] text-white/50">{t('settings.mascot_penny_desc')}</p>
           </div>
           {gender === 'penny' && (
             <span className="absolute top-2 right-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-pink-400 text-black">
@@ -159,9 +161,9 @@ export function MascotPicker({ initialGender, currentEvo = 1 }: MascotPickerProp
 
       {/* Status line */}
       <div className="h-5 mt-3 text-xs flex items-center justify-center">
-        {status === 'saving' && <span className="text-white/40">A guardar…</span>}
-        {status === 'saved'  && <span className="text-green-400">Mascote actualizada ✓</span>}
-        {status === 'error'  && <span className="text-red-400">Falha ao guardar. Tenta novamente.</span>}
+        {status === 'saving' && <span className="text-white/40">{t('settings.mascot_saving')}</span>}
+        {status === 'saved'  && <span className="text-green-400">{t('settings.mascot_saved')}</span>}
+        {status === 'error'  && <span className="text-red-400">{t('settings.mascot_error')}</span>}
         {status === 'idle'   && <span className="text-white/25">&nbsp;</span>}
       </div>
     </div>

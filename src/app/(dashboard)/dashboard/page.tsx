@@ -11,6 +11,7 @@ import { StreakBanner }                from '@/components/dashboard/StreakBanner
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
 import { CelebrationModal }            from '@/components/ui/CelebrationModal'
 import { formatMonth }                 from '@/lib/utils'
+import { useT }                        from '@/lib/i18n/LocaleProvider'
 import Link                            from 'next/link'
 
 // ── Dynamic imports — only load when needed (reduces mobile JS) ──────────────
@@ -54,6 +55,7 @@ const AdBanner = dynamic(
 export default function DashboardPage() {
   const { user }        = useUser()
   const { plan, isFree } = useUserPlan()
+  const t = useT()
   const [showForm, setShowForm]         = useState(false)
   const [celebration, setCelebration]   = useState<{
     icon: string; title: string; subtitle: string; xp?: number
@@ -61,12 +63,12 @@ export default function DashboardPage() {
   const checkinDone = useRef(false)
   const welcomeDone = useRef(false)
 
-  const firstName = user?.firstName ?? 'explorador'
+  const firstName = user?.firstName ?? t('dashboard.greeting_default')
   // Greeting: tried a time-based "Bom dia/tarde/noite" previously, but the
   // client/server TZ mismatch (Vercel runs UTC; hydration re-runs in the user's
   // TZ) caused the wrong greeting to flash on load. "Olá" is TZ-agnostic and
   // works for every user at every hour — also easier to i18n later.
-  const greeting  = 'Olá'
+  const greeting  = t('common.hello')
 
   /* ── first-login welcome (once per user per device) ── */
   useEffect(() => {
@@ -92,14 +94,14 @@ export default function DashboardPage() {
             isBrandNew
               ? {
                   icon:     '⚡',
-                  title:    `Bem-vindo, ${firstName}!`,
-                  subtitle: 'Começa a registar as tuas finanças e ganha XP. O Voltix está pronto!',
+                  title:    t('dashboard.welcome_new', { name: firstName }),
+                  subtitle: t('dashboard.welcome_new_sub'),
                   xp:       0,
                 }
               : {
                   icon:     '👋',
-                  title:    `Bem-vindo de volta, ${firstName}!`,
-                  subtitle: `Nível ${level} · ${xpTotal} XP. Continua a construir a tua jornada financeira.`,
+                  title:    t('dashboard.welcome_back', { name: firstName }),
+                  subtitle: t('dashboard.welcome_back_sub', { level, xp: xpTotal }),
                   xp:       xpTotal,
                 },
           )
@@ -128,14 +130,14 @@ export default function DashboardPage() {
 
         const streak = res.streak ?? 0
         if (streak === 7) {
-          setCelebration({ icon: '🔥', title: '7 dias seguidos!', subtitle: 'Semana perfeita! Tens um streak incrível.', xp: res.xp_earned })
+          setCelebration({ icon: '🔥', title: t('dashboard.streak_7_title'), subtitle: t('dashboard.streak_7_sub'), xp: res.xp_earned })
         } else if (streak === 30) {
-          setCelebration({ icon: '👑', title: '30 dias imparável!', subtitle: 'Lenda absoluta. O Voltix nunca esteve tão poderoso.', xp: res.xp_earned })
+          setCelebration({ icon: '👑', title: t('dashboard.streak_30_title'), subtitle: t('dashboard.streak_30_sub'), xp: res.xp_earned })
         }
 
         res.badges_awarded?.forEach((b: { name: string; icon: string }) => {
           setTimeout(() => {
-            setCelebration({ icon: b.icon, title: 'Badge desbloqueado!', subtitle: b.name })
+            setCelebration({ icon: b.icon, title: t('dashboard.badge_unlocked'), subtitle: b.name })
           }, 800)
         })
       })
@@ -147,6 +149,7 @@ export default function DashboardPage() {
       })
 
     return () => controller.abort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   return (
@@ -164,7 +167,7 @@ export default function DashboardPage() {
           className="hidden sm:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-colors text-sm active:scale-95"
         >
           <PlusCircle className="w-4 h-4" />
-          Adicionar
+          {t('dashboard.add')}
         </button>
       </div>
 
@@ -184,11 +187,11 @@ export default function DashboardPage() {
         >
           <Crown className="w-5 h-5 text-purple-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white">Desbloqueia funcionalidades Pro</p>
-            <p className="text-xs text-white/50">Perspetiva · Simulador · Academia · Sem anúncios</p>
+            <p className="text-sm font-bold text-white">{t('dashboard.upgrade_title')}</p>
+            <p className="text-xs text-white/50">{t('dashboard.upgrade_sub')}</p>
           </div>
           <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-2.5 py-1 rounded-lg flex-shrink-0">
-            Ver planos
+            {t('dashboard.upgrade_cta')}
           </span>
         </Link>
       )}
@@ -224,8 +227,8 @@ export default function DashboardPage() {
       {/* Missões */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-white">Missões Ativas</h2>
-          <Link href="/missions" className="text-xs text-green-400 hover:text-green-300">Ver todas →</Link>
+          <h2 className="text-base font-semibold text-white">{t('dashboard.active_missions')}</h2>
+          <Link href="/missions" className="text-xs text-green-400 hover:text-green-300">{t('dashboard.see_all')}</Link>
         </div>
         <MissionCard userId={user?.id ?? ''} limit={3} />
       </div>
@@ -233,8 +236,8 @@ export default function DashboardPage() {
       {/* Transações recentes */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-white">Transações Recentes</h2>
-          <Link href="/transactions" className="text-xs text-green-400 hover:text-green-300">Ver todas →</Link>
+          <h2 className="text-base font-semibold text-white">{t('dashboard.recent_transactions')}</h2>
+          <Link href="/transactions" className="text-xs text-green-400 hover:text-green-300">{t('dashboard.see_all')}</Link>
         </div>
         <RecentTransactions userId={user?.id ?? ''} limit={5} />
       </div>

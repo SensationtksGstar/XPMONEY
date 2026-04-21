@@ -12,6 +12,7 @@ import {
   formatCurrency, formatDate, getTransactionColor,
   getTransactionSign, groupBy,
 } from '@/lib/utils'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 interface Props {
   search:     string
@@ -21,6 +22,7 @@ interface Props {
 export function TransactionList({ search, typeFilter }: Props) {
   const { transactions, loading, deleteTransaction } = useTransactions()
   const { toast }   = useToast()
+  const t           = useT()
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmId,  setConfirmId]  = useState<string | null>(null)
 
@@ -39,9 +41,9 @@ export function TransactionList({ search, typeFilter }: Props) {
     setDeletingId(id)
     try {
       await deleteTransaction(id)
-      toast('Transação eliminada', 'success')
+      toast(t('txlist.deleted_toast'), 'success')
     } catch {
-      toast('Erro ao eliminar', 'error')
+      toast(t('txlist.delete_error'), 'error')
     } finally {
       setDeletingId(null)
       setConfirmId(null)
@@ -78,10 +80,10 @@ export function TransactionList({ search, typeFilter }: Props) {
     return (
       <EmptyState
         icon={hasFilters ? '🔍' : '💸'}
-        title={hasFilters ? 'Nenhuma transação encontrada' : 'Ainda sem transações'}
+        title={hasFilters ? t('txlist.empty_search_title') : t('txlist.empty_title')}
         description={hasFilters
-          ? 'Tenta ajustar a pesquisa ou alterar os filtros para ver mais resultados.'
-          : 'Regista a primeira transação para começares a ganhar XP e a construir o teu histórico financeiro.'
+          ? t('txlist.empty_search_desc')
+          : t('txlist.empty_desc')
         }
       />
     )
@@ -101,7 +103,9 @@ export function TransactionList({ search, typeFilter }: Props) {
                 {formatDate(date)}
               </h3>
               <span className="text-xs text-white/20">
-                {grouped[date].length} transaç{grouped[date].length === 1 ? 'ão' : 'ões'}
+                {grouped[date].length === 1
+                  ? t('txlist.count_one', { count: grouped[date].length })
+                  : t('txlist.count_many', { count: grouped[date].length })}
               </span>
             </div>
 
@@ -120,7 +124,7 @@ export function TransactionList({ search, typeFilter }: Props) {
                     {/* ── Description + category ── */}
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-medium text-white truncate leading-snug">
-                        {tx.description || tx.category?.name || 'Transação'}
+                        {tx.description || tx.category?.name || t('txlist.tx_fallback')}
                       </p>
                       <p className="text-xs text-white/35 mt-0.5">{tx.category?.name}</p>
                     </div>
@@ -134,7 +138,7 @@ export function TransactionList({ search, typeFilter }: Props) {
                       <button
                         onClick={() => setConfirmId(tx.id)}
                         className="w-11 h-11 -mr-2 flex items-center justify-center text-white/30 hover:text-red-400 opacity-60 sm:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all active:scale-90 rounded-xl hover:bg-red-500/10"
-                        aria-label={`Eliminar transação ${tx.description || tx.category?.name || ''}`.trim()}
+                        aria-label={t('txlist.delete_aria', { label: tx.description || tx.category?.name || '' }).trim()}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -150,14 +154,17 @@ export function TransactionList({ search, typeFilter }: Props) {
       {/* Proper confirmation dialog — replaces the ambiguous swipe panel */}
       <ConfirmDialog
         open={!!confirmId}
-        title="Eliminar transação?"
+        title={t('txlist.confirm_title')}
         description={
           targetTx
-            ? `"${targetTx.description || targetTx.category?.name || 'Transação'}" · ${formatCurrency(targetTx.amount)}. Esta ação não pode ser desfeita.`
-            : 'Esta ação não pode ser desfeita.'
+            ? t('txlist.confirm_desc', {
+                label: targetTx.description || targetTx.category?.name || t('txlist.tx_fallback'),
+                amount: formatCurrency(targetTx.amount),
+              })
+            : t('txlist.confirm_desc_fallback')
         }
-        confirmLabel="Eliminar"
-        cancelLabel="Cancelar"
+        confirmLabel={t('txlist.confirm_delete')}
+        cancelLabel={t('common.cancel')}
         tone="danger"
         loading={!!deletingId}
         onConfirm={() => confirmId && handleDelete(confirmId)}

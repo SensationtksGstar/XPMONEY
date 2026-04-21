@@ -7,11 +7,19 @@ import { useUser }    from '@clerk/nextjs'
 import { useUserPlan } from '@/lib/contexts/UserPlanContext'
 import { COURSES, getCourseProgress } from '@/lib/courses'
 import type { CourseProgress } from '@/lib/courses'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 const LEVEL_COLOR: Record<string, string> = {
   'Iniciante':   'text-green-400 bg-green-500/15 border-green-500/20',
   'Intermédio':  'text-blue-400 bg-blue-500/15 border-blue-500/20',
   'Avançado':    'text-purple-400 bg-purple-500/15 border-purple-500/20',
+}
+
+const LEVEL_LABEL_KEY: Record<string, TranslationKey> = {
+  'Iniciante':  'academy.level.beginner',
+  'Intermédio': 'academy.level.intermediate',
+  'Avançado':   'academy.level.advanced',
 }
 
 const PLAN_RANK: Record<string, number> = {
@@ -26,6 +34,7 @@ const PLAN_RANK: Record<string, number> = {
 export default function CursosPage() {
   const { user }         = useUser()
   const { plan }         = useUserPlan()
+  const t                = useT()
   const [progress, setProgress] = useState<Record<string, CourseProgress>>({})
 
   useEffect(() => {
@@ -46,10 +55,10 @@ export default function CursosPage() {
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <BookOpen className="w-6 h-6 text-green-400" />
-          Academia XP-Money
+          {t('academy.title')}
         </h1>
         <p className="text-white/50 text-sm mt-0.5">
-          Cursos de gestão financeira com certificado oficial
+          {t('academy.subtitle')}
         </p>
       </div>
 
@@ -58,15 +67,15 @@ export default function CursosPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
             <div className="text-green-400 font-bold text-xl">{completedCount}</div>
-            <div className="text-white/40 text-xs mt-0.5">Concluídos</div>
+            <div className="text-white/40 text-xs mt-0.5">{t('academy.stat_completed')}</div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
             <div className="text-white font-bold text-xl">{doneLessons}/{totalLessons}</div>
-            <div className="text-white/40 text-xs mt-0.5">Lições</div>
+            <div className="text-white/40 text-xs mt-0.5">{t('academy.stat_lessons')}</div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
             <div className="text-purple-400 font-bold text-xl">{completedCount}</div>
-            <div className="text-white/40 text-xs mt-0.5">Certificados</div>
+            <div className="text-white/40 text-xs mt-0.5">{t('academy.stat_certs')}</div>
           </div>
         </div>
       )}
@@ -100,20 +109,20 @@ export default function CursosPage() {
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <h3 className="font-bold text-white/60 text-base leading-tight">{course.title}</h3>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${LEVEL_COLOR[course.level]}`}>
-                          {course.level}
+                          {LEVEL_LABEL_KEY[course.level] ? t(LEVEL_LABEL_KEY[course.level]) : course.level}
                         </span>
                       </div>
                       <p className="text-white/35 text-xs mb-3 line-clamp-2">{course.subtitle}</p>
                       <div className="flex items-center gap-3 text-xs text-white/30">
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{course.duration}min</span>
-                        <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{course.lessons.length} lições</span>
-                        <span className="flex items-center gap-1"><Trophy className="w-3 h-3" />Certificado</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t('academy.duration', { min: course.duration })}</span>
+                        <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{t('academy.lessons_count', { count: course.lessons.length })}</span>
+                        <span className="flex items-center gap-1"><Trophy className="w-3 h-3" />{t('academy.chip.cert')}</span>
                       </div>
                     </div>
                     <div className="flex-shrink-0 text-right">
                       <div className="flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold px-2.5 py-1.5 rounded-xl">
                         <Lock className="w-3 h-3" />
-                        Premium
+                        {t('academy.chip.premium')}
                       </div>
                     </div>
                   </div>
@@ -123,7 +132,7 @@ export default function CursosPage() {
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 font-bold text-sm rounded-xl transition-all"
                     >
                       <Crown className="w-4 h-4" />
-                      Fazer upgrade para Premium
+                      {t('academy.upgrade_cta')}
                     </Link>
                   </div>
                 </div>
@@ -142,20 +151,20 @@ export default function CursosPage() {
                           <h3 className="font-bold text-white text-base leading-tight">{course.title}</h3>
                           {isCompleted && (
                             <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded-full">
-                              <Check className="w-2.5 h-2.5" /> Concluído
+                              <Check className="w-2.5 h-2.5" /> {t('academy.completed')}
                             </span>
                           )}
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${LEVEL_COLOR[course.level]}`}>
-                            {course.level}
+                            {LEVEL_LABEL_KEY[course.level] ? t(LEVEL_LABEL_KEY[course.level]) : course.level}
                           </span>
                         </div>
                         <p className="text-white/50 text-xs mb-3 line-clamp-2">{course.subtitle}</p>
                         <div className="flex items-center gap-3 text-xs text-white/40">
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{course.duration}min</span>
-                          <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{course.lessons.length} lições</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t('academy.duration', { min: course.duration })}</span>
+                          <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{t('academy.lessons_count', { count: course.lessons.length })}</span>
                           {hasQuiz && prog?.quizScore !== null && (
                             <span className="flex items-center gap-1 text-green-400">
-                              <Star className="w-3 h-3" />{prog.quizScore}% no quiz
+                              <Star className="w-3 h-3" />{t('academy.chip.quiz_score', { pct: prog.quizScore })}
                             </span>
                           )}
                         </div>
@@ -168,7 +177,7 @@ export default function CursosPage() {
                       <div className="mt-4">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs text-white/40">
-                            {lessonsComp}/{course.lessons.length} lições
+                            {t('academy.lessons_progress', { done: lessonsComp, total: course.lessons.length })}
                           </span>
                           <span className="text-xs text-white/40">{pct}%</span>
                         </div>
@@ -190,7 +199,7 @@ export default function CursosPage() {
                             ? 'bg-white/10 text-white group-hover:bg-white/15'
                             : 'bg-green-500 text-black group-hover:bg-green-400'
                       }`}>
-                        {isCompleted ? '🏆 Ver certificado' : pct > 0 ? 'Continuar curso' : 'Começar curso'}
+                        {isCompleted ? t('academy.cta_cert') : pct > 0 ? t('academy.cta_continue') : t('academy.cta_start')}
                       </div>
                     </div>
                   </div>

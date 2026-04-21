@@ -5,6 +5,7 @@ import { Clock, Coffee, Star, TrendingUp, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import { SalaryCompare } from '@/components/perspetiva/SalaryCompare'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 /* ─── Celebrity data (annual gross income in EUR, approximate) ───────── */
 const CELEBRITIES = [
@@ -37,16 +38,6 @@ const fmt = (n: number) =>
 const fmtDec = (n: number) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n)
 
-function humanDuration(minutes: number): string {
-  if (minutes < 0.017) return `${Math.round(minutes * 3600)} segundos`
-  if (minutes < 1)     return `${Math.round(minutes * 60)} segundos`
-  if (minutes < 60)    return `${minutes.toFixed(1).replace('.0', '')} minutos`
-  if (minutes < 1440)  return `${(minutes / 60).toFixed(1).replace('.0', '')} horas`
-  if (minutes < 10080) return `${(minutes / 1440).toFixed(1).replace('.0', '')} dias`
-  if (minutes < 43200) return `${(minutes / 10080).toFixed(1).replace('.0', '')} semanas`
-  return `${(minutes / 43200).toFixed(1).replace('.0', '')} meses`
-}
-
 function minutesToEarnAmount(earnerYearly: number, amount: number): number {
   const perMinute = earnerYearly / (365 * 24 * 60)
   return amount / perMinute
@@ -70,8 +61,19 @@ interface Props {
 
 /* ─── Component ───────────────────────────────────────────────────────── */
 export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryTotal, recentExpenses }: Props) {
+  const t = useT()
   const [selectedCel, setSelectedCel] = useState(CELEBRITIES[0])
   const [tab, setTab] = useState<'celebrities' | 'hourly' | 'equivalents' | 'countries'>('celebrities')
+
+  function humanDurationT(minutes: number): string {
+    if (minutes < 0.017) return t('perspective.dur.seconds', { n: Math.round(minutes * 3600) })
+    if (minutes < 1)     return t('perspective.dur.seconds', { n: Math.round(minutes * 60) })
+    if (minutes < 60)    return t('perspective.dur.minutes', { n: minutes.toFixed(1).replace('.0', '') })
+    if (minutes < 1440)  return t('perspective.dur.hours',   { n: (minutes / 60).toFixed(1).replace('.0', '') })
+    if (minutes < 10080) return t('perspective.dur.days',    { n: (minutes / 1440).toFixed(1).replace('.0', '') })
+    if (minutes < 43200) return t('perspective.dur.weeks',   { n: (minutes / 10080).toFixed(1).replace('.0', '') })
+    return                 t('perspective.dur.months',  { n: (minutes / 43200).toFixed(1).replace('.0', '') })
+  }
 
   // Derived values
   const hourlyRate    = monthlyIncome / (22 * 8)   // 22 working days × 8 h
@@ -89,17 +91,16 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
       <div>
         <div className="flex items-center gap-2 mb-1">
           <Star className="w-5 h-5 text-yellow-400" />
-          <h1 className="text-2xl font-bold text-white">Perspetiva de Riqueza</h1>
-          <span className="text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full font-bold">PRO</span>
+          <h1 className="text-2xl font-bold text-white">{t('perspective.title')}</h1>
+          <span className="text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full font-bold">{t('perspective.badge_pro')}</span>
         </div>
-        <p className="text-white/50 text-sm">Compara o teu dinheiro com o mundo real</p>
+        <p className="text-white/50 text-sm">{t('perspective.subtitle')}</p>
       </div>
 
       {/* Income summary */}
       {monthlyIncome === 0 ? (
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-sm text-yellow-300">
-          ⚠️ Não foram encontradas transações de <strong>Salário</strong> ou <strong>Freelance</strong> registadas.
-          Adiciona receitas nessas categorias para ver a comparação personalizada.
+          {t('perspective.no_salary', { salary: 'Salário', freelance: 'Freelance' })}
         </div>
       ) : (
         <div className="space-y-3">
@@ -107,20 +108,20 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
           <div className="flex items-center gap-2 text-xs text-white/40 px-1">
             <Info className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
             <span>
-              Média calculada com base em{' '}
-              <strong className="text-green-400">{salaryMonths} {salaryMonths === 1 ? 'mês' : 'meses'}</strong>
-              {' '}de salário/freelance declarado
+              {t('perspective.avg_base_a')}{' '}
+              <strong className="text-green-400">{salaryMonths} {salaryMonths === 1 ? t('perspective.months_one') : t('perspective.months_many')}</strong>
+              {' '}{t('perspective.avg_base_b')}
               {salaryMonths > 1 && (
-                <> · Total: <strong className="text-white">{fmt(salaryTotal)}</strong></>
+                <> · {t('perspective.avg_total', { amount: '' })}<strong className="text-white">{fmt(salaryTotal)}</strong></>
               )}
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: 'Por hora',  value: fmtDec(hourlyRate),  icon: '⏱️' },
-              { label: 'Por dia',   value: fmt(dailyRate),       icon: '📅' },
-              { label: 'Por mês',  value: fmt(monthlyIncome),    icon: '💰' },
+              { label: t('perspective.per_hour'),  value: fmtDec(hourlyRate),  icon: '⏱️' },
+              { label: t('perspective.per_day'),   value: fmt(dailyRate),       icon: '📅' },
+              { label: t('perspective.per_month'), value: fmt(monthlyIncome),   icon: '💰' },
             ].map(c => (
               <div key={c.label} className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
                 <div className="text-2xl mb-1">{c.icon}</div>
@@ -135,10 +136,10 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {[
-          { id: 'countries',   label: '🌍 Países' },
-          { id: 'celebrities', label: '⭐ Celebridades' },
-          { id: 'hourly',      label: '⏱️ Custo em horas' },
-          { id: 'equivalents', label: '☕ Equivalentes' },
+          { id: 'countries',   label: t('perspective.tab.countries') },
+          { id: 'celebrities', label: t('perspective.tab.celebrities') },
+          { id: 'hourly',      label: t('perspective.tab.hourly') },
+          { id: 'equivalents', label: t('perspective.tab.equivalents') },
         ].map(t => (
           <button
             key={t.id}
@@ -204,25 +205,25 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
             {monthlyIncome > 0 ? (
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-white/5">
-                  <span className="text-sm text-white/60">O teu salário mensal ({fmt(monthlyIncome)})</span>
+                  <span className="text-sm text-white/60">{t('perspective.my_monthly', { amount: fmt(monthlyIncome) })}</span>
                   <span className="text-sm font-bold text-white">
-                    = {humanDuration(minsToEarnMyMonthly)} p/ {selectedCel.name.split(' ')[0]}
+                    {t('perspective.earn_time', { duration: humanDurationT(minsToEarnMyMonthly), name: selectedCel.name.split(' ')[0] })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-white/5">
-                  <span className="text-sm text-white/60">O teu salário anual ({fmt(yearlyIncome)})</span>
+                  <span className="text-sm text-white/60">{t('perspective.my_yearly', { amount: fmt(yearlyIncome) })}</span>
                   <span className="text-sm font-bold text-white">
-                    = {humanDuration(minutesToEarnAmount(selectedCel.yearlyEUR, yearlyIncome))} p/ {selectedCel.name.split(' ')[0]}
+                    {t('perspective.earn_time', { duration: humanDurationT(minutesToEarnAmount(selectedCel.yearlyEUR, yearlyIncome)), name: selectedCel.name.split(' ')[0] })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-white/5">
-                  <span className="text-sm text-white/60">{selectedCel.name.split(' ')[0]} ganha por hora</span>
+                  <span className="text-sm text-white/60">{t('perspective.hourly_earn', { name: selectedCel.name.split(' ')[0] })}</span>
                   <span className="text-sm font-bold text-purple-300">
                     {fmt(selectedCel.yearlyEUR / (365 * 24))}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-white/60">{selectedCel.name.split(' ')[0]} ganha por minuto</span>
+                  <span className="text-sm text-white/60">{t('perspective.minute_earn', { name: selectedCel.name.split(' ')[0] })}</span>
                   <span className="text-sm font-bold text-purple-300">
                     {fmtDec(selectedCel.yearlyEUR / (365 * 24 * 60))}
                   </span>
@@ -232,7 +233,7 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
                 <div className="bg-white/5 rounded-xl p-3 text-xs text-white/60 flex gap-2">
                   <Info className="w-3.5 h-3.5 text-purple-400 flex-shrink-0 mt-0.5" />
                   <span>
-                    Enquanto lias esta frase (~5 seg), {selectedCel.name.split(' ')[0]} ganhou{' '}
+                    {t('perspective.funfact', { name: selectedCel.name.split(' ')[0] })}{' '}
                     <strong className="text-purple-300">
                       {fmtDec(selectedCel.yearlyEUR / (365 * 24 * 60 * 60) * 5)}
                     </strong>.
@@ -240,7 +241,7 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
                 </div>
               </div>
             ) : (
-              <p className="text-white/40 text-sm">Regista rendimentos para ver a comparação personalizada.</p>
+              <p className="text-white/40 text-sm">{t('perspective.no_income_msg')}</p>
             )}
           </div>
         </div>
@@ -251,25 +252,25 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
         <div className="space-y-3 animate-fade-in-up">
           {monthlyIncome === 0 ? (
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-sm text-yellow-300">
-              ⚠️ Regista as tuas receitas para ver o custo das despesas em horas de trabalho.
+              {t('perspective.hourly.no_income')}
             </div>
           ) : (
             <>
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-2">
                 <div className="flex items-center gap-2 text-green-400 mb-1">
                   <Clock className="w-4 h-4" />
-                  <span className="text-sm font-medium">A tua hora vale</span>
+                  <span className="text-sm font-medium">{t('perspective.hour_worth')}</span>
                 </div>
                 <div className="text-3xl font-bold text-white">{fmtDec(hourlyRate)}</div>
-                <div className="text-xs text-white/40 mt-1">Baseado em €{monthlyIncome.toFixed(0)}/mês · 22 dias × 8h</div>
+                <div className="text-xs text-white/40 mt-1">{t('perspective.hour_base', { income: monthlyIncome.toFixed(0) })}</div>
               </div>
 
               <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide px-1">
-                Custo real das tuas despesas
+                {t('perspective.real_cost')}
               </h3>
 
               {recentExpenses.length === 0 ? (
-                <div className="text-white/40 text-sm text-center py-8">Sem despesas registadas</div>
+                <div className="text-white/40 text-sm text-center py-8">{t('perspective.no_expenses')}</div>
               ) : (
                 recentExpenses.map(exp => {
                   const hoursNeeded  = exp.amount / hourlyRate
@@ -287,14 +288,14 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-white truncate">{exp.description}</div>
-                        <div className="text-xs text-white/40">{exp.category?.name ?? 'Despesa'}</div>
+                        <div className="text-xs text-white/40">{exp.category?.name ?? t('perspective.expense_fallback')}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-bold text-white">{fmtDec(exp.amount)}</div>
                         <div className="text-xs text-orange-400">
                           {hoursNeeded >= 1
-                            ? `${hoursNeeded.toFixed(1)}h de trabalho`
-                            : `${Math.round(minsNeeded)}min de trabalho`}
+                            ? t('perspective.cost_hours', { hours: hoursNeeded.toFixed(1) })
+                            : t('perspective.cost_minutes', { mins: Math.round(minsNeeded) })}
                         </div>
                       </div>
                     </div>
@@ -313,9 +314,9 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
             <Coffee className="w-5 h-5 text-yellow-400" />
             <div>
               <div className="text-sm font-medium text-white">
-                O teu salário mensal{monthlyIncome > 0 ? ` (${fmt(monthlyIncome)})` : ''} equivale a...
+                {t('perspective.eq.monthly_eq', { amount: monthlyIncome > 0 ? t('perspective.eq.amount_suffix', { amount: fmt(monthlyIncome) }) : '' })}
               </div>
-              <div className="text-xs text-white/40">Baseado em preços de referência em Portugal</div>
+              <div className="text-xs text-white/40">{t('perspective.eq.ref')}</div>
             </div>
           </div>
 
@@ -329,13 +330,13 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
                 <span className="text-3xl w-10 text-center">{eq.emoji}</span>
                 <div className="flex-1">
                   <div className="text-sm font-medium text-white">{eq.name}</div>
-                  <div className="text-xs text-white/40">{fmtDec(eq.price)} cada</div>
+                  <div className="text-xs text-white/40">{t('perspective.eq.each', { amount: fmtDec(eq.price) })}</div>
                 </div>
                 <div className="text-right">
                   {qty !== null ? (
                     <>
                       <div className="text-lg font-bold text-green-400">{qty.toLocaleString('pt-PT')}</div>
-                      <div className="text-xs text-white/40">por mês</div>
+                      <div className="text-xs text-white/40">{t('perspective.eq.per_month')}</div>
                     </>
                   ) : (
                     <div className="text-xs text-white/30">—</div>
@@ -349,19 +350,19 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mt-2">
               <div className="flex items-center gap-2 text-blue-300 text-sm mb-2">
                 <TrendingUp className="w-4 h-4" />
-                <span className="font-medium">Comparação anual</span>
+                <span className="font-medium">{t('perspective.eq.compare')}</span>
               </div>
               <div className="text-xs text-white/60 space-y-1">
                 <div className="flex justify-between">
-                  <span>Rendimento anual</span>
+                  <span>{t('perspective.eq.yearly')}</span>
                   <span className="text-white font-medium">{fmt(yearlyIncome)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Equivale a cafés ☕</span>
+                  <span>{t('perspective.eq.coffees')}</span>
                   <span className="text-white font-medium">{Math.floor(yearlyIncome / 0.80).toLocaleString('pt-PT')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Ou iPhones 📱</span>
+                  <span>{t('perspective.eq.iphones')}</span>
                   <span className="text-white font-medium">{Math.floor(yearlyIncome / 1000).toLocaleString('pt-PT')}</span>
                 </div>
               </div>

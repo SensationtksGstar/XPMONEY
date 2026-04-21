@@ -6,6 +6,7 @@ import { Zap, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useRouter } from 'next/navigation'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 interface Props {
   userId: string
@@ -15,6 +16,7 @@ interface Props {
 export function MissionCard({ userId, limit = 3 }: Props) {
   const { missions, loading } = useMissions(userId)
   const router = useRouter()
+  const t      = useT()
   const active = missions.filter(m => m.status === 'active').slice(0, limit)
 
   if (loading) {
@@ -34,10 +36,10 @@ export function MissionCard({ userId, limit = 3 }: Props) {
     return (
       <EmptyState
         icon="🎯"
-        title="Sem missões ativas"
-        description="As missões renovam-se periodicamente. Continua a registar transações para desbloquear novas."
+        title={t('missions.card_empty_title')}
+        description={t('missions.card_empty_desc')}
         secondary={{
-          label: 'Ver todas →',
+          label: t('missions.card_empty_link'),
           onClick: () => router.push('/missions'),
         }}
       />
