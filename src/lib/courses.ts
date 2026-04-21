@@ -28,11 +28,14 @@ export interface Course {
   quiz:        QuizQuestion[]
   certificate: { title: string; description: string }
   /**
-   * Plan gate. No modelo 2-tier só existe `premium`.
-   * `plus`/`pro` são aliases legacy para dados antigos — quem tiver
-   * `plus` ou `pro` no DB é tratado como premium no runtime.
+   * Plan gate.
+   *   'free'    → anyone (signed-in) can take it. Seeds free users with
+   *               3 "starter" courses.
+   *   'premium' → paid tier only.
+   *   'plus'/'pro' → legacy aliases. Existing users on those tiers are
+   *                  treated as premium at runtime.
    */
-  plan:        'premium' | 'plus' | 'pro'
+  plan:        'free' | 'premium' | 'plus' | 'pro'
 }
 
 export const COURSES: Course[] = [
@@ -44,7 +47,7 @@ export const COURSES: Course[] = [
     color:    'from-green-600 to-emerald-500',
     level:    'Iniciante',
     duration: 10,
-    plan:     'premium',
+    plan:     'free',
     certificate: {
       title:       'Certificado em Gestão Financeira Básica',
       description: 'Dominou os fundamentos de orçamento pessoal, fundo de emergência e eliminação de dívidas.',
@@ -191,7 +194,7 @@ Com Bola de Neve: foca o cartão (€400) → pessoal → carro
     color:    'from-blue-600 to-indigo-500',
     level:    'Intermédio',
     duration: 13,
-    plan:     'premium',
+    plan:     'free',
     certificate: {
       title:       'Certificado em Investimento Básico',
       description: 'Compreendeu os princípios de risco/retorno, ETFs, juro composto e construção de carteira diversificada.',
@@ -715,7 +718,7 @@ Se a retenção durante o ano foi superior ao IRS devido, recebes reembolso (nor
     color:    'from-rose-600 to-pink-500',
     level:    'Intermédio',
     duration: 11,
-    plan:     'premium',
+    plan:     'free',
     certificate: {
       title:       'Certificado em Psicologia Financeira',
       description: 'Identifica e neutraliza os principais vieses cognitivos que afectam decisões de gasto, poupança e investimento.',
