@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams }    from 'next/navigation'
 import { useUser }      from '@clerk/nextjs'
 import { useQueryClient } from '@tanstack/react-query'
@@ -12,11 +12,12 @@ import {
   ChevronLeft, RotateCcw, Award, Shield, Sparkles,
 } from 'lucide-react'
 import {
-  COURSES, getCourseProgress, markLessonComplete,
+  getCourseProgress, markLessonComplete,
   saveCourseProgress,
 } from '@/lib/courses'
 import type { Course, CourseProgress } from '@/lib/courses'
-import { useT } from '@/lib/i18n/LocaleProvider'
+import { getCourseById } from '@/lib/coursesAccess'
+import { useLocale, useT } from '@/lib/i18n/LocaleProvider'
 
 const PLAN_RANK: Record<string, number> = {
   free:    0,
@@ -400,8 +401,9 @@ export default function CourseDetailPage() {
   const id       = params.id
   const { user } = useUser()
   const { plan } = useUserPlan()
-  const t        = useT()
-  const course   = COURSES.find(c => c.id === id)
+  const { locale, t } = useLocale()
+  // Rebuild the localised course whenever the id or language changes.
+  const course   = useMemo(() => getCourseById(id, locale), [id, locale])
 
   const [activeLesson, setActiveLesson] = useState(0)
   const [progress,     setProgress]     = useState<CourseProgress>({ completedLessons: [], quizScore: null, completedAt: null, certificateAt: null })

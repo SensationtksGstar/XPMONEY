@@ -2,6 +2,7 @@ import { auth }                    from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { scanReceipt, AIProvidersError, type ReceiptScanResult } from '@/lib/ai'
+import { getServerLocale }           from '@/lib/i18n/server'
 
 // Re-export for clients
 export type { ReceiptScanResult }
@@ -16,7 +17,8 @@ const PLAN_RANK: Record<string, number> = {
 }
 
 export async function POST(req: NextRequest) {
-  const demo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+  const demo   = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+  const locale = await getServerLocale()
 
   if (!demo) {
     const { userId } = await auth()
@@ -30,7 +32,11 @@ export async function POST(req: NextRequest) {
     const rank = PLAN_RANK[user.plan ?? 'free'] ?? 0
     if (rank < 1) {
       return NextResponse.json(
-        { error: 'Funcionalidade exclusiva do plano Premium.' },
+        {
+          error: locale === 'en'
+            ? 'Feature available only on the Premium plan.'
+            : 'Funcionalidade exclusiva do plano Premium.',
+        },
         { status: 403 },
       )
     }
@@ -58,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   // ── Scan (cache → Gemini 2.0 → Gemini 1.5 → Groq) ──
   try {
-    const result = await scanReceipt(imageBase64, mimeType)
+    const result = await scanReceipt(imageBase64, mimeType, locale)
 
     // Expose provider + cache info in response headers for debugging/telemetry.
     // (The body shape stays the same — UI keeps reading `data`.)
@@ -76,14 +82,21 @@ export async function POST(req: NextRequest) {
       console.error('[scan-receipt] all providers failed:', err.attempts)
       if (err.kind === 'auth') {
         return NextResponse.json(
-          { error: 'Serviço de IA não configurado. Contacta o suporte.', code: 'ai_auth' },
+          {
+            error: locale === 'en'
+              ? 'AI service not configured. Please contact support.'
+              : 'Serviço de IA não configurado. Contacta o suporte.',
+            code: 'ai_auth',
+          },
           { status: 503 },
         )
       }
       if (err.kind === 'quota') {
         return NextResponse.json(
           {
-            error: 'Serviço de leitura de recibos temporariamente indisponível. Tenta novamente dentro de alguns minutos ou introduz os dados manualmente.',
+            error: locale === 'en'
+              ? 'Receipt-reading service temporarily unavailable. Try again in a few minutes or enter the data manually.'
+              : 'Serviço de leitura de recibos temporariamente indisponível. Tenta novamente dentro de alguns minutos ou introduz os dados manualmente.',
             code:  'ai_quota',
           },
           { status: 503 },
@@ -91,7 +104,11 @@ export async function POST(req: NextRequest) {
       }
       if (err.kind === 'bad_input') {
         return NextResponse.json(
-          { error: 'Imagem inválida ou ilegível. Tenta com outra foto mais nítida.' },
+          {
+            error: locale === 'en'
+              ? 'Invalid or unreadable image. Try another, clearer photo.'
+              : 'Imagem inválida ou ilegível. Tenta com outra foto mais nítida.',
+          },
           { status: 422 },
         )
       }
@@ -100,7 +117,11 @@ export async function POST(req: NextRequest) {
     const msg = err instanceof Error ? err.message : 'unknown'
     console.error('[scan-receipt]', msg)
     return NextResponse.json(
-      { error: 'Não foi possível processar o recibo. Tenta novamente ou introduz manualmente.' },
+      {
+        error: locale === 'en'
+          ? 'Could not process the receipt. Try again or enter the data manually.'
+          : 'Não foi possível processar o recibo. Tenta novamente ou introduz manualmente.',
+      },
       { status: 500 },
     )
   }

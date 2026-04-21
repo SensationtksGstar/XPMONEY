@@ -7,6 +7,8 @@ import {
   parseStatement, AIProvidersError,
   type StatementParseResult, type ParsedTransaction as LibParsedTransaction,
 } from '@/lib/ai'
+import { getServerLocale }             from '@/lib/i18n/server'
+import type { Locale }                 from '@/lib/i18n/translations'
 
 // Extended shape used by the UI (adds `selected` for deselection flow)
 export interface ParsedTransaction extends LibParsedTransaction {
@@ -67,8 +69,13 @@ interface RequestBody {
   filename?:   string
 }
 
+// Small ternary helper so the many inline error messages below stay scannable.
+const L = (locale: Locale, pt: string, en: string) => (locale === 'en' ? en : pt)
+
 export async function POST(req: NextRequest) {
   if (isDemoMode()) return demoResponse(DEMO_RESULT)
+
+  const locale = await getServerLocale()
 
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -86,7 +93,9 @@ export async function POST(req: NextRequest) {
   if (rank < 1) {
     return NextResponse.json(
       {
-        error: 'Importação de extratos disponível apenas no plano Premium.',
+        error: L(locale,
+          'Importação de extratos disponível apenas no plano Premium.',
+          'Statement import is available only on the Premium plan.'),
         code:  'plan_required',
       },
       { status: 403 },
@@ -104,7 +113,10 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json() as RequestBody
   } catch {
-    return NextResponse.json({ error: 'Conteúdo inválido.' }, { status: 400 })
+    return NextResponse.json(
+      { error: L(locale, 'Conteúdo inválido.', 'Invalid content.') },
+      { status: 400 },
+    )
   }
 
   const filename = (body.filename ?? 'extrato').slice(0, 120)
@@ -122,7 +134,11 @@ export async function POST(req: NextRequest) {
     // 400, better to catch it here with a clear message.
     if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleaned)) {
       return NextResponse.json(
-        { error: 'PDF corrompido ou mal codificado. Tenta exportar o extrato de novo.' },
+        {
+          error: L(locale,
+            'PDF corrompido ou mal codificado. Tenta exportar o extrato de novo.',
+            'Corrupted or badly encoded PDF. Try re-exporting the statement.'),
+        },
         { status: 400 },
       )
     }
@@ -131,40 +147,55 @@ export async function POST(req: NextRequest) {
     const approxBytes = Math.floor(cleaned.length * 0.75)
     if (approxBytes > MAX_PDF_BYTES) {
       return NextResponse.json(
-        { error: 'PDF demasiado grande. Máximo 3 MB. Experimenta exportar só as páginas com movimentos.' },
+        {
+          error: L(locale,
+            'PDF demasiado grande. Máximo 3 MB. Experimenta exportar só as páginas com movimentos.',
+            'PDF too large. Max 3 MB. Try exporting only the pages with transactions.'),
+        },
         { status: 413 },
       )
     }
     if (approxBytes < 500) {
       return NextResponse.json(
-        { error: 'PDF vazio ou inválido.' },
+        { error: L(locale, 'PDF vazio ou inválido.', 'Empty or invalid PDF.') },
         { status: 400 },
       )
     }
     // Quick magic-bytes check: base64 of "%PDF" starts with "JVBERi".
     if (!cleaned.startsWith('JVBERi')) {
       return NextResponse.json(
-        { error: 'Ficheiro não parece ser um PDF válido.' },
+        {
+          error: L(locale,
+            'Ficheiro não parece ser um PDF válido.',
+            'File does not look like a valid PDF.'),
+        },
         { status: 400 },
       )
     }
 
-    return runParse({ kind: 'pdf', pdfBase64: cleaned, filename }, categoryNames)
+    return runParse({ kind: 'pdf', pdfBase64: cleaned, filename }, categoryNames, locale)
   }
 
   // Text path
   const content = body.content
   if (!content || content.trim().length < 10) {
-    return NextResponse.json({ error: 'Conteúdo inválido.' }, { status: 400 })
+    return NextResponse.json(
+      { error: L(locale, 'Conteúdo inválido.', 'Invalid content.') },
+      { status: 400 },
+    )
   }
   if (content.length > MAX_TEXT_BYTES) {
     return NextResponse.json(
-      { error: 'Ficheiro demasiado grande (máx 200 KB de texto).' },
+      {
+        error: L(locale,
+          'Ficheiro demasiado grande (máx 200 KB de texto).',
+          'File too large (max 200 KB of text).'),
+      },
       { status: 413 },
     )
   }
 
-  return runParse({ kind: 'text', content, filename }, categoryNames)
+  return runParse({ kind: 'text', content, filename }, categoryNames, locale)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -176,9 +207,10 @@ async function runParse(
     | { kind: 'text'; content: string; filename: string }
     | { kind: 'pdf';  pdfBase64: string; filename: string },
   categoryNames: string,
+  locale: Locale = 'pt',
 ): Promise<NextResponse> {
   try {
-    const result = await parseStatement(input, categoryNames)
+    const result = await parseStatement(input, categoryNames, locale)
 
     const withSelected: ImportStatementResult = {
       ...result.data,
@@ -211,7 +243,9 @@ async function runParse(
             // configurada. Em vez da antiga "em manutenção" genérica,
             // dizemos ao user que parece ser chave, com fallback para
             // contacto se o user não for admin.
-            error: 'A autenticação com os providers de IA falhou. Se és admin, verifica GOOGLE_GEMINI_API_KEY e GROQ_API_KEY no Vercel. Entretanto, adiciona as transações manualmente.',
+            error: L(locale,
+              'A autenticação com os providers de IA falhou. Se és admin, verifica GOOGLE_GEMINI_API_KEY e GROQ_API_KEY no Vercel. Entretanto, adiciona as transações manualmente.',
+              'Authentication with the AI providers failed. If you are the admin, check GOOGLE_GEMINI_API_KEY and GROQ_API_KEY in Vercel. In the meantime, add the transactions manually.'),
             code:     'ai_auth',
             attempts: err.attempts.map(a => a.slice(0, 240)),
           },
@@ -229,10 +263,16 @@ async function runParse(
           /\bbilling\b|\binsufficient\s+credits?\b|\bpayment\s+required\b|\bsubscription\s+(expired|required)\b/.test(attemptsStr)
 
         const message = isBilling
-          ? 'A conta da IA atingiu o limite de créditos. Contacta-nos pelo formulário — vamos resolver.'
+          ? L(locale,
+              'A conta da IA atingiu o limite de créditos. Contacta-nos pelo formulário — vamos resolver.',
+              'The AI account hit its credit limit. Contact us via the form — we will fix it.')
           : isDaily
-          ? 'A quota diária da IA foi atingida. Reinicia à meia-noite (Pacífico) ou converte o PDF em CSV no site do banco — CSVs não consomem IA e entram de imediato.'
-          : 'Muitos pedidos ao mesmo tempo — o plano gratuito da IA tem limite por minuto. Tenta novamente daqui a 60 segundos. Se persistir, usa CSV em vez de PDF.'
+          ? L(locale,
+              'A quota diária da IA foi atingida. Reinicia à meia-noite (Pacífico) ou converte o PDF em CSV no site do banco — CSVs não consomem IA e entram de imediato.',
+              'The AI daily quota has been reached. It resets at midnight (Pacific time). Alternatively, export the statement as CSV from your bank — CSVs do not consume AI quota and import instantly.')
+          : L(locale,
+              'Muitos pedidos ao mesmo tempo — o plano gratuito da IA tem limite por minuto. Tenta novamente daqui a 60 segundos. Se persistir, usa CSV em vez de PDF.',
+              'Too many requests at once — the free AI tier has a per-minute limit. Try again in 60 seconds. If it persists, use CSV instead of PDF.')
 
         return NextResponse.json(
           {
@@ -251,8 +291,12 @@ async function runParse(
       return NextResponse.json(
         {
           error: err.kind === 'bad_input'
-            ? 'A IA bloqueou o conteúdo por política de segurança ou formato inválido. Verifica se o ficheiro é mesmo um extrato.'
-            : 'Não foi possível processar — todos os providers falharam. Expande "Detalhes técnicos" para ver o que cada um respondeu.',
+            ? L(locale,
+                'A IA bloqueou o conteúdo por política de segurança ou formato inválido. Verifica se o ficheiro é mesmo um extrato.',
+                'The AI blocked the content due to a safety policy or invalid format. Check that the file is actually a bank statement.')
+            : L(locale,
+                'Não foi possível processar — todos os providers falharam. Expande "Detalhes técnicos" para ver o que cada um respondeu.',
+                'Could not process — all providers failed. Expand "Technical details" to see what each one returned.'),
           code:     err.kind === 'bad_input' ? 'ai_bad_input' : 'ai_unknown',
           attempts: err.attempts.map(a => a.slice(0, 240)),
         },
@@ -262,7 +306,11 @@ async function runParse(
 
     if (err instanceof SyntaxError) {
       return NextResponse.json(
-        { error: 'A IA não conseguiu interpretar o ficheiro. Verifica o formato.' },
+        {
+          error: L(locale,
+            'A IA não conseguiu interpretar o ficheiro. Verifica o formato.',
+            'The AI could not interpret the file. Check the format.'),
+        },
         { status: 422 },
       )
     }
@@ -277,24 +325,40 @@ async function runParse(
     const lower = msg.toLowerCase()
     if (lower.includes('encrypted') || lower.includes('password')) {
       return NextResponse.json(
-        { error: 'PDF protegido por palavra-passe. Remove a proteção antes de carregar.' },
+        {
+          error: L(locale,
+            'PDF protegido por palavra-passe. Remove a proteção antes de carregar.',
+            'Password-protected PDF. Remove the protection before uploading.'),
+        },
         { status: 422 },
       )
     }
     if (lower.includes('safety') || lower.includes('blocked')) {
       return NextResponse.json(
-        { error: 'A IA bloqueou o conteúdo por política de segurança. Verifica se o PDF é mesmo um extrato bancário.' },
+        {
+          error: L(locale,
+            'A IA bloqueou o conteúdo por política de segurança. Verifica se o PDF é mesmo um extrato bancário.',
+            'The AI blocked the content due to a safety policy. Check that the PDF is actually a bank statement.'),
+        },
         { status: 422 },
       )
     }
     if (lower.includes('timeout') || lower.includes('deadline')) {
       return NextResponse.json(
-        { error: 'A análise demorou demasiado. Tenta um PDF mais pequeno ou com menos páginas.' },
+        {
+          error: L(locale,
+            'A análise demorou demasiado. Tenta um PDF mais pequeno ou com menos páginas.',
+            'Analysis took too long. Try a smaller PDF or one with fewer pages.'),
+        },
         { status: 504 },
       )
     }
     return NextResponse.json(
-      { error: 'Não foi possível processar o extrato. Verifica o formato do ficheiro ou tenta novamente.' },
+      {
+        error: L(locale,
+          'Não foi possível processar o extrato. Verifica o formato do ficheiro ou tenta novamente.',
+          'Could not process the statement. Check the file format or try again.'),
+      },
       { status: 500 },
     )
   }

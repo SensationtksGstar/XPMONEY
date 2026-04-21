@@ -19,6 +19,7 @@ import { createHash }            from 'crypto'
 import { GoogleGenerativeAI }    from '@google/generative-ai'
 import { jsonrepair }            from 'jsonrepair'
 import { createSupabaseAdmin }   from '@/lib/supabase'
+import type { Locale }           from '@/lib/i18n/translations'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,8 +64,24 @@ export class AIProvidersError extends Error {
 }
 
 // ── Prompts ──────────────────────────────────────────────────────────────────
+//
+// IMPORTANT — locale policy for AI categorisation
+// ────────────────────────────────────────────────
+// The `category_hint` that the model returns is later matched against category
+// names stored in the database. Those names are **user data** (seeded in PT:
+// "Alimentação", "Transportes" …) and MUST NOT be renamed per-locale — a rename
+// would break historical transactions that reference them.
+//
+// Consequence: even for EN users the prompts still instruct the model to emit
+// the PT category names verbatim. The UI translates them at render time via the
+// translation layer. What the EN prompt *does* change:
+//   - The instruction language is English (better adherence for EN-biased
+//     training sets like Llama).
+//   - The cleaned `description` field is emitted in English so the receipt/
+//     statement preview is intelligible to the user.
+// Keep this contract if you edit the prompts.
 
-const RECEIPT_PROMPT = `És um extrator de dados de recibos/facturas portuguesas.
+const RECEIPT_PROMPT_PT = `És um extrator de dados de recibos/facturas portuguesas.
 Categorias disponíveis: Alimentação, Transporte, Saúde, Lazer, Educação, Casa, Roupas, Tecnologia, Salário, Freelance, Outros.
 Para category_hint, escolhe a categoria mais adequada com base no comerciante/itens.
 Para date, usa formato YYYY-MM-DD. Se não houver ano visível, assume o ano actual.
@@ -81,7 +98,30 @@ Devolve APENAS este JSON (sem markdown, sem texto extra):
   "raw_text": "<todo o texto visível, separado por vírgulas>"
 }`
 
-function buildStatementInstructions(filename: string, categoryNames: string): string {
+// EN variant — behaviourally identical. Categories stay in PT (stored in DB,
+// see note at top of section). `description` is emitted in English.
+const RECEIPT_PROMPT_EN = `You are a data extractor for Portuguese receipts and invoices.
+Available categories (Portuguese — output them VERBATIM in the PT form, do NOT translate): Alimentação, Transporte, Saúde, Lazer, Educação, Casa, Roupas, Tecnologia, Salário, Freelance, Outros.
+For category_hint, pick the closest semantic match from the list above based on the merchant/items, and output the Portuguese name exactly as written.
+For date, use format YYYY-MM-DD. If no year is visible, assume the current year.
+
+Return ONLY this JSON (no markdown, no extra text):
+{
+  "amount": <total as number, or null>,
+  "merchant": <store/restaurant name, or null>,
+  "date": <"YYYY-MM-DD" or null>,
+  "description": <short English description such as "Groceries at Continente" or "Dinner at TGI", or null>,
+  "category_hint": <one of the Portuguese category names above, or null>,
+  "items": [{"name": "<item>", "price": <price>}],
+  "currency": "<ISO 3-letter code, default EUR>",
+  "raw_text": "<all visible text, comma-separated>"
+}`
+
+function buildReceiptPrompt(locale: Locale = 'pt'): string {
+  return locale === 'en' ? RECEIPT_PROMPT_EN : RECEIPT_PROMPT_PT
+}
+
+function buildStatementInstructionsPT(filename: string, categoryNames: string): string {
   return `És um especialista em análise de extratos bancários portugueses.
 Recebes um ficheiro exportado de um banco (CSV/TXT/TSV com texto bruto, ou um PDF scan do extrato).
 A tua tarefa é identificar o banco, fazer parse de TODAS as transações e categorizá-las.
@@ -129,10 +169,72 @@ Devolve APENAS este JSON (sem markdown, sem texto extra):
 }`
 }
 
-function buildStatementPromptWithContent(content: string, filename: string, categoryNames: string): string {
-  return `${buildStatementInstructions(filename, categoryNames)}
+// EN variant — same behaviour. Categories are still matched against PT DB
+// names (see note at top of section). Cleaned descriptions go out in English.
+function buildStatementInstructionsEN(filename: string, categoryNames: string): string {
+  return `You are an expert in parsing Portuguese bank statements.
+You receive a file exported from a bank (CSV/TXT/TSV as raw text, or a PDF scan of the statement).
+Your task is to identify the bank, parse EVERY transaction and categorise them.
 
-CONTEÚDO:
+── Common banks and formats ──
+- CGD (Caixa): CSV with semicolon separator, columns Data/Descrição/Valor/Saldo · PDF with Caixa logo
+- Millennium BCP: CSV/Excel, columns Data/Descritivo/Valor/Saldo · PDF with Millennium logo
+- BPI: CSV with ";" separator, columns "Data mov.", "Data valor", "Descrição", "Débito", "Crédito", "Saldo"
+- Santander: CSV, columns Data/Descrição/Montante/Saldo
+- Novobanco / Montepio / Activobank: format similar to BPI (Débito/Crédito as separate columns)
+- Wise / Revolut / N26: English CSV, columns "Date", "Description", "Amount"
+
+── Parsing rules ──
+- Dates: accept DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD — ALWAYS convert to YYYY-MM-DD
+- PT decimals: "1.234,56" or "1234,56" → 1234.56 (dot is thousands separator, comma is decimal)
+- EN decimals: "1,234.56" → 1234.56 (Wise/Revolut)
+- SEPARATE Débito/Crédito columns: value in Débito → type="expense"; Crédito → type="income"
+- Single signed column: negative → expense; positive → income
+- In PDFs: each movement row typically has Date, Description and Amount (may be signed or in separate columns)
+- IGNORE header rows, totals, opening/closing balances, empty lines, blank pages
+- "amount" is ALWAYS positive (the type determines the sign)
+
+── Categorisation ──
+"PINGO","CONTINENTE","LIDL" → Alimentação · "GALP","BP","REPSOL" → Transportes ·
+"EDP","MEO","NOS","VODAFONE" → Casa · "NETFLIX","SPOTIFY","HBO" → Lazer · "FARMACIA","CLINICA" → Saúde ·
+"SALARIO","ORDENADO","VENCIMENTO" → Salário · "RENDA","CONDOMINIO" → Casa · "UBER","BOLT","METRO" → Transportes
+(Category names above are in Portuguese — output them VERBATIM, DO NOT translate to English.)
+
+File: ${filename}
+
+Return ONLY this JSON (no markdown, no extra text):
+{
+  "bank": "<identified bank name>",
+  "currency": "<ISO 3-letter code, default EUR>",
+  "total": <total number of transactions>,
+  "transactions": [
+    {
+      "date": "<YYYY-MM-DD>",
+      "description": "<cleaned description in English>",
+      "original_description": "<original text, unchanged>",
+      "amount": <positive number>,
+      "type": "<income|expense>",
+      "category_hint": "<one of (Portuguese, verbatim): ${categoryNames}>"
+    }
+  ]
+}`
+}
+
+function buildStatementInstructions(
+  filename: string, categoryNames: string, locale: Locale = 'pt',
+): string {
+  return locale === 'en'
+    ? buildStatementInstructionsEN(filename, categoryNames)
+    : buildStatementInstructionsPT(filename, categoryNames)
+}
+
+function buildStatementPromptWithContent(
+  content: string, filename: string, categoryNames: string, locale: Locale = 'pt',
+): string {
+  const header = locale === 'en' ? 'CONTENT' : 'CONTEÚDO'
+  return `${buildStatementInstructions(filename, categoryNames, locale)}
+
+${header}:
 ${content}`
 }
 
@@ -333,6 +435,7 @@ function normaliseStatement(raw: string): StatementParseResult {
 
 async function geminiVision(
   apiKey: string, model: string, imageBase64: string, mimeType: string,
+  prompt: string,
 ): Promise<ReceiptScanResult> {
   const genAI = new GoogleGenerativeAI(apiKey)
   const m = genAI.getGenerativeModel({
@@ -346,7 +449,7 @@ async function geminiVision(
     },
   })
   const result = await m.generateContent([
-    RECEIPT_PROMPT,
+    prompt,
     { inlineData: { data: imageBase64, mimeType } },
   ])
   return normaliseReceipt(result.response.text())
@@ -419,7 +522,7 @@ interface GroqResponse {
 }
 
 async function groqVision(
-  apiKey: string, imageBase64: string, mimeType: string,
+  apiKey: string, imageBase64: string, mimeType: string, prompt: string,
 ): Promise<ReceiptScanResult> {
   // Llama 4 Scout — current Groq vision-capable model (replaces deprecated
   // llama-3.2-90b-vision-preview which was removed in late 2025).
@@ -435,7 +538,7 @@ async function groqVision(
         {
           role:    'user',
           content: [
-            { type: 'text',      text: RECEIPT_PROMPT },
+            { type: 'text',      text: prompt },
             { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
           ],
         },
@@ -567,7 +670,7 @@ async function setCachedReceipt(
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export async function scanReceipt(
-  imageBase64: string, mimeType: string,
+  imageBase64: string, mimeType: string, locale: Locale = 'pt',
 ): Promise<AIResult<ReceiptScanResult>> {
   // 1) Cache lookup
   const hash   = hashImage(imageBase64)
@@ -580,6 +683,7 @@ export async function scanReceipt(
   const geminiKey = getGeminiKey()
   const groqKey   = getGroqKey()
   const attempts: string[] = []
+  const receiptPrompt = buildReceiptPrompt(locale)
 
   if (!geminiKey && !groqKey) {
     throw new AIProvidersError(['no-provider-configured'], 'auth')
@@ -589,7 +693,7 @@ export async function scanReceipt(
   if (geminiKey) {
     try {
       const data = await withRetry(
-        () => geminiVision(geminiKey, 'gemini-2.5-flash', imageBase64, mimeType),
+        () => geminiVision(geminiKey, 'gemini-2.5-flash', imageBase64, mimeType, receiptPrompt),
         'gemini-2.5-flash',
       )
       await setCachedReceipt(hash, data, 'gemini-2.5-flash')
@@ -601,7 +705,7 @@ export async function scanReceipt(
     // 2b) Gemini 2.0 Flash — non-thinking fallback (different quota pool)
     try {
       const data = await withRetry(
-        () => geminiVision(geminiKey, 'gemini-2.0-flash', imageBase64, mimeType),
+        () => geminiVision(geminiKey, 'gemini-2.0-flash', imageBase64, mimeType, receiptPrompt),
         'gemini-2.0-flash',
       )
       await setCachedReceipt(hash, data, 'gemini-2.0-flash')
@@ -615,7 +719,7 @@ export async function scanReceipt(
   if (groqKey) {
     try {
       const data = await withRetry(
-        () => groqVision(groqKey, imageBase64, mimeType),
+        () => groqVision(groqKey, imageBase64, mimeType, receiptPrompt),
         'groq-vision',
       )
       await setCachedReceipt(hash, data, 'groq-llama-4-scout')
@@ -641,8 +745,9 @@ export async function parseStatement(
     | { kind: 'text'; content: string; filename: string }
     | { kind: 'pdf';  pdfBase64: string; filename: string },
   categoryNames: string,
+  locale: Locale = 'pt',
 ): Promise<AIResult<StatementParseResult>> {
-  const instructions = buildStatementInstructions(input.filename, categoryNames)
+  const instructions = buildStatementInstructions(input.filename, categoryNames, locale)
 
   const geminiKey = getGeminiKey()
   const groqKey   = getGroqKey()
@@ -687,7 +792,7 @@ export async function parseStatement(
 
     // Caminho texto — preferido
     if (extractedText && extractedText.trim().length > 50) {
-      const textPrompt = buildStatementPromptWithContent(extractedText, input.filename, categoryNames)
+      const textPrompt = buildStatementPromptWithContent(extractedText, input.filename, categoryNames, locale)
 
       if (geminiKey) {
         try {
@@ -754,7 +859,7 @@ export async function parseStatement(
   }
 
   // ── Text path: Gemini → Gemini 2.0 → Groq ──
-  const prompt = buildStatementPromptWithContent(input.content, input.filename, categoryNames)
+  const prompt = buildStatementPromptWithContent(input.content, input.filename, categoryNames, locale)
 
   // Se o conteúdo é grande (>500 chars) provavelmente há movimentos reais —
   // um resultado com 0 transações indica que a IA falhou no parsing, não que

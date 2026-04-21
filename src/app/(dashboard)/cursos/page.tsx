@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link                    from 'next/link'
 import { BookOpen, Check, Clock, Lock, Star, Trophy, Zap, Crown } from 'lucide-react'
 import { useUser }    from '@clerk/nextjs'
 import { useUserPlan } from '@/lib/contexts/UserPlanContext'
-import { COURSES, getCourseProgress } from '@/lib/courses'
+import { getCourseProgress } from '@/lib/courses'
 import type { CourseProgress } from '@/lib/courses'
-import { useT } from '@/lib/i18n/LocaleProvider'
+import { getCourses } from '@/lib/coursesAccess'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
 const LEVEL_COLOR: Record<string, string> = {
@@ -34,18 +35,21 @@ const PLAN_RANK: Record<string, number> = {
 export default function CursosPage() {
   const { user }         = useUser()
   const { plan }         = useUserPlan()
-  const t                = useT()
+  const { locale, t }    = useLocale()
+  // Localised catalogue: rebuilt whenever the user flips language. Pure merge
+  // of PT base + EN override, so there's no flash of mixed content.
+  const courses          = useMemo(() => getCourses(locale), [locale])
   const [progress, setProgress] = useState<Record<string, CourseProgress>>({})
 
   useEffect(() => {
     if (!user?.id) return
     const map: Record<string, CourseProgress> = {}
-    COURSES.forEach(c => { map[c.id] = getCourseProgress(user.id, c.id) })
+    courses.forEach(c => { map[c.id] = getCourseProgress(user.id, c.id) })
     setProgress(map)
-  }, [user?.id])
+  }, [user?.id, courses])
 
   const completedCount = Object.values(progress).filter(p => p.completedAt).length
-  const totalLessons   = COURSES.reduce((s, c) => s + c.lessons.length, 0)
+  const totalLessons   = courses.reduce((s, c) => s + c.lessons.length, 0)
   const doneLessons    = Object.values(progress).reduce((s, p) => s + p.completedLessons.length, 0)
 
   return (
@@ -82,7 +86,7 @@ export default function CursosPage() {
 
       {/* Course list */}
       <div className="space-y-4">
-        {COURSES.map((course, i) => {
+        {courses.map((course, i) => {
           const prog        = progress[course.id]
           const isCompleted = !!prog?.completedAt
           const lessonsComp = prog?.completedLessons.length ?? 0
