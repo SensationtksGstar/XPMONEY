@@ -317,6 +317,33 @@ export default function GoalsPage() {
     .sort((a, b) => (a.deadline ?? '').localeCompare(b.deadline ?? ''))[0] ?? null
   const closestDays  = daysUntil(closestGoal?.deadline ?? null)
 
+  // Sorted list for rendering. Ordering rules:
+  //   1. Active before completed (completed sink to the bottom — they're
+  //      historic, not actionable)
+  //   2. Within active: closest deadline first; goals without a deadline
+  //      come AFTER goals with deadlines (less urgent)
+  //   3. Tiebreaker: alphabetical by name (locale-aware) so the order is
+  //      stable across renders even when deadlines are identical
+  // Previously goals rendered in DB-insertion order which felt random
+  // (a "Casa Própria" with a deadline could appear after a free-floating
+  // "Objetivo Pessoal").
+  const sortedGoals = [...goals].sort((a, b) => {
+    const aActive = a.status === 'active' ? 0 : 1
+    const bActive = b.status === 'active' ? 0 : 1
+    if (aActive !== bActive) return aActive - bActive
+
+    const aHasDl = a.deadline ? 0 : 1
+    const bHasDl = b.deadline ? 0 : 1
+    if (aHasDl !== bHasDl) return aHasDl - bHasDl
+
+    if (a.deadline && b.deadline) {
+      const cmp = a.deadline.localeCompare(b.deadline)
+      if (cmp !== 0) return cmp
+    }
+
+    return (a.name ?? '').localeCompare(b.name ?? '', 'pt-PT', { sensitivity: 'base' })
+  })
+
   async function handleCreateGoal(e: React.FormEvent) {
     e.preventDefault()
     if (!name || !targetAmount) return
@@ -444,7 +471,7 @@ export default function GoalsPage() {
         />
       ) : (
         <div className="space-y-4">
-          {goals.map(goal => (
+          {sortedGoals.map(goal => (
             <GoalCard
               key={goal.id}
               goal={goal}

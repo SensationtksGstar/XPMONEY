@@ -1,7 +1,7 @@
 'use client'
 
 import { useState }  from 'react'
-import { Crown, Check, Zap, ArrowLeft } from 'lucide-react'
+import { Crown, Check, Zap, ArrowLeft, Settings as SettingsIcon } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { track } from '@/lib/posthog'
@@ -96,6 +96,30 @@ export default function BillingClient({ currentPlan }: Props) {
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError]     = useState<string | null>(null)
 
+  // Open Stripe Customer Portal — Stripe-hosted UI for cancel / update
+  // card / view invoices. Setting `loading='portal'` so the badge button
+  // shows a spinner; same setError() flow as checkout for consistency.
+  async function handleManageSubscription() {
+    setError(null)
+    setLoading('portal')
+    try {
+      const res = await fetch('/api/billing/portal', { method: 'POST' })
+      let payload: { url?: string; error?: string } = {}
+      try { payload = await res.json() } catch { /* non-JSON */ }
+
+      if (!res.ok || !payload.url) {
+        setError(payload.error ?? `HTTP ${res.status}`)
+        return
+      }
+      window.location.href = payload.url
+    } catch (err) {
+      console.warn('[billing] portal failed:', err)
+      setError(err instanceof Error ? err.message : 'Falha ao abrir portal.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
   async function handleUpgrade(planId: string) {
     if (planId === 'free') return
     setError(null)
@@ -155,11 +179,34 @@ export default function BillingClient({ currentPlan }: Props) {
         </div>
       </div>
 
-      {/* Plano atual badge */}
+      {/* Plano atual badge — Premium users get a "Gerir subscrição" button
+          that opens the Stripe Customer Portal (cancel, update card,
+          download invoices). The Portal is the canonical place to cancel,
+          fixing the bug where the chatbot pointed users here but no
+          control existed. */}
       {currentPlan !== 'free' && (
-        <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3">
-          <Check className="w-5 h-5 text-purple-400 flex-shrink-0" />
-          <p className="text-sm text-purple-300 font-medium" dangerouslySetInnerHTML={{ __html: t('billing.current_premium') }} />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Check className="w-5 h-5 text-purple-400 flex-shrink-0" />
+            <p className="text-sm text-purple-300 font-medium" dangerouslySetInnerHTML={{ __html: t('billing.current_premium') }} />
+          </div>
+          <button
+            type="button"
+            onClick={handleManageSubscription}
+            disabled={loading === 'portal'}
+            className={cn(
+              'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all min-h-[40px] flex-shrink-0',
+              'bg-purple-500 hover:bg-purple-400 text-white',
+              'disabled:opacity-60 disabled:cursor-wait',
+            )}
+          >
+            {loading === 'portal' ? (
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            ) : (
+              <SettingsIcon className="w-3.5 h-3.5" />
+            )}
+            {t('billing.manage_subscription')}
+          </button>
         </div>
       )}
 

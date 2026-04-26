@@ -6,21 +6,27 @@ export const metadata = {
 /**
  * Termos de Serviço — governa a relação contratual entre utilizador e serviço.
  *
- * TEMPLATE de arranque. Cobre o essencial para um SaaS B2C português: objecto,
- * aceitação, conta, subscrições, cancelamento, responsabilidade, PI, cessação.
- * **Validar com advogado antes de cobrar pagamentos a utilizadores reais.**
+ * Ajustado em Abril 2026:
+ *   - Modelo simplificado para 2 tiers (Free + Premium); referências a
+ *     Plus/Pro/Family removidas
+ *   - Política de não-reembolso explicitada ao abrigo do Art. 17.º n.º 1
+ *     alínea m) do DL 24/2014 — utilizador pede execução imediata e
+ *     reconhece perder o direito de livre resolução de 14 dias
+ *   - Não substitui aconselhamento jurídico. Validar com advogado antes
+ *     de tráfego em volume significativo.
  */
 export default function TermosPage() {
   return (
     <>
       <h1>Termos de Serviço</h1>
-      <p className="updated">Última atualização: 17 de abril de 2026</p>
+      <p className="updated">Última atualização: 26 de abril de 2026</p>
 
       <div className="tldr">
-        <strong>TL;DR:</strong> Usas a app gratuitamente ou pagas uma subscrição.
-        Comportas-te civilizadamente. Nós fazemos o melhor para manter o serviço
-        estável, mas não garantimos 100% de uptime. Qualquer dos lados pode
-        cancelar a relação a qualquer momento.
+        <strong>TL;DR:</strong> Usas o XP-Money gratuitamente ou pagas uma subscrição
+        Premium. Cancelas quando quiseres — mantens acesso até ao fim do período pago.
+        <strong> Não fazemos reembolsos:</strong> ao subscrever Premium pedes a execução
+        imediata do serviço digital e reconheces perder o direito de livre resolução
+        de 14 dias. Usa o plano Free para testar à vontade antes de pagares.
       </div>
 
       <h2>1. Objeto e aceitação</h2>
@@ -38,7 +44,7 @@ export default function TermosPage() {
       <ul>
         <li>És responsável por manter as tuas credenciais seguras (recomendamos MFA).</li>
         <li>Os dados que introduzes (transações, objetivos, etc.) são da tua responsabilidade.</li>
-        <li>Uma conta por pessoa singular. Contas partilhadas são proibidas no plano Individual — usa o plano Família.</li>
+        <li>Uma conta por pessoa singular. Contas partilhadas não são permitidas.</li>
         <li>Podes apagar a tua conta a qualquer momento em Definições.</li>
       </ul>
 
@@ -55,22 +61,34 @@ export default function TermosPage() {
 
       <h2>4. Subscrições e pagamento</h2>
       <ul>
-        <li>Planos pagos (<strong>Plus</strong>, <strong>Pro</strong>, <strong>Family</strong>) são cobrados mensalmente ou anualmente via <strong>Stripe</strong>.</li>
-        <li>Renovação automática. Podes cancelar a qualquer momento — a subscrição mantém-se ativa até ao fim do período pago.</li>
-        <li>Preços incluem IVA à taxa em vigor.</li>
-        <li>Alterações de preço são comunicadas por email com 30 dias de antecedência; se não concordares, podes cancelar.</li>
+        <li>Existem dois planos: <strong>Free</strong> (gratuito, com anúncios discretos) e <strong>Premium</strong> (€4,99/mês ou €39,99/ano, ~33% desconto no anual).</li>
+        <li>O plano Premium é cobrado via <strong>Stripe</strong>, com renovação automática mensal ou anual conforme o ciclo escolhido.</li>
+        <li>Podes cancelar a qualquer momento em <em>Definições → Subscrição</em>: o portal Stripe permite-te cancelar, alterar cartão e descarregar facturas. Após cancelamento mantens acesso Premium até ao fim do período já pago — não há reembolso parcial.</li>
+        <li>Preços incluem IVA à taxa em vigor em Portugal.</li>
+        <li>Alterações de preço são comunicadas por email com 30 dias de antecedência; podes cancelar antes da entrada em vigor.</li>
+        <li>Pagamentos não recebidos resultam em downgrade automático para Free no fim do período.</li>
       </ul>
 
-      <h2>5. Direito de livre resolução (consumidores UE)</h2>
+      <h2>5. Não-reembolso e direito de livre resolução</h2>
       <p>
-        Ao subscrever um plano pago, <strong>solicitas o início imediato</strong> da
-        execução do serviço digital — pelo que, nos termos do Art. 17.º n.º 1 alínea m) do
-        DL 24/2014, perdes o direito de livre resolução de 14 dias após o primeiro acesso
-        às funcionalidades premium.
+        <strong>Não fazemos reembolsos</strong> de subscrições Premium pagas. Ao subscrever,
+        confirmas expressamente que:
+      </p>
+      <ul>
+        <li><strong>Solicitas o início imediato</strong> da execução do serviço digital — todas as funcionalidades Premium ficam disponíveis instantaneamente após o pagamento.</li>
+        <li><strong>Reconheces perder o direito de livre resolução de 14 dias</strong>, nos termos do Art. 17.º n.º 1 alínea m) do Decreto-Lei n.º 24/2014, dado tratar-se de fornecimento de conteúdos digitais cuja execução começou com o teu consentimento prévio.</li>
+        <li>O plano <strong>Free</strong> permanece disponível em permanência para testares todas as funcionalidades-base sem qualquer compromisso financeiro — usa-o para avaliar o serviço antes de pagar.</li>
+      </ul>
+      <p>
+        <strong>Excepções obrigatórias por lei:</strong> reembolsos são concedidos
+        em caso de (i) cobrança duplicada por falha técnica, (ii) inexecução total e
+        permanente do serviço por nossa responsabilidade durante todo o período pago,
+        ou (iii) outros casos imperativos da legislação portuguesa do consumo.
       </p>
       <p>
-        Ainda assim, <strong>reembolso total em 14 dias</strong> por insatisfação — basta
-        pedires pelo formulário de contacto.
+        Pedidos de reembolso ao abrigo destas excepções são apresentados pelo{' '}
+        <a href="/contacto">formulário de contacto</a> com prova documental e analisados
+        no prazo máximo de 14 dias.
       </p>
 
       <h2>6. Propriedade intelectual</h2>
