@@ -481,6 +481,97 @@ function Planeador({
           </div>
         )}
       </div>
+
+      {/* ── Sensitivity table — "what if I pay more?" ─────────────────
+          Lets the user FEEL how their monthly extra translates into total
+          interest paid. The biggest behaviour-change lever in debt-payoff
+          UX is showing that doubling a small extra often halves total
+          interest — without this table the math stays abstract. Each row
+          is clickable: tapping it sets `monthlyExtra` to that scenario,
+          turning the table into a "what-if" tuner.
+
+          Anchored around the current extra so a user already paying
+          €100/mo sees €0, €50, €100, €200, €300; a user with no extra
+          sees a fixed ladder (50/100/200/500). All scenarios that fail
+          to converge (interest > min payment) are filtered out so the
+          row doesn't lie. */}
+      {(() => {
+        const base    = parseFloat(monthlyExtra) || 0
+        const ladder  = base === 0
+          ? [0, 50, 100, 200, 500]
+          : [0, Math.round(base / 2), Math.round(base), Math.round(base * 2), Math.round(base * 3)]
+        const amounts = Array.from(new Set(ladder)).sort((a, b) => a - b)
+        const sims    = amounts.map(amt => ({
+          amt,
+          ...simulatePlan(debts, amt, strategy),
+        }))
+        const noExtra = sims.find(s => s.amt === 0 && !s.infinite)
+        const baseline = noExtra?.totalInterest ?? null
+
+        // If everything diverges (e.g. user has only crippling debts), don't
+        // show the table — would be confusing. Need at least 2 viable rows.
+        const viable = sims.filter(s => !s.infinite)
+        if (viable.length < 2) return null
+
+        return (
+          <div className="bg-black/20 border border-white/8 rounded-xl p-3">
+            <p className="text-[11px] uppercase tracking-wider text-white/40 mb-2 flex items-center gap-1.5">
+              <TrendingDown className="w-3 h-3 text-emerald-400" />
+              E se pagares mais por mês?
+            </p>
+            <div className="space-y-1">
+              {sims.map(s => {
+                const isCurrent = Math.abs(s.amt - Math.round(base)) < 0.5
+                const savings   = baseline !== null ? baseline - s.totalInterest : null
+                const isBetter  = savings !== null && savings > 0.5
+
+                if (s.infinite) {
+                  return (
+                    <div
+                      key={s.amt}
+                      className="flex items-center gap-2 text-[11px] text-white/35 px-2 py-1.5 rounded-lg"
+                    >
+                      <span className="font-semibold tabular-nums w-16">€{s.amt}/mês</span>
+                      <span className="italic">não chega para os juros</span>
+                    </div>
+                  )
+                }
+
+                return (
+                  <button
+                    key={s.amt}
+                    type="button"
+                    onClick={() => setMonthlyExtra(String(s.amt))}
+                    className={`w-full flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-lg transition-colors text-left ${
+                      isCurrent
+                        ? 'bg-yellow-500/15 border border-yellow-400/40 text-white'
+                        : 'bg-white/3 hover:bg-white/8 border border-white/5 text-white/75'
+                    }`}
+                  >
+                    <span className={`font-semibold tabular-nums w-16 ${isCurrent ? 'text-yellow-200' : ''}`}>
+                      €{s.amt}/mês
+                    </span>
+                    <span className="text-white/50 tabular-nums w-20">
+                      {formatMonths(s.monthsToFree)}
+                    </span>
+                    <span className="text-orange-300/85 tabular-nums flex-1 text-right">
+                      {formatCurrency(s.totalInterest)}
+                    </span>
+                    {isBetter && (
+                      <span className="text-emerald-300 font-bold tabular-nums">
+                        −{formatCurrency(savings ?? 0)}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-[10px] text-white/35 mt-2 leading-relaxed">
+              Toca numa linha para definir esse extra. A coluna verde é o que poupas em juros face a pagar só os mínimos.
+            </p>
+          </div>
+        )
+      })()}
     </div>
   )
 }
