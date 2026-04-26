@@ -13,6 +13,7 @@ import {
   resolveCategory,
   simulatePlan,
   compareStrategies,
+  orderByStrategy,
   formatMonths,
   type Debt,
   type DebtStrategy,
@@ -390,9 +391,28 @@ function Planeador({
           )
         }
 
+        // Ordered attack queue per strategy. Reusing orderByStrategy ensures
+        // the visible list matches what simulatePlan internally iterates,
+        // so the user sees exactly the path the math is taking.
+        const avQ = orderByStrategy(debts, 'avalanche')
+        const snQ = orderByStrategy(debts, 'snowball')
+        const renderQueue = (queue: Debt[]) => (
+          <ol className="mt-2 space-y-0.5 text-[11px] text-white/70">
+            {queue.map((d, i) => (
+              <li key={d.id} className="flex items-center gap-1.5 truncate">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 text-[9px] font-bold text-white/70 flex-shrink-0">
+                  {i + 1}
+                </span>
+                <span aria-hidden className="text-sm flex-shrink-0">{resolveCategory(d.category).icon}</span>
+                <span className="truncate">{d.name}</span>
+              </li>
+            ))}
+          </ol>
+        )
+
         return (
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className={`rounded-xl border p-2.5 ${
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+            <div className={`rounded-xl border p-3 ${
               strategy === 'avalanche' ? 'border-yellow-400/40 bg-yellow-500/8' : 'border-white/8 bg-white/3'
             }`}>
               <p className="uppercase tracking-wider text-white/40 mb-1 flex items-center gap-1">
@@ -401,8 +421,11 @@ function Planeador({
               <p className="text-white/85 tabular-nums">
                 {formatMonths(avM)} · <span className="text-orange-300">{formatCurrency(avI)}</span>
               </p>
+              {/* Full attack queue — prevents the "it's always the same
+                  debt" confusion when the user has 2+ debts. */}
+              {avQ.length > 0 && renderQueue(avQ)}
             </div>
-            <div className={`rounded-xl border p-2.5 ${
+            <div className={`rounded-xl border p-3 ${
               strategy === 'snowball' ? 'border-blue-400/40 bg-blue-500/8' : 'border-white/8 bg-white/3'
             }`}>
               <p className="uppercase tracking-wider text-white/40 mb-1 flex items-center gap-1">
@@ -411,6 +434,7 @@ function Planeador({
               <p className="text-white/85 tabular-nums">
                 {formatMonths(snM)} · <span className="text-orange-300">{formatCurrency(snI)}</span>
               </p>
+              {snQ.length > 0 && renderQueue(snQ)}
             </div>
           </div>
         )
