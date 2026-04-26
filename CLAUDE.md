@@ -1,29 +1,49 @@
 # XP Money — Claude context
 
-Finance-gamification PWA, **PT-PT UI copy (not PT-BR)**. Deployed: https://xp-money.vercel.app
-Core loop: log transactions → earn XP → level up mascot → unlock badges/missions/courses.
+Finance-gamification PWA. Bilingual **PT-PT (default) + EN-US**. Deployed: https://xp-money.com (alias `xp-money.vercel.app`).
+Core loop: log transactions → score climbs → mascot evolves → XP/badges/missions/courses unlock.
 
-## Stack essentials
+## Stack
 
-- **Next.js 15** App Router · **React 19** · **TypeScript strict**
-- **Supabase** Postgres + RLS (`src/lib/supabase.ts` has `import 'server-only'`). I **cannot run DDL** (no DB password/PAT) — migrations go via the user's SQL editor, and new columns always need a localStorage/runtime fallback.
-- **Clerk** auth. `userId` from Clerk is NEVER the Supabase UUID — resolve via `resolveUser(clerkId)`.
-- **React Query** (`src/components/providers/QueryProvider.tsx`): staleTime 5m, gcTime 15m, retry 1. `queryKey` MUST NOT include `userId` (causes `''`→real-id double-fetch). Filter server-side via RLS.
-- **Stripe** billing · `PLAN_RANK = { free:0, plus:1, pro:2, family:3 }` · read via `useUserPlan()`. Paid-only features gate on rank ≥ 1.
-- **AI chain** (`src/lib/ai.ts`): Gemini 2.5 Flash → Gemini 2.0 Flash → Groq Llama. Env `GOOGLE_GEMINI_API_KEY` (falls back to `GOOGLE_API_KEY`/`GEMINI_API_KEY`). `maxOutputTokens`: 4k vision / 16k text. `parseStatement()` takes `{ kind:'text'|'pdf' }` — PDFs go only to Gemini (Groq text can't read them). Receipt OCR cached by SHA-256 in `ai_receipt_cache`.
-- **Tailwind + Radix + lucide + framer-motion + recharts + sharp** (sharp is a **runtime dep**, not devDep — mascot upload route needs it).
-- PostHog analytics · web-push notifications.
+- **Next.js 15** App Router · **React 19** · **TypeScript strict** · **Tailwind 3.4** + Radix + lucide + framer-motion + recharts
+- **Supabase** Postgres + RLS — `src/lib/supabase.ts` is `import 'server-only'`. **I cannot run DDL** (no DB password). Migrations live in `database/*.sql` and the user runs them in the Supabase SQL editor; new code must always have a runtime fallback for "table not yet created".
+- **Clerk** auth · `localization` prop wired to `ptPT`/`enUS` from `@clerk/localizations`. `userId` from Clerk is **NEVER** the Supabase UUID — resolve via `resolveUser(clerkId)`.
+- **React Query** — staleTime 5 min, gcTime 15 min, retry 1. `queryKey` MUST NOT include `userId` (causes `''`→real-id double-fetch). Filter server-side via RLS.
+- **Stripe** billing — Customer Portal at `/api/billing/portal`. Webhook at `/api/webhooks/stripe` is signature-verified + idempotent via `stripe_events` table.
+- **AI chain** (`src/lib/ai.ts`): Gemini 2.5 Flash → Gemini 2.0 Flash → Groq Llama. Env `GOOGLE_GEMINI_API_KEY` (falls back to `GOOGLE_API_KEY`/`GEMINI_API_KEY`). `parseStatement({ kind:'text'|'pdf' })` — PDFs go only to Gemini. **Locale-aware**: pass `locale` arg → builds PT or EN system prompt; the EN variant tells the model to keep DB category names in PT verbatim so historical data stays intact.
+- **PostHog** analytics · web-push (VAPID) · sharp (RUNTIME dep — mascot upload route).
+
+## Plans (2-tier, April 2026)
+
+`PLAN_RANK` from `src/lib/stripe.ts`: `{ free:0, premium:1, plus:1, pro:1, family:1 }` — Plus/Pro/Family are LEGACY aliases mapped to Premium for backwards-compat with old subscriptions. Read via `useUserPlan()`. Paid features gate on rank ≥ 1.
+
+**Pricing** (synced between `LandingPricing.tsx` + `BillingClient.tsx`):
+- Free: ad-supported, 2 goals, 3 starter courses (`gestao-basica`, `investimento-iniciantes`, `psicologia-dinheiro`), no AI features.
+- Premium: €4,99/mo · €39,99/yr (~33% annual discount). All features, 4 advanced courses, no ads.
+
+**No-refund policy** — codified in `src/app/(legal)/termos/page.tsx` §5 under Art. 17.º n.º 1 al. m) DL 24/2014. Users waive 14-day cooling-off via immediate-execution consent at checkout. Cancellation = period-end; access kept until paid period ends.
+
+## i18n (PT/EN)
+
+- **Source of truth**: `src/lib/i18n/translations.ts` — flat-key dict, `pt` is canonical, `en` is `Partial<...>` (falls back to PT when missing).
+- **Client**: `useT()` / `useLocale()` from `LocaleProvider`. **Server**: `getServerT()` / `getServerLocale()` from `@/lib/i18n/server` — reads `xpmoney-locale` cookie, falls back to `Accept-Language`.
+- `<html lang>` is dynamic via `getServerLocale()` in root layout.
+- `generateMetadata()` in root layout flips `<title>`/`<meta description>`/`og:locale`/keywords per locale.
+- Course content: PT in `src/lib/courses.ts` (source); EN overrides keyed by id in `src/lib/courses.en.ts`. Pages call `getCourseById(id, locale)` from `coursesAccess.ts`.
+- `LanguageToggle` (compact PT/EN segmented control) lives in landing nav + mobile TopBar.
+- Format helpers (`formatCurrency`/`formatMonth`/`formatDate`) accept optional `Locale`.
 
 ## Don't-re-discover rules
 
-- **Silent errors are banned.** No `.catch(() => {})`. Use `console.warn('[source] failed:', err)` + `AbortController` cleanup in `useEffect`.
-- **`.maybeSingle()` on probe queries** — `.single()` throws PGRST116 (500) for fresh users with no row yet. Already applied on xp/voltix/score/daily-checkin/import-statement.
-- **Safe numerics** (`src/lib/safeNumber.ts`): `toNumber(v, 0)` wraps Supabase numeric columns (they come back as strings); `parseBoundedInt(raw, { default, min, max })` for URL params.
-- **XP awards go through `awardXP(db, userId, amount, source)`** (`src/lib/awardXP.ts`) — returns `{ xp_gained, xp_total, level, leveled_up, previous_level }`. Never duplicate the logic.
-- **Financial score** (`src/lib/gamification.ts` + `recalculateScore.ts`): returns **0 on truly empty state** (no tx + no goals) — not a 24 neutral baseline. `/api/score` POST delegates — don't inline.
-- **PT decimal comma**: amount inputs use `type="text" inputMode="decimal" pattern="[0-9.,]*"` + `parseAmountLocale()` that accepts both `1.234,56` and `1,234.56`.
-- **Dynamic-import heavy widgets** (`dynamic(..., { ssr:false, loading:<skeleton/> })`): dashboard widgets, AdBanner, recharts blocks (`SimuladorChart`, `GoalChart`). Keeps mobile JS small.
-- **Demo mode** (`NEXT_PUBLIC_DEMO_MODE=true`): `isDemoMode()` / `demoResponse()` bypass Clerk with seeded data in `src/lib/demo/`.
+- **Silent errors are banned.** No `.catch(() => {})`. Always `console.warn('[source] failed:', err)` + AbortController cleanup in `useEffect`.
+- **`.maybeSingle()` for probe queries** — `.single()` throws PGRST116 (500) for fresh users without a row.
+- **Safe numerics** (`src/lib/safeNumber.ts`): `toNumber(v, 0)` for Supabase numeric columns (they come back as strings); `parseBoundedInt(raw, { default, min, max })` for URL params.
+- **XP awards through `awardXP(db, userId, amount, reason)`** (`src/lib/awardXP.ts`). Never duplicate the logic. Idempotent guards expected via `xp_history` reason check on call site.
+- **Financial score** (`src/lib/gamification.ts` + `recalculateScore.ts`): returns **0 on truly empty state**. `/api/score` POST delegates to the lib — don't inline.
+- **PT decimal comma**: amount inputs use `type="text" inputMode="decimal" pattern="[0-9.,]*"` + `parseAmountLocale()` (accepts `1.234,56` AND `1,234.56`).
+- **Dynamic-import heavy widgets** (`dynamic(..., { ssr:false, loading:<skeleton/> })`) for dashboard widgets, AdBanner, recharts (`SimuladorChart`, `GoalChart`).
+- **Demo mode** is now SAFE: `isDemoMode()` from `src/lib/demo/demoGuard.ts` refuses to enable on `NODE_ENV='production'` unless `ALLOW_DEMO_IN_PROD='true'` is ALSO set (server-only, no NEXT_PUBLIC_ prefix). Use this helper everywhere — never read `NEXT_PUBLIC_DEMO_MODE` directly for auth-bypass logic.
+- **Plan gates run SERVER-SIDE on every paid action.** Already enforced on `/api/scan-receipt`, `/api/import-statement`, `/api/courses/[id]/complete`, `/simulador`, `/perspetiva`, PDF report.
 
 ## Gamification primitives
 
@@ -31,33 +51,50 @@ Core loop: log transactions → earn XP → level up mascot → unlock badges/mi
 |---|---|---|
 | XP | `useXP` + `awardXP` | `/api/xp` |
 | Voltix (mood/evo) | `useVoltix` | `/api/voltix` |
-| Missions | `useMissions` (has `is_premium`) | `/api/missions` |
-| Badges | `awardBadge` | `/api/badges` |
-| Streak | — (dashboard `useEffect`, runs once) | `/api/daily-checkin` |
-| Notifications feed | `NotificationPanel` | `/api/xp/history` |
+| Missions | `useMissions` | `/api/missions` |
+| Badges | `awardBadge` + `checkAllBadges` | `/api/badges` |
+| Streak | dashboard `useEffect` daily | `/api/daily-checkin` |
+| Score | `recalculateScore` | `/api/score` |
 
-Celebration modals trigger on: streak 7, streak 30, level-up, badge unlock.
+Celebration modals: streak 7, streak 30, level-up, badge unlock.
+
+**XP rewards** (`src/types/index.ts → XP_REWARDS`):
+- TRANSACTION_REGISTERED: 15 · DAILY_LOGIN: 25 · GOAL_CREATED: 100
+- STREAK_7_DAYS: 300 · STREAK_30_DAYS: 1000 · GOAL_REACHED: 1000
 
 ## Mascot system
 
-Two mascots × 6 evolutions: **Voltix** (male, thunder dragon) · **Penny** (female, angel cat).
+Two mascots × 6 evolutions: **Voltix** (male, thunder dragon — names Voltini→Voltito→Voltix→Voltaryon→Magnavoltix→Imperivoltix) · **Penny** (female, angel cat — Pennini→Pennito→Penny→Pennyara→Pennael→Seraphenny).
 
-- Render: `<MascotCreature gender evo mood animate />` tries `/mascot/<gender>/<n>.webp` (512×512, in `public/mascot/<gender>/`) → `onError` falls back to SVG `VoltixCreature`/`PennyCreature`. Never broken UI.
-- **Gender resolution** (`src/lib/mascotGender.ts`): `localStorage override > DB > 'voltix'`. `/api/voltix` sends `null` when DB has no value so localStorage isn't shadowed. `MascotPicker` hydrates via `useEffect`.
-- **Evolution is score-based + monotonic** (`src/lib/mascotEvolution.ts`): thresholds `{2:35, 3:55, 4:72, 5:85, 6:95}` · XP bonuses `{2:200, 3:400, 4:700, 5:1000, 6:2000}`. `maybeEvolveMascot()` in `recalculateScore.ts` only bumps UP. Reset endpoint manually writes `evolution_level=1` to allow the downgrade.
-- **Cinematic**: 5-stage framer-motion timeline in `MascotEvolutionCinematic.tsx` + runtime Web Audio SFX in `evolutionSfx.ts`. Preview via `?previewEvo=2-3`.
-- Animation layers (no transform collision): `mascot-float` → aura → pointer tilt (desktop only, `perspective:800px`, ±16°, skipped on touch/reduced-motion) → `mascot-breathe` → `<img>` → sparkles (evo≥3). Keyframes in `src/app/globals.css`.
+- Render: `<MascotCreature gender evo mood animate />` tries `/mascot/<gender>/<n>.webp` (512×512) → `onError` fallback to SVG `VoltixCreature`/`PennyCreature`. Never broken UI.
+- Gender resolution (`src/lib/mascotGender.ts`): `localStorage > DB > 'voltix'`. `/api/voltix` sends `null` when DB has no value so localStorage isn't shadowed.
+- **Evolution is SCORE-based + monotonic** (`src/lib/mascotEvolution.ts`). **Tuned April 2026** (was `{2:35, 3:55, 4:72, 5:85, 6:95}` and bonus `{2:200, 3:400, 4:700, 5:1000, 6:2000}`):
+  - Thresholds: `{2:20, 3:48, 4:68, 5:85, 6:95}` (Evo 2 dramatically easier so users see the "wow moment" in week 1)
+  - XP bonuses: `{2:350, 3:500, 4:800, 5:1200, 6:2500}`
+  - Late-game (5/6) intentionally untouched — keeps top-tier aspirational.
+- Cinematic: 5-stage framer-motion timeline in `MascotEvolutionCinematic.tsx` + Web Audio SFX. Preview via `?previewEvo=2-3`.
+- **Landing hero** uses `PlatedMascot` (`src/components/landing/PlatedMascot.tsx`) — 8-layer monochrome deep-blue plate with iridescence + rim light + specular core + chromatic fringe + idle Lissajous when no pointer activity.
 - Raw PNGs in `public/mascot/raw/` + `raw-clean/` are **gitignored** — commit only processed WebPs.
 
-## Paid features (rank ≥ 1 gate)
+## Site-wide visuals
 
-- **Receipt scan** (`/api/scan-receipt`, `TransactionForm` Scan button).
-- **Statement import** (`/api/import-statement`, `StatementImporter`): accepts CSV/TXT (≤200 KB) OR PDF (≤8 MB base64 → Gemini inline). Free users see full-panel paywall. Confirm path awards 5 XP per row.
-- **Simulador de investimento**: `pro`/`family` only (page-level server-side check in `simulador/page.tsx`).
+- **Neon Grid wallpaper** (`SiteBackground` mounted in root layout). On `(min-width: 1024px) and (pointer: fine)` it renders the live WebGL2 fragment shader from `src/components/wallpaper/shaders.ts` (cursor-reactive). On mobile / coarse-pointer: replaced with a static CSS gradient stack (zero GPU). 4 other shaders (Aurora, Voronoi, Metaballs, Starfield) sit in `shaders.ts` ready for a future theme picker.
+- `body` is **transparent**; `html` keeps `bg-background` as flash-of-unstyled protection. Root layout wraps `{children}` in `relative z-10` so content always sits above the fixed `z-0` backdrop.
 
 ## Reset endpoint
 
-`DELETE /api/transactions/reset` requires `{ confirm: "APAGAR" }`. Wipes `transactions`/`xp_history`/`financial_scores`/`goal_deposits`; resets `xp_progress` (0/1), `voltix_states` (evo 1, neutral, streak 0), active `missions.current_value`, `goals.current_amount`. Keeps badges + completed missions (historical). Client must also clear `localStorage['xpmoney:mascot_last_evo']`.
+`DELETE /api/transactions/reset` requires `{ confirm: "APAGAR" }`. Wipes `transactions`/`xp_history`/`financial_scores`/`goal_deposits`; resets `xp_progress` (0/1), `voltix_states` (evo 1, neutral, streak 0), active `missions.current_value`, `goals.current_amount`. Keeps badges + completed missions. Client clears `localStorage['xpmoney:mascot_last_evo']`.
+
+## Security baseline (April 2026)
+
+- Demo mode: see above.
+- Rate limiting: `src/lib/rateLimit.ts` — auto-uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set, in-memory fallback otherwise. Applied to `/api/landing-chat` (10/10min + 150/day) and `/api/contact-message` (3/5min + 20/day).
+- Cloudflare Turnstile: `src/lib/turnstile.ts` + `src/components/common/TurnstileWidget.tsx`. No-ops when `TURNSTILE_SECRET_KEY`/`NEXT_PUBLIC_TURNSTILE_SITE_KEY` are unset. Wired into `/contacto`.
+- Stripe webhook: signature-verified + idempotent via `stripe_events` table (migration in `database/stripe_events_2026_04.sql`). `current_period_end` null-guarded.
+- Admin endpoints (`/api/admin/upload-mascot`, `/api/admin/setup-db`) gated on `ADMIN_CLERK_ID` env with 404 stealth response.
+- CRON_SECRET comparison: `crypto.timingSafeEqual` + minimum 20 chars.
+- Transaction POST verifies `account_id` / `category_id` ownership before insert.
+- Headers (`next.config.ts`): HSTS preload, Permissions-Policy denies powerful APIs except `camera=(self)`, `Cache-Control: no-store` on `/api/*`, `poweredByHeader: false`.
 
 ## A11y floor
 
@@ -66,34 +103,38 @@ Two mascots × 6 evolutions: **Voltix** (male, thunder dragon) · **Penny** (fem
 - Overlays: `role="dialog"` + `aria-modal="true"` + `aria-labelledby={useId()}`.
 - Destructive icons: mobile `opacity-60` always visible; desktop fade-in on hover. Never hover-only.
 
-## Pricing (PT market, ~€1100 median)
-
-Single-source pairs — keep both in sync: `settings/billing/BillingClient.tsx` (PLANS const) + `app/page.tsx` (landing hero).
-
-| Plan | Monthly | Annual (~30% off) |
-|---|---|---|
-| Plus | €2,99 | €24,99 |
-| Pro  | €5,99 | €49,99 |
-
-Free plan sees `<AdBanner variant="feed\|banner" />` (dynamic-imported). Paid never see ads. NFT certificate mint is **waitlist only** — modal in `cursos/[id]`, no backend.
-
-## Courses
-
-`src/lib/courses.ts` + `(dashboard)/cursos/[id]/page.tsx`. Quiz threshold **100%**. Progress via `saveCourseProgress(userId, courseId, patch)` client-side. Certificate has deterministic code `XPM-XXX-HASH` from `certCode()`. Gated by `PLAN_RANK`.
-
 ## Shared UI — reuse, don't rebuild
 
-`Logo` (never hardcode "⚡ XP Money"), `EmptyState`, `ConfirmDialog` (tone="danger"), `CelebrationModal` (role="alertdialog"), `Spinner`, `AdBanner`, `MascotCreature`, `MascotPicker`.
+`Logo` (never hardcode "⚡ XP Money"), `EmptyState`, `ConfirmDialog` (tone="danger"), `CelebrationModal` (role="alertdialog"), `Spinner`, `AdBanner`, `MascotCreature`, `MascotPicker`, `LanguageToggle`, `LanguageSwitcher`, `PremiumFeatureLock`, `TurnstileWidget`.
 
 ## Brand
 
-- Master logo: `public/logo.svg` (512×512) — minimalist emerald square + bolt cutout via SVG mask.
-- Favicon: `src/app/icon.svg` · Apple touch: `apple-icon.tsx` (180×180) · OG: `opengraph-image.tsx` (1200×630, uses `clip-path` polygon — Satori doesn't support `<mask>`).
+- Master logo: `public/logo.svg` (512×512).
+- Favicon: `src/app/icon.svg` · Apple touch: `apple-icon.tsx` (180×180) · OG: `opengraph-image.tsx` (1200×630, uses `clip-path` — Satori doesn't support `<mask>`).
 
-## Workflow quirks
+## Workflow
 
-- **ESLint is interactive** in this repo. Don't script `next lint`. CI gate is `npx tsc --noEmit`.
+- **ESLint is interactive** in this repo. Don't script `next lint`. **CI gate: `npx tsc --noEmit`** — must pass before commit.
+- **Auto-push to main** for Vercel deploy: `git push origin HEAD:main`. No PR workflow unless explicitly requested.
 - **Never amend commits.** Never `--no-verify` / `--no-gpg-sign` unless asked.
-- **Never create `.md` docs** unless asked.
-- Currency EUR · dates `dd/MM/yyyy` · months PT via `formatCurrency`/`formatMonth` in `lib/utils`.
+- **Never create `.md` docs** unless asked. (CLAUDE.md updates are explicitly OK.)
+- Commit messages: prefix with type — `fix:`, `feat:`, `sec:`, `tune:`, `feat(i18n):`, etc. Body explains WHY, not what. End with `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`.
+- Currency EUR · dates `dd/MM/yyyy` PT or `MMM d, yyyy` EN · `formatCurrency`/`formatMonth` in `lib/utils`.
 - Vercel `.vercel/project.json` → `projectId: prj_YKQCICr9yOJe00wFfAJSWY2F882U`, name `xp-money`.
+
+## Pending user actions (one-time setup)
+
+These are TODOs that require the user to act on a third-party dashboard — code is already prepared.
+
+- **Stripe Customer Portal**: enable at https://dashboard.stripe.com/settings/billing/portal so the "Gerir subscrição" button works.
+- **Upstash Redis** (optional, for rate-limit at scale): set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` in Vercel env. Without these the limiter falls back to in-memory.
+- **Cloudflare Turnstile** (optional, for hard anti-bot on `/contacto`): set `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` in Vercel env. Without these the form falls back to honeypot only.
+- **SQL migrations not yet confirmed applied**: `database/stripe_events_2026_04.sql` (Stripe idempotency), `database/bug_reports.sql` (bug-report submission table).
+
+## Backlog (cosmetic / non-blocking)
+
+- Sign-in/up custom headers ("Bem-vindo de volta") still PT-only — needs `t()` wrapping.
+- Badges page doesn't visually distinguish `is_premium` badges (rarity drives all styling).
+- 4 unused shaders in `shaders.ts` (~400 LOC) — keep as theme-picker seed or delete.
+- Dashboard layout has its own `dashboard-bg` solid which covers the Neon Grid (intentional).
+- Strict CSP — currently NOT set (Clerk + PostHog + AdSense + Turnstile mix needs nonce infra; deferred).
