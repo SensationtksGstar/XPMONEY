@@ -365,6 +365,57 @@ function Planeador({
         </button>
       </div>
 
+      {/* Comparação directa das duas estratégias — fica SEMPRE visível
+          para que a diferença (ou a falta dela) não passe despercebida.
+          Antes só mudava um chip "Poupa €X" e os números do `plan` activo,
+          o que em casos degenerados (1 dívida, extra=0, taxas iguais)
+          faziam parecer que o toggle não tinha efeito. */}
+      {!plan.infinite && (() => {
+        const avM = compare.avalanche.monthsToFree
+        const snM = compare.snowball.monthsToFree
+        const avI = compare.avalanche.totalInterest
+        const snI = compare.snowball.totalInterest
+        const tied = avM === snM && Math.abs(avI - snI) < 0.5
+
+        if (tied) {
+          return (
+            <div className="bg-blue-500/10 border border-blue-400/25 rounded-xl px-3 py-2 flex items-start gap-2 text-xs text-blue-200">
+              <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <p className="leading-relaxed">
+                <strong className="text-blue-100">Estratégias equivalentes</strong> com
+                a tua configuração ({debts.length === 1 ? 'só 1 dívida activa' : 'taxas / saldos parecidos'}).
+                Avalanche e Bola de Neve dão o mesmo resultado — escolhe a que te motivar mais.
+              </p>
+            </div>
+          )
+        }
+
+        return (
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className={`rounded-xl border p-2.5 ${
+              strategy === 'avalanche' ? 'border-yellow-400/40 bg-yellow-500/8' : 'border-white/8 bg-white/3'
+            }`}>
+              <p className="uppercase tracking-wider text-white/40 mb-1 flex items-center gap-1">
+                <span aria-hidden>🏔️</span> Avalanche
+              </p>
+              <p className="text-white/85 tabular-nums">
+                {formatMonths(avM)} · <span className="text-orange-300">{formatCurrency(avI)}</span>
+              </p>
+            </div>
+            <div className={`rounded-xl border p-2.5 ${
+              strategy === 'snowball' ? 'border-blue-400/40 bg-blue-500/8' : 'border-white/8 bg-white/3'
+            }`}>
+              <p className="uppercase tracking-wider text-white/40 mb-1 flex items-center gap-1">
+                <span aria-hidden>❄️</span> Bola de Neve
+              </p>
+              <p className="text-white/85 tabular-nums">
+                {formatMonths(snM)} · <span className="text-orange-300">{formatCurrency(snI)}</span>
+              </p>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Resultado do plano */}
       <div className="bg-black/30 border border-white/5 rounded-xl p-4">
         {plan.infinite ? (

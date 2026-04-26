@@ -27,6 +27,23 @@ export function BugReportCard() {
     e.preventDefault()
     if (status === 'sending' || status === 'sent') return
 
+    // Inline validation BEFORE submitting. Previously the submit button
+    // was `disabled` for short inputs, which on mobile gave silent dead-
+    // ends — users tapped and nothing happened, no feedback. Now the
+    // button always responds; we surface a friendly message instead.
+    const titleTrim = title.trim()
+    const descTrim  = description.trim()
+    if (titleTrim.length < 3) {
+      setStatus('error')
+      setErrorMsg('Escreve um título com pelo menos 3 caracteres.')
+      return
+    }
+    if (descTrim.length < 10) {
+      setStatus('error')
+      setErrorMsg('A descrição precisa de pelo menos 10 caracteres — conta-nos o que aconteceu.')
+      return
+    }
+
     setStatus('sending')
     setErrorMsg(null)
 
@@ -63,7 +80,10 @@ export function BugReportCard() {
     }
   }
 
-  const disabled = status === 'sending' || title.trim().length < 3 || description.trim().length < 10
+  // Only block the button while a submit is actually in flight. Length
+  // gates moved into handleSubmit() so users always get feedback when
+  // they tap.
+  const disabled = status === 'sending'
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl p-5">
