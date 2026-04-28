@@ -1,0 +1,397 @@
+import { auth }                  from '@clerk/nextjs/server'
+import { notFound, redirect }   from 'next/navigation'
+import { createSupabaseAdmin }  from '@/lib/supabase'
+
+/**
+ * /admin/metrics — internal SaaS-metrics dashboard.
+ *
+ * Gating: same pattern as /admin/bugs — `ADMIN_CLERK_ID` env var. Anyone
+ * else gets a 404 (the page "doesn't exist" for them).
+ *
+ * Defensive: every secondary query (subscriptions, ai_receipt_cache,
+ * stripe_events, xp_progress) is wrapped in try/catch and surfaces inline
+ * warnings instead of crashing — this admin page must never blank out
+ * because a downstream migration hasn't been applied.
+ *
+ * Limitations baked into the math (documented in the UI footer too):
+ *   - We can't distinguish monthly vs yearly subscribers from the DB
+ *     (the `subscriptions` table has no `cycle` column). Everyone is
+ *     treated as monthly → MRR is OVER-estimated when yearly users exist.
+ *   - AI cost estimate is per-user ballpark; only the cache table is
+ *     authoritative (and only for receipts, not statement parsing).
+ *   - Churn uses current-premium as the denominator (we'd need a
+ *     historical snapshot for "active 30d ago"). Under-estimates churn
+ *     while the user base is growing.
+ */
+
+export const metadata = { title: 'Admin · Metrics' }
+export const dynamic  = 'force-dynamic'
+
+// ── Pricing & cost constants ────────────────────────────────────────────────
+const PRICE_GROSS_MONTHLY = 4.99             // headline monthly price
+const VAT_RATE            = 0.23             // PT IVA standard rate
+const PRICE_NET_OF_VAT    = PRICE_GROSS_MONTHLY / (1 + VAT_RATE)  // 4.0569…
+const STRIPE_FEE_PCT      = 0.015            // EU cards
+const STRIPE_FEE_FIX      = 0.25
+const STRIPE_FEE_PER_TX   = PRICE_NET_OF_VAT * STRIPE_FEE_PCT + STRIPE_FEE_FIX
+
+// Per-user/month infra ballpark (Supabase Pro €25 / ~500 users +
+// Clerk free tier + Vercel free tier). Refine when scaling.
+const INFRA_COST_PER_USER  = 0.10
+// Premium user AI usage average (5-10 scans + 0-1 statement per month)
+const AI_COST_PER_PREMIUM  = 0.50
+// Cost of a single receipt scan we'd otherwise have paid (for cache savings)
+const AI_COST_PER_SCAN_EUR = 0.0005
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function fmtNum(n: number, decimals = 0): string {
+  return n.toLocaleString('pt-PT', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
+}
+function eur(n: number, decimals = 2): string { return `€${fmtNum(n, decimals)}` }
+function pct(n: number, decimals = 1): string { return `${fmtNum(n * 100, decimals)}%` }
+
+// ── Data loader ─────────────────────────────────────────────────────────────
+interface MetricsBundle {
+  totals:     { users: number; free: number; premium: number; activeSubs: number }
+  growth:     { signups7d: number; signups30d: number }
+  engagement: { tx7d: number; tx30d: number; dau7d: number; mau30d: number }
+  ai:         { cacheEntries: number; cacheHits: number }
+  stripe:     { events30d: number; cancellations30d: number; checkouts30d: number }
+  warnings:   string[]
+}
+
+async function loadMetrics(): Promise<MetricsBundle> {
+  const db   = createSupabaseAdmin()
+  const warnings: string[] = []
+  const now  = Date.now()
+  const day  = 86_400_000
+  const iso7  = new Date(now -  7 * day).toISOString()
+  const iso30 = new Date(now - 30 * day).toISOString()
+
+  const totals     = { users: 0, free: 0, premium: 0, activeSubs: 0 }
+  const growth     = { signups7d: 0, signups30d: 0 }
+  const engagement = { tx7d: 0, tx30d: 0, dau7d: 0, mau30d: 0 }
+  const ai         = { cacheEntries: 0, cacheHits: 0 }
+  const stripe     = { events30d: 0, cancellations30d: 0, checkouts30d: 0 }
+
+  // Users — totals + plan split + signup velocity. The `users` table is
+  // load-bearing; if this fails, the whole page is meaningless, so let it
+  // throw rather than silently zeroing out.
+  const { count: userCount } = await db
+    .from('users').select('id', { count: 'exact', head: true })
+  const { count: premiumCount } = await db
+    .from('users').select('id', { count: 'exact', head: true }).eq('plan', 'premium')
+  totals.users   = userCount    ?? 0
+  totals.premium = premiumCount ?? 0
+  totals.free    = totals.users - totals.premium
+
+  const { count: c7 } = await db
+    .from('users').select('id', { count: 'exact', head: true }).gte('created_at', iso7)
+  const { count: c30 } = await db
+    .from('users').select('id', { count: 'exact', head: true }).gte('created_at', iso30)
+  growth.signups7d  = c7  ?? 0
+  growth.signups30d = c30 ?? 0
+
+  // Stripe-active subscription count — separate from `users.plan` because
+  // webhook lag can make them temporarily disagree. Difference ≈ migration
+  // friction or webhook outage.
+  try {
+    const { count } = await db
+      .from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active')
+    totals.activeSubs = count ?? 0
+  } catch (err) {
+    warnings.push(`subscriptions: ${err instanceof Error ? err.message : 'indisponível'}`)
+  }
+
+  // Engagement — transactions in window + DAU/MAU
+  try {
+    const { count: tx7 } = await db
+      .from('transactions').select('id', { count: 'exact', head: true }).gte('created_at', iso7)
+    const { count: tx30 } = await db
+      .from('transactions').select('id', { count: 'exact', head: true }).gte('created_at', iso30)
+    engagement.tx7d  = tx7  ?? 0
+    engagement.tx30d = tx30 ?? 0
+  } catch (err) {
+    warnings.push(`transactions: ${err instanceof Error ? err.message : 'indisponível'}`)
+  }
+
+  // DAU/MAU via xp_progress.last_activity_at — bumped on every meaningful
+  // interaction (not just transactions), so it's a closer "active user" proxy.
+  try {
+    const { count: dau } = await db
+      .from('xp_progress').select('user_id', { count: 'exact', head: true })
+      .gte('last_activity_at', iso7)
+    const { count: mau } = await db
+      .from('xp_progress').select('user_id', { count: 'exact', head: true })
+      .gte('last_activity_at', iso30)
+    engagement.dau7d  = dau ?? 0
+    engagement.mau30d = mau ?? 0
+  } catch (err) {
+    warnings.push(`xp_progress: ${err instanceof Error ? err.message : 'indisponível'}`)
+  }
+
+  // AI cache stats — entries = receipts billed historically; sum of
+  // hit_counts > entries = scans saved by serving from cache.
+  try {
+    const { count: entries } = await db
+      .from('ai_receipt_cache').select('image_hash', { count: 'exact', head: true })
+    const { data: rows } = await db
+      .from('ai_receipt_cache').select('hit_count').limit(10_000)
+    ai.cacheEntries = entries ?? 0
+    // hit_count starts at 1 per row; subtract entries to get the "saved" count.
+    const totalHits = (rows ?? []).reduce(
+      (s, r) => s + ((r as { hit_count: number | null }).hit_count ?? 0), 0,
+    )
+    ai.cacheHits = Math.max(0, totalHits - ai.cacheEntries)
+  } catch (err) {
+    warnings.push(`ai_receipt_cache: ${err instanceof Error ? err.message : 'indisponível'}`)
+  }
+
+  // Stripe webhook events — health + churn proxy.
+  try {
+    const { data: events } = await db
+      .from('stripe_events').select('event_type').gte('received_at', iso30).limit(10_000)
+    const list = (events ?? []) as { event_type: string }[]
+    stripe.events30d        = list.length
+    stripe.cancellations30d = list.filter(e => e.event_type === 'customer.subscription.deleted').length
+    stripe.checkouts30d     = list.filter(e => e.event_type === 'checkout.session.completed').length
+  } catch (err) {
+    warnings.push(`stripe_events: ${err instanceof Error ? err.message : 'indisponível'}`)
+  }
+
+  return { totals, growth, engagement, ai, stripe, warnings }
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
+export default async function AdminMetricsPage() {
+  const { userId } = await auth()
+  if (!userId) redirect('/sign-in')
+  if (!process.env.ADMIN_CLERK_ID || userId !== process.env.ADMIN_CLERK_ID) notFound()
+
+  const m = await loadMetrics()
+
+  // ── Derived metrics ──
+  const mrr  = m.totals.premium * PRICE_NET_OF_VAT       // post-VAT, pre-fees
+  const arr  = mrr * 12
+  const arpu = m.totals.premium > 0 ? PRICE_NET_OF_VAT : 0
+  const conversionRate = m.totals.users > 0 ? m.totals.premium / m.totals.users : 0
+
+  // Margin (monthly)
+  const grossRevenue  = m.totals.premium * PRICE_GROSS_MONTHLY
+  const vatPortion    = grossRevenue - mrr
+  const stripeFees    = m.totals.premium * STRIPE_FEE_PER_TX
+  const aiCost        = m.totals.premium * AI_COST_PER_PREMIUM
+  const infraCost     = m.totals.users * INFRA_COST_PER_USER
+  const netMargin     = mrr - stripeFees - aiCost - infraCost
+  const grossMarginPct = mrr > 0 ? netMargin / mrr : 0
+
+  // AI cache savings
+  const aiCostSaved  = m.ai.cacheHits * AI_COST_PER_SCAN_EUR
+  const cacheHitRate = m.ai.cacheEntries + m.ai.cacheHits > 0
+    ? m.ai.cacheHits / (m.ai.cacheEntries + m.ai.cacheHits)
+    : 0
+
+  // Churn — see file-header note about why this is approximate
+  const churn30d = m.totals.premium > 0
+    ? m.stripe.cancellations30d / m.totals.premium
+    : 0
+
+  // Stickiness DAU/MAU
+  const stickiness = m.engagement.mau30d > 0
+    ? m.engagement.dau7d / m.engagement.mau30d
+    : 0
+
+  // Subscription drift — when this is non-zero, webhooks are out of sync
+  const subDrift = m.totals.premium - m.totals.activeSubs
+
+  return (
+    <main className="min-h-screen bg-[#0a0f1e] text-white p-6">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Métricas</h1>
+            <p className="text-white/50 text-sm mt-0.5">
+              Snapshot · {new Date().toLocaleString('pt-PT', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+              })}
+            </p>
+          </div>
+          <a href="/dashboard" className="text-sm text-white/60 hover:text-white">
+            ← Dashboard
+          </a>
+        </header>
+
+        {m.warnings.length > 0 && (
+          <section className="bg-orange-500/5 border border-orange-500/30 rounded-xl p-4">
+            <h2 className="font-semibold text-orange-300 text-sm mb-1.5">
+              ⚙ Tabelas em falta ou indisponíveis
+            </h2>
+            <ul className="text-xs text-white/70 space-y-0.5 font-mono">
+              {m.warnings.map((w, i) => <li key={i}>• {w}</li>)}
+            </ul>
+            <p className="text-[11px] text-white/50 mt-2">
+              Estas secções aparecerão a zero. Aplica as migrações em <code>database/*.sql</code> via Supabase SQL Editor.
+            </p>
+          </section>
+        )}
+
+        {/* ── Top KPIs ── */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard label="MRR"      value={eur(mrr)}      hint="receita mensal recorrente (líq. IVA)" />
+          <KpiCard label="ARR"      value={eur(arr)}      hint="MRR × 12" />
+          <KpiCard label="ARPU"     value={eur(arpu)}     hint="receita por user pago" />
+          <KpiCard label="Conversão" value={pct(conversionRate)} hint={`${m.totals.premium} / ${m.totals.users} users`} />
+        </section>
+
+        {/* ── Crescimento ── */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-3 text-white/90">Crescimento</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+            <Row label="Total users"   value={fmtNum(m.totals.users)} />
+            <Row label="Free"          value={fmtNum(m.totals.free)} />
+            <Row label="Premium"       value={fmtNum(m.totals.premium)} />
+            <Row label="Subs Stripe activas" value={fmtNum(m.totals.activeSubs)} />
+            <Row label="Signups 7 dias"  value={fmtNum(m.growth.signups7d)} />
+            <Row label="Signups 30 dias" value={fmtNum(m.growth.signups30d)} />
+            {subDrift !== 0 && (
+              <Row
+                label="⚠ Drift users.plan vs Stripe"
+                value={String(subDrift)}
+                accent="orange"
+              />
+            )}
+          </div>
+        </section>
+
+        {/* ── Receita & Margem ── */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-3 text-white/90">
+            Receita & margem (mês actual, estimativa)
+          </h2>
+          <div className="space-y-1.5 text-sm font-mono">
+            <Line label="Receita bruta (mensal)"      value={`+${eur(grossRevenue)}`} />
+            <Line label="− IVA 23%"                   value={`−${eur(vatPortion)}`}    muted />
+            <Line label="− Stripe fees (1,5% + €0,25)" value={`−${eur(stripeFees)}`}    muted />
+            <Line label="− AI estimado (≈€0,50/Premium)" value={`−${eur(aiCost)}`}      muted />
+            <Line label="− Infra (Supabase + Clerk + Vercel rateado)" value={`−${eur(infraCost)}`} muted />
+            <div className="border-t border-white/10 mt-2 pt-2">
+              <Line label="Margem líquida"    value={eur(netMargin)} bold />
+              <Line label="Margem bruta (% MRR)" value={pct(grossMarginPct)} bold />
+            </div>
+          </div>
+          <p className="text-[11px] text-white/40 mt-3 leading-relaxed">
+            Assume todos os Premium em ciclo mensal. Subscritores anuais (€39,99/ano) são contabilizados como €4,99/mês — sobre-estima MRR. Adicionar coluna <code>cycle</code> a <code>subscriptions</code> resolve.
+          </p>
+        </section>
+
+        {/* ── AI cache ── */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-3 text-white/90">AI receipt cache (poupança)</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+            <Row label="Entries no cache"  value={fmtNum(m.ai.cacheEntries)} />
+            <Row label="Hits servidos"     value={fmtNum(m.ai.cacheHits)} />
+            <Row label="Hit rate"          value={pct(cacheHitRate)} />
+            <Row label="Custo poupado est." value={eur(aiCostSaved, 4)} />
+          </div>
+          <p className="text-[11px] text-white/40 mt-3">
+            Só conta scans de recibos. Parsing de extratos não é cacheado — não está incluído.
+          </p>
+        </section>
+
+        {/* ── Engagement ── */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-3 text-white/90">Engagement</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+            <Row label="Transações 7d"  value={fmtNum(m.engagement.tx7d)} />
+            <Row label="Transações 30d" value={fmtNum(m.engagement.tx30d)} />
+            <Row label="DAU (7d)"       value={fmtNum(m.engagement.dau7d)} />
+            <Row label="MAU (30d)"      value={fmtNum(m.engagement.mau30d)} />
+            <Row label="Stickiness"     value={pct(stickiness)} hint="DAU / MAU — saudável > 20%" />
+          </div>
+        </section>
+
+        {/* ── Stripe & churn ── */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-3 text-white/90">Stripe webhooks & churn</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+            <Row label="Eventos 30d"           value={fmtNum(m.stripe.events30d)} />
+            <Row label="Checkouts completos"   value={fmtNum(m.stripe.checkouts30d)} />
+            <Row label="Cancelamentos 30d"     value={fmtNum(m.stripe.cancellations30d)} />
+            <Row label="Churn estimado"        value={pct(churn30d)} hint="canc. ÷ Premium actual" />
+          </div>
+          {m.totals.premium > 0 && churn30d === 0 && m.stripe.cancellations30d === 0 && (
+            <p className="text-[11px] text-emerald-400/80 mt-3">
+              ✓ Zero cancelamentos nos últimos 30 dias.
+            </p>
+          )}
+        </section>
+
+        {/* ── Pendente / aguarda dados ── */}
+        <section className="bg-white/[0.02] border border-dashed border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-2 text-white/60 text-sm">
+            Sem dados suficientes ainda
+          </h2>
+          <ul className="text-sm text-white/50 space-y-1">
+            <li>• <strong>CAC</strong> — precisa de input manual de gasto em marketing (a adicionar)</li>
+            <li>• <strong>LTV</strong> — fórmula = ARPU ÷ churn; precisa ≥3 meses de churn estável</li>
+            <li>• <strong>NRR</strong> — só faz sentido com tier Premium+ ou upgrades intra-plano</li>
+            <li>• <strong>Rule of 40</strong> — soma crescimento MoM + margem; calculável daqui a 60 dias</li>
+            <li>• <strong>Burn rate</strong> — precisa input manual de custos fixos</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  )
+}
+
+// ── Tiny presentational helpers ─────────────────────────────────────────────
+function KpiCard(
+  { label, value, hint }: { label: string; value: string; hint?: string },
+) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+      <p className="text-xs uppercase tracking-wider text-white/40">{label}</p>
+      <p className="text-2xl font-bold mt-1 tabular-nums">{value}</p>
+      {hint && <p className="text-[11px] text-white/40 mt-0.5">{hint}</p>}
+    </div>
+  )
+}
+
+function Row(
+  { label, value, hint, accent }:
+  { label: string; value: string; hint?: string; accent?: 'orange' },
+) {
+  return (
+    <div className="flex justify-between items-baseline gap-3 min-w-0">
+      <span className="text-white/60 truncate">{label}</span>
+      <span className={
+        'font-semibold tabular-nums shrink-0 ' +
+        (accent === 'orange' ? 'text-orange-300' : 'text-white')
+      }>
+        {value}
+        {hint && <span className="block text-[10px] text-white/40 font-normal text-right">{hint}</span>}
+      </span>
+    </div>
+  )
+}
+
+function Line(
+  { label, value, muted, bold }:
+  { label: string; value: string; muted?: boolean; bold?: boolean },
+) {
+  return (
+    <div className="flex justify-between items-baseline gap-3">
+      <span className={muted ? 'text-white/40' : bold ? 'text-white' : 'text-white/70'}>
+        {label}
+      </span>
+      <span className={
+        'tabular-nums shrink-0 ' +
+        (muted ? 'text-white/40' : bold ? 'text-white font-bold' : 'text-white')
+      }>{value}</span>
+    </div>
+  )
+}
