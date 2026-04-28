@@ -1,6 +1,18 @@
-export const metadata = {
-  title:       'Política de Privacidade · XP-Money',
-  description: 'Como tratamos os teus dados pessoais e financeiros. GDPR-compliant.',
+import type { Metadata } from 'next'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { breadcrumb } from '@/lib/seo/jsonLd'
+
+export const metadata: Metadata = {
+  title:       'Política de Privacidade',
+  description: 'Como o XP-Money trata os teus dados pessoais e financeiros — RGPD/GDPR-compliant. Dados na UE (Supabase eu-central-1), nunca partilhados, apagáveis em 1 clique.',
+  alternates:  { canonical: '/privacidade' },
+  openGraph:   {
+    type:        'article',
+    title:       'Política de Privacidade · XP-Money',
+    description: 'Tratamento de dados pessoais e financeiros conforme RGPD/GDPR.',
+    url:         'https://xp-money.com/privacidade',
+  },
+  robots:      { index: true, follow: true },
 }
 
 /**
@@ -17,6 +29,10 @@ export const metadata = {
 export default function PrivacidadePage() {
   return (
     <>
+      <JsonLd schema={breadcrumb([
+        { name: 'Início', href: '/' },
+        { name: 'Política de Privacidade', href: '/privacidade' },
+      ])} />
       <h1>Política de Privacidade</h1>
       <p className="updated">Última atualização: 17 de abril de 2026</p>
 

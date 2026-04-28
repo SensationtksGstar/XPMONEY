@@ -1,11 +1,22 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/Logo'
 import { ContactForm } from './ContactForm'
 import { LandingFooter } from '@/components/landing/LandingFooter'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { breadcrumb } from '@/lib/seo/jsonLd'
 
-export const metadata = {
-  title:       'Contacto · XP-Money',
-  description: 'Envia-nos uma mensagem. Respondemos em menos de 24 horas.',
+export const metadata: Metadata = {
+  title:       'Contacto',
+  description: 'Fala connosco — envia uma mensagem pelo formulário e respondemos em menos de 24 horas. Sem partilha do email do administrador, anti-spam (Turnstile + rate-limit).',
+  alternates:  { canonical: '/contacto' },
+  openGraph:   {
+    type:        'website',
+    title:       'Contacto · XP-Money',
+    description: 'Mensagem directa via formulário. Resposta humana em <24h.',
+    url:         'https://xp-money.com/contacto',
+  },
+  robots:      { index: true, follow: true },
 }
 
 /**
@@ -19,6 +30,10 @@ export const metadata = {
 export default function ContactoPage() {
   return (
     <main className="min-h-screen text-white">
+      <JsonLd schema={breadcrumb([
+        { name: 'Início', href: '/' },
+        { name: 'Contacto', href: '/contacto' },
+      ])} />
       <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#060b14]/85 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2">
           <Logo size={28} />

@@ -1,6 +1,18 @@
-export const metadata = {
-  title:       'Política de Cookies · XP-Money',
-  description: 'Que cookies usamos e porquê.',
+import type { Metadata } from 'next'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { breadcrumb } from '@/lib/seo/jsonLd'
+
+export const metadata: Metadata = {
+  title:       'Política de Cookies',
+  description: 'Cookies usados pelo XP-Money: essenciais (Clerk, locale), analytics opt-in (PostHog) e como gerir o consentimento.',
+  alternates:  { canonical: '/cookies' },
+  openGraph:   {
+    type:        'article',
+    title:       'Política de Cookies · XP-Money',
+    description: 'Cookies essenciais, analytics opt-in e gestão de consentimento (ePrivacy / RGPD).',
+    url:         'https://xp-money.com/cookies',
+  },
+  robots:      { index: true, follow: true },
 }
 
 /**
@@ -12,6 +24,10 @@ export const metadata = {
 export default function CookiesPage() {
   return (
     <>
+      <JsonLd schema={breadcrumb([
+        { name: 'Início', href: '/' },
+        { name: 'Política de Cookies', href: '/cookies' },
+      ])} />
       <h1>Política de Cookies</h1>
       <p className="updated">Última atualização: 17 de abril de 2026</p>
 

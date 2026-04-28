@@ -15,7 +15,9 @@ import { LandingFooter }          from '@/components/landing/LandingFooter'
 import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
 import { LanguageToggle }         from '@/components/common/LanguageToggle'
 import { InstallAppButton }       from '@/components/common/InstallAppButton'
-import { getServerT }             from '@/lib/i18n/server'
+import { JsonLd }                 from '@/components/seo/JsonLd'
+import { softwareApplication, faqPage, premiumProduct } from '@/lib/seo/jsonLd'
+import { getServerT, getServerLocale } from '@/lib/i18n/server'
 
 /**
  * Landing page — the face of XP-Money.
@@ -39,10 +41,27 @@ import { getServerT }             from '@/lib/i18n/server'
  * the app uses — we're literally showing the product.
  */
 export default async function LandingPage() {
-  const t = await getServerT()
+  const t      = await getServerT()
+  const locale = await getServerLocale()
+
+  // FAQ rich-snippet — extract the same 8 Q&As the LandingFAQ section
+  // renders client-side, but here as plain strings for schema.org. Keep
+  // these in sync with src/components/landing/LandingFAQ.tsx (same keys).
+  // If the FAQ list grows, append to this array — Google penalises FAQ
+  // schemas that don't match the visible page content.
+  const faqs = [1, 2, 3, 4, 5, 6, 7, 8].map(i => ({
+    q: t(`landing.faq.q${i}` as `landing.faq.q1`),
+    a: t(`landing.faq.a${i}` as `landing.faq.a1`),
+  }))
 
   return (
     <main className="min-h-screen text-white overflow-x-hidden">
+      {/* Page-specific JSON-LD. Site-wide Organization + WebSite live in
+          the root layout. SoftwareApplication + FAQPage + Product unlock
+          rich snippets specifically for the landing in the SERP. */}
+      <JsonLd schema={softwareApplication(locale)} />
+      <JsonLd schema={faqPage(faqs)} />
+      <JsonLd schema={premiumProduct(locale)} />
 
       {/* ── NAV ─────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3.5 border-b border-white/5 bg-[#060b14]/85 backdrop-blur-md">

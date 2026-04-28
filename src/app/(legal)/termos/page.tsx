@@ -1,6 +1,18 @@
-export const metadata = {
-  title:       'Termos de Serviço · XP-Money',
-  description: 'As regras de utilização do XP-Money.',
+import type { Metadata } from 'next'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { breadcrumb } from '@/lib/seo/jsonLd'
+
+export const metadata: Metadata = {
+  title:       'Termos de Serviço',
+  description: 'Regras de utilização do XP-Money — subscrições, política de não-reembolso (Art. 17.º DL 24/2014), regime de isenção de IVA Art. 53.º CIVA.',
+  alternates:  { canonical: '/termos' },
+  openGraph:   {
+    type:        'article',
+    title:       'Termos de Serviço · XP-Money',
+    description: 'Regras de utilização, subscrições, política de não-reembolso e enquadramento fiscal.',
+    url:         'https://xp-money.com/termos',
+  },
+  robots:      { index: true, follow: true },
 }
 
 /**
@@ -18,6 +30,10 @@ export const metadata = {
 export default function TermosPage() {
   return (
     <>
+      <JsonLd schema={breadcrumb([
+        { name: 'Início', href: '/' },
+        { name: 'Termos de Serviço', href: '/termos' },
+      ])} />
       <h1>Termos de Serviço</h1>
       <p className="updated">Última atualização: 26 de abril de 2026</p>
 

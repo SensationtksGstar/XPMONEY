@@ -11,6 +11,8 @@ import { LocaleProvider }  from '@/lib/i18n/LocaleProvider'
 import { SiteBackground }  from '@/components/wallpaper/SiteBackground'
 import { CookieConsentBanner } from '@/components/common/CookieConsentBanner'
 import { PWAInstallPrompt }    from '@/components/common/PWAInstallPrompt'
+import { JsonLd }              from '@/components/seo/JsonLd'
+import { organization, website } from '@/lib/seo/jsonLd'
 import { getServerLocale, getServerT } from '@/lib/i18n/server'
 
 const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ''
@@ -34,6 +36,16 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale()
   const title  = t('meta.title_default')
 
+  // Optional verification env vars — if/when set in Vercel, Next.js
+  // emits the right meta tag and we get verified ownership in Google
+  // Search Console / Bing Webmaster without code changes.
+  // Pattern: GOOGLE_SITE_VERIFICATION=ABC123... (just the token, not the
+  // full meta tag). Same for Bing/Yandex.
+  const verification: NonNullable<Metadata['verification']> = {}
+  if (process.env.GOOGLE_SITE_VERIFICATION) verification.google = process.env.GOOGLE_SITE_VERIFICATION
+  if (process.env.BING_SITE_VERIFICATION)   verification.other  = { 'msvalidate.01': process.env.BING_SITE_VERIFICATION }
+  if (process.env.YANDEX_SITE_VERIFICATION) verification.yandex = process.env.YANDEX_SITE_VERIFICATION
+
   return {
     metadataBase: new URL('https://xp-money.com'),
     alternates:   { canonical: '/' },
@@ -43,9 +55,11 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: t('meta.description'),
     keywords: locale === 'en'
-      ? ['personal finance', 'expense tracker', 'gamification', 'budget', 'savings', 'finance app']
-      : ['finanças pessoais', 'controlo de gastos', 'gamificação', 'orçamento pessoal', 'poupança', 'gestão financeira', 'app finanças'],
+      ? ['personal finance', 'expense tracker', 'gamification', 'budget', 'savings', 'finance app', 'PWA finance app', 'YNAB alternative', 'gamified budgeting']
+      : ['finanças pessoais', 'controlo de gastos', 'gamificação', 'orçamento pessoal', 'poupança', 'gestão financeira', 'app finanças', 'app finanças portuguesa', 'alternativa YNAB', 'orçamento familiar', 'controlar despesas', 'finanças gamificadas'],
     authors:  [{ name: 'XP-Money' }],
+    creator:  'XP-Money',
+    publisher:'XP-Money',
     manifest: '/manifest.json',
     appleWebApp: {
       capable:        true,
@@ -59,8 +73,32 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName:    'XP-Money',
       title:       t('meta.title_og'),
       description: t('meta.description_og'),
+      url:         'https://xp-money.com',
     },
-    robots: { index: true, follow: true },
+    // Twitter Cards — without this, links shared on X/Twitter render as
+    // a plain blue text link. With `summary_large_image`, our 1200×630
+    // OG image fills the card. Same image+title flips for EN locale via
+    // generateMetadata().
+    twitter: {
+      card:        'summary_large_image',
+      site:        '@xpmoney',  // placeholder until handle exists; harmless
+      creator:     '@xpmoney',
+      title:       t('meta.title_og'),
+      description: t('meta.description_og'),
+    },
+    robots: {
+      index:     true,
+      follow:    true,
+      googleBot: {
+        index:                   true,
+        follow:                  true,
+        'max-image-preview':     'large',
+        'max-snippet':           -1,
+        'max-video-preview':     -1,
+      },
+    },
+    verification: Object.keys(verification).length > 0 ? verification : undefined,
+    category: 'finance',
   }
 }
 
@@ -94,6 +132,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       }}
     >
       <html lang={locale} className={inter.variable} suppressHydrationWarning>
+        <head>
+          {/* Site-wide JSON-LD — Organization + WebSite live in <head> so
+              every page (including authenticated ones) inherits the brand
+              identity. Per-page schemas (SoftwareApplication, FAQPage,
+              Product, BreadcrumbList) are injected in their own page.tsx. */}
+          <JsonLd schema={organization()} />
+          <JsonLd schema={website(locale)} />
+        </head>
         <body className="font-sans antialiased">
           {ADSENSE_CLIENT && (
             <Script
