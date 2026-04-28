@@ -170,3 +170,45 @@ export async function guardRequest(
   }
   return null
 }
+
+/**
+ * Per-user rate limit guard for authenticated, AI-cost-bearing endpoints.
+ *
+ * Why this exists separately from `guardRequest`:
+ *   - `guardRequest` keys on IP+UA, which a paid Premium user can rotate
+ *     trivially (proxy, mobile data switch). For endpoints that hit paid AI
+ *     providers (Gemini billed tier, future DeepSeek), one paying user could
+ *     burn through far more provider quota than their subscription covers.
+ *   - This guard keys on the Supabase user UUID — same identity across
+ *     devices, IPs and sessions. The only way to multiply the limit is to
+ *     pay for additional subscriptions, which is fine.
+ *
+ * Identifier format `u:<uuid>` — the `u:` prefix prevents collisions in the
+ * shared Upstash bucket with IP-based keys (which contain `|` from the UA).
+ *
+ * Caller passes a custom errorBody so the message can be localised and
+ * include domain-specific hints (e.g. "use CSV instead of PDF" for the
+ * statement-import limiter).
+ */
+export async function guardUser(
+  userId:    string,
+  scope:     string,
+  windows:   Array<{ limit: number; windowMs: number }>,
+  errorBody: Record<string, unknown> = { error: 'Limite atingido. Tenta novamente mais tarde.' },
+): Promise<NextResponse | null> {
+  const id = `u:${userId}`
+  for (const w of windows) {
+    const rl = await hit(scope, id, w)
+    if (!rl.allowed) {
+      return NextResponse.json(errorBody, {
+        status:  429,
+        headers: {
+          'Retry-After':          String(rl.retryAfter),
+          'X-RateLimit-Limit':    String(rl.limit),
+          'X-RateLimit-Window-s': String(Math.round(w.windowMs / 1000)),
+        },
+      })
+    }
+  }
+  return null
+}

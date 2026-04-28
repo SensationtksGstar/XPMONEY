@@ -9,6 +9,7 @@ import {
 } from '@/lib/ai'
 import { getServerLocale }             from '@/lib/i18n/server'
 import type { Locale }                 from '@/lib/i18n/translations'
+import { guardUser }                   from '@/lib/rateLimit'
 
 // Extended shape used by the UI (adds `selected` for deselection flow)
 export interface ParsedTransaction extends LibParsedTransaction {
@@ -101,6 +102,22 @@ export async function POST(req: NextRequest) {
       { status: 403 },
     )
   }
+
+  // Per-user AI cost guard. Statement parsing is the most expensive AI call
+  // we make (a 300-transaction PDF can burn 30k+ output tokens on Gemini
+  // paid tier). Honest users import 1-2 statements per month — these limits
+  // are 10× any realistic case while still capping a malicious paid user
+  // at ~€4.5/month worst case in Gemini billed quota.
+  const limited = await guardUser(user.id, 'import-statement', [
+    { limit: 5,  windowMs: 60 * 60 * 1000 },        // 5/hour
+    { limit: 15, windowMs: 24 * 60 * 60 * 1000 },   // 15/day
+  ], {
+    error: L(locale,
+      'Atingiste o limite diário de importações (15/dia). Reinicia em 24h. Se precisares mesmo de mais, contacta o suporte.',
+      'Daily statement import limit reached (15/day). It resets in 24h. If you genuinely need more, contact support.'),
+    code: 'rate_limit',
+  })
+  if (limited) return limited
 
   const { data: cats } = await db
     .from('categories')

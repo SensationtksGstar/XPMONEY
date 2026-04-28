@@ -4,6 +4,7 @@ import { createSupabaseAdmin }       from '@/lib/supabase'
 import { scanReceipt, AIProvidersError, type ReceiptScanResult } from '@/lib/ai'
 import { getServerLocale }           from '@/lib/i18n/server'
 import { isDemoMode }                from '@/lib/demo/demoGuard'
+import { guardUser }                 from '@/lib/rateLimit'
 
 // Re-export for clients
 export type { ReceiptScanResult }
@@ -43,6 +44,21 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       )
     }
+
+    // Per-user AI cost guard. Honest users scan ~5-10 receipts/day. The
+    // hourly cap absorbs reasonable bursts (e.g. processing a stack of
+    // receipts at the end of the month); the daily cap puts a hard ceiling
+    // on what a single subscription can cost us in Gemini paid quota.
+    const limited = await guardUser(user.id, 'scan-receipt', [
+      { limit: 30,  windowMs: 60 * 60 * 1000 },        // 30/hour
+      { limit: 100, windowMs: 24 * 60 * 60 * 1000 },   // 100/day
+    ], {
+      error: locale === 'en'
+        ? 'Daily scan limit reached (100/day). It resets in 24h. If you genuinely need more, contact support.'
+        : 'Atingiste o limite diário de scans (100/dia). Reinicia em 24h. Se precisares mesmo de mais, contacta o suporte.',
+      code: 'rate_limit',
+    })
+    if (limited) return limited
   }
 
   // ── Parse body ──
