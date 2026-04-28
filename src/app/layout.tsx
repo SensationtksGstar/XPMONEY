@@ -13,6 +13,7 @@ import { CookieConsentBanner } from '@/components/common/CookieConsentBanner'
 import { PWAInstallPrompt }    from '@/components/common/PWAInstallPrompt'
 import { JsonLd }              from '@/components/seo/JsonLd'
 import { organization, website } from '@/lib/seo/jsonLd'
+import { SpeedInsights }       from '@vercel/speed-insights/next'
 import { getServerLocale, getServerT } from '@/lib/i18n/server'
 
 const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ''
@@ -173,6 +174,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <CookieConsentBanner />
                 <PWAInstallPrompt />
               </LocaleProvider>
+              {/* Vercel Speed Insights — Web Vitals (LCP, CLS, INP, FCP)
+                  measured on real visitors. No cookies, no fingerprinting,
+                  no consent banner needed. Free up to 25k datapoints/mo. */}
+              <SpeedInsights />
             </QueryProvider>
           </PostHogProvider>
         </body>
