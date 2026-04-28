@@ -14,6 +14,7 @@ import { LandingPricing }         from '@/components/landing/LandingPricing'
 import { LandingFooter }          from '@/components/landing/LandingFooter'
 import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
 import { LanguageToggle }         from '@/components/common/LanguageToggle'
+import { InstallAppButton }       from '@/components/common/InstallAppButton'
 import { getServerT }             from '@/lib/i18n/server'
 
 /**
@@ -59,6 +60,10 @@ export default async function LandingPage() {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Install app — only renders when PWAInstallPrompt has detected
+              a real install path (Chromium with BIP, or iOS Safari).
+              Self-hiding on desktop Firefox / already-standalone / etc. */}
+          <InstallAppButton />
           {/* Language toggle — EN visitors flip here without hunting through
               the app. Persists via cookie + localStorage, reloads instantly. */}
           <LanguageToggle className="mr-0.5 sm:mr-1" />

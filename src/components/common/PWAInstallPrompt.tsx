@@ -30,6 +30,25 @@ import { useT, useLocale } from '@/lib/i18n/LocaleProvider'
 const DISMISS_KEY     = 'xpmoney:install-prompt-dismissed'
 const DISMISS_TTL_MS  = 14 * 24 * 60 * 60 * 1000   // 14 days
 
+/**
+ * Public events for cross-component install UX.
+ *
+ *   AVAILABLE_EVENT — fired by the prompt when it detects an install path
+ *                     is real (Chromium captured BIP, or iOS Safari).
+ *                     `InstallAppButton` (and any future install CTA)
+ *                     subscribes to know when it's safe to render.
+ *   OPEN_EVENT      — listened to by the prompt to surface its modal on
+ *                     demand (e.g. when the nav button is clicked).
+ *
+ * Both are simple CustomEvents on `window` — no provider/context needed,
+ * which keeps this module dependency-free for components that just want
+ * to expose an "Install app" button.
+ */
+export const AVAILABLE_EVENT = 'xpmoney:install-available'
+export const OPEN_EVENT      = 'xpmoney:open-install'
+
+export type InstallKind = 'chromium' | 'ios'
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
@@ -75,23 +94,24 @@ export function PWAInstallPrompt() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (isStandalone())            return
-    if (wasDismissedRecently())    return
 
-    // Chromium path
+    // Chromium path. We ALWAYS register this — even if the user dismissed
+    // recently — because we still want to broadcast availability so an
+    // explicit "Install app" CTA in the nav can surface. Auto-open is what
+    // dismissal blocks, not the manual entry point.
     function onBip(e: Event) {
       e.preventDefault()  // Prevents the mini-infobar from also showing
-      setBipEvent(e as BeforeInstallPromptEvent)
+      const ev = e as BeforeInstallPromptEvent
+      setBipEvent(ev)
+      // Tell the rest of the app: "an install button is now meaningful"
+      window.dispatchEvent(new CustomEvent<InstallKind>(AVAILABLE_EVENT, { detail: 'chromium' }))
     }
     window.addEventListener('beforeinstallprompt', onBip as EventListener)
 
-    // iOS path — no event, just detect + delay so we don't interrupt the
-    // first paint with a modal. 8s gives the user time to look around.
+    // iOS path — no event, just detect.
     if (detectIOSSafari()) {
-      const t = window.setTimeout(() => setShowIos(true), 8000)
-      return () => {
-        window.removeEventListener('beforeinstallprompt', onBip as EventListener)
-        window.clearTimeout(t)
-      }
+      setShowIos(true)
+      window.dispatchEvent(new CustomEvent<InstallKind>(AVAILABLE_EVENT, { detail: 'ios' }))
     }
 
     return () => {
@@ -99,17 +119,24 @@ export function PWAInstallPrompt() {
     }
   }, [])
 
-  // Auto-open the prompt 5s after the BIP event so we don't fight the user
-  // who's mid-task. They can also trigger it via any "Install app" CTA that
-  // calls window.dispatchEvent(new Event('xpmoney:open-install')).
+  // Auto-open after a delay so we don't fight the user who's mid-task.
+  // Two gates apply only to AUTO-open, not to the manual OPEN_EVENT path:
+  //   - wasDismissedRecently() — respect a recent "no thanks"
+  //   - delay (5s Chromium / 8s iOS) — let the page settle first
+  // A click on the nav "Install app" button bypasses both, because that's
+  // an explicit user request — they want it now.
   useEffect(() => {
-    if (!bipEvent && !showIos) return
-    const t = window.setTimeout(() => setOpen(true), bipEvent ? 5000 : 0)
     function onOpen() { setOpen(true) }
-    window.addEventListener('xpmoney:open-install', onOpen)
+    window.addEventListener(OPEN_EVENT, onOpen)
+
+    if ((!bipEvent && !showIos) || wasDismissedRecently()) {
+      return () => window.removeEventListener(OPEN_EVENT, onOpen)
+    }
+    const delay = bipEvent ? 5000 : 8000
+    const timer = window.setTimeout(() => setOpen(true), delay)
     return () => {
-      window.clearTimeout(t)
-      window.removeEventListener('xpmoney:open-install', onOpen)
+      window.clearTimeout(timer)
+      window.removeEventListener(OPEN_EVENT, onOpen)
     }
   }, [bipEvent, showIos])
 
