@@ -58,6 +58,15 @@ export default DEMO_MODE
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Skip Next.js internals + image extensions + the auto-generated
+    // metadata routes (icon, apple-icon, opengraph-image, twitter-image —
+    // produced from src/app/icon.svg, apple-icon.tsx, opengraph-image.tsx).
+    // The metadata routes are served WITHOUT a file extension (e.g. `/icon`,
+    // not `/icon.svg`), so the trailing `\.(svg|png|...)` exclusion alone
+    // doesn't match them. Without listing them here, Clerk's auth middleware
+    // intercepts `/icon` and 307-redirects to `/sign-in`, leaving the browser
+    // to fall back to a default favicon ("X" — the first letter of the
+    // page title in Chrome/Edge).
+    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
