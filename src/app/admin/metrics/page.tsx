@@ -28,10 +28,14 @@ export const metadata = { title: 'Admin · Metrics' }
 export const dynamic  = 'force-dynamic'
 
 // ── Pricing & cost constants ────────────────────────────────────────────────
-const PRICE_GROSS_MONTHLY = 4.99             // headline monthly price
-const VAT_RATE            = 0.23             // PT IVA standard rate
-const PRICE_NET_OF_VAT    = PRICE_GROSS_MONTHLY / (1 + VAT_RATE)  // 4.0569…
-const STRIPE_FEE_PCT      = 0.015            // EU cards
+// We're under the Art. 53.º CIVA isenção regime — no IVA carved out of the
+// €4,99. The price the customer pays IS our gross revenue. If we ever cross
+// the €15k/year threshold and move to the standard regime, switch back to
+// `VAT_RATE = 0.23` and `PRICE_NET_OF_VAT = PRICE_GROSS / (1 + VAT_RATE)`,
+// and re-enable the "− IVA" line in the margin breakdown below.
+const PRICE_GROSS_MONTHLY = 4.99
+const PRICE_NET_OF_VAT    = PRICE_GROSS_MONTHLY  // no VAT under isenção
+const STRIPE_FEE_PCT      = 0.015                // EU cards
 const STRIPE_FEE_FIX      = 0.25
 const STRIPE_FEE_PER_TX   = PRICE_NET_OF_VAT * STRIPE_FEE_PCT + STRIPE_FEE_FIX
 
@@ -174,14 +178,15 @@ export default async function AdminMetricsPage() {
   const m = await loadMetrics()
 
   // ── Derived metrics ──
-  const mrr  = m.totals.premium * PRICE_NET_OF_VAT       // post-VAT, pre-fees
+  // Under Art. 53.º CIVA isenção: PRICE_NET_OF_VAT === PRICE_GROSS_MONTHLY.
+  // MRR is the full €4,99 per Premium user; no IVA portion to carve out.
+  const mrr  = m.totals.premium * PRICE_NET_OF_VAT
   const arr  = mrr * 12
   const arpu = m.totals.premium > 0 ? PRICE_NET_OF_VAT : 0
   const conversionRate = m.totals.users > 0 ? m.totals.premium / m.totals.users : 0
 
   // Margin (monthly)
   const grossRevenue  = m.totals.premium * PRICE_GROSS_MONTHLY
-  const vatPortion    = grossRevenue - mrr
   const stripeFees    = m.totals.premium * STRIPE_FEE_PER_TX
   const aiCost        = m.totals.premium * AI_COST_PER_PREMIUM
   const infraCost     = m.totals.users * INFRA_COST_PER_USER
@@ -241,7 +246,7 @@ export default async function AdminMetricsPage() {
 
         {/* ── Top KPIs ── */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard label="MRR"      value={eur(mrr)}      hint="receita mensal recorrente (líq. IVA)" />
+          <KpiCard label="MRR"      value={eur(mrr)}      hint="receita mensal recorrente (regime isenção, sem IVA)" />
           <KpiCard label="ARR"      value={eur(arr)}      hint="MRR × 12" />
           <KpiCard label="ARPU"     value={eur(arpu)}     hint="receita por user pago" />
           <KpiCard label="Conversão" value={pct(conversionRate)} hint={`${m.totals.premium} / ${m.totals.users} users`} />
@@ -274,7 +279,6 @@ export default async function AdminMetricsPage() {
           </h2>
           <div className="space-y-1.5 text-sm font-mono">
             <Line label="Receita bruta (mensal)"      value={`+${eur(grossRevenue)}`} />
-            <Line label="− IVA 23%"                   value={`−${eur(vatPortion)}`}    muted />
             <Line label="− Stripe fees (1,5% + €0,25)" value={`−${eur(stripeFees)}`}    muted />
             <Line label="− AI estimado (≈€0,50/Premium)" value={`−${eur(aiCost)}`}      muted />
             <Line label="− Infra (Supabase + Clerk + Vercel rateado)" value={`−${eur(infraCost)}`} muted />
@@ -284,7 +288,8 @@ export default async function AdminMetricsPage() {
             </div>
           </div>
           <p className="text-[11px] text-white/40 mt-3 leading-relaxed">
-            Assume todos os Premium em ciclo mensal. Subscritores anuais (€39,99/ano) são contabilizados como €4,99/mês — sobre-estima MRR. Adicionar coluna <code>cycle</code> a <code>subscriptions</code> resolve.
+            Regime de isenção de IVA Art. 53.º CIVA — €4,99 é receita bruta inteira, sem IVA a entregar. Limiar: €15.000/ano facturado (≈250 Premium ano-todo) → passa a regime normal.
+            <br />Assume todos os Premium em ciclo mensal. Subscritores anuais (€39,99/ano) são contabilizados como €4,99/mês — sobre-estima MRR. Adicionar coluna <code>cycle</code> a <code>subscriptions</code> resolve.
           </p>
         </section>
 

@@ -64,7 +64,7 @@ export default function TermosPage() {
         <li>Existem dois planos: <strong>Free</strong> (gratuito, com anúncios discretos) e <strong>Premium</strong> (€4,99/mês ou €39,99/ano, ~33% desconto no anual).</li>
         <li>O plano Premium é cobrado via <strong>Stripe</strong>, com renovação automática mensal ou anual conforme o ciclo escolhido.</li>
         <li>Podes cancelar a qualquer momento em <em>Definições → Subscrição</em>: o portal Stripe permite-te cancelar, alterar cartão e descarregar facturas. Após cancelamento mantens acesso Premium até ao fim do período já pago — não há reembolso parcial.</li>
-        <li>Preços incluem IVA à taxa em vigor em Portugal.</li>
+        <li>Preços apresentados são finais. <strong>IVA — regime de isenção, artigo 53.º do CIVA</strong> (não acresce IVA ao preço).</li>
         <li>Alterações de preço são comunicadas por email com 30 dias de antecedência; podes cancelar antes da entrada em vigor.</li>
         <li>Pagamentos não recebidos resultam em downgrade automático para Free no fim do período.</li>
       </ul>

@@ -64,7 +64,7 @@ App web/PWA que transforma gerir finanças pessoais num jogo estilo RPG. Núcleo
 - **Perspetiva** (análise avançada de padrões e previsões) — Premium.
 - PWA instalável no telemóvel (iOS/Android) + desktop.
 
-## PREÇOS (EUR, IVA incluído) — modelo simples, 2 planos
+## PREÇOS (EUR — regime de isenção de IVA Art. 53.º CIVA, sem IVA aplicável) — modelo simples, 2 planos
 - **Grátis**: para sempre. Inclui score, XP, missões, mascote, objetivos (até 2), transações ilimitadas, cursos iniciais. Tem anúncios discretos.
 - **Premium**: **€4,99/mês** ou **€39,99/ano** (poupa ~33%). Desbloqueia tudo: sem anúncios, scan de recibos, import PDF, simulador, relatório PDF, Perspetiva, Academia completa, missões premium, objetivos ilimitados.
 
@@ -119,7 +119,7 @@ A web/PWA that turns managing personal finance into an RPG-style game. Core:
 - **Perspective** (advanced pattern analysis and forecasts) — Premium.
 - Installable PWA on mobile (iOS/Android) and desktop.
 
-## PRICING (EUR, VAT included) — simple, 2 plans
+## PRICING (EUR — Portuguese VAT exemption regime Art. 53 CIVA, no VAT charged) — simple, 2 plans
 - **Free**: forever. Includes score, XP, missions, mascot, up to 2 goals, unlimited transactions, starter courses. Shows discreet ads.
 - **Premium**: **€4.99/month** or **€39.99/year** (save ~33%). Unlocks everything: no ads, receipt scanning, PDF import, simulator, PDF report, Perspective, full Academy, premium missions, unlimited goals.
 

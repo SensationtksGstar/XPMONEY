@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
 import { isDemoMode }                from '@/lib/demo/demoGuard'
+import { notifyAdmin, escapeHtml }   from '@/lib/email'
 import { z }                         from 'zod'
 
 /**
@@ -93,6 +94,28 @@ export async function POST(req: NextRequest) {
       { status: missingTable ? 503 : 500 },
     )
   }
+
+  // Fire-and-forget admin notification. The DB row is the source of truth;
+  // a slow/failing email provider must not delay the user's response. Using
+  // void + .catch handles both "promise rejection" and "promise resolves to
+  // {ok:false}" without coupling either path to the response.
+  void notifyAdmin({
+    subject: `[BUG] ${parsed.data.title}`,
+    replyTo: email,
+    html: `
+      <h2 style="margin:0 0 12px;font-size:18px;">🐞 Novo bug report</h2>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;font-size:13px;color:#52525b;">
+        <tr><td style="padding:2px 8px 2px 0;">De:</td><td>${email ? escapeHtml(email) : '<em>email indisponível</em>'}</td></tr>
+        <tr><td style="padding:2px 8px 2px 0;">User:</td><td><code style="font-size:12px;">${escapeHtml(userId)}</code></td></tr>
+        ${parsed.data.pageUrl ? `<tr><td style="padding:2px 8px 2px 0;">URL:</td><td><a href="${escapeHtml(parsed.data.pageUrl)}" style="color:#16a34a;">${escapeHtml(parsed.data.pageUrl)}</a></td></tr>` : ''}
+      </table>
+      <h3 style="margin:0 0 6px;font-size:15px;">${escapeHtml(parsed.data.title)}</h3>
+      <pre style="margin:0;padding:12px;background:#f4f4f5;border-radius:8px;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.5;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(parsed.data.description)}</pre>
+      <p style="margin:18px 0 0;font-size:12px;color:#71717a;">
+        Triagem em <a href="https://xp-money.com/admin/bugs" style="color:#16a34a;">/admin/bugs</a>.
+      </p>
+    `,
+  }).catch(err => console.warn('[bug-report] notify failed (non-fatal):', err))
 
   return NextResponse.json({ success: true }, { status: 201 })
 }

@@ -204,7 +204,7 @@ export const pt = {
   'pricing.premium_f11':   'Suporte prioritário · acesso antecipado',
   'pricing.premium_cta_y': 'Quero o anual · €3,33/mês',
   'pricing.premium_cta_m': 'Experimentar mensal · €4,99',
-  'pricing.premium_footer':'Cancela a qualquer momento · IVA incluído',
+  'pricing.premium_footer':'Cancela a qualquer momento · Sem fidelização',
   'pricing.footer_note':   'Preços em EUR · Pagamento seguro via Stripe · GDPR',
 
   // ── Landing final CTA ─────────────────────────────────────────────
@@ -274,7 +274,7 @@ export const pt = {
   'paywall.social_proof':    '+1.200 utilizadores já fizeram upgrade',
   'paywall.price_hint':      '€3,33/mês no anual · menos que um café · cancelas quando quiseres',
   'paywall.price_hint_free': 'Sem cartão · Cancela a qualquer momento',
-  'paywall.no_risk':         '✓ 7 dias grátis  ✓ Sem compromisso  ✓ IVA incluído',
+  'paywall.no_risk':         '✓ Cancela quando quiseres  ✓ Sem compromisso  ✓ Sem fidelização',
   'paywall.secondary_link':  'Ver tudo o que incluo no Premium →',
   'paywall.statement_title': 'Importa extratos com IA',
   'paywall.statement_desc':  'Arrasta o PDF do banco — a IA extrai e categoriza tudo em segundos. Sem digitar nada.',
@@ -1252,7 +1252,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'pricing.premium_f11':   'Priority support · early access',
   'pricing.premium_cta_y': 'Get annual · €3.33/mo',
   'pricing.premium_cta_m': 'Try monthly · €4.99',
-  'pricing.premium_footer':'Cancel anytime · VAT included',
+  'pricing.premium_footer':'Cancel anytime · No lock-in',
   'pricing.footer_note':   'Prices in EUR · Secure payment via Stripe · GDPR',
 
   // ── Landing final CTA ─────────────────────────────────────────────
@@ -1316,7 +1316,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'paywall.social_proof':    '1,200+ users already upgraded',
   'paywall.price_hint':      '€3.33/mo on the annual plan · less than a coffee · cancel anytime',
   'paywall.price_hint_free': 'No credit card · Cancel anytime',
-  'paywall.no_risk':         '✓ 7-day free trial  ✓ No lock-in  ✓ VAT included',
+  'paywall.no_risk':         '✓ Cancel anytime  ✓ No commitment  ✓ No lock-in',
   'paywall.secondary_link':  'See everything Premium unlocks →',
   'paywall.statement_title': 'Import statements with AI',
   'paywall.statement_desc':  'Drop your bank PDF — AI extracts and categorises every line in seconds. Zero typing.',

@@ -3,6 +3,7 @@ import { createSupabaseAdmin }       from '@/lib/supabase'
 import { z }                         from 'zod'
 import { guardRequest }              from '@/lib/rateLimit'
 import { verifyTurnstile }           from '@/lib/turnstile'
+import { notifyAdmin, escapeHtml }   from '@/lib/email'
 
 /**
  * POST /api/contact-message
@@ -110,6 +111,26 @@ export async function POST(req: NextRequest) {
       { status: missingTable ? 503 : 500 },
     )
   }
+
+  // Fire-and-forget admin notification. Same pattern as /api/bug-report:
+  // the row is already in `bug_reports`; this is a courtesy ping so the
+  // admin sees it without opening Supabase. replyTo points at the user's
+  // email so a click on Reply goes directly back to them.
+  void notifyAdmin({
+    subject: `[Contacto] ${parsed.data.subject}`,
+    replyTo: parsed.data.email,
+    html: `
+      <h2 style="margin:0 0 12px;font-size:18px;">📬 Nova mensagem de contacto</h2>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;font-size:13px;color:#52525b;">
+        <tr><td style="padding:2px 8px 2px 0;">De:</td><td>${parsed.data.name ? escapeHtml(parsed.data.name) + ' &lt;' : ''}${escapeHtml(parsed.data.email)}${parsed.data.name ? '&gt;' : ''}</td></tr>
+        <tr><td style="padding:2px 8px 2px 0;">Assunto:</td><td>${escapeHtml(parsed.data.subject)}</td></tr>
+      </table>
+      <pre style="margin:0;padding:12px;background:#f4f4f5;border-radius:8px;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">${escapeHtml(parsed.data.message)}</pre>
+      <p style="margin:18px 0 0;font-size:12px;color:#71717a;">
+        Responde a este email para falar diretamente com a pessoa, ou abre <a href="https://xp-money.com/admin/bugs" style="color:#16a34a;">/admin/bugs</a> para gerir o estado.
+      </p>
+    `,
+  }).catch(err => console.warn('[contact-message] notify failed (non-fatal):', err))
 
   return NextResponse.json({ success: true }, { status: 201 })
 }
