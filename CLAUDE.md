@@ -44,6 +44,17 @@ Core loop: log transactions → score climbs → mascot evolves → XP/badges/mi
 - **Dynamic-import heavy widgets** (`dynamic(..., { ssr:false, loading:<skeleton/> })`) for dashboard widgets, AdBanner, recharts (`SimuladorChart`, `GoalChart`).
 - **Demo mode** is now SAFE: `isDemoMode()` from `src/lib/demo/demoGuard.ts` refuses to enable on `NODE_ENV='production'` unless `ALLOW_DEMO_IN_PROD='true'` is ALSO set (server-only, no NEXT_PUBLIC_ prefix). Use this helper everywhere — never read `NEXT_PUBLIC_DEMO_MODE` directly for auth-bypass logic.
 - **Plan gates run SERVER-SIDE on every paid action.** Already enforced on `/api/scan-receipt`, `/api/import-statement`, `/api/courses/[id]/complete`, `/simulador`, `/perspetiva`, PDF report.
+- **Mobile dead-end pattern is banned.** Never use `disabled` on a submit button for length/format validation — on mobile a disabled tap gives zero feedback and the user thinks the form is broken. Validate inside the handler and surface inline error text instead. `BugReportCard` and `ContactForm` follow this; replicate it on any new form.
+
+## Mata-Dívidas planner (`/dividas`)
+
+The `Planeador` panel is a deliberately-dense decision tool, not just a status card. It has three independent subpanels that must all stay in sync with `monthlyExtra` + `strategy` state:
+
+  1. **Avalanche vs Bola de Neve comparison** — ALWAYS visible (not just the active strategy). Each card shows months + total interest + a numbered queue of debts to attack from `orderByStrategy()`. When both methods produce identical output (1 debt active, extra=0, similar rates) we render a "Estratégias equivalentes" info card instead — silent equality looked like a UI bug to users.
+  2. **Result panel** — "Livre em / Juros totais / Próxima a abater" for the active strategy. Falls back to "minimum doesn't cover interest" warning when `simulatePlan().infinite`.
+  3. **"E se pagares mais?" sensitivity table** — clickable ladder of scenarios (around the current extra: ½, 1×, 2×, 3×; or fixed 0/50/100/200/500 when current is 0). Each row runs `simulatePlan` and shows months + interest + savings vs the no-extra baseline. Tapping a row sets `monthlyExtra` to that value — turns the table into a what-if tuner without leaving the page.
+
+If you add new debt-related UI, route it through `simulatePlan` / `compareStrategies` / `orderByStrategy` from `src/lib/killDebt.ts` — never re-implement the math.
 
 ## Gamification primitives
 
