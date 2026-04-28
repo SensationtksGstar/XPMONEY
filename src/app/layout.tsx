@@ -9,6 +9,8 @@ import { QueryProvider }   from '@/components/providers/QueryProvider'
 import { Toaster }         from '@/components/ui/toaster'
 import { LocaleProvider }  from '@/lib/i18n/LocaleProvider'
 import { SiteBackground }  from '@/components/wallpaper/SiteBackground'
+import { CookieConsentBanner } from '@/components/common/CookieConsentBanner'
+import { PWAInstallPrompt }    from '@/components/common/PWAInstallPrompt'
 import { getServerLocale, getServerT } from '@/lib/i18n/server'
 
 const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ''
@@ -117,6 +119,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     {children}
                   </Toaster>
                 </div>
+                {/* Overlays — render last so they sit above all page chrome.
+                    Both are no-ops when their conditions aren't met (banner
+                    only when consent is undecided; install prompt only when
+                    `beforeinstallprompt` fired and the app isn't already
+                    standalone), so unconditionally mounting is cheap. */}
+                <CookieConsentBanner />
+                <PWAInstallPrompt />
               </LocaleProvider>
             </QueryProvider>
           </PostHogProvider>

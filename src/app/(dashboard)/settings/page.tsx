@@ -6,6 +6,7 @@ import { getUserProfile }    from '@/lib/userCache'
 import { ProfileEditForm }   from './ProfileEditForm'
 import { PushOptIn }         from '@/components/notifications/PushOptIn'
 import { ResetTransactionsCard } from '@/components/settings/ResetTransactionsCard'
+import { PrivacyCards }          from '@/components/settings/PrivacyCards'
 import { MascotPicker }      from '@/components/settings/MascotPicker'
 import { LanguageSwitcher }  from '@/components/settings/LanguageSwitcher'
 import { BugReportCard }     from '@/components/settings/BugReportCard'
@@ -148,7 +149,10 @@ export default async function SettingsPage() {
       {/* Report bug — user → admin (admin email never exposed) */}
       <BugReportCard />
 
-      {/* Zona de perigo — apagar todas as transações */}
+      {/* RGPD — exportar dados (Art. 20) e apagar conta de vez (Art. 17) */}
+      <PrivacyCards />
+
+      {/* Zona de perigo — apagar todas as transações (mantém a conta) */}
       <ResetTransactionsCard />
     </div>
   )

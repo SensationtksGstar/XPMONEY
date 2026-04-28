@@ -997,6 +997,37 @@ export const pt = {
   'settings.reset.err_default':  'Erro ao apagar transações.',
   'settings.reset.err_unknown':  'Erro desconhecido.',
 
+  // ── Cookie consent banner ─────────────────────────────────────────
+  'consent.title':         'Cookies e analytics',
+  'consent.body':          'Usamos analytics anonimizados (PostHog) para perceber que funcionalidades te ajudam mais. Não usamos publicidade comportamental nem partilhamos dados com terceiros. Cookies essenciais (login, idioma) funcionam sempre.',
+  'consent.privacy_link':  'Política de privacidade',
+  'consent.cookies_link':  'Política de cookies',
+  'consent.accept':        'Aceitar tudo',
+  'consent.reject':        'Recusar analytics',
+
+  // ── RGPD: exportar / apagar conta ─────────────────────────────────
+  'privacy.export.title':         'Exportar os meus dados',
+  'privacy.export.desc':          'Descarrega num único ficheiro JSON tudo o que registaste — transações, objetivos, XP, missões, badges e histórico. Direito ao abrigo do Art. 20.º RGPD.',
+  'privacy.export.button':        'Descarregar JSON',
+  'privacy.export.loading':       'A preparar…',
+  'privacy.delete.title':         'Apagar conta de vez',
+  'privacy.delete.desc':          'Elimina permanentemente a tua conta e TODOS os dados associados (transações, objetivos, XP, badges, etc.). Cancela qualquer subscrição activa. Direito ao abrigo do Art. 17.º RGPD. Esta ação é irreversível.',
+  'privacy.delete.button':        'Apagar conta',
+  'privacy.delete.confirm_title': 'Apagar conta para sempre?',
+  'privacy.delete.confirm_desc':  'Vou cancelar a tua subscrição (se houver), apagar TODOS os teus dados e remover a tua conta de autenticação. Não há volta atrás. Tens a certeza?',
+  'privacy.delete.confirm_yes':   'Sim, apagar tudo',
+
+  // ── PWA install prompt ────────────────────────────────────────────
+  'pwa.install.title':       'Instalar XP-Money',
+  'pwa.install.desc':        'Adiciona à tua tela inicial para acesso rápido, ícone próprio e funcionar como app — sem ocupar espaço extra.',
+  'pwa.install.now':         'Instalar',
+  'pwa.install.later':       'Agora não',
+  'pwa.install_ios.title':   'Instalar como app',
+  'pwa.install_ios.desc':    'Para instalar no iPhone/iPad, basta seguir estes 3 passos no Safari:',
+  'pwa.install_ios.step1':   'Toca no botão Partilhar (em baixo)',
+  'pwa.install_ios.step2':   'Escolhe "Adicionar ao Ecrã Principal"',
+  'pwa.install_ios.step3':   'Confirma e abre pelo ícone novo',
+
   // ── Billing (Settings → Billing) ──────────────────────────────────
   'billing.back_aria':        'Voltar às definições',
   'billing.choose_plan':      'Escolhe o teu plano',
@@ -2007,6 +2038,37 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'settings.reset.confirm_yes':  'Yes, reset everything',
   'settings.reset.err_default':  'Failed to delete transactions.',
   'settings.reset.err_unknown':  'Unknown error.',
+
+  // ── Cookie consent banner ─────────────────────────────────────────
+  'consent.title':         'Cookies & analytics',
+  'consent.body':          'We use anonymised analytics (PostHog) to learn which features help you most. No behavioural ads, no third-party data sharing. Essential cookies (login, language) always work.',
+  'consent.privacy_link':  'Privacy policy',
+  'consent.cookies_link':  'Cookie policy',
+  'consent.accept':        'Accept all',
+  'consent.reject':        'Reject analytics',
+
+  // ── GDPR: export / delete account ─────────────────────────────────
+  'privacy.export.title':         'Export my data',
+  'privacy.export.desc':          'Download everything you\'ve recorded as a single JSON file — transactions, goals, XP, missions, badges and history. Your right under GDPR Art. 20.',
+  'privacy.export.button':        'Download JSON',
+  'privacy.export.loading':       'Preparing…',
+  'privacy.delete.title':         'Delete account permanently',
+  'privacy.delete.desc':          'Permanently deletes your account and ALL associated data (transactions, goals, XP, badges, etc.). Cancels any active subscription. Your right under GDPR Art. 17. This action is irreversible.',
+  'privacy.delete.button':        'Delete account',
+  'privacy.delete.confirm_title': 'Delete account forever?',
+  'privacy.delete.confirm_desc':  'I will cancel your subscription (if any), delete ALL your data, and remove your auth account. There is no going back. Are you sure?',
+  'privacy.delete.confirm_yes':   'Yes, delete everything',
+
+  // ── PWA install prompt ────────────────────────────────────────────
+  'pwa.install.title':       'Install XP-Money',
+  'pwa.install.desc':        'Add to your home screen for quick access, a proper icon, and an app-like feel — without taking extra space.',
+  'pwa.install.now':         'Install',
+  'pwa.install.later':       'Not now',
+  'pwa.install_ios.title':   'Install as app',
+  'pwa.install_ios.desc':    'To install on iPhone/iPad, just follow these 3 steps in Safari:',
+  'pwa.install_ios.step1':   'Tap the Share button (below)',
+  'pwa.install_ios.step2':   'Choose "Add to Home Screen"',
+  'pwa.install_ios.step3':   'Confirm and open from the new icon',
 
   // ── Billing (Settings → Billing) ──────────────────────────────────
   'billing.back_aria':        'Back to settings',
