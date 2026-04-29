@@ -15,6 +15,7 @@ import { LandingFooter }          from '@/components/landing/LandingFooter'
 import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
 import { LanguageToggle }         from '@/components/common/LanguageToggle'
 import { InstallAppButton }       from '@/components/common/InstallAppButton'
+import { NewsletterSignup }       from '@/components/common/NewsletterSignup'
 import { JsonLd }                 from '@/components/seo/JsonLd'
 import { softwareApplication, faqPage, premiumProduct } from '@/lib/seo/jsonLd'
 import { getServerT, getServerLocale } from '@/lib/i18n/server'
@@ -142,6 +143,13 @@ export default async function LandingPage() {
 
       {/* ── 9. PRICING ──────────────────────────────────────────────── */}
       <LandingPricing />
+
+      {/* ── 9.5. NEWSLETTER ─────────────────────────────────────────── */}
+      <section className="px-6 py-16 max-w-2xl mx-auto">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8">
+          <NewsletterSignup source="landing" variant="default" />
+        </div>
+      </section>
 
       {/* ── 10. FINAL CTA ───────────────────────────────────────────── */}
       <section className="px-6 py-24 text-center relative overflow-hidden">

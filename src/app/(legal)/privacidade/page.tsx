@@ -67,6 +67,7 @@ export default function PrivacidadePage() {
         <li><strong>Transações:</strong> valor, categoria, descrição, data — que TU introduzes manualmente, por scan de recibo, ou por importação de extrato.</li>
         <li><strong>Objetivos e depósitos:</strong> nome do objetivo, valor-alvo, prazo, depósitos feitos.</li>
         <li><strong>Conteúdo de reports:</strong> se reportas bugs ou envias mensagens via formulário de contacto, ficamos com o conteúdo + email.</li>
+        <li><strong>Newsletter:</strong> se subscreves a newsletter, guardamos o teu email + locale + IP/UA do momento da subscrição (forensics anti-spam) até cancelares. Aplicamos <strong>duplo opt-in</strong> — o teu email só passa a "activo" depois de clicares no link de confirmação que te enviamos. Cancelas em 1 clique no link de unsubscribe presente em todos os emails.</li>
       </ul>
 
       <h3>2.2. Dados gerados pela utilização</h3>

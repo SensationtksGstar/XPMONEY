@@ -140,7 +140,7 @@ These are TODOs that require the user to act on a third-party dashboard — code
 - **Stripe Customer Portal**: enable at https://dashboard.stripe.com/settings/billing/portal so the "Gerir subscrição" button works.
 - **Upstash Redis** (optional, for rate-limit at scale): set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` in Vercel env. Without these the limiter falls back to in-memory.
 - **Cloudflare Turnstile** (optional, for hard anti-bot on `/contacto`): set `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` in Vercel env. Without these the form falls back to honeypot only.
-- **SQL migrations not yet confirmed applied**: `database/stripe_events_2026_04.sql` (Stripe idempotency), `database/bug_reports.sql` (bug-report submission table).
+- **SQL migrations not yet confirmed applied**: `database/stripe_events_2026_04.sql` (Stripe idempotency), `database/bug_reports.sql` (bug-report submission table), `database/newsletter_2026_04.sql` (newsletter subscribers — required for `/api/newsletter/*` to work).
 
 ## Backlog (cosmetic / non-blocking)
 

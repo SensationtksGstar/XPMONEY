@@ -27,6 +27,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/notifications/send',
   '/api/landing-chat',
   '/api/contact-message',
+  '/api/newsletter/(.*)',
+  '/newsletter/(.*)',
   '/sw.js',
   '/manifest.json',
   '/icons/(.*)',
