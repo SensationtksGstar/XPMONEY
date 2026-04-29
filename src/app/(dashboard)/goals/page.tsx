@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link                  from 'next/link'
 import {
   PlusCircle, Target, TrendingUp, Trash2, X,
   Check, ChevronDown, ChevronUp, PiggyBank,
   ArrowDownCircle, ArrowUpCircle, Calendar,
-  Flame, Clock,
+  Flame, Clock, Crown, Lock,
 } from 'lucide-react'
-import { useGoals, useGoalDeposits, useAddDeposit } from '@/hooks/useGoals'
+import { useGoals, useGoalDeposits, useAddDeposit, CreateGoalError } from '@/hooks/useGoals'
+import { useUserPlan }        from '@/lib/contexts/UserPlanContext'
 import dynamic                from 'next/dynamic'
 import { useToast }            from '@/components/ui/toaster'
 import { EmptyState }          from '@/components/ui/EmptyState'
@@ -281,10 +283,17 @@ function BottomSheet({ onClose, children }: { onClose: () => void; children: Rea
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 
+// Free plan goal limit. Mirrors FREE_GOAL_LIMIT in /api/goals/route.ts —
+// keep them in sync. The server is the authoritative gate; this constant
+// just powers the UI counter and proactive button-state so free users
+// don't open the create modal only to be rejected on submit.
+const FREE_GOAL_LIMIT = 2
+
 export default function GoalsPage() {
   const { goals, loading, createGoal, isCreating, deleteGoal } = useGoals()
   const { mutateAsync: addDeposit, isPending: isDepositing }   = useAddDeposit()
-  const { toast } = useToast()
+  const { isFree }    = useUserPlan()
+  const { toast }     = useToast()
   const t = useT()
 
   // UI state
@@ -312,6 +321,9 @@ export default function GoalsPage() {
   // Stats
   const totalSaved   = goals.reduce((s, g) => s + Number(g.current_amount), 0)
   const activeGoals  = goals.filter(g => g.status === 'active').length
+  // Free user is "at limit" when they have FREE_GOAL_LIMIT active goals
+  // already. Completed goals don't count (finishing one frees a slot).
+  const freeAtLimit  = isFree && activeGoals >= FREE_GOAL_LIMIT
   const closestGoal  = goals
     .filter(g => g.status === 'active' && g.deadline)
     .sort((a, b) => (a.deadline ?? '').localeCompare(b.deadline ?? ''))[0] ?? null
@@ -353,8 +365,18 @@ export default function GoalsPage() {
       toast(xp > 0 ? t('goals.created_xp', { xp }) : t('goals.created'), 'success')
       setShowForm(false)
       resetCreateForm()
-    } catch {
-      toast(t('goals.create_error'), 'error')
+    } catch (err) {
+      // Surface the server-provided message verbatim when it's a known
+      // structured rejection (e.g. free_goal_limit). The server message
+      // is already locale-aware, so we don't translate again client-side.
+      if (err instanceof CreateGoalError && err.message) {
+        toast(err.message, 'error')
+        // For the limit case, also close the form — keeping it open
+        // implies "fix and retry" but they can't retry without upgrading.
+        if (err.code === 'free_goal_limit') setShowForm(false)
+      } else {
+        toast(t('goals.create_error'), 'error')
+      }
     }
   }
 
@@ -412,15 +434,51 @@ export default function GoalsPage() {
           </h1>
           <p className="text-white/50 text-sm mt-0.5">{t('goals.subtitle')}</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span className="hidden sm:inline">{t('goals.new_long')}</span>
-          <span className="sm:hidden">{t('goals.new_short')}</span>
-        </button>
+        {freeAtLimit ? (
+          // Free user at the 2-goal limit — swap the "New" CTA for an
+          // "Upgrade" CTA that goes straight to the billing page. Gives
+          // honest feedback instead of letting the user click and fail.
+          <Link
+            href="/settings/billing"
+            className="flex items-center gap-2 bg-purple-500 hover:bg-purple-400 text-white font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
+            aria-label={t('goals.limit.upgrade_aria')}
+          >
+            <Crown className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('goals.limit.upgrade_long')}</span>
+            <span className="sm:hidden">{t('goals.limit.upgrade_short')}</span>
+          </Link>
+        ) : (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-all text-sm active:scale-95"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('goals.new_long')}</span>
+            <span className="sm:hidden">{t('goals.new_short')}</span>
+          </button>
+        )}
       </div>
+
+      {/* Free-plan limit indicator: small badge under the header so users
+          see at a glance how close they are to the cap. Only renders for
+          free users with at least 1 active goal — otherwise it's noise. */}
+      {isFree && activeGoals > 0 && (
+        <div className="flex items-center gap-2 text-xs">
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border tabular-nums ${
+            freeAtLimit
+              ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
+              : 'bg-white/5 border-white/10 text-white/60'
+          }`}>
+            {freeAtLimit && <Lock className="w-3 h-3" />}
+            {t('goals.limit.counter', { used: activeGoals, max: FREE_GOAL_LIMIT })}
+          </span>
+          {!freeAtLimit && (
+            <Link href="/settings/billing" className="text-white/40 hover:text-white/70 underline underline-offset-2">
+              {t('goals.limit.upgrade_link')}
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Stats row */}
       {goals.length > 0 && (

@@ -16,13 +16,38 @@ interface CreateGoalResult {
   leveled_up: boolean
 }
 
+/**
+ * Server-rejection error that preserves the response code (e.g.
+ * `free_goal_limit`) so the UI can react with a tailored toast/modal
+ * instead of a generic "Erro ao criar objetivo". Caller does:
+ *   catch (e) { if (e instanceof CreateGoalError && e.code === 'free_goal_limit') ... }
+ */
+export class CreateGoalError extends Error {
+  constructor(message: string, public readonly code?: string) {
+    super(message)
+    this.name = 'CreateGoalError'
+  }
+}
+
 async function createGoal(input: Partial<Goal>): Promise<CreateGoalResult> {
   const res = await fetch('/api/goals', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(input),
   })
-  if (!res.ok) throw new Error('Erro ao criar objetivo')
+  if (!res.ok) {
+    // Try to surface the structured error body { error, code, ... }.
+    // Fall back to a generic message if the body is not JSON (e.g. a
+    // 502 HTML page from a dead Vercel function).
+    let serverMessage = 'Erro ao criar objetivo'
+    let code: string | undefined
+    try {
+      const j = await res.json() as { error?: string; code?: string }
+      if (j.error) serverMessage = j.error
+      if (j.code)  code = j.code
+    } catch { /* non-JSON body — keep default */ }
+    throw new CreateGoalError(serverMessage, code)
+  }
   const json = await res.json()
   return {
     goal:       json.data,

@@ -7,6 +7,7 @@ import { XP_REWARDS }                from '@/types'
 import { z }                         from 'zod'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
 import { DEMO_GOALS }                from '@/lib/demo/mockData'
+import { getServerLocale }           from '@/lib/i18n/server'
 
 const GoalSchema = z.object({
   name:          z.string().min(1),
@@ -14,6 +15,14 @@ const GoalSchema = z.object({
   target_amount: z.number().positive(),
   deadline:      z.string().nullable().optional(),
 })
+
+// Free plan: max 2 active savings goals. Completed goals don't count —
+// finishing one frees a slot, which matches user expectation ("I poupei
+// para férias, agora quero outro objetivo"). Existing free users who
+// already have 3+ active goals keep them; this gate only blocks the
+// next creation. Premium (and legacy plus/pro/family) is unlimited.
+const FREE_GOAL_LIMIT = 2
+const PAID_PLANS = new Set(['premium', 'plus', 'pro', 'family'])
 
 export async function GET() {
   if (isDemoMode()) return demoResponse(DEMO_GOALS)
@@ -48,6 +57,36 @@ export async function POST(req: NextRequest) {
   if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const db = createSupabaseAdmin()
+
+  // Free-plan gate: count active goals and refuse if at the limit. Marketing
+  // copy promises "2 savings goals" for Free / unlimited for Premium —
+  // before this gate the API didn't enforce it and free users could create
+  // goals indefinitely (mismatch flagged April 2026 audit).
+  const { data: planRow } = await db
+    .from('users').select('plan').eq('id', internalId).maybeSingle()
+  const isPaid = PAID_PLANS.has(planRow?.plan ?? 'free')
+  if (!isPaid) {
+    const { count: activeCount } = await db
+      .from('goals')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', internalId)
+      .eq('status', 'active')
+    if ((activeCount ?? 0) >= FREE_GOAL_LIMIT) {
+      const locale = await getServerLocale()
+      return NextResponse.json(
+        {
+          error: locale === 'en'
+            ? `Free plan is limited to ${FREE_GOAL_LIMIT} active savings goals. Complete one or upgrade to Premium for unlimited goals.`
+            : `O plano Grátis permite até ${FREE_GOAL_LIMIT} objetivos ativos. Conclui um existente ou faz upgrade para Premium para objetivos ilimitados.`,
+          code:   'free_goal_limit',
+          limit:  FREE_GOAL_LIMIT,
+          active: activeCount ?? 0,
+        },
+        { status: 403 },
+      )
+    }
+  }
+
   const { data, error } = await db
     .from('goals').insert({ ...parsed.data, user_id: internalId }).select().single()
 
