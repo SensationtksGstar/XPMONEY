@@ -34,7 +34,7 @@ const COLUMNS: FooterColumn[] = [
     titleKey: 'landing.footer.col2_title',
     links: [
       { labelKey: 'landing.footer.col2_l1',  href: '/sobre',    soon: true },
-      { labelKey: 'landing.footer.col2_l2',  href: '/blog',     soon: true },
+      { labelKey: 'landing.footer.col2_l2',  href: '/blog' },
       { labelKey: 'landing.footer.col2_l3',  href: '/contacto' },
     ],
   },

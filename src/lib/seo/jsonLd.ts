@@ -166,6 +166,56 @@ export function breadcrumb(items: ReadonlyArray<{ name: string; href: string }>)
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Article — for blog posts. Pairs with BreadcrumbList on the same page.
+// `headline` is what Google shows as the SERP title; keep it ≤ 110 chars
+// or it gets truncated.
+// ─────────────────────────────────────────────────────────────────────────
+export function article(input: {
+  slug:         string
+  title:        string
+  description:  string
+  date:         string
+  /** Optional ISO date when the post was last edited. Falls back to `date`. */
+  modifiedDate?: string
+  author?:      string
+  /** Absolute or root-relative URL. Falls back to the site OG image. */
+  image?:       string
+  keywords?:    string[]
+  locale?:      Locale
+}) {
+  const url = `${SITE_URL}/blog/${input.slug}`
+  return {
+    '@context':       'https://schema.org',
+    '@type':          'BlogPosting',
+    headline:         input.title,
+    description:      input.description,
+    datePublished:    input.date,
+    dateModified:     input.modifiedDate ?? input.date,
+    inLanguage:       input.locale === 'en' ? 'en-US' : 'pt-PT',
+    keywords:         input.keywords?.join(', '),
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id':   url,
+    },
+    image:  input.image
+      ? (input.image.startsWith('http') ? input.image : `${SITE_URL}${input.image}`)
+      : `${SITE_URL}/opengraph-image`,
+    author: {
+      '@type': 'Person',
+      name:    input.author ?? BRAND,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name:    BRAND,
+      logo: {
+        '@type': 'ImageObject',
+        url:     `${SITE_URL}/logo.svg`,
+      },
+    },
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // WebSite — declares the site root + a SearchAction so Google can show
 // the in-result search box for our brand. Cheap, no downside.
 // ─────────────────────────────────────────────────────────────────────────

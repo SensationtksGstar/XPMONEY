@@ -44,6 +44,7 @@ export const pt = {
   'common.loading':        'A carregar…',
   'common.retry':          'Tentar novamente',
   'common.back':           'Voltar',
+  'common.home':           'Início',
   'common.yes':            'Sim',
   'common.no':             'Não',
   'common.delete':         'Eliminar',
@@ -657,6 +658,23 @@ export const pt = {
   'goals.limit.upgrade_aria':  'Faz upgrade para Premium para criar mais objetivos',
   'goals.limit.upgrade_link':  'Upgrade para ilimitado',
 
+  // ── Blog (/blog + /blog/[slug]) ───────────────────────────────────
+  'blog.meta_title':         'Blog · XP-Money',
+  'blog.meta_description':   'Artigos sobre finanças pessoais em Portugal: orçamento, IRS, poupança, investir com pouco dinheiro. Sem jargão, sem promessas vazias.',
+  'blog.eyebrow':            'Blog',
+  'blog.title':              'Finanças pessoais sem jargão',
+  'blog.subtitle':            'Artigos curtos e práticos sobre orçamento, IRS, e como controlar o teu dinheiro. Português direto, sem clickbait.',
+  'blog.empty_title':        'Em breve',
+  'blog.empty_desc':         'Estamos a preparar os primeiros artigos. Volta em alguns dias.',
+  'blog.reading_time':       '{min} min de leitura',
+  'blog.fallback_locale':    'Em PT',
+  'blog.fallback_locale_long': 'This post is only available in Portuguese for now. English version coming.',
+  'blog.back_home':          'Início',
+  'blog.back_to_index':      'Todos os artigos',
+  'blog.cta_title':          'Aplica isto em vez de só ler',
+  'blog.cta_desc':           'O XP-Money é a app que faz tudo isto por ti — gamificada, em português, grátis para começar.',
+  'blog.cta_button':         'Experimentar grátis',
+
   // ── Relatório financeiro PDF (/reports/print) ──────────────────────
   'report.title':                  'Relatório Financeiro',
   'report.fallback_user':          'Utilizador',
@@ -1173,6 +1191,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'common.loading':        'Loading…',
   'common.retry':          'Retry',
   'common.back':           'Back',
+  'common.home':           'Home',
   'common.yes':            'Yes',
   'common.no':             'No',
   'common.delete':         'Delete',
@@ -1779,6 +1798,23 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'goals.limit.upgrade_short': 'Upgrade',
   'goals.limit.upgrade_aria':  'Upgrade to Premium to create more goals',
   'goals.limit.upgrade_link':  'Upgrade for unlimited',
+
+  // ── Blog (/blog + /blog/[slug]) ───────────────────────────────────
+  'blog.meta_title':         'Blog · XP-Money',
+  'blog.meta_description':   'Articles on personal finance in Portugal: budgeting, taxes, saving, investing with little money. No jargon, no empty promises.',
+  'blog.eyebrow':            'Blog',
+  'blog.title':              'Personal finance without jargon',
+  'blog.subtitle':            'Short, practical articles on budgeting, taxes, and how to take control of your money. Direct Portuguese-style writing, no clickbait.',
+  'blog.empty_title':        'Coming soon',
+  'blog.empty_desc':         'We\'re preparing the first articles. Check back in a few days.',
+  'blog.reading_time':       '{min} min read',
+  'blog.fallback_locale':    'In PT',
+  'blog.fallback_locale_long': 'Este artigo está disponível em português apenas. A versão em inglês está a caminho.',
+  'blog.back_home':          'Home',
+  'blog.back_to_index':      'All articles',
+  'blog.cta_title':          'Apply it instead of just reading',
+  'blog.cta_desc':           'XP-Money is the app that does all of this for you — gamified, in Portuguese, free to start.',
+  'blog.cta_button':         'Try it free',
 
   // ── Financial PDF report (/reports/print) ──────────────────────────
   'report.title':                  'Financial Report',

@@ -125,7 +125,13 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [
+    require('tailwindcss-animate'),
+    // @tailwindcss/typography drives the `prose` classes used by /blog/[slug]
+    // for clean MDX article styling. Adds ~6 KB to the production CSS but
+    // only on routes that use `prose` (Tailwind tree-shakes correctly).
+    require('@tailwindcss/typography'),
+  ],
 }
 
 export default config
