@@ -1,7 +1,8 @@
-import { SignUp } from '@clerk/nextjs'
-import { dark }   from '@clerk/themes'
-import Link       from 'next/link'
-import { Logo }   from '@/components/ui/Logo'
+import { SignUp }       from '@clerk/nextjs'
+import { dark }          from '@clerk/themes'
+import Link              from 'next/link'
+import { Logo }          from '@/components/ui/Logo'
+import { getServerT }    from '@/lib/i18n/server'
 
 const clerkAppearance = {
   baseTheme: dark,
@@ -45,7 +46,8 @@ const clerkAppearance = {
   },
 }
 
-export default function SignUpPage() {
+export default async function SignUpPage() {
+  const t = await getServerT()
   return (
     <main className="min-h-screen dashboard-bg flex flex-col items-center justify-center px-4 py-8">
       <div className="mb-6 text-center">
@@ -53,16 +55,16 @@ export default function SignUpPage() {
           <Logo size={36} />
           <span className="font-bold text-xl text-white tracking-tight">XP-Money</span>
         </Link>
-        <h1 className="text-2xl font-bold text-white">Cria a tua conta grátis</h1>
-        <p className="text-white/50 mt-1 text-sm">Sem cartão de crédito. Sempre grátis no plano base.</p>
+        <h1 className="text-2xl font-bold text-white">{t('auth.signup.title')}</h1>
+        <p className="text-white/50 mt-1 text-sm">{t('auth.signup.subtitle')}</p>
       </div>
 
       <SignUp appearance={clerkAppearance} />
 
       <p className="mt-5 text-sm text-white/40">
-        Já tens conta?{' '}
+        {t('auth.signup.has_account_q')}{' '}
         <Link href="/sign-in" className="text-green-400 hover:text-green-300 transition-colors font-semibold">
-          Entra aqui
+          {t('auth.signup.has_account_link')}
         </Link>
       </p>
     </main>

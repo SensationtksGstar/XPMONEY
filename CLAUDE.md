@@ -144,7 +144,6 @@ These are TODOs that require the user to act on a third-party dashboard — code
 
 ## Backlog (cosmetic / non-blocking)
 
-- Sign-in/up custom headers ("Bem-vindo de volta") still PT-only — needs `t()` wrapping.
 - Badges page doesn't visually distinguish `is_premium` badges (rarity drives all styling).
 - 4 unused shaders in `shaders.ts` (~400 LOC) — keep as theme-picker seed or delete.
 - Dashboard layout has its own `dashboard-bg` solid which covers the Neon Grid (intentional).

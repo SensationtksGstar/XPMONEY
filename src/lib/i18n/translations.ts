@@ -59,6 +59,16 @@ export const pt = {
   'common.sign_up':        'Criar conta',
   'common.create_account': 'Criar conta grátis',
   'common.sign_out':       'Sair',
+
+  // ── Auth pages (/sign-in, /sign-up) chrome around the Clerk widget ─
+  'auth.signin.title':            'Bem-vindo de volta',
+  'auth.signin.subtitle':         'O Voltix está com saudades tuas',
+  'auth.signin.no_account_q':     'Ainda não tens conta?',
+  'auth.signin.no_account_link':  'Regista-te grátis',
+  'auth.signup.title':            'Cria a tua conta grátis',
+  'auth.signup.subtitle':         'Sem cartão de crédito. Sempre grátis no plano base.',
+  'auth.signup.has_account_q':    'Já tens conta?',
+  'auth.signup.has_account_link': 'Entra aqui',
   'common.free':           'Grátis',
   'common.premium':        'Premium',
   'common.per_month':      '/mês',
@@ -1206,6 +1216,16 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'common.sign_up':        'Sign up',
   'common.create_account': 'Create free account',
   'common.sign_out':       'Sign out',
+
+  // ── Auth pages (/sign-in, /sign-up) chrome around the Clerk widget ─
+  'auth.signin.title':            'Welcome back',
+  'auth.signin.subtitle':         'Voltix is missing you',
+  'auth.signin.no_account_q':     'No account yet?',
+  'auth.signin.no_account_link':  'Sign up free',
+  'auth.signup.title':            'Create your free account',
+  'auth.signup.subtitle':         'No credit card. Free forever on the base plan.',
+  'auth.signup.has_account_q':    'Already have an account?',
+  'auth.signup.has_account_link': 'Sign in',
   'common.free':           'Free',
   'common.premium':        'Premium',
   'common.per_month':      '/mo',
