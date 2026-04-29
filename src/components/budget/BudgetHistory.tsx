@@ -77,15 +77,15 @@ export function BudgetHistory() {
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-        <div>
+      <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+        <div className="min-w-0">
           <h3 className="font-semibold text-white text-sm">Histórico · últimos 6 meses</h3>
           <p className="text-[11px] text-white/45 mt-0.5">
-            Barras empilhadas por bucket · linha = rendimento mensal
+            Barras empilhadas por bucket · linha tracejada = rendimento mensal
           </p>
         </div>
         {trend && (
-          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${
             Math.abs(trend.pct) < 3
               ? 'bg-white/5 border-white/15 text-white/60'
               : trend.diff > 0
@@ -102,9 +102,23 @@ export function BudgetHistory() {
         )}
       </div>
 
+      {/* Income caption moved out of the chart (April 2026 mobile fix).
+          Before: ReferenceLine label `Rendimento €X` rendered
+          `insideTopRight` of the chart and overlapped the rightmost bar
+          on viewports below ~480 px. Now the value lives in this
+          dedicated caption row — cleaner on every screen, and the
+          dashed line still visually anchors the threshold inside the
+          chart itself. */}
+      {data.income > 0 && (
+        <div className="flex items-center gap-2 mb-3 text-[11px] text-white/55">
+          <span aria-hidden className="inline-block w-6 h-px border-t border-dashed border-white/45" />
+          <span>Rendimento mensal: <strong className="text-white/80 tabular-nums">{formatCurrency(data.income)}</strong></span>
+        </div>
+      )}
+
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data.points} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
+          <BarChart data={data.points} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
             <XAxis
               dataKey="label"
               axisLine={false}
@@ -146,18 +160,15 @@ export function BudgetHistory() {
                 v
               }
             />
-            {/* Linha de rendimento — só desenha se for > 0, senão é ruído */}
+            {/* Dashed reference line stays — it's the visual anchor for
+                the income threshold. The numeric value moved to the
+                caption above so labels can't crash into the bars on
+                mobile. */}
             {data.income > 0 && (
               <ReferenceLine
                 y={data.income}
                 stroke="rgba(255,255,255,0.35)"
                 strokeDasharray="4 4"
-                label={{
-                  value:    `Rendimento ${formatCurrency(data.income)}`,
-                  position: 'insideTopRight',
-                  fill:     'rgba(255,255,255,0.55)',
-                  fontSize: 10,
-                }}
               />
             )}
             <Bar dataKey="needs"   stackId="a" fill={COLORS.needs}   radius={[0, 0, 0, 0]} />

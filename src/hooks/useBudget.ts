@@ -1,8 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import type { Budget, BudgetStatus, OverridesMap, BudgetBucket } from '@/lib/budget'
 
-const OVERRIDES_KEY = 'xpmoney:budget_overrides'
+const OVERRIDES_KEY        = 'xpmoney:budget_overrides'
+// React Query queryKey used as the single source of truth for budget
+// overrides across every component that reads them. Critical: every
+// `useBudgetOverrides()` consumer must subscribe to this exact key so
+// they re-render in lockstep when one mutates the value (see bug fix
+// rationale on the hook below).
+const OVERRIDES_QUERY_KEY  = ['budget-overrides'] as const
 
 /**
  * Hooks do Orçamento Pessoal.
@@ -109,18 +115,40 @@ export function useBudgetStatus() {
  * vai ao DB, porque é preferência personal do user e não precisa de
  * sincronização cross-device. Se for importante para o user, pode ser
  * migrado para o DB mais tarde sem partir nada.
+ *
+ * ── State-sharing fix (April 2026) ──────────────────────────────────
+ * Before: each call to this hook had its own `useState`. Two consumers
+ * (useBudgetStatus internally + CategoryOverrides directly) ran with
+ * INDEPENDENT copies of `overrides`. Clicking Need/Want/Save inside
+ * CategoryOverrides updated localStorage and that component's local
+ * state, but useBudgetStatus's snapshot was still `{}` from its own
+ * mount → the re-fetch URL didn't carry the new override → the bucket
+ * pill in the UI never moved. User-reported: "se mudar nao muda nada".
+ *
+ * Now: a single React Query entry (`budget-overrides`) is the source
+ * of truth. The `queryFn` reads from localStorage once at mount;
+ * `setOverride`/`clearAll` mutate via `setQueryData`, which both
+ * persists to localStorage AND triggers a re-render in every consumer
+ * subscribing to that key — including the one inside useBudgetStatus,
+ * whose own `queryKey` includes `overrides` and so re-fetches.
  */
 export function useBudgetOverrides() {
   const client = useQueryClient()
-  const [overrides, setState] = useState<OverridesMap>({})
 
-  // Hydrate do localStorage após mount — SSR-safe
-  useEffect(() => {
-    setState(readOverrides())
-  }, [])
+  const { data: overrides = {} } = useQuery<OverridesMap>({
+    queryKey:             OVERRIDES_QUERY_KEY,
+    queryFn:              readOverrides,
+    staleTime:            Infinity,   // localStorage IS the source of truth here
+    refetchOnWindowFocus: false,
+    refetchOnMount:       false,
+    // Important: structural sharing keeps the same object reference
+    // when contents are equal, so consumers don't see "fake" updates.
+    structuralSharing:    true,
+  })
 
   const setOverride = useCallback((category: string, bucket: BudgetBucket | null) => {
-    setState(prev => {
+    let nextSnapshot: OverridesMap = {}
+    client.setQueryData<OverridesMap>(OVERRIDES_QUERY_KEY, (prev = {}) => {
       const next: OverridesMap = { ...prev }
       if (bucket === null) {
         delete next[category]
@@ -134,14 +162,21 @@ export function useBudgetOverrides() {
           localStorage.setItem(OVERRIDES_KEY, JSON.stringify(next))
         }
       } catch { /* storage quota / privacy mode — não crítico */ }
-      // Invalida o cache do status para a barra recalcular imediatamente
-      client.invalidateQueries({ queryKey: ['budget-status'] })
+      nextSnapshot = next
       return next
     })
+    // Force-refetch the budget-status query whose queryKey embeds the
+    // overrides object. setQueryData on OVERRIDES_QUERY_KEY already
+    // triggers a re-render of useBudgetStatus's hook (it reads
+    // `overrides` from the cache → new ref → new queryKey), but we
+    // call invalidateQueries explicitly as a belt-and-braces guard
+    // against any cached responses with the old override shape.
+    void nextSnapshot
+    client.invalidateQueries({ queryKey: ['budget-status'] })
   }, [client])
 
   const clearAll = useCallback(() => {
-    setState({})
+    client.setQueryData<OverridesMap>(OVERRIDES_QUERY_KEY, {})
     try { localStorage.removeItem(OVERRIDES_KEY) } catch { /* noop */ }
     client.invalidateQueries({ queryKey: ['budget-status'] })
   }, [client])
