@@ -816,6 +816,13 @@ export const pt = {
   'badges.rarity.rare':     'Raro',
   'badges.rarity.epic':     'Épico',
   'badges.rarity.legendary':'Lendário',
+  'badges.premium_badge':   'Premium',
+  'badges.premium_locked':  'Apenas Premium',
+  'badges.premium_aria':    'Conquista exclusiva do plano Premium',
+  'badges.section_standard':'Conquistas',
+  'badges.section_premium': 'Conquistas Premium',
+  'badges.section_premium_sub': 'Trophy wall — só para subscritores Premium.',
+  'badges.upgrade_cta':     'Upgrade para desbloquear',
 
   // ── Voltix page ──────────────────────────────────────────────────
   'voltix.subtitle':          'O teu copiloto financeiro — evolui contigo',
@@ -1981,6 +1988,13 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'badges.rarity.rare':     'Rare',
   'badges.rarity.epic':     'Epic',
   'badges.rarity.legendary':'Legendary',
+  'badges.premium_badge':   'Premium',
+  'badges.premium_locked':  'Premium only',
+  'badges.premium_aria':    'Premium-only achievement',
+  'badges.section_standard':'Achievements',
+  'badges.section_premium': 'Premium achievements',
+  'badges.section_premium_sub': 'Trophy wall — Premium subscribers only.',
+  'badges.upgrade_cta':     'Upgrade to unlock',
 
   // ── Voltix page ──────────────────────────────────────────────────
   'voltix.subtitle':          'Your finance copilot — evolves with you',
