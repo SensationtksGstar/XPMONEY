@@ -318,7 +318,15 @@ export default async function ReportPrintPage() {
   return (
     <main className="min-h-screen bg-white text-[#0a0f1e] print:bg-white">
       {/* Print stylesheet — strips nav / buttons, sets A4 margins, defines
-          page-break helpers (.break = always, .avoid = avoid splitting). */}
+          page-break helpers (.break = always, .avoid = avoid splitting),
+          and forces desktop-style card layout in the printed PDF even when
+          the user clicks "Save as PDF" from a mobile browser.
+
+          Why the print overrides: iOS Safari (and some Android browsers)
+          use the SCREEN viewport for the print engine instead of the @page
+          A4 dimensions. Without these overrides, mobile users got cards
+          with 24-px text overflowing 110-px-wide containers — the bug
+          flagged April 2026. */}
       <style>{`
         @page { margin: 16mm 14mm; size: A4; }
         @media print {
@@ -326,6 +334,15 @@ export default async function ReportPrintPage() {
           .no-print  { display: none !important; }
           .break     { page-break-before: always; }
           .avoid     { page-break-inside: avoid; }
+          /* Force the 3-column summary grid to render at desktop widths
+             regardless of which viewport the print engine inherited. */
+          .report-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+          .report-delta-grid   { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+          .report-summary-card { padding: 1rem !important; }
+          /* Snap value text back to desktop size so it fits in the card. */
+          .report-summary-value { font-size: 1.375rem !important; line-height: 1.75rem !important; }
+          /* Outer container — keep wide horizontal padding on print. */
+          .report-container { padding-left: 2rem !important; padding-right: 2rem !important; }
         }
       `}</style>
 
@@ -340,7 +357,7 @@ export default async function ReportPrintPage() {
         </a>
       </div>
 
-      <div className="max-w-3xl mx-auto px-8 py-10">
+      <div className="report-container max-w-3xl mx-auto px-4 sm:px-8 py-8 sm:py-10">
 
         {/* ═══ HEADER ═══════════════════════════════════════════════════ */}
         <header className="flex items-start justify-between border-b-2 border-emerald-600 pb-5 mb-6 avoid">
@@ -365,19 +382,28 @@ export default async function ReportPrintPage() {
           {narrative}
         </p>
 
-        {/* ═══ SUMMARY CARDS ════════════════════════════════════════════ */}
-        <section className="grid grid-cols-3 gap-3 mb-5 avoid">
-          <div className="border border-gray-200 rounded-lg p-4">
+        {/* ═══ SUMMARY CARDS ════════════════════════════════════════════
+            Mobile (screen): 1-col stack so €1.500,00 never overflows on a
+            375-px viewport. Tablet+ and print: 3-col side-by-side. The
+            print stylesheet above forces 3-col even when iOS Safari uses
+            the screen viewport for printing. `tabular-nums` keeps digits
+            aligned vertically when stacked. */}
+        <section className="report-summary-grid grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5 avoid">
+          <div className="report-summary-card border border-gray-200 rounded-lg p-3 sm:p-4 min-w-0">
             <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{t('report.summary.income')}</p>
-            <p className="text-2xl font-bold text-emerald-700">+{formatCurrency(income, currency)}</p>
+            <p className="report-summary-value text-xl sm:text-2xl font-bold text-emerald-700 tabular-nums break-words">
+              +{formatCurrency(income, currency)}
+            </p>
           </div>
-          <div className="border border-gray-200 rounded-lg p-4">
+          <div className="report-summary-card border border-gray-200 rounded-lg p-3 sm:p-4 min-w-0">
             <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{t('report.summary.expenses')}</p>
-            <p className="text-2xl font-bold text-red-700">−{formatCurrency(expenses, currency)}</p>
+            <p className="report-summary-value text-xl sm:text-2xl font-bold text-red-700 tabular-nums break-words">
+              −{formatCurrency(expenses, currency)}
+            </p>
           </div>
-          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <div className="report-summary-card border border-gray-200 rounded-lg p-3 sm:p-4 bg-gray-50 min-w-0">
             <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{t('report.summary.balance')}</p>
-            <p className={`text-2xl font-bold ${balance >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+            <p className={`report-summary-value text-xl sm:text-2xl font-bold tabular-nums break-words ${balance >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
               {balance >= 0 ? '+' : '−'}{formatCurrency(Math.abs(balance), currency)}
             </p>
           </div>
@@ -389,7 +415,7 @@ export default async function ReportPrintPage() {
             {t('report.compare.title')}
           </h2>
           {hasLastMonthData ? (
-            <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="report-delta-grid grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
               <DeltaRow label={t('report.compare.income')}   delta={incomeDelta}   diff={deltaAbs(income,   incomeLast)}   invert={false} />
               <DeltaRow label={t('report.compare.expenses')} delta={expensesDelta} diff={deltaAbs(expenses, expensesLast)} invert={true} />
               <DeltaRow label={t('report.compare.balance')}  delta={balanceDelta}  diff={deltaAbs(balance,  balanceLast)}  invert={false} />
@@ -708,10 +734,10 @@ function DeltaRow({ label, delta, diff, invert }: DeltaRowProps) {
     :                 'text-red-700'
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3">
+    <div className="border border-gray-200 rounded-lg p-3 min-w-0">
       <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-base font-bold ${colour}`}>{delta.txt}</p>
-      <p className="text-[11px] text-gray-500">{diff}</p>
+      <p className={`text-base font-bold tabular-nums break-words ${colour}`}>{delta.txt}</p>
+      <p className="text-[11px] text-gray-500 tabular-nums break-words">{diff}</p>
     </div>
   )
 }
