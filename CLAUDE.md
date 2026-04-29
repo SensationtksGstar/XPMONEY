@@ -145,5 +145,6 @@ These are TODOs that require the user to act on a third-party dashboard — code
 ## Backlog (cosmetic / non-blocking)
 
 - 4 unused shaders in `shaders.ts` (~400 LOC) — keep as theme-picker seed or delete.
+- **ClerkProvider on the landing**: today every public route (`/`, `/blog`, `/termos`, etc.) ships the Clerk JS client (~120 KB gzipped) because `<ClerkProvider>` lives in the root layout. Worth a future refactor: split route groups so `(marketing)` has no provider, `(app)` has it. Risk: any Clerk hook used outside the provider crashes — needs full audit. Estimated ~25-30% mobile JS reduction. Defer until other perf wins land.
 - Dashboard layout has its own `dashboard-bg` solid which covers the Neon Grid (intentional).
 - Strict CSP — currently NOT set (Clerk + PostHog + AdSense + Turnstile mix needs nonce infra; deferred).

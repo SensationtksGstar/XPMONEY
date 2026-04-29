@@ -1,14 +1,19 @@
-'use client'
-
-import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
-import { useT } from '@/lib/i18n/LocaleProvider'
+import { getServerT } from '@/lib/i18n/server'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
 /**
  * LandingFAQ — perguntas mais afiadas + agente IA + fallback humano.
+ *
+ * April 2026 mobile-perf rework: this used to be `'use client'` so the
+ * accordion expand/collapse could use React state. The whole component
+ * (~250 lines + the FAQ data) shipped to the client even though the
+ * answers themselves are static. Now uses native HTML `<details>` /
+ * `<summary>` for the accordion, removing the React runtime cost from
+ * this section entirely. The QA content gets server-rendered into the
+ * SSR HTML straight away → better LCP + SEO, smaller mobile bundle.
  *
  * Princípio de edição: eliminámos o banal ("é seguro?", "funciona offline?")
  * e deixámos só perguntas que um prospect REAL faz antes de comprar — as
@@ -17,9 +22,9 @@ import type { TranslationKey } from '@/lib/i18n/translations'
  *   2. Dá um detalhe verificável
  *   3. Não usa "apenas" nem "simplesmente"
  *
- * Layout: primeiro a FAQ pré-escrita para SEO (todas as answers sempre no
- * DOM, collapsed via max-height), depois o chat IA para perguntas que
- * ficaram de fora, depois um CTA claro para /contacto se quiserem humano.
+ * Layout: FAQ pré-escrita (8 entries, server-rendered for SEO), depois
+ * uma âncora visual para o Dragon Coin (que vive como FAB), depois um
+ * fallback humano para quem prefere preencher um formulário.
  */
 
 interface QA { qKey: TranslationKey; aKey: TranslationKey }
@@ -35,13 +40,12 @@ const FAQS: QA[] = [
   { qKey: 'landing.faq.q8', aKey: 'landing.faq.a8' },
 ]
 
-export function LandingFAQ() {
-  const t = useT()
-  const [open, setOpen] = useState<number | null>(0)
+export async function LandingFAQ() {
+  const t = await getServerT()
 
   return (
     <section className="px-6 py-24 max-w-3xl mx-auto">
-      {/* ── Pre-written FAQ ──────────────────────────────────────── */}
+      {/* ── Pre-written FAQ (server-rendered, SEO-friendly) ─────────── */}
       <div className="text-center mb-12">
         <p className="text-green-400 font-semibold text-sm uppercase tracking-widest mb-2">{t('landing.faq.eyebrow')}</p>
         <h2 className="text-4xl md:text-5xl font-bold">{t('landing.faq.title')}</h2>
@@ -51,49 +55,32 @@ export function LandingFAQ() {
       </div>
 
       <div className="space-y-2 mb-16">
-        {FAQS.map((f, i) => {
-          const isOpen = open === i
-          return (
-            <article
-              key={i}
-              className={`bg-white/5 border rounded-xl transition-colors ${
-                isOpen ? 'border-green-500/30' : 'border-white/10 hover:border-white/20'
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => setOpen(isOpen ? null : i)}
-                aria-expanded={isOpen}
-                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left min-h-[56px]"
-              >
-                <span className="font-semibold text-white text-[15px]">{t(f.qKey)}</span>
-                <ChevronDown
-                  className={`w-4 h-4 text-white/50 flex-shrink-0 transition-transform ${
-                    isOpen ? 'rotate-180 text-green-400' : ''
-                  }`}
-                />
-              </button>
-              <div
-                className={`overflow-hidden transition-all duration-300 ${
-                  isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <p className="px-5 pb-5 text-sm text-white/70 leading-relaxed">{t(f.aKey)}</p>
-              </div>
-            </article>
-          )
-        })}
+        {FAQS.map((f, i) => (
+          // <details> is a native HTML accordion. First entry opens by default
+          // via the `open` attribute (matches the previous client-state behaviour
+          // where index 0 was open on mount). The `[open]:…` Tailwind variants
+          // light up the open state without any JS.
+          <details
+            key={i}
+            open={i === 0}
+            className="group bg-white/5 border border-white/10 hover:border-white/20 open:border-green-500/30 rounded-xl transition-colors"
+          >
+            <summary className="cursor-pointer list-none flex items-center justify-between gap-4 px-5 py-4 min-h-[56px] [&::-webkit-details-marker]:hidden">
+              <span className="font-semibold text-white text-[15px]">{t(f.qKey)}</span>
+              <ChevronDown
+                className="w-4 h-4 text-white/50 flex-shrink-0 transition-transform group-open:rotate-180 group-open:text-green-400"
+              />
+            </summary>
+            <p className="px-5 pb-5 text-sm text-white/70 leading-relaxed">{t(f.aKey)}</p>
+          </details>
+        ))}
       </div>
 
-      {/* ── Dragon Coin nudge ────────────────────────────────────────
-          The conversational chat used to live inline here. It was moved to
-          a persistent floating button (DragonCoinFAB) in April 2026 so
-          users don't have to scroll past the whole FAQ to find it. This
-          block now just points at the FAB that is visible on every page. */}
+      {/* ── Dragon Coin nudge ─────────────────────────────────────────
+          The conversational chat used to live inline here. Now it lives
+          on the persistent floating button (DragonCoinFAB), so this
+          block just points at where to find it. */}
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent border border-green-500/20 rounded-2xl p-6 text-center">
-        {/* Retrato do Dragon Coin — sem moldura, apenas o animal com um glow
-            emerald via drop-shadow. Serve de âncora visual do mascote que
-            vive no FAB flutuante. */}
         <div className="flex items-center justify-center mb-4">
           <Image
             src="/dragon-coin.webp"
@@ -113,7 +100,7 @@ export function LandingFAQ() {
         </p>
       </div>
 
-      {/* ── Human fallback ───────────────────────────────────────── */}
+      {/* ── Human fallback ────────────────────────────────────────── */}
       <div className="mt-10 bg-white/[0.03] border border-white/10 rounded-2xl p-6 text-center">
         <h4 className="font-bold text-white mb-2">{t('landing.faq.human_title')}</h4>
         <p className="text-sm text-white/60 mb-4 max-w-md mx-auto">
