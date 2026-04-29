@@ -1,21 +1,16 @@
 import { Suspense }         from 'react'
 import { auth }              from '@clerk/nextjs/server'
 import { redirect }          from 'next/navigation'
-import nextDynamic           from 'next/dynamic'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { Sidebar }          from '@/components/layout/Sidebar'
 import { TopBar }           from '@/components/layout/TopBar'
 import { MobileNav }        from '@/components/layout/MobileNav'
 import { UserPlanProvider } from '@/lib/contexts/UserPlanContext'
 import { MascotEvolutionWatcher } from '@/components/voltix/MascotEvolutionWatcher'
-
-// Lazy-load the FAB. Same rationale as on the landing — chat chrome,
-// no SEO impact, ~25 KB of JS most sessions never expand. `nextDynamic`
-// alias avoids clashing with this file's own `export const dynamic`.
-const DragonCoinFAB = nextDynamic(
-  () => import('@/components/common/DragonCoinFAB').then(m => ({ default: m.DragonCoinFAB })),
-  { ssr: false },
-)
+// FAB lazy-loaded behind a tiny client wrapper — Next.js 15 forbids
+// `dynamic({ssr:false})` in server components, and this layout is one.
+// Same ~25 KB gzipped saving as before, just routed through the wrapper.
+import { DragonCoinFABLazy } from '@/components/common/DragonCoinFABLazy'
 
 // Force dynamic — plan must always be authoritative, never cached
 export const dynamic = 'force-dynamic'
@@ -80,7 +75,7 @@ export default async function DashboardLayout({
         </Suspense>
 
         {/* Persistent Dragon Coin chat FAB — available across the dashboard. */}
-        <DragonCoinFAB />
+        <DragonCoinFABLazy />
       </div>
     </UserPlanProvider>
   )
