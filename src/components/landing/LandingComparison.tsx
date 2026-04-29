@@ -24,6 +24,12 @@ const ROWS: { key: TranslationKey; xp: Cell; excel: Cell; generic: Cell }[] = [
   { key: 'landing.cmp.r4',  xp: 'yes', excel: 'no',      generic: 'no' },
   { key: 'landing.cmp.r5',  xp: 'yes', excel: 'no',      generic: 'no' },
   { key: 'landing.cmp.r6',  xp: 'yes', excel: 'no',      generic: 'no' },
+  // Orçamento 50/30/20 + alertas — Excel needs heavy formulas (partial),
+  // generic apps usually offer total budget but not bucket discipline.
+  { key: 'landing.cmp.r12', xp: 'yes', excel: 'partial', generic: 'partial' },
+  // Mata-Dívidas avalanche/snowball — neither Excel nor generic apps
+  // ship the planner out-of-the-box; you'd build it yourself.
+  { key: 'landing.cmp.r13', xp: 'yes', excel: 'no',      generic: 'no' },
   { key: 'landing.cmp.r7',  xp: 'yes', excel: 'no',      generic: 'no' },
   { key: 'landing.cmp.r8',  xp: 'yes', excel: 'partial', generic: 'partial' },
   { key: 'landing.cmp.r9',  xp: 'yes', excel: 'partial', generic: 'partial' },

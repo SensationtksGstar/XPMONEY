@@ -7,17 +7,18 @@ import {
   Sparkles,
   Shield,
   Smartphone,
+  Sword,
+  PiggyBank,
 } from 'lucide-react'
 import { getServerT } from '@/lib/i18n/server'
 
 /**
- * LandingFeatures — 8-card feature grid covering what actually exists today.
+ * LandingFeatures — 10-card feature grid covering what actually exists today.
  *
- * Replaces the old 6-card grid that missed big differentiators:
- *   - Receipt scan (AI / OCR)
- *   - Statement import (CSV + PDF)
- *   - Academia with certificates
- *   - Dual mascots (Voltix + Penny)
+ * April 2026: extended from 8 to 10 cards after audit flagged Mata-Dívidas
+ * and Orçamento 50/30/20 as missing from the landing despite being shipped
+ * features. Reorder so the highest-conversion items (mascot/score/scan)
+ * stay above the fold on a 3-col grid; PWA + Privacy fall to the bottom.
  *
  * Each card: one icon, one title, one-sentence promise, one concrete proof
  * point. Proof points are the hook — "score financeiro" alone is abstract,
@@ -67,6 +68,22 @@ export async function LandingFeatures() {
       title: t('landing.features.c5_title'),
       desc:  t('landing.features.c5_desc'),
       proof: t('landing.features.c5_proof'),
+    },
+    {
+      icon:  <PiggyBank  className="w-5 h-5" />,
+      color: 'text-rose-300',
+      bg:    'bg-rose-500/10',
+      title: t('landing.features.c9_title'),
+      desc:  t('landing.features.c9_desc'),
+      proof: t('landing.features.c9_proof'),
+    },
+    {
+      icon:  <Sword      className="w-5 h-5" />,
+      color: 'text-red-300',
+      bg:    'bg-red-500/10',
+      title: t('landing.features.c10_title'),
+      desc:  t('landing.features.c10_desc'),
+      proof: t('landing.features.c10_proof'),
     },
     {
       icon:  <GraduationCap className="w-5 h-5" />,

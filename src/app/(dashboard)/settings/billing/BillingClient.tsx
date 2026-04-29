@@ -49,6 +49,8 @@ const PLANS: {
       'billing.free_f4',
       'billing.free_f5',
       'billing.free_f6',
+      'billing.free_f9',  // Orçamento 50/30/20 — high-value free hook
+      'billing.free_f10', // Mata-Dívidas (1 dívida) — teaser into Premium
       'billing.free_f7',
       'billing.free_f8',
     ],
@@ -65,6 +67,7 @@ const PLANS: {
       'billing.premium_f1',
       'billing.premium_f2',
       'billing.premium_f3',
+      'billing.premium_f12', // Mata-Dívidas ilimitado — placed near other power-tools
       'billing.premium_f4',
       'billing.premium_f5',
       'billing.premium_f6',

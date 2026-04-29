@@ -55,18 +55,20 @@ App web/PWA que transforma gerir finanças pessoais num jogo estilo RPG. Núcleo
 
 ## FUNCIONALIDADES PRINCIPAIS
 - Registo rápido de transações (receita/despesa) com categorias.
-- **Objetivos de poupança** com deposits e XP ao atingir.
+- **Orçamento 50/30/20** — defines limites por bucket (essenciais / lazer / poupança), app alerta a 80% e 100%. **Grátis**.
+- **Mata-Dívidas** — plano de ataque às dívidas com método avalanche ou bola de neve, mostra meses até estares livre. Free: 1 dívida. Premium: ilimitadas + planeador + ataques + XP.
+- **Objetivos de poupança** com deposits e XP ao atingir. Free: 2 objetivos ativos. Premium: ilimitados.
 - **Scan de recibos por IA** (tira foto → categoriza em 2 segundos) — Premium.
 - **Import de extratos bancários** em CSV ou PDF — Premium.
 - **Academia** com cursos de finanças pessoais (orçamento, DCA, impostos) + quiz + certificado digital com código único.
 - **Simulador de investimento** (DCA, juros compostos) — Premium.
-- **Relatório PDF mensal** (score, balanço, top categorias, poupanças) — Premium.
+- **Relatório PDF mensal** (score, balanço, top categorias, poupanças, padrão semanal, notas IRS) — Premium.
 - **Perspetiva** (análise avançada de padrões e previsões) — Premium.
 - PWA instalável no telemóvel (iOS/Android) + desktop.
 
 ## PREÇOS (EUR — regime de isenção de IVA Art. 53.º CIVA, sem IVA aplicável) — modelo simples, 2 planos
-- **Grátis**: para sempre. Inclui score, XP, missões, mascote, objetivos (até 2), transações ilimitadas, cursos iniciais. Tem anúncios discretos.
-- **Premium**: **€4,99/mês** ou **€39,99/ano** (poupa ~33%). Desbloqueia tudo: sem anúncios, scan de recibos, import PDF, simulador, relatório PDF, Perspetiva, Academia completa, missões premium, objetivos ilimitados.
+- **Grátis**: para sempre. Inclui score, XP, missões, mascote, **2 objetivos**, **orçamento 50/30/20**, **1 dívida no Mata-Dívidas**, transações ilimitadas, cursos iniciais. Tem anúncios discretos.
+- **Premium**: **€4,99/mês** ou **€39,99/ano** (poupa ~33%). Desbloqueia tudo: sem anúncios, scan de recibos, import PDF, simulador, relatório PDF, Perspetiva, Academia completa, missões premium, **objetivos ilimitados**, **Mata-Dívidas ilimitado + planeador**.
 
 Não existem planos intermédios "Plus" ou "Pro" — isso era o modelo antigo. Agora é só Grátis ou Premium.
 
@@ -110,18 +112,20 @@ A web/PWA that turns managing personal finance into an RPG-style game. Core:
 
 ## MAIN FEATURES
 - Fast transaction logging (income/expense) with categories.
-- **Savings goals** with deposits and XP on completion.
+- **50/30/20 budget** — set per-bucket limits (essentials / wants / savings), app alerts at 80% and 100%. **Free**.
+- **Debt Killer** — attack plan with avalanche or snowball method, shows months until you are debt-free. Free: 1 debt. Premium: unlimited + planner + attacks + XP.
+- **Savings goals** with deposits and XP on completion. Free: 2 active goals. Premium: unlimited.
 - **AI receipt scanning** (take a photo → categorised in 2 seconds) — Premium.
 - **Bank statement import** in CSV or PDF — Premium.
 - **Academy** with personal-finance courses (budgeting, DCA, taxes) + quiz + digital certificate with a unique code.
 - **Investment simulator** (DCA, compound interest) — Premium.
-- **Monthly PDF report** (score, balance, top categories, savings) — Premium.
+- **Monthly PDF report** (score, balance, top categories, savings, weekday pattern, IRS notes) — Premium.
 - **Perspective** (advanced pattern analysis and forecasts) — Premium.
 - Installable PWA on mobile (iOS/Android) and desktop.
 
 ## PRICING (EUR — Portuguese VAT exemption regime Art. 53 CIVA, no VAT charged) — simple, 2 plans
-- **Free**: forever. Includes score, XP, missions, mascot, up to 2 goals, unlimited transactions, starter courses. Shows discreet ads.
-- **Premium**: **€4.99/month** or **€39.99/year** (save ~33%). Unlocks everything: no ads, receipt scanning, PDF import, simulator, PDF report, Perspective, full Academy, premium missions, unlimited goals.
+- **Free**: forever. Includes score, XP, missions, mascot, **2 goals**, **50/30/20 budget**, **1 debt in Debt Killer**, unlimited transactions, starter courses. Shows discreet ads.
+- **Premium**: **€4.99/month** or **€39.99/year** (save ~33%). Unlocks everything: no ads, receipt scanning, PDF import, simulator, PDF report, Perspective, full Academy, premium missions, **unlimited goals**, **unlimited Debt Killer + planner**.
 
 There are no mid-tier "Plus" or "Pro" plans — that was the old model. Now it's just Free or Premium.
 

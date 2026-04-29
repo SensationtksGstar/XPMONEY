@@ -35,6 +35,7 @@ const PREMIUM_FEATURE_KEYS: Array<{ key: TranslationKey; highlight?: boolean }> 
   { key: 'pricing.premium_f4' },
   { key: 'pricing.premium_f5' },
   { key: 'pricing.premium_f6' },
+  { key: 'pricing.premium_f12' },     // Mata-Dívidas ilimitado · placed near other power-tools
   { key: 'pricing.premium_f7' },
   { key: 'pricing.premium_f8' },
   { key: 'pricing.premium_f9' },
@@ -45,9 +46,11 @@ const PREMIUM_FEATURE_KEYS: Array<{ key: TranslationKey; highlight?: boolean }> 
 const FREE_FEATURE_KEYS: TranslationKey[] = [
   'pricing.free_f1',
   'pricing.free_f2',
+  'pricing.free_f7',                  // Orçamento 50/30/20 — high-value free hook, surface early
   'pricing.free_f3',
   'pricing.free_f4',
   'pricing.free_f5',
+  'pricing.free_f8',                  // Mata-Dívidas (1 dívida) — teaser into Premium
   'pricing.free_f6',
 ]
 
