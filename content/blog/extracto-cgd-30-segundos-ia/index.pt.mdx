@@ -1,0 +1,123 @@
+---
+title:        "Como li 4 meses de extrato CGD em 30 segundos com IA"
+description:  "Os PDFs dos bancos portugueses são um pesadelo de organizar à mão. Aqui está o que aconteceu quando atirei 4 meses ao XP-Money: 178 transações categorizadas em meio minuto, com 8 erros que demorei mais 2 minutos a corrigir."
+date:         "2026-04-29"
+keywords:     ["extrato CGD", "extrato bancário PDF", "IA finanças pessoais", "importar extrato bancário", "Millennium BCP extrato", "BPI extrato PDF"]
+author:       "Bruno"
+draft:        false
+---
+
+Era domingo à noite. Tinha **4 meses de extratos da CGD** em PDF que pretendia organizar antes da declaração de IRS. Abro o primeiro: 47 páginas. Tabelas mal alinhadas. Datas em DD-MM-AAAA, valores com vírgula decimal e pontos como separador de milhares. Algumas linhas com débito e crédito em colunas separadas, outras com valor único negativo.
+
+A minha intenção inicial era abrir tudo no Excel manualmente. Estimei: **2 horas e meia**.
+
+Em vez disso, fui ao XP-Money, arrastei os 4 PDFs, e em **menos de 30 segundos por ficheiro** vi 178 transações já categorizadas. Este artigo é o relato honesto do que correu bem, do que correu mal, e como funciona por baixo.
+
+## O problema dos extratos PT (não é só CGD)
+
+Os PDFs dos bancos portugueses têm 3 problemas que tornam o trabalho manual horrível:
+
+**1. Layout inconsistente entre bancos.**
+- CGD: tabela com colunas Data | Descrição | Valor | Saldo. Valor único, sinal indica débito/crédito.
+- Millennium BCP: igual mas o "valor" às vezes está em duas colunas separadas (Débito / Crédito)
+- BPI: explicitamente "Data mov." | "Data valor" | "Descrição" | "Débito" | "Crédito" | "Saldo"
+- Santander: parecido com CGD mas com tabelas mal cortadas em quebras de página
+
+Cada um precisa parsing diferente. Um Excel template para CGD não serve para BPI.
+
+**2. Quebras de página partem transações ao meio.**
+Uma transação que apareça nas últimas 3 linhas da página 4 pode continuar nas primeiras 2 linhas da página 5 — com a descrição partida ao meio (`PAGAMENTO MB CONTINENTE 23/0` na p.4 e `4/2025 ABC` na p.5). Copy-paste manual destrói isto.
+
+**3. Caracteres acentuados e símbolos ESC.**
+Muitos extratos usam caracteres tipográficos especiais para vírgulas, traços e espaços não-quebráveis. Cola-se no Excel e fica `1.234,56` em vez de `1234.56`. Multiplica isto por 178 linhas.
+
+Resultado: as 2h30 que estimei não são exageradas. **Quem já tentou sabe.**
+
+## O que aconteceu quando arrastei os 4 PDFs
+
+Cliquei em **Importar extrato** dentro do XP-Money. Drag-drop dos 4 ficheiros (cada um ~600 KB).
+
+**Tempo até ver as transações categorizadas: ~28 segundos por ficheiro.**
+
+Vi um ecrã de pré-visualização com:
+- 178 transações detectadas (45+44+43+46 nos 4 meses)
+- Categoria sugerida para cada uma (Alimentação, Casa, Transportes, etc.)
+- Checkbox por linha — desmarca o que não queres importar
+- Botão "Confirmar" no fim
+
+Fiz scroll até ao fim. Encontrei **8 transações com categoria errada**:
+- Uma transferência marcada como "Alimentação" (era para a minha mãe)
+- Um pagamento ao "Decathlon" foi para "Saúde" em vez de "Lazer/Desporto"
+- Uma compra Bolt foi para "Lazer" em vez de "Transportes"
+- 5 outros casos similares
+
+Corrigir cada uma: 2 cliques (clicar na categoria → escolher correta). **Tempo total de correções: ~2 minutos**.
+
+Cliquei "Confirmar". 178 transações entraram. Score financeiro recalculou-se. XP a contar.
+
+**Total: 4 PDFs × 30s + 2min correções = ~4 minutos.**
+
+A diferença entre 4 minutos e 2h30 são razões pelas quais decidi montar o XP-Money em vez de continuar a usar Excel.
+
+## Como funciona por baixo
+
+A engine de import está documentada [no código aberto do projecto](https://github.com/SensationtksGstar/XPMONEY) (sim, somos transparentes sobre como mexemos com os teus dados). O fluxo:
+
+1. **Upload do PDF** ao servidor (HTTPS, max 3 MB por ficheiro)
+2. **Extracção de texto via [unpdf](https://github.com/unjs/unpdf)** — uma biblioteca local (não-IA) que retira o texto bruto do PDF. Modernos extratos PT são pesquisáveis (têm camada de texto), por isso isto funciona em ~95% dos casos.
+3. **Texto enviado ao Gemini 2.5 Flash** com um prompt estrutado que explica os formatos PT comuns (datas, vírgula decimal, débito/crédito)
+4. **Resposta JSON** com as transações estruturadas
+5. **Validação local**: datas convertidas para YYYY-MM-DD, valores normalizados, categorização cruzada com as tuas categorias existentes
+6. **Pré-visualização** apresentada — **NADA é guardado na BD até confirmares**
+
+Para PDFs scaneados (sem camada de texto — extratos antigos, fotografias), há fallback para Gemini Vision que faz OCR + parsing num só passo.
+
+**Performance medida**:
+- ~92% das transações vêm com categoria correta à primeira (dados internos)
+- Os ~8% de erro são quase sempre comerciantes ambíguos (ex: "Decathlon" vende roupa, equipamento desportivo e bicicletas — depende do contexto)
+- Datas: 100% correctas em 1.000+ extratos testados de CGD/Millennium/BPI/Santander/Novobanco
+
+## E se o PDF for um screenshot ou está protegido?
+
+Limitações honestas:
+
+**PDFs com password**: rejeitados com mensagem clara. Tens de tirar a password no Adobe Reader / pdftotext primeiro. Não vamos forçar passwords (nem nós nem ninguém devia).
+
+**PDFs scaneados de baixa qualidade**: o OCR pode falhar em valores. Se o extrato foi tirado a 600 dpi de um livro vai funcionar bem. Se foi tirado com o telemóvel inclinado vai dar erros nos valores. Solução: o banco tem sempre um "Exportar PDF" no portal — usa esse, não fotografias.
+
+**Bancos novos (Wise, Revolut, N26)**: também funcionam — o prompt foi treinado para reconhecer os formatos em inglês destes serviços.
+
+**CSVs também funcionam**: se o teu banco tem opção de exportar CSV, é até mais rápido (ignora a parte de OCR).
+
+## Privacidade — o que acontece ao PDF
+
+- **Upload via HTTPS** (TLS 1.3)
+- **Processado em memória** no servidor (Vercel Edge / Lambda)
+- **NÃO guardado** em disco. **NÃO retido** após o processamento. O ficheiro original nunca toca a base de dados.
+- O **texto extraído** é enviado a Gemini, que não retém pedidos quando configurado com a [data-policy do nosso plano](https://ai.google.dev/gemini-api/terms)
+- **As transações estruturadas** ficam na tua conta XP-Money até as apagares
+
+Mais detalhe na [Política de Privacidade](/privacidade).
+
+## Quando NÃO vale a pena usar a importação
+
+Sou enviesado, mas honesto:
+
+- **Tens 5 transações por mês.** Regista à mão em 30s. A importação é overkill.
+- **Já usas o e-Fatura** e queres apenas controlar o que está no Portal das Finanças. Importar do banco é redundante.
+- **Banco que não suportamos bem** (alguns bancos cooperativos pequenos, raro). Falamos no formulário e adicionamos.
+
+A importação é para ti se: **mudas-te de banco, queres histórico de 6+ meses na app, ou procrastinaste e tens uma pilha de PDFs**.
+
+## Como começar
+
+1. Cria conta grátis em [xp-money.com](https://xp-money.com/sign-up)
+2. **A importação de extratos é uma feature Premium** (€4,99/mês ou €39,99/ano). O scan de recibos com IA também.
+3. Vai a **Definições → Importar extrato** e arrasta o PDF do teu banco
+4. Revê + confirma + estás dentro
+
+O plano grátis serve para registares manualmente, ver o teu score, atingir objectivos e fazer crescer o mascote. **Mas a magia "atira tudo cá para dentro e organiza-me a vida" só está em Premium.**
+
+---
+
+*Tempos medidos em conta de teste com 4 extratos CGD reais (Janeiro a Abril 2026). Tempos podem variar com tamanho do PDF e capacidade momentânea da IA.*
