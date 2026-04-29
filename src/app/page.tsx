@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { ArrowRight } from 'lucide-react'
 import { Logo }                   from '@/components/ui/Logo'
 import { LandingHero }            from '@/components/landing/LandingHero'
@@ -12,13 +13,23 @@ import { LandingReviews }         from '@/components/landing/LandingReviews'
 import { LandingFAQ }             from '@/components/landing/LandingFAQ'
 import { LandingPricing }         from '@/components/landing/LandingPricing'
 import { LandingFooter }          from '@/components/landing/LandingFooter'
-import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
 import { LanguageToggle }         from '@/components/common/LanguageToggle'
 import { InstallAppButton }       from '@/components/common/InstallAppButton'
 import { NewsletterSignup }       from '@/components/common/NewsletterSignup'
 import { JsonLd }                 from '@/components/seo/JsonLd'
 import { softwareApplication, faqPage, premiumProduct } from '@/lib/seo/jsonLd'
 import { getServerT, getServerLocale } from '@/lib/i18n/server'
+
+// Below-the-fold widgets — lazy-loaded so the initial JS payload on
+// mobile doesn't carry their chunks. The FAB sits bottom-right and
+// holds an entire chat client; rolling it into the critical path was
+// the single biggest contributor to the 6 s mobile load reported in
+// the April 2026 audit (HAR analysis: 1.3 MB JS total). Mounted with
+// `ssr: false` because it has no SEO value — it's chrome.
+const DragonCoinFAB = dynamic(
+  () => import('@/components/common/DragonCoinFAB').then(m => ({ default: m.DragonCoinFAB })),
+  { ssr: false },
+)
 
 /**
  * Landing page — the face of XP-Money.

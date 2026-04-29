@@ -1,13 +1,21 @@
 import { Suspense }         from 'react'
 import { auth }              from '@clerk/nextjs/server'
 import { redirect }          from 'next/navigation'
+import nextDynamic           from 'next/dynamic'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { Sidebar }          from '@/components/layout/Sidebar'
 import { TopBar }           from '@/components/layout/TopBar'
 import { MobileNav }        from '@/components/layout/MobileNav'
 import { UserPlanProvider } from '@/lib/contexts/UserPlanContext'
 import { MascotEvolutionWatcher } from '@/components/voltix/MascotEvolutionWatcher'
-import { DragonCoinFAB }          from '@/components/common/DragonCoinFAB'
+
+// Lazy-load the FAB. Same rationale as on the landing — chat chrome,
+// no SEO impact, ~25 KB of JS most sessions never expand. `nextDynamic`
+// alias avoids clashing with this file's own `export const dynamic`.
+const DragonCoinFAB = nextDynamic(
+  () => import('@/components/common/DragonCoinFAB').then(m => ({ default: m.DragonCoinFAB })),
+  { ssr: false },
+)
 
 // Force dynamic — plan must always be authoritative, never cached
 export const dynamic = 'force-dynamic'

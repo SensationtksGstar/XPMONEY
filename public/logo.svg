@@ -1,87 +1,148 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="XP Money logo">
   <!--
-    XP Money — v3 (2026) · "Digivice" edition
-    A Digimon-style handheld device silhouette: emerald chassis with a dark
-    inner screen showing the lightning bolt. A subtle Bitcoin ₿ watermark in
-    the screen corner nods to crypto-aware finance without dominating the
-    identity. Side buttons and top antenna-dot are the digivice tells.
-    Still readable at 16px because the bolt stays the dominant shape.
+    XP Money master logo — v4 (April 2026) · "3D Digivice" edition.
+
+    v3 used flat gradients; v4 layers genuine bevel + ambient occlusion +
+    consistent top-left light source so the logo reads like a polished,
+    moulded device instead of a sticker. Used by the manifest (PWA install
+    icon), Open Graph fallback, and any other 512-px asset surface.
+
+    Light direction: top-left (highlights TL, shadow BR — same convention
+    as the favicon icon.svg, kept consistent across all sizes).
   -->
   <defs>
-    <!-- Chassis gradient (emerald, same family as v2) -->
-    <linearGradient id="xpm_chassis" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"   stop-color="#10b981"/>
+    <!-- Body face: rich vertical gradient with a brighter highlight band. -->
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#34d399"/>
+      <stop offset="20%"  stop-color="#10b981"/>
       <stop offset="100%" stop-color="#047857"/>
     </linearGradient>
-    <!-- Dark screen gradient — deep navy/ink -->
-    <linearGradient id="xpm_screen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"   stop-color="#0a1220"/>
-      <stop offset="100%" stop-color="#050a14"/>
+    <!-- Top bevel highlight (lit edge sliver). -->
+    <linearGradient id="bevel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#a7f3d0" stop-opacity="0.95"/>
+      <stop offset="35%"  stop-color="#a7f3d0" stop-opacity="0.0"/>
     </linearGradient>
-    <!-- Bolt gradient — emerald-white for glow -->
-    <linearGradient id="xpm_bolt" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"   stop-color="#6ee7b7"/>
-      <stop offset="60%"  stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#047857"/>
+    <!-- Bottom shade (curved-away edge). -->
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="60%"  stop-color="#022c22" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#022c22" stop-opacity="0.55"/>
     </linearGradient>
-    <!-- Subtle screen scanline pattern (digivice retro feel) -->
-    <pattern id="xpm_scan" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
-      <rect width="6" height="1" fill="#10b981" opacity="0.05"/>
+    <!-- Diagonal sheen sweeping from upper-left → glossy plastic look. -->
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.32"/>
+      <stop offset="50%"  stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Screen: deep navy with off-axis radial bloom for CRT glow. -->
+    <radialGradient id="screen" cx="35%" cy="32%" r="80%">
+      <stop offset="0%"   stop-color="#1e293b"/>
+      <stop offset="55%"  stop-color="#0a1220"/>
+      <stop offset="100%" stop-color="#02060d"/>
+    </radialGradient>
+    <!-- Screen scanline pattern — kept from v3 for retro CRT feel. -->
+    <pattern id="scan" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+      <rect width="6" height="1" fill="#10b981" opacity="0.07"/>
     </pattern>
+    <!-- Bolt: lime → emerald, with a separate specular layer above. -->
+    <linearGradient id="bolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#d9f99d"/>
+      <stop offset="35%"  stop-color="#86efac"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="boltGlint" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="50%"  stop-color="#ffffff" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Side button base (recessed dark gradient). -->
+    <linearGradient id="btn" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#022c22"/>
+      <stop offset="100%" stop-color="#0f3a2a"/>
+    </linearGradient>
+    <!-- Drop shadow gaussian (cast on the surface beneath the chassis). -->
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#000000" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Bitcoin coin glow halo (around the BTC dot). -->
+    <radialGradient id="btcGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#f7931a" stop-opacity="0.45"/>
+      <stop offset="60%"  stop-color="#f7931a" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
-  <!-- ── Outer chassis ── -->
-  <rect x="32" y="32" width="448" height="448" rx="96" ry="96"
-        fill="url(#xpm_chassis)"/>
+  <!-- Cast shadow on the ground plane. -->
+  <ellipse cx="256" cy="490" rx="180" ry="22" fill="url(#floorShadow)"/>
 
-  <!-- Chassis depth shadow ring (gives a bevelled/moulded feel) -->
-  <rect x="32" y="32" width="448" height="448" rx="96" ry="96"
-        fill="none" stroke="#064e3b" stroke-width="3" stroke-opacity="0.55"/>
+  <!-- ── Chassis (with multi-layer bevel) ─────────────────────────── -->
+  <!-- Outer dark base (slightly larger so the body sits ON it). -->
+  <rect x="28" y="28" width="456" height="456" rx="100" ry="100" fill="#064e3b"/>
+  <!-- Body face. -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#body)"/>
+  <!-- Top bevel highlight. -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#bevel)" opacity="0.95"/>
+  <!-- Bottom shade. -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#shade)"/>
+  <!-- Diagonal sheen (glossy plastic). -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#sheen)"/>
+  <!-- Crisp inner edge stroke (catches light). -->
+  <rect x="36" y="36" width="440" height="440" rx="92" ry="92"
+        fill="none" stroke="#022c22" stroke-opacity="0.7" stroke-width="2"/>
+  <rect x="40" y="40" width="432" height="432" rx="88" ry="88"
+        fill="none" stroke="#a7f3d0" stroke-opacity="0.25" stroke-width="1"/>
 
-  <!-- ── Digivice tells: antenna dot (top-centre) ── -->
-  <circle cx="256" cy="64" r="6" fill="#d1fae5" opacity="0.55"/>
+  <!-- Antenna bump (recessed metal pin). -->
+  <circle cx="256" cy="56" r="9" fill="#022c22"/>
+  <circle cx="256" cy="56" r="6" fill="#86efac" opacity="0.95"/>
+  <circle cx="254" cy="54" r="2.5" fill="#ffffff" opacity="0.8"/>
 
-  <!-- ── Side physical buttons (left + right edges) ── -->
-  <!-- Left: D-pad / menu buttons -->
-  <rect x="42" y="216" width="14" height="36" rx="7" fill="#064e3b" opacity="0.85"/>
-  <rect x="42" y="262" width="14" height="36" rx="7" fill="#064e3b" opacity="0.85"/>
-  <!-- Right: action button -->
-  <rect x="456" y="232" width="14" height="52" rx="7" fill="#064e3b" opacity="0.85"/>
+  <!-- ── Side physical buttons ───────────────────────────────────── -->
+  <!-- Left: two D-pad/menu buttons. -->
+  <rect x="38" y="216" width="20" height="40" rx="9" fill="url(#btn)"/>
+  <rect x="38" y="216" width="5"  height="40" rx="2" fill="#a7f3d0" opacity="0.45"/>
+  <rect x="38" y="262" width="20" height="40" rx="9" fill="url(#btn)"/>
+  <rect x="38" y="262" width="5"  height="40" rx="2" fill="#a7f3d0" opacity="0.45"/>
+  <!-- Right: action button (slightly bigger). -->
+  <rect x="454" y="232" width="20" height="56" rx="9" fill="url(#btn)"/>
+  <rect x="469" y="232" width="5"  height="56" rx="2" fill="#022c22" opacity="0.7"/>
 
-  <!-- ── Screen panel ── -->
+  <!-- ── Screen panel ────────────────────────────────────────────── -->
+  <!-- Bezel ambient occlusion (recessed look). -->
+  <rect x="92" y="108" width="328" height="280" rx="44" ry="44" fill="#022c22" opacity="0.7"/>
+  <!-- Screen face. -->
+  <rect x="96" y="112" width="320" height="272" rx="40" ry="40" fill="url(#screen)"/>
+  <!-- Top inner shadow (screen sits inside chassis). -->
+  <rect x="96" y="112" width="320" height="32" rx="40" ry="40" fill="#000000" opacity="0.4"/>
+  <!-- Subtle gloss reflection on the upper third. -->
+  <rect x="96" y="112" width="320" height="60" rx="40" ry="40" fill="#ffffff" opacity="0.05"/>
+  <!-- Scanlines for retro CRT/LCD texture. -->
+  <rect x="98" y="114" width="316" height="268" rx="38" ry="38" fill="url(#scan)"/>
+  <!-- Crisp emerald frame line. -->
   <rect x="96" y="112" width="320" height="272" rx="40" ry="40"
-        fill="url(#xpm_screen)"/>
-  <!-- Screen inner glow rim -->
-  <rect x="96" y="112" width="320" height="272" rx="40" ry="40"
-        fill="none" stroke="#10b981" stroke-width="2" stroke-opacity="0.35"/>
-  <!-- Scanlines (subtle CRT/LCD texture) -->
-  <rect x="98" y="114" width="316" height="268" rx="38" ry="38" fill="url(#xpm_scan)"/>
+        fill="none" stroke="#10b981" stroke-width="2" stroke-opacity="0.5"/>
 
-  <!-- ── Subtle Bitcoin ₿ watermark (top-right of screen) ── -->
-  <!-- Hand-drawn ₿ as a proper path so it renders the same on every device,
-       no font fallback quirks. Low opacity keeps it from fighting the bolt. -->
-  <g opacity="0.22" transform="translate(344, 140) scale(0.85)">
-    <!-- Coin disc with bitcoin orange -->
-    <circle cx="0" cy="0" r="24" fill="#f7931a"/>
-    <!-- ₿ glyph (vertical bar + two lobes) -->
-    <g fill="#0a1220">
-      <!-- Vertical bar -->
-      <rect x="-3" y="-16" width="6" height="32" rx="1"/>
-      <!-- Top horizontal stubs (descenders of ₿) -->
-      <rect x="-8" y="-18" width="3" height="4"/>
-      <rect x="-8" y="14"  width="3" height="4"/>
-      <!-- Top lobe (upper bump of B) -->
-      <path d="M -8 -11 L 4 -11 A 6 6 0 0 1 4 1 L -8 1 Z"/>
-      <!-- Bottom lobe (lower bump of B) -->
-      <path d="M -8 1 L 6 1 A 7 7 0 0 1 6 15 L -8 15 Z"/>
-      <!-- Cut-outs inside the lobes so the B reads -->
-      <path d="M -3 -8 L 1 -8 A 2.5 2.5 0 0 1 1 -3 L -3 -3 Z" fill="#f7931a"/>
-      <path d="M -3 4 L 2.5 4 A 3 3 0 0 1 2.5 12 L -3 12 Z" fill="#f7931a"/>
+  <!-- ── Bitcoin ₿ accent (top-right of screen, with halo) ────────── -->
+  <circle cx="368" cy="156" r="36" fill="url(#btcGlow)"/>
+  <g transform="translate(368, 156)">
+    <circle cx="0" cy="0" r="18" fill="#f7931a"/>
+    <circle cx="-3" cy="-3" r="11" fill="#fbbf24" opacity="0.6"/>
+    <g fill="#0a1220" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" text-anchor="middle">
+      <text x="0" y="8">₿</text>
     </g>
+    <!-- Tiny specular highlight on the coin. -->
+    <ellipse cx="-5" cy="-7" rx="5" ry="3" fill="#ffffff" opacity="0.55"/>
   </g>
 
-  <!-- ── Main lightning bolt (screen centre) ──
-       Same geometry as v2 so brand memory carries over. -->
+  <!-- ── Lightning bolt (centre of screen) ──────────────────────── -->
+  <!-- Drop shadow behind the bolt — lifts it off the screen. -->
+  <path d="M 298 152
+           L 182 282
+           L 242 282
+           L 226 374
+           L 342 242
+           L 282 242
+           L 298 152 Z"
+        fill="#000000" opacity="0.55" transform="translate(2, 4)"/>
+  <!-- Bolt body. -->
   <path d="M 296 150
            L 180 280
            L 240 280
@@ -89,13 +150,18 @@
            L 340 240
            L 280 240
            L 296 150 Z"
-        fill="url(#xpm_bolt)"/>
-
-  <!-- Bolt inner highlight (gives it dimensional glow) -->
-  <path d="M 296 150 L 280 240 L 240 280 L 228 340 Z"
-        fill="#d1fae5" opacity="0.28"/>
-
-  <!-- Outer highlight on chassis (top-left gloss) -->
-  <path d="M 32 128 Q 32 32 128 32 L 200 32"
-        fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round"/>
+        fill="url(#bolt)"/>
+  <!-- Edge stroke for definition. -->
+  <path d="M 296 150
+           L 180 280
+           L 240 280
+           L 224 372
+           L 340 240
+           L 280 240
+           L 296 150 Z"
+        fill="none" stroke="#064e3b" stroke-opacity="0.7" stroke-width="2"/>
+  <!-- Specular streak — bright wet glint along the lit (left) face. -->
+  <path d="M 296 150 L 256 218 L 232 250 L 180 280 Z" fill="url(#boltGlint)"/>
+  <!-- Pin highlight on the topmost vertex. -->
+  <circle cx="294" cy="156" r="5" fill="#ffffff" opacity="0.95"/>
 </svg>

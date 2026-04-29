@@ -1,8 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ShaderCanvas } from './ShaderCanvas'
-import { SHADERS }     from './shaders'
+import dynamic                   from 'next/dynamic'
+import { SHADERS }               from './shaders'
+
+// Dynamic-import the WebGL canvas. ShaderCanvas pulls in WebGL2 setup,
+// uniform-binding plumbing and a rAF loop — ~10-20 KB gzipped of code
+// the mobile fallback never executes. Keeping it out of the initial
+// bundle is the biggest mobile-bundle win on this component. SHADERS
+// itself is just GLSL string constants (~3 KB total) so we keep that
+// static for simpler typing.
+const ShaderCanvas = dynamic(
+  () => import('./ShaderCanvas').then(m => m.ShaderCanvas),
+  { ssr: false },
+)
 
 /**
  * SiteBackground — fullscreen fixed Neon Grid behind every page.
