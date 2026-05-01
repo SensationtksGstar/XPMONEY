@@ -21,6 +21,7 @@ import { millenniumParser } from './millennium'
 import { bpiParser }        from './bpi'
 import { santanderParser }  from './santander'
 import { revolutParser }    from './revolut'
+import { montepioParser }   from './montepio'
 
 const PARSERS: BankParser[] = [
   // Order matters only for ties — most banks have unique fingerprints.
@@ -31,6 +32,7 @@ const PARSERS: BankParser[] = [
   millenniumParser,
   bpiParser,
   santanderParser,
+  montepioParser,
 ]
 
 export interface DeterministicResult {
