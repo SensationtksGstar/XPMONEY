@@ -7,6 +7,7 @@ import {
   parseStatement, AIProvidersError,
   type StatementParseResult, type ParsedTransaction as LibParsedTransaction,
 } from '@/lib/ai'
+import { tryDeterministicParse }       from '@/lib/statementParsers'
 import { getServerLocale }             from '@/lib/i18n/server'
 import type { Locale }                 from '@/lib/i18n/translations'
 import { guardUser }                   from '@/lib/rateLimit'
@@ -226,6 +227,33 @@ async function runParse(
   categoryNames: string,
   locale: Locale = 'pt',
 ): Promise<NextResponse> {
+  // ── Deterministic parsers FIRST — top-5 PT banks (CGD, Millennium, BPI,
+  // Santander, Revolut). Zero AI tokens, ~1s parse time. Falls through to
+  // the AI chain when no parser fingerprints the format or none extract
+  // any transactions (e.g. scanned PDFs, unknown banks, exotic exports).
+  try {
+    const det = await tryDeterministicParse(input)
+    if (det) {
+      const withSelected: ImportStatementResult = {
+        ...det.result,
+        transactions: det.result.transactions.map(t => ({ ...t, selected: true })),
+      }
+      return NextResponse.json(
+        { data: withSelected },
+        {
+          headers: {
+            'x-ai-provider':  det.provider,
+            'x-ai-cache-hit': '0',
+          },
+        },
+      )
+    }
+  } catch (err) {
+    // Deterministic parser threw unexpectedly — never let that 500 the
+    // import. Log and fall through to AI.
+    console.warn('[import-statement] deterministic parse threw — falling through to AI:', err)
+  }
+
   try {
     const result = await parseStatement(input, categoryNames, locale)
 

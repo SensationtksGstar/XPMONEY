@@ -256,7 +256,7 @@ ${content}`
  *   - Dynamic import — unpdf traz pdfjs-dist que é pesado. Não carregamos
  *     no cold start dos outros endpoints.
  */
-async function extractPdfText(pdfBase64: string): Promise<string> {
+export async function extractPdfText(pdfBase64: string): Promise<string> {
   // Decodificar base64 → Uint8Array
   const bin = Buffer.from(pdfBase64, 'base64')
   const bytes = new Uint8Array(bin.buffer, bin.byteOffset, bin.byteLength)
