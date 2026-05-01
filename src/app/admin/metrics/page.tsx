@@ -225,9 +225,11 @@ export default async function AdminMetricsPage() {
               })}
             </p>
           </div>
-          <a href="/dashboard" className="text-sm text-white/60 hover:text-white">
-            ← Dashboard
-          </a>
+          <div className="flex gap-3 text-sm">
+            <a href="/admin/setup" className="text-white/60 hover:text-white">Setup →</a>
+            <a href="/admin/bugs"  className="text-white/60 hover:text-white">Bugs →</a>
+            <a href="/dashboard"   className="text-white/60 hover:text-white">← Dashboard</a>
+          </div>
         </header>
 
         {m.warnings.length > 0 && (
