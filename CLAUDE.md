@@ -10,6 +10,8 @@ Core loop: log transactions → score climbs → mascot evolves → XP/badges/mi
 - **Clerk** auth · `localization` prop wired to `ptPT`/`enUS` from `@clerk/localizations`. `userId` from Clerk is **NEVER** the Supabase UUID — resolve via `resolveUser(clerkId)`.
 - **React Query** — staleTime 5 min, gcTime 15 min, retry 1. `queryKey` MUST NOT include `userId` (causes `''`→real-id double-fetch). Filter server-side via RLS.
 - **Stripe** billing — Customer Portal at `/api/billing/portal`. Webhook at `/api/webhooks/stripe` is signature-verified + idempotent via `stripe_events` table.
+  - **PT payment methods supported by Stripe:** Cards (always), **Multibanco** (bank-reference, 24-72h pay-by), **MBWay** (instant mobile, launched in Stripe 2024 — yes, Stripe DOES support it directly; don't tell the user otherwise). Activate both at https://dashboard.stripe.com/settings/payment_methods.
+  - **VAT / IVA:** user is in **regime de isenção Art. 53.º CIVA** — no VAT charged. Stripe price is gross revenue (PRICE_NET_OF_VAT === PRICE_GROSS in `/admin/metrics`). When >€15k/year cross-over → switch to standard regime + add `automatic_tax: true` to checkout (recipe in `src/lib/stripe.ts` comment).
 - **AI chain** (`src/lib/ai.ts`): Gemini 2.5 Flash → Gemini 2.0 Flash → Groq Llama. Env `GOOGLE_GEMINI_API_KEY` (falls back to `GOOGLE_API_KEY`/`GEMINI_API_KEY`). `parseStatement({ kind:'text'|'pdf' })` — PDFs go only to Gemini. **Locale-aware**: pass `locale` arg → builds PT or EN system prompt; the EN variant tells the model to keep DB category names in PT verbatim so historical data stays intact.
 - **PostHog** analytics · web-push (VAPID) · sharp (RUNTIME dep — mascot upload route).
 
