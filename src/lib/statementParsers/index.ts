@@ -16,12 +16,13 @@
 import { extractPdfText } from '@/lib/ai'
 import type { StatementParseResult } from '@/lib/ai'
 import type { BankParser } from './types'
-import { cgdParser }        from './cgd'
-import { millenniumParser } from './millennium'
-import { bpiParser }        from './bpi'
-import { santanderParser }  from './santander'
-import { revolutParser }    from './revolut'
-import { montepioParser }   from './montepio'
+import { cgdParser }             from './cgd'
+import { millenniumParser }      from './millennium'
+import { bpiParser }             from './bpi'
+import { santanderParser }       from './santander'
+import { revolutParser }         from './revolut'
+import { montepioParser }        from './montepio'
+import { creditoAgricolaParser } from './creditoAgricola'
 
 const PARSERS: BankParser[] = [
   // Order matters only for ties — most banks have unique fingerprints.
@@ -33,6 +34,7 @@ const PARSERS: BankParser[] = [
   bpiParser,
   santanderParser,
   montepioParser,
+  creditoAgricolaParser,
 ]
 
 export interface DeterministicResult {

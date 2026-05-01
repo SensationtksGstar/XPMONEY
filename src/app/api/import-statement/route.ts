@@ -298,14 +298,28 @@ async function runParse(
         )
       }
       if (err.kind === 'quota') {
-        // Distinguir daily quota vs per-minute rate vs billing usando
-        // FRASES completas (word boundaries), evitando falsos positivos
-        // como "credentials" a accionar billing.
+        // Distinguir daily quota vs per-minute rate vs billing.
+        //
+        // Order matters: Gemini's free-tier daily-quota error often suggests
+        // "Please enable billing for your project to increase quota..." —
+        // the word "billing" appears in the SUGGESTION, not because billing
+        // itself failed. We therefore check daily FIRST and only fall to
+        // billing when daily-quota signals are absent.
+        //
+        // Billing pattern is also tightened to require a billing-state word
+        // ("disabled", "not enabled", "suspended", "invalid") rather than
+        // bare "billing" — kills the false positive that misled a user into
+        // "limite de créditos" when their PDF just hit the daily cap.
         const attemptsStr = err.attempts.join(' ').toLowerCase()
         const isDaily =
-          /\bresource[_ ]?exhausted\b|quota.*exceeded.*day|\bdaily\s+limit\b/.test(attemptsStr)
-        const isBilling =
-          /\bbilling\b|\binsufficient\s+credits?\b|\bpayment\s+required\b|\bsubscription\s+(expired|required)\b/.test(attemptsStr)
+          /\bresource[_ ]?exhausted\b|quota.*exceeded.*day|\bdaily\s+limit\b|\brequests?\s+per\s+day\b|\bgenerate\s*content[_ ]requests/.test(attemptsStr)
+        const isBilling = !isDaily && (
+          /\bbilling\s+(account|disabled|not\s+enabled|suspended|invalid)\b/.test(attemptsStr) ||
+          /\binsufficient\s+credits?\b/.test(attemptsStr) ||
+          /\bpayment\s+required\b/.test(attemptsStr) ||
+          /\bsubscription\s+(expired|required)\b/.test(attemptsStr) ||
+          /\baccount.*deactivated\b/.test(attemptsStr)
+        )
 
         const message = isBilling
           ? L(locale,
@@ -313,8 +327,8 @@ async function runParse(
               'The AI account hit its credit limit. Contact us via the form — we will fix it.')
           : isDaily
           ? L(locale,
-              'A quota diária da IA foi atingida. Reinicia à meia-noite (Pacífico) ou converte o PDF em CSV no site do banco — CSVs não consomem IA e entram de imediato.',
-              'The AI daily quota has been reached. It resets at midnight (Pacific time). Alternatively, export the statement as CSV from your bank — CSVs do not consume AI quota and import instantly.')
+              'A quota diária da IA foi atingida. Reinicia à meia-noite (Pacífico) ou exporta o extrato em CSV no site do banco — CSV é instantâneo, não consome IA e funciona mesmo com a quota esgotada.',
+              'The AI daily quota has been reached. It resets at midnight (Pacific time). Alternatively, export the statement as CSV from your bank — CSV is instant, does not consume AI quota and works even when the quota is exhausted.')
           : L(locale,
               'Muitos pedidos ao mesmo tempo — o plano gratuito da IA tem limite por minuto. Tenta novamente daqui a 60 segundos. Se persistir, usa CSV em vez de PDF.',
               'Too many requests at once — the free AI tier has a per-minute limit. Try again in 60 seconds. If it persists, use CSV instead of PDF.')

@@ -30,6 +30,7 @@ const BANKS = [
   { id: 'santander',   label: 'Santander' },
   { id: 'novobanco',   label: 'Novobanco' },
   { id: 'montepio',    label: 'Montepio' },
+  { id: 'ca',          label: 'Crédito Agrícola / Moey' },
   { id: 'activobank',  label: 'ActivoBank' },
   { id: 'wise',        label: 'Wise' },
   { id: 'revolut',     label: 'Revolut' },
