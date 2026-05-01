@@ -272,6 +272,20 @@ export function StatementImporter({ onClose }: Props) {
           'CSV no site do teu banco — importa em segundos, sem limites de tamanho. ' +
           'Em alternativa, divide o PDF para conter só o último mês.',
         )
+      } else if (e instanceof TypeError) {
+        // Safari/iOS surface fetch-level failures as TypeError "Load failed".
+        // Could be: network drop mid-request, server crashed before sending
+        // headers, or Vercel infra timeout. Give the user actionable steps
+        // instead of the cryptic raw message.
+        const msg  = e.message || ''
+        const isLoadFailed = /load\s*failed/i.test(msg) || /network/i.test(msg)
+        setErrorMsg(
+          isLoadFailed
+            ? 'A ligação ao servidor caiu durante o envio. ' +
+              'Verifica a ligação à Internet e tenta de novo. Se persistir, ' +
+              'tenta um ficheiro mais pequeno (CSV em vez de PDF, ou só o último mês).'
+            : `Erro de rede: ${msg}`,
+        )
       } else {
         setErrorMsg(e instanceof Error ? e.message : 'Erro ao analisar ficheiro.')
       }
