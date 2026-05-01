@@ -69,19 +69,22 @@ export default function TransactionsPage() {
           >
             <Search className="w-4 h-4" />
           </button>
-          {/* Import statement button — gradient + sparkle to make the feature discoverable */}
+          {/* Import statement button — gradient + sparkle to make the feature
+              discoverable. Mobile: square 44x44 icon to match the search
+              button next to it (was 38x44 with px-3 → looked off-axis). */}
           <button
             onClick={openImporter}
             aria-label={t('transactions.import_aria')}
             className={cn(
-              'relative flex items-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl',
+              'relative flex items-center justify-center gap-1.5 rounded-xl',
+              'w-11 h-11 sm:w-auto sm:h-auto sm:min-h-[44px] sm:px-3 sm:py-2.5',
               'bg-gradient-to-r from-blue-500/15 to-purple-500/15 hover:from-blue-500/25 hover:to-purple-500/25',
               'border border-blue-500/30 text-blue-300 text-sm font-semibold',
               'transition-all active:scale-95',
               showHint && 'ring-2 ring-blue-400/50 ring-offset-2 ring-offset-[#0a0d14]',
             )}
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+            <Sparkles className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-blue-300" />
             <span className="hidden sm:inline">{t('transactions.import_cta')}</span>
             <span className="hidden sm:inline-block text-[10px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">{t('transactions.import_ai_tag')}</span>
           </button>
