@@ -268,8 +268,9 @@ export function StatementImporter({ onClose }: Props) {
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         setErrorMsg(
-          'A análise ultrapassou 4 minutos e foi cancelada. Divide o PDF em menos páginas ' +
-          '(ex: só o último mês) ou converte para CSV no site do teu banco.',
+          'A análise ultrapassou 4 minutos. A forma mais fiável: exporta o extrato em ' +
+          'CSV no site do teu banco — importa em segundos, sem limites de tamanho. ' +
+          'Em alternativa, divide o PDF para conter só o último mês.',
         )
       } else {
         setErrorMsg(e instanceof Error ? e.message : 'Erro ao analisar ficheiro.')

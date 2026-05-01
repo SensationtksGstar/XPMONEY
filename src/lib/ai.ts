@@ -270,6 +270,40 @@ async function extractPdfText(pdfBase64: string): Promise<string> {
   return ''
 }
 
+/**
+ * Promise.race wrapper que rejeita após `ms` se a promessa original não
+ * resolver. NÃO cancela o trabalho subjacente (o SDK do Gemini não expõe
+ * AbortSignal em generateContent), apenas pára a espera para o chain
+ * conseguir continuar para o próximo provider.
+ *
+ * Sem isto, uma chamada Gemini que demore 120s+ encadeada com fallbacks
+ * empurra o tempo total acima dos 240s do AbortController do cliente, e o
+ * user vê "ultrapassou 4 minutos" sem feedback útil.
+ */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label}: timeout after ${ms}ms`))
+    }, ms)
+    p.then(
+      v => { clearTimeout(timer); resolve(v) },
+      e => { clearTimeout(timer); reject(e) },
+    )
+  })
+}
+
+// Limite suave de texto extraído de PDF antes de enviar para a IA. Acima
+// disto (~30k tokens só de input + ainda mais para output), Gemini fica
+// minutos a processar e muitas vezes trunca ou estoira o budget do cliente.
+// Melhor recusar logo com instrução clara — extratos anuais grandes devem
+// ser divididos por mês ou exportados em CSV.
+const PDF_TEXT_HARD_LIMIT = 120_000
+
+// Per-provider call timeout. Texto path: 3 calls × 60s = 180s, ainda 60s
+// abaixo do AbortController do cliente (240s). Vision path (mais raro): 2
+// calls × 60s = 120s.
+const PROVIDER_CALL_TIMEOUT_MS = 60_000
+
 function getGeminiKey(): string | null {
   const k =
     process.env.GOOGLE_GEMINI_API_KEY ??
@@ -790,6 +824,16 @@ export async function parseStatement(
       attempts.push(`unpdf-extract: ${err instanceof Error ? err.message : err}`)
     }
 
+    // Pre-flight: PDFs com >120k chars de texto extraído são extratos
+    // anuais ou consolidados de múltiplas contas — Gemini demora 3-5 min e
+    // muitas vezes trunca a resposta. Recusamos logo com mensagem clara
+    // em vez de fazer o user esperar 4 min para ver "ultrapassou o tempo".
+    if (extractedText && extractedText.length > PDF_TEXT_HARD_LIMIT) {
+      throw new Error(
+        `STATEMENT_TOO_LARGE: extracted ${extractedText.length} chars — split PDF by month or use CSV`,
+      )
+    }
+
     // Caminho texto — preferido
     if (extractedText && extractedText.trim().length > 50) {
       const textPrompt = buildStatementPromptWithContent(extractedText, input.filename, categoryNames, locale)
@@ -797,7 +841,10 @@ export async function parseStatement(
       if (geminiKey) {
         try {
           const data = await withRetry(
-            () => geminiText(geminiKey, 'gemini-2.5-flash', textPrompt),
+            () => withTimeout(
+              geminiText(geminiKey, 'gemini-2.5-flash', textPrompt),
+              PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.5-flash-text',
+            ),
             'gemini-2.5-flash-text',
           )
           return { data, provider: 'gemini-2.5-flash-text', cache_hit: false, attempts }
@@ -807,7 +854,10 @@ export async function parseStatement(
 
         try {
           const data = await withRetry(
-            () => geminiText(geminiKey, 'gemini-2.0-flash', textPrompt),
+            () => withTimeout(
+              geminiText(geminiKey, 'gemini-2.0-flash', textPrompt),
+              PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash-text',
+            ),
             'gemini-2.0-flash-text',
           )
           return { data, provider: 'gemini-2.0-flash-text', cache_hit: false, attempts }
@@ -819,7 +869,10 @@ export async function parseStatement(
       if (groqKey) {
         try {
           const data = await withRetry(
-            () => groqText(groqKey, textPrompt),
+            () => withTimeout(
+              groqText(groqKey, textPrompt),
+              PROVIDER_CALL_TIMEOUT_MS, 'groq-llama-text',
+            ),
             'groq-llama-text',
           )
           return { data, provider: 'groq-llama-text', cache_hit: false, attempts }
@@ -835,7 +888,10 @@ export async function parseStatement(
     if (geminiKey) {
       try {
         const data = await withRetry(
-          () => geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions),
+          () => withTimeout(
+            geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions),
+            PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.5-flash-vision',
+          ),
           'gemini-2.5-flash-vision',
         )
         return { data, provider: 'gemini-2.5-flash-vision', cache_hit: false, attempts }
@@ -845,7 +901,10 @@ export async function parseStatement(
 
       try {
         const data = await withRetry(
-          () => geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions),
+          () => withTimeout(
+            geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions),
+            PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash-vision',
+          ),
           'gemini-2.0-flash-vision',
         )
         return { data, provider: 'gemini-2.0-flash-vision', cache_hit: false, attempts }
@@ -872,7 +931,10 @@ export async function parseStatement(
   if (geminiKey) {
     try {
       const data = await withRetry(
-        () => geminiText(geminiKey, 'gemini-2.5-flash', prompt),
+        () => withTimeout(
+          geminiText(geminiKey, 'gemini-2.5-flash', prompt),
+          PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.5-flash',
+        ),
         'gemini-2.5-flash',
       )
       if (data.transactions.length > 0 || !contentLikelyHasData) {
@@ -886,7 +948,10 @@ export async function parseStatement(
 
     try {
       const data = await withRetry(
-        () => geminiText(geminiKey, 'gemini-2.0-flash', prompt),
+        () => withTimeout(
+          geminiText(geminiKey, 'gemini-2.0-flash', prompt),
+          PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash',
+        ),
         'gemini-2.0-flash',
       )
       if (data.transactions.length > 0 || !contentLikelyHasData) {
@@ -902,7 +967,10 @@ export async function parseStatement(
   if (groqKey) {
     try {
       const data = await withRetry(
-        () => groqText(groqKey, prompt),
+        () => withTimeout(
+          groqText(groqKey, prompt),
+          PROVIDER_CALL_TIMEOUT_MS, 'groq-llama-3.3',
+        ),
         'groq-llama-3.3',
       )
       if (data.transactions.length > 0 || !contentLikelyHasData) {

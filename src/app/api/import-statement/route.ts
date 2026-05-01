@@ -340,6 +340,17 @@ async function runParse(
     // the expected pattern" the user was seeing came from Vercel returning an
     // HTML 413 page that the client then tried to res.json().
     const lower = msg.toLowerCase()
+    if (msg.startsWith('STATEMENT_TOO_LARGE')) {
+      return NextResponse.json(
+        {
+          error: L(locale,
+            'PDF tem demasiados movimentos para processar de uma vez (>120k caracteres de texto). Divide-o por mês — ou exporta em CSV pelo site do banco, que importa em segundos sem limite.',
+            'PDF has too many transactions to process at once (>120k chars of text). Split it by month — or export as CSV from your bank, which imports in seconds without limits.'),
+          code: 'pdf_too_large_content',
+        },
+        { status: 413 },
+      )
+    }
     if (lower.includes('encrypted') || lower.includes('password')) {
       return NextResponse.json(
         {
