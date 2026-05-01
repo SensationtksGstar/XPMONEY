@@ -8,26 +8,37 @@ import { isDemoMode }                from '@/lib/demo/demoGuard'
 /**
  * DELETE /api/transactions/reset
  *
- * FULL factory reset of the user's gamification state:
- *   - transactions          (wiped)
- *   - xp_progress           (xp_total → 0, level → 1)
- *   - xp_history            (log cleared)
- *   - voltix_states         (evolution_level → 1, mood → neutral, streak → 0)
- *   - financial_scores      (history cleared; a fresh zero-score row is written)
- *   - missions progress     (current_value → 0 on active missions)
- *   - goal_deposits         (wiped)
- *   - goals                 (ALL deleted — user said "poupanças também devem
- *                           resetar"; without this, stale goal rows with a
- *                           zeroed amount still showed up on the goals page
- *                           after a reset, which looked like a bug)
+ * FULL factory reset — restaura o utilizador ao estado pós-onboarding.
+ * Apaga TUDO o que é gameplay/histórico, mantém só a configuração de
+ * conta (users, accounts, categorias custom, subscrição Stripe).
  *
- * Badges and completed missions are kept intentionally — those are historical
- * achievements, not derived state.
+ * Apaga:
+ *   - transactions
+ *   - xp_history
+ *   - financial_scores
+ *   - goal_deposits  (FK precisa ir antes de goals)
+ *   - goals
+ *   - debts          (Mata-Dívidas — debt_attacks cascade automaticamente)
+ *   - missions       (TODAS — activas + concluídas)
+ *   - user_badges    (todas as conquistas — fica como user novo)
+ *   - budgets        (orçamento 50/30/20 e overrides reaplicam-se em zero)
  *
- * Irreversible. Requires typed confirmation `{ confirm: "APAGAR" }` in body.
+ * Reseta in-place (mantém a row, zera os valores):
+ *   - xp_progress    (xp_total → 0, level → 1, streak → 0)
+ *   - voltix_states  (evolution_level → 1, mood → neutral, streak → 0)
+ *
+ * Mantém intacto:
+ *   - users, accounts, categories (config de utilizador, não-gameplay)
+ *   - subscriptions (a Stripe é separada — para sair tem de cancelar lá)
+ *
+ * April 2026 update: anteriormente missions ficavam só com current_value
+ * zerado e badges + debts NÃO eram apagados. Reportado pelo user como
+ * "Mata-Dívidas continua lá, missões continuam" — corrigido.
+ *
+ * Irreversível. Requer confirmação `{ confirm: "APAGAR" }` no body.
  *
  * Response:
- *   { success: true, deleted: <tx-count>, reset: { xp, voltix, scores, goals } }
+ *   { success: true, deleted: <tx-count>, reset: { ... } }
  */
 export async function DELETE(req: NextRequest) {
   if (isDemoMode()) {
@@ -67,13 +78,25 @@ export async function DELETE(req: NextRequest) {
     .eq('user_id', internalId)
 
   // ── 1. Core wipe (parallel where safe) ─────────────────────────────────
-  // goal_deposits must be wiped BEFORE goals because deposits reference goals
-  // via FK. The other deletes are order-independent.
+  //
+  // Order rules:
+  //   - goal_deposits MUST run before goals (FK from deposits → goals)
+  //   - debt_attacks NOT listed: cascades from debts on delete
+  //   - everything else is FK-independent and can be parallel
+  //
+  // Tables newly added April 2026 (debts, missions full delete,
+  // user_badges, budgets) may not exist on older Supabase projects —
+  // each delete is wrapped in Promise.allSettled and a per-result error
+  // log so a missing table doesn't break the whole reset.
   const wipeResults = await Promise.allSettled([
     db.from('transactions').delete().eq('user_id', internalId),
     db.from('xp_history').delete().eq('user_id', internalId),
     db.from('financial_scores').delete().eq('user_id', internalId),
     db.from('goal_deposits').delete().eq('user_id', internalId),
+    db.from('debts').delete().eq('user_id', internalId),         // cascades to debt_attacks
+    db.from('missions').delete().eq('user_id', internalId),       // ALL of them — completed and active
+    db.from('user_badges').delete().eq('user_id', internalId),    // start fresh, no carry-over achievements
+    db.from('budgets').delete().eq('user_id', internalId),        // 50/30/20 config + overrides clear
   ])
 
   // Goals last — FKs from goal_deposits must be cleared first. A plain delete
@@ -102,12 +125,17 @@ export async function DELETE(req: NextRequest) {
     if (r.status === 'rejected') {
       console.warn('[transactions/reset] secondary wipe rejected:', r.reason)
     } else if (r.value.error) {
-      // goal_deposits table may not exist on older deployments — swallow but log
+      // Tables may not exist on older deployments (debts/budgets were added
+      // post-launch) — swallow but log so it shows up in observability.
       console.warn('[transactions/reset] secondary wipe error:', r.value.error.message)
     }
   }
 
-  // ── 2. Reset gamification rows (not delete — keep the row, zero the data) ──
+  // ── 2. Reset in-place rows (single-row tables that we keep but zero) ──
+  // xp_progress and voltix_states are 1-per-user so we don't delete them;
+  // we keep the row and reset its values. Missions used to also live here
+  // (current_value → 0 on active rows) but as of April 2026 we DELETE all
+  // missions instead — the next mission rotation re-seeds active ones.
   const resetResults = await Promise.allSettled([
     db.from('xp_progress').update({
       xp_total:         0,
@@ -123,11 +151,6 @@ export async function DELETE(req: NextRequest) {
       streak_days:      0,
       last_interaction: now,
     }).eq('user_id', internalId),
-
-    db.from('missions').update({
-      current_value: 0,
-    }).eq('user_id', internalId).eq('status', 'active'),
-    // (Goals are fully deleted in step 1 — no reset-in-place needed.)
   ])
 
   for (const r of resetResults) {
@@ -149,10 +172,14 @@ export async function DELETE(req: NextRequest) {
     success: true,
     deleted: before ?? 0,
     reset: {
-      xp:     true,
-      voltix: true,
-      scores: true,
-      goals:  true,
+      xp:       true,
+      voltix:   true,
+      scores:   true,
+      goals:    true,
+      debts:    true,
+      missions: true,
+      badges:   true,
+      budgets:  true,
     },
   })
 }
