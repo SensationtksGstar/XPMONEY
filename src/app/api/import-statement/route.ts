@@ -14,6 +14,7 @@ import { guardUser }                   from '@/lib/rateLimit'
 import {
   normalizeDescription, getCachedCategoriesBulk,
 } from '@/lib/merchantCache'
+import { detectSelfTransfers } from '@/lib/selfTransferDetect'
 
 // Extended shape used by the UI (adds `selected` for deselection flow)
 export interface ParsedTransaction extends LibParsedTransaction {
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
   // Probe with .maybeSingle() — a fresh user won't have a row yet and
   // .single() throws PGRST116 (500 to the client).
   const { data: user } = await db
-    .from('users').select('id, plan').eq('clerk_id', userId).maybeSingle()
+    .from('users').select('id, plan, name').eq('clerk_id', userId).maybeSingle()
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   // Plan gate — Plus or higher. Matches /api/scan-receipt.
@@ -194,7 +195,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    return runParse({ kind: 'pdf', pdfBase64: cleaned, filename }, categoryNames, locale, user.id)
+    return runParse({ kind: 'pdf', pdfBase64: cleaned, filename }, categoryNames, locale, user.id, user.name ?? null)
   }
 
   // Text path
@@ -216,7 +217,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  return runParse({ kind: 'text', content, filename }, categoryNames, locale, user.id)
+  return runParse({ kind: 'text', content, filename }, categoryNames, locale, user.id, user.name ?? null)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,7 +230,8 @@ async function runParse(
     | { kind: 'pdf';  pdfBase64: string; filename: string },
   categoryNames: string,
   locale: Locale = 'pt',
-  userId: string | null = null,
+  userId:   string | null = null,
+  userName: string | null = null,
 ): Promise<NextResponse> {
   // ── Deterministic parsers FIRST — top-5 PT banks (CGD, Millennium, BPI,
   // Santander, Revolut). Zero AI tokens, ~1s parse time. Falls through to
@@ -238,10 +240,14 @@ async function runParse(
   try {
     const det = await tryDeterministicParse(input)
     if (det) {
-      // Apply merchant cache to upgrade categories from heuristic → cached
-      // (cached entries have validations ≥ 2 OR confidence ≥ 0.8, so they
-      // outrank the heuristic ~75% of the time after a few weeks of usage).
-      const upgraded = await applyMerchantCache(det.result.transactions)
+      // Pipeline order matters:
+      //   (1) detectSelfTransfers — flag intra-account moves as
+      //       'Transferência' BEFORE cache lookup, otherwise the cache
+      //       might recategorize them as Salário/Outros.
+      //   (2) applyMerchantCache — upgrade remaining categories from
+      //       heuristic → cached when a trusted merchant entry exists.
+      const { transactions: detected } = detectSelfTransfers(det.result.transactions, userName)
+      const upgraded = await applyMerchantCache(detected)
       const withSelected: ImportStatementResult = {
         ...det.result,
         transactions: upgraded.map(t => ({ ...t, selected: true })),
@@ -265,10 +271,12 @@ async function runParse(
   try {
     const result = await parseStatement(input, categoryNames, locale, userId)
 
-    // Apply merchant cache after AI too — when AI hallucinates a wrong
-    // category for a well-known merchant, the cache (validated by other
-    // users) corrects it transparently.
-    const upgraded = await applyMerchantCache(result.data.transactions)
+    // Same pipeline as the deterministic path: self-transfer detection
+    // BEFORE merchant cache lookup. AI may have categorized self-MB-WAY
+    // top-ups as Salário (high incoming amounts) — pair detection
+    // overrides that to Transferência.
+    const { transactions: detected } = detectSelfTransfers(result.data.transactions, userName)
+    const upgraded = await applyMerchantCache(detected)
 
     const withSelected: ImportStatementResult = {
       ...result.data,

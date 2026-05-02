@@ -20,7 +20,7 @@ const RowSchema = z.object({
    */
   original_description: z.string().optional(),
   amount:               z.number().positive(),
-  type:                 z.enum(['income', 'expense']),
+  type:                 z.enum(['income', 'expense', 'transfer']),
 })
 
 const BodySchema = z.object({

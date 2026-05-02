@@ -691,10 +691,13 @@ export function StatementImporter({ onClose }: Props) {
                       <td className="px-4 py-3 text-right">
                         <span className={cn(
                           'font-bold text-sm tabular-nums',
-                          row.type === 'income' ? 'text-green-400' : 'text-red-400'
+                          row.type === 'income'   && 'text-green-400',
+                          row.type === 'expense'  && 'text-red-400',
+                          row.type === 'transfer' && 'text-purple-300',
                         )}>
-                          {row.type === 'income' ? '+' : '-'}
-                          {row.amount.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} €
+                          {row.type === 'transfer'
+                            ? <>🔁 {row.amount.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} €</>
+                            : <>{row.type === 'income' ? '+' : '-'}{row.amount.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} €</>}
                         </span>
                       </td>
                     </tr>

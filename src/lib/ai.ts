@@ -40,7 +40,14 @@ export interface ParsedTransaction {
   description:          string
   original_description: string
   amount:               number
-  type:                 'income' | 'expense'
+  /**
+   * 'income' / 'expense' come from the bank's natural movement direction.
+   * 'transfer' is set BY US (in lib/selfTransferDetect) when an incoming
+   * MB-WAY-style entry pairs with the matching outgoing TRF — net-zero
+   * intra-account moves. Dashboard summaries filter type=income|expense,
+   * so 'transfer' rows transparently drop out of receitas/despesas totals.
+   */
+  type:                 'income' | 'expense' | 'transfer'
   category_hint:        string
 }
 
