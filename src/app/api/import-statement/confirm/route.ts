@@ -5,15 +5,22 @@ import { resolveUser }                 from '@/lib/resolveUser'
 import { isDemoMode, demoResponse }    from '@/lib/demo/demoGuard'
 import { recalculateScore }            from '@/lib/recalculateScore'
 import { awardXP }                     from '@/lib/awardXP'
+import { setCachedCategoriesBulk }     from '@/lib/merchantCache'
 import { z }                           from 'zod'
 
 const RowSchema = z.object({
-  account_id:  z.string(),
-  category_id: z.string(),
-  date:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  description: z.string(),
-  amount:      z.number().positive(),
-  type:        z.enum(['income', 'expense']),
+  account_id:           z.string(),
+  category_id:          z.string(),
+  date:                 z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  description:          z.string(),
+  /**
+   * Optional original (unmodified) bank description. When supplied we use
+   * it as the merchant-cache key — the user's edited description may have
+   * stripped the merchant token. Falls back to `description` when omitted.
+   */
+  original_description: z.string().optional(),
+  amount:               z.number().positive(),
+  type:                 z.enum(['income', 'expense']),
 })
 
 const BodySchema = z.object({
@@ -67,10 +74,38 @@ export async function POST(req: NextRequest) {
   const inserted = rows.length
   const xpEarned = inserted * 5 // 5 XP per imported transaction (bulk discount vs manual)
 
+  // Resolve category_id → category name once for the cache write below.
+  // Cache stores the human-readable category name (e.g. "Alimentação"),
+  // not the per-user UUID — that's what the merchant-cache contract
+  // expects, and it's what the next user's import will receive.
+  const categoryIds = Array.from(new Set(body.transactions.map(t => t.category_id)))
+  const { data: cats } = await db
+    .from('categories')
+    .select('id, name')
+    .in('id', categoryIds)
+  const catNameById = new Map((cats ?? []).map(c => [c.id, c.name as string]))
+
   // XP award + score recalc — run in parallel, never block on errors
   await Promise.allSettled([
     awardXP(db, internalId, xpEarned, `statement_import_${inserted}_transactions`),
     recalculateScore(db, internalId),
+    // Seed the global merchant cache with confirmed categorizations. This
+    // is gated by privacy allowlist (src/lib/merchantCache.ts) so personal
+    // transfers never leak into the shared table. Source 'user' starts at
+    // confidence 0.7 because a human label is a strong signal.
+    setCachedCategoriesBulk(
+      body.transactions
+        .map(t => {
+          const category = catNameById.get(t.category_id)
+          if (!category) return null
+          return {
+            originalDescription: t.original_description ?? t.description,
+            category,
+            source: 'user' as const,
+          }
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null),
+    ),
   ])
 
   return NextResponse.json({ data: { inserted, xp_gained: xpEarned } }, { status: 201 })

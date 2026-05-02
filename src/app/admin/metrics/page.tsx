@@ -63,6 +63,27 @@ interface MetricsBundle {
   growth:     { signups7d: number; signups30d: number }
   engagement: { tx7d: number; tx30d: number; dau7d: number; mau30d: number }
   ai:         { cacheEntries: number; cacheHits: number }
+  aiCalls:    {
+    total30d:        number
+    success30d:      number
+    error30d:        number
+    timeout30d:      number
+    quota30d:        number
+    auth30d:         number
+    avgLatencyMs:    number
+    p95LatencyMs:    number
+    tokensIn30d:     number
+    tokensOut30d:    number
+    estCostUsd30d:   number
+    parseStatement:  number
+    scanReceipt:     number
+    cacheHitsLogged: number
+  }
+  merchantCache: {
+    entries:     number
+    trusted:     number   // validations >= 2 OR confidence >= 0.8
+    seededLast7: number
+  }
   stripe:     { events30d: number; cancellations30d: number; checkouts30d: number }
   warnings:   string[]
 }
@@ -79,6 +100,13 @@ async function loadMetrics(): Promise<MetricsBundle> {
   const growth     = { signups7d: 0, signups30d: 0 }
   const engagement = { tx7d: 0, tx30d: 0, dau7d: 0, mau30d: 0 }
   const ai         = { cacheEntries: 0, cacheHits: 0 }
+  const aiCalls    = {
+    total30d:        0, success30d: 0, error30d: 0, timeout30d: 0, quota30d: 0, auth30d: 0,
+    avgLatencyMs:    0, p95LatencyMs: 0,
+    tokensIn30d:     0, tokensOut30d: 0, estCostUsd30d: 0,
+    parseStatement:  0, scanReceipt: 0, cacheHitsLogged: 0,
+  }
+  const merchantCache = { entries: 0, trusted: 0, seededLast7: 0 }
   const stripe     = { events30d: 0, cancellations30d: 0, checkouts30d: 0 }
 
   // Users — totals + plan split + signup velocity. The `users` table is
@@ -166,7 +194,89 @@ async function loadMetrics(): Promise<MetricsBundle> {
     warnings.push(`stripe_events: ${err instanceof Error ? err.message : 'indisponível'}`)
   }
 
-  return { totals, growth, engagement, ai, stripe, warnings }
+  // AI cost log (ai_calls table — migration: database/ai_calls_2026_05.sql).
+  // Pulls last 30d of provider invocations to compute cost, latency
+  // distribution, success/error breakdown. Defensive: missing migration
+  // produces a warning, page keeps rendering.
+  try {
+    const { data: calls } = await db
+      .from('ai_calls')
+      .select('model, status, latency_ms, tokens_in, tokens_out, operation, cache_hit')
+      .gte('created_at', iso30)
+      .limit(50_000)
+    const list = (calls ?? []) as Array<{
+      model: string; status: string; latency_ms: number;
+      tokens_in: number; tokens_out: number; operation: string; cache_hit: boolean
+    }>
+    aiCalls.total30d   = list.length
+    aiCalls.success30d = list.filter(c => c.status === 'success').length
+    aiCalls.error30d   = list.filter(c => c.status === 'error').length
+    aiCalls.timeout30d = list.filter(c => c.status === 'timeout').length
+    aiCalls.quota30d   = list.filter(c => c.status === 'quota').length
+    aiCalls.auth30d    = list.filter(c => c.status === 'auth').length
+    aiCalls.parseStatement = list.filter(c => c.operation === 'parse-statement').length
+    aiCalls.scanReceipt    = list.filter(c => c.operation === 'scan-receipt').length
+    aiCalls.cacheHitsLogged = list.filter(c => c.cache_hit).length
+
+    // Latency p50 / p95 — only over successful, non-cache calls
+    const realLatencies = list
+      .filter(c => c.status === 'success' && !c.cache_hit && c.latency_ms > 0)
+      .map(c => c.latency_ms)
+      .sort((a, b) => a - b)
+    if (realLatencies.length > 0) {
+      const sum = realLatencies.reduce((s, v) => s + v, 0)
+      aiCalls.avgLatencyMs = Math.round(sum / realLatencies.length)
+      aiCalls.p95LatencyMs = realLatencies[Math.floor(realLatencies.length * 0.95)] ?? 0
+    }
+
+    // Token totals + estimated USD cost via the per-model price table in
+    // src/lib/aiCostLog.ts. Inline mirror to avoid pulling the helper into
+    // a server component.
+    const PRICES: Record<string, { in: number; out: number }> = {
+      'gemini-2.5-flash':         { in: 0.075, out: 0.30 },
+      'gemini-2.5-flash-text':    { in: 0.075, out: 0.30 },
+      'gemini-2.5-flash-vision':  { in: 0.075, out: 0.30 },
+      'gemini-2.0-flash':         { in: 0.10,  out: 0.40 },
+      'gemini-2.0-flash-text':    { in: 0.10,  out: 0.40 },
+      'gemini-2.0-flash-vision':  { in: 0.10,  out: 0.40 },
+      'llama-3.3-70b-versatile':  { in: 0.59,  out: 0.79 },
+      'groq-vision':              { in: 0.34,  out: 0.34 },
+      'cache':                    { in: 0,     out: 0 },
+    }
+    for (const c of list) {
+      aiCalls.tokensIn30d  += c.tokens_in  ?? 0
+      aiCalls.tokensOut30d += c.tokens_out ?? 0
+      const p = PRICES[c.model]
+      if (p) aiCalls.estCostUsd30d +=
+        (c.tokens_in  / 1_000_000) * p.in +
+        (c.tokens_out / 1_000_000) * p.out
+    }
+  } catch (err) {
+    warnings.push(`ai_calls: ${err instanceof Error ? err.message : 'indisponível'}`)
+  }
+
+  // Merchant cache — entries + trust ratio.
+  try {
+    const { count: entries } = await db
+      .from('merchant_categories').select('normalized_desc', { count: 'exact', head: true })
+    const { data: trustedRows } = await db
+      .from('merchant_categories')
+      .select('normalized_desc')
+      .or('validations.gte.2,confidence.gte.0.8')
+      .limit(50_000)
+    const { count: seeded } = await db
+      .from('merchant_categories')
+      .select('normalized_desc', { count: 'exact', head: true })
+      .gte('created_at', iso7)
+
+    merchantCache.entries     = entries ?? 0
+    merchantCache.trusted     = (trustedRows ?? []).length
+    merchantCache.seededLast7 = seeded ?? 0
+  } catch (err) {
+    warnings.push(`merchant_categories: ${err instanceof Error ? err.message : 'indisponível'}`)
+  }
+
+  return { totals, growth, engagement, ai, aiCalls, merchantCache, stripe, warnings }
 }
 
 // ── Page ────────────────────────────────────────────────────────────────────
@@ -306,6 +416,56 @@ export default async function AdminMetricsPage() {
           </div>
           <p className="text-[11px] text-white/40 mt-3">
             Só conta scans de recibos. Parsing de extratos não é cacheado — não está incluído.
+          </p>
+        </section>
+
+        {/* ── AI calls observability (30d) ── */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-3 text-white/90">
+            AI calls — últimos 30 dias
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+            <Row label="Total chamadas"     value={fmtNum(m.aiCalls.total30d)} />
+            <Row label="Sucesso"            value={fmtNum(m.aiCalls.success30d)} />
+            <Row label="Cache hits servidos" value={fmtNum(m.aiCalls.cacheHitsLogged)} />
+            <Row label="Custo USD estimado" value={`$${m.aiCalls.estCostUsd30d.toFixed(4)}`} />
+
+            <Row label="parse-statement"    value={fmtNum(m.aiCalls.parseStatement)} />
+            <Row label="scan-receipt"       value={fmtNum(m.aiCalls.scanReceipt)} />
+            <Row label="Latência média"     value={`${fmtNum(m.aiCalls.avgLatencyMs)} ms`} />
+            <Row label="Latência p95"       value={`${fmtNum(m.aiCalls.p95LatencyMs)} ms`} />
+
+            <Row label="Tokens IN"          value={fmtNum(m.aiCalls.tokensIn30d)} />
+            <Row label="Tokens OUT"         value={fmtNum(m.aiCalls.tokensOut30d)} />
+            <Row label="Erros"              value={fmtNum(m.aiCalls.error30d + m.aiCalls.timeout30d + m.aiCalls.quota30d + m.aiCalls.auth30d)} />
+            <Row
+              label="Quota / Auth"
+              value={`${m.aiCalls.quota30d} / ${m.aiCalls.auth30d}`}
+              accent={m.aiCalls.quota30d + m.aiCalls.auth30d > 0 ? 'orange' : undefined}
+            />
+          </div>
+          <p className="text-[11px] text-white/40 mt-3 leading-relaxed">
+            Observabilidade real por chamada (tabela <code>ai_calls</code>) — preço estimado pelo modelo. Latência é só sucessos não-cache. Aplica <code>database/ai_calls_2026_05.sql</code> no Supabase para activar.
+          </p>
+        </section>
+
+        {/* ── Merchant cache ── */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-3 text-white/90">
+            Merchant cache (categorização global)
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+            <Row label="Entries totais"      value={fmtNum(m.merchantCache.entries)} />
+            <Row label="Entries trusted"     value={fmtNum(m.merchantCache.trusted)} hint="validations ≥ 2 OU confidence ≥ 0,8" />
+            <Row label="Trust ratio"         value={
+              m.merchantCache.entries > 0
+                ? pct(m.merchantCache.trusted / m.merchantCache.entries)
+                : '—'
+            } />
+            <Row label="Seeded últimos 7d"   value={fmtNum(m.merchantCache.seededLast7)} />
+          </div>
+          <p className="text-[11px] text-white/40 mt-3 leading-relaxed">
+            Categorias confirmadas pelos users na preview de import são guardadas globalmente (privacy-allowlisted — não armazena transferências pessoais). Próximo user com a mesma descrição já vê a categoria correcta sem chamar IA. Aplica <code>database/merchant_categories_2026_05.sql</code>.
           </p>
         </section>
 

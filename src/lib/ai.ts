@@ -19,6 +19,7 @@ import { createHash }            from 'crypto'
 import { GoogleGenerativeAI }    from '@google/generative-ai'
 import { jsonrepair }            from 'jsonrepair'
 import { createSupabaseAdmin }   from '@/lib/supabase'
+import { logAiCall, classifyStatus, type AiOperation } from '@/lib/aiCostLog'
 import type { Locale }           from '@/lib/i18n/translations'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -465,12 +466,27 @@ function normaliseStatement(raw: string): StatementParseResult {
   }
 }
 
+// ── Cost-log context ────────────────────────────────────────────────────────
+//
+// Every provider function below accepts an optional LogCtx. When provided,
+// the call is timed, classified (success/timeout/quota/auth/error) and
+// emitted to the `ai_calls` table via logAiCall. Token counts come from
+// the SDK response's usageMetadata where available; for Groq, from the
+// OpenAI-compatible `usage` field. Logging is fire-and-forget — even if
+// the row insert errors, the user request continues unaffected.
+
+interface LogCtx {
+  userId?:   string | null
+  operation: AiOperation
+}
+
 // ── Gemini provider ──────────────────────────────────────────────────────────
 
 async function geminiVision(
   apiKey: string, model: string, imageBase64: string, mimeType: string,
-  prompt: string,
+  prompt: string, logCtx?: LogCtx,
 ): Promise<ReceiptScanResult> {
+  const t0 = Date.now()
   const genAI = new GoogleGenerativeAI(apiKey)
   const m = genAI.getGenerativeModel({
     model,
@@ -482,16 +498,36 @@ async function geminiVision(
       maxOutputTokens:  4096,
     },
   })
-  const result = await m.generateContent([
-    prompt,
-    { inlineData: { data: imageBase64, mimeType } },
-  ])
-  return normaliseReceipt(result.response.text())
+  try {
+    const result = await m.generateContent([
+      prompt,
+      { inlineData: { data: imageBase64, mimeType } },
+    ])
+    const usage = result.response.usageMetadata
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'gemini', model,
+      tokensIn:  usage?.promptTokenCount     ?? 0,
+      tokensOut: usage?.candidatesTokenCount ?? 0,
+      latencyMs: Date.now() - t0, status: 'success',
+    })
+    return normaliseReceipt(result.response.text())
+  } catch (err) {
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'gemini', model,
+      latencyMs: Date.now() - t0,
+      status:    classifyStatus(err),
+      error:     err instanceof Error ? err.message : String(err),
+    })
+    throw err
+  }
 }
 
 async function geminiText(
-  apiKey: string, model: string, prompt: string,
+  apiKey: string, model: string, prompt: string, logCtx?: LogCtx,
 ): Promise<StatementParseResult> {
+  const t0 = Date.now()
   const genAI = new GoogleGenerativeAI(apiKey)
   // Extratos reais podem ter 150-300 transações num único mês (conta
   // activa com débitos frequentes). Cada transação em JSON ocupa ~100
@@ -509,12 +545,31 @@ async function geminiText(
       maxOutputTokens:  maxTokens,
     },
   })
-  const result    = await m.generateContent(prompt)
-  const finishReason = result.response.candidates?.[0]?.finishReason
-  if (finishReason === 'MAX_TOKENS') {
-    console.warn(`[ai:${model}] response truncated at MAX_TOKENS — PDF pode ter mais transações do que o modelo conseguiu listar`)
+  try {
+    const result    = await m.generateContent(prompt)
+    const finishReason = result.response.candidates?.[0]?.finishReason
+    if (finishReason === 'MAX_TOKENS') {
+      console.warn(`[ai:${model}] response truncated at MAX_TOKENS — PDF pode ter mais transações do que o modelo conseguiu listar`)
+    }
+    const usage = result.response.usageMetadata
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'gemini', model,
+      tokensIn:  usage?.promptTokenCount     ?? 0,
+      tokensOut: usage?.candidatesTokenCount ?? 0,
+      latencyMs: Date.now() - t0, status: 'success',
+    })
+    return normaliseStatement(result.response.text())
+  } catch (err) {
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'gemini', model,
+      latencyMs: Date.now() - t0,
+      status:    classifyStatus(err),
+      error:     err instanceof Error ? err.message : String(err),
+    })
+    throw err
   }
-  return normaliseStatement(result.response.text())
 }
 
 /**
@@ -526,7 +581,9 @@ async function geminiText(
  */
 async function geminiPdfStatement(
   apiKey: string, model: string, pdfBase64: string, instructions: string,
+  logCtx?: LogCtx,
 ): Promise<StatementParseResult> {
+  const t0 = Date.now()
   const genAI = new GoogleGenerativeAI(apiKey)
   const maxTokens = model.startsWith('gemini-2.5') ? 65_536 : 8192
   const m = genAI.getGenerativeModel({
@@ -537,15 +594,34 @@ async function geminiPdfStatement(
       maxOutputTokens:  maxTokens,
     },
   })
-  const result = await m.generateContent([
-    instructions,
-    { inlineData: { data: pdfBase64, mimeType: 'application/pdf' } },
-  ])
-  const finishReason = result.response.candidates?.[0]?.finishReason
-  if (finishReason === 'MAX_TOKENS') {
-    console.warn(`[ai:${model}] PDF response truncated — muitas transações para caber na resposta. Considera dividir o PDF por quinzena.`)
+  try {
+    const result = await m.generateContent([
+      instructions,
+      { inlineData: { data: pdfBase64, mimeType: 'application/pdf' } },
+    ])
+    const finishReason = result.response.candidates?.[0]?.finishReason
+    if (finishReason === 'MAX_TOKENS') {
+      console.warn(`[ai:${model}] PDF response truncated — muitas transações para caber na resposta. Considera dividir o PDF por quinzena.`)
+    }
+    const usage = result.response.usageMetadata
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'gemini', model: `${model}-vision`,
+      tokensIn:  usage?.promptTokenCount     ?? 0,
+      tokensOut: usage?.candidatesTokenCount ?? 0,
+      latencyMs: Date.now() - t0, status: 'success',
+    })
+    return normaliseStatement(result.response.text())
+  } catch (err) {
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'gemini', model: `${model}-vision`,
+      latencyMs: Date.now() - t0,
+      status:    classifyStatus(err),
+      error:     err instanceof Error ? err.message : String(err),
+    })
+    throw err
   }
-  return normaliseStatement(result.response.text())
 }
 
 // ── Groq provider (OpenAI-compatible endpoint) ───────────────────────────────
@@ -553,44 +629,65 @@ async function geminiPdfStatement(
 interface GroqResponse {
   choices: { message: { content: string } }[]
   error?:  { message: string }
+  usage?:  { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
 }
 
 async function groqVision(
   apiKey: string, imageBase64: string, mimeType: string, prompt: string,
+  logCtx?: LogCtx,
 ): Promise<ReceiptScanResult> {
+  const t0 = Date.now()
   // Llama 4 Scout — current Groq vision-capable model (replaces deprecated
   // llama-3.2-90b-vision-preview which was removed in late 2025).
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method:  'POST',
-    headers: {
-      Authorization:  `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [
-        {
-          role:    'user',
-          content: [
-            { type: 'text',      text: prompt },
-            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
-          ],
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature:     0.1,
-      max_tokens:      1024,
-    }),
-  })
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:  'POST',
+      headers: {
+        Authorization:  `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        messages: [
+          {
+            role:    'user',
+            content: [
+              { type: 'text',      text: prompt },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
+            ],
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature:     0.1,
+        max_tokens:      1024,
+      }),
+    })
 
-  const json = await res.json() as GroqResponse
-  if (!res.ok || json.error) {
-    throw new Error(`Groq ${res.status}: ${json.error?.message ?? 'unknown'}`)
+    const json = await res.json() as GroqResponse
+    if (!res.ok || json.error) {
+      throw new Error(`Groq ${res.status}: ${json.error?.message ?? 'unknown'}`)
+    }
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'groq', model: 'groq-vision',
+      tokensIn:  json.usage?.prompt_tokens     ?? 0,
+      tokensOut: json.usage?.completion_tokens ?? 0,
+      latencyMs: Date.now() - t0, status: 'success',
+    })
+    return normaliseReceipt(json.choices[0].message.content)
+  } catch (err) {
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'groq', model: 'groq-vision',
+      latencyMs: Date.now() - t0,
+      status:    classifyStatus(err),
+      error:     err instanceof Error ? err.message : String(err),
+    })
+    throw err
   }
-  return normaliseReceipt(json.choices[0].message.content)
 }
 
-async function groqText(apiKey: string, prompt: string): Promise<StatementParseResult> {
+async function groqText(apiKey: string, prompt: string, logCtx?: LogCtx): Promise<StatementParseResult> {
   /**
    * Groq é stricto em `response_format: json_object` — se o prompt for
    * muito longo (extratos grandes geram prompts de ~15k tokens) ou se
@@ -602,6 +699,12 @@ async function groqText(apiKey: string, prompt: string): Promise<StatementParseR
    * instrução reforçada no prompt — o safeJsonParse vai recuperar o
    * JSON mesmo que venha embrulhado em prosa.
    */
+  const t0 = Date.now()
+  // Mutable container — TS narrows `let foo: T | undefined = undefined`
+  // back to `undefined` after the inner closure assigns it, which then
+  // refuses property access in the outer logger calls. A wrapper object
+  // sidesteps the narrowing without sacrificing the field types.
+  const usageRef: { current: { prompt_tokens?: number; completion_tokens?: number } | null } = { current: null }
   const callGroq = async (useJsonMode: boolean): Promise<string> => {
     const extraInstr = useJsonMode
       ? ''
@@ -633,16 +736,51 @@ async function groqText(apiKey: string, prompt: string): Promise<StatementParseR
       }
       throw err
     }
+    usageRef.current = json.usage ?? null
     return json.choices[0].message.content
   }
 
   try {
-    return normaliseStatement(await callGroq(true))
+    const out = normaliseStatement(await callGroq(true))
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'groq', model: 'llama-3.3-70b-versatile',
+      tokensIn:  usageRef.current?.prompt_tokens     ?? 0,
+      tokensOut: usageRef.current?.completion_tokens ?? 0,
+      latencyMs: Date.now() - t0, status: 'success',
+    })
+    return out
   } catch (err) {
     if ((err as Error & { isJsonModeError?: boolean }).isJsonModeError) {
       console.warn('[ai:groq] json_object mode failed, retrying without it')
-      return normaliseStatement(await callGroq(false))
+      try {
+        const out = normaliseStatement(await callGroq(false))
+        if (logCtx) void logAiCall({
+          userId: logCtx.userId, operation: logCtx.operation,
+          provider: 'groq', model: 'llama-3.3-70b-versatile',
+          tokensIn:  usageRef.current?.prompt_tokens     ?? 0,
+          tokensOut: usageRef.current?.completion_tokens ?? 0,
+          latencyMs: Date.now() - t0, status: 'success',
+        })
+        return out
+      } catch (err2) {
+        if (logCtx) void logAiCall({
+          userId: logCtx.userId, operation: logCtx.operation,
+          provider: 'groq', model: 'llama-3.3-70b-versatile',
+          latencyMs: Date.now() - t0,
+          status:    classifyStatus(err2),
+          error:     err2 instanceof Error ? err2.message : String(err2),
+        })
+        throw err2
+      }
     }
+    if (logCtx) void logAiCall({
+      userId: logCtx.userId, operation: logCtx.operation,
+      provider: 'groq', model: 'llama-3.3-70b-versatile',
+      latencyMs: Date.now() - t0,
+      status:    classifyStatus(err),
+      error:     err instanceof Error ? err.message : String(err),
+    })
     throw err
   }
 }
@@ -705,11 +843,13 @@ async function setCachedReceipt(
 
 export async function scanReceipt(
   imageBase64: string, mimeType: string, locale: Locale = 'pt',
+  userId: string | null = null,
 ): Promise<AIResult<ReceiptScanResult>> {
   // 1) Cache lookup
   const hash   = hashImage(imageBase64)
   const cached = await getCachedReceipt(hash)
   if (cached) {
+    void logAiCall({ userId, operation: 'scan-receipt', provider: 'cache', model: 'cache', latencyMs: 0, cacheHit: true, status: 'success' })
     return { data: cached, provider: 'cache', cache_hit: true, attempts: [] }
   }
 
@@ -718,6 +858,7 @@ export async function scanReceipt(
   const groqKey   = getGroqKey()
   const attempts: string[] = []
   const receiptPrompt = buildReceiptPrompt(locale)
+  const logCtx: LogCtx = { userId, operation: 'scan-receipt' }
 
   if (!geminiKey && !groqKey) {
     throw new AIProvidersError(['no-provider-configured'], 'auth')
@@ -727,7 +868,7 @@ export async function scanReceipt(
   if (geminiKey) {
     try {
       const data = await withRetry(
-        () => geminiVision(geminiKey, 'gemini-2.5-flash', imageBase64, mimeType, receiptPrompt),
+        () => geminiVision(geminiKey, 'gemini-2.5-flash', imageBase64, mimeType, receiptPrompt, logCtx),
         'gemini-2.5-flash',
       )
       await setCachedReceipt(hash, data, 'gemini-2.5-flash')
@@ -739,7 +880,7 @@ export async function scanReceipt(
     // 2b) Gemini 2.0 Flash — non-thinking fallback (different quota pool)
     try {
       const data = await withRetry(
-        () => geminiVision(geminiKey, 'gemini-2.0-flash', imageBase64, mimeType, receiptPrompt),
+        () => geminiVision(geminiKey, 'gemini-2.0-flash', imageBase64, mimeType, receiptPrompt, logCtx),
         'gemini-2.0-flash',
       )
       await setCachedReceipt(hash, data, 'gemini-2.0-flash')
@@ -753,7 +894,7 @@ export async function scanReceipt(
   if (groqKey) {
     try {
       const data = await withRetry(
-        () => groqVision(groqKey, imageBase64, mimeType, receiptPrompt),
+        () => groqVision(groqKey, imageBase64, mimeType, receiptPrompt, logCtx),
         'groq-vision',
       )
       await setCachedReceipt(hash, data, 'groq-llama-4-scout')
@@ -780,12 +921,14 @@ export async function parseStatement(
     | { kind: 'pdf';  pdfBase64: string; filename: string },
   categoryNames: string,
   locale: Locale = 'pt',
+  userId: string | null = null,
 ): Promise<AIResult<StatementParseResult>> {
   const instructions = buildStatementInstructions(input.filename, categoryNames, locale)
 
   const geminiKey = getGeminiKey()
   const groqKey   = getGroqKey()
   const attempts: string[] = []
+  const logCtx: LogCtx = { userId, operation: 'parse-statement' }
 
   if (!geminiKey && !groqKey) {
     throw new AIProvidersError(['no-provider-configured'], 'auth')
@@ -842,7 +985,7 @@ export async function parseStatement(
         try {
           const data = await withRetry(
             () => withTimeout(
-              geminiText(geminiKey, 'gemini-2.5-flash', textPrompt),
+              geminiText(geminiKey, 'gemini-2.5-flash', textPrompt, logCtx),
               PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.5-flash-text',
             ),
             'gemini-2.5-flash-text',
@@ -855,7 +998,7 @@ export async function parseStatement(
         try {
           const data = await withRetry(
             () => withTimeout(
-              geminiText(geminiKey, 'gemini-2.0-flash', textPrompt),
+              geminiText(geminiKey, 'gemini-2.0-flash', textPrompt, logCtx),
               PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash-text',
             ),
             'gemini-2.0-flash-text',
@@ -870,7 +1013,7 @@ export async function parseStatement(
         try {
           const data = await withRetry(
             () => withTimeout(
-              groqText(groqKey, textPrompt),
+              groqText(groqKey, textPrompt, logCtx),
               PROVIDER_CALL_TIMEOUT_MS, 'groq-llama-text',
             ),
             'groq-llama-text',
@@ -889,7 +1032,7 @@ export async function parseStatement(
       try {
         const data = await withRetry(
           () => withTimeout(
-            geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions),
+            geminiPdfStatement(geminiKey, 'gemini-2.5-flash', input.pdfBase64, instructions, logCtx),
             PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.5-flash-vision',
           ),
           'gemini-2.5-flash-vision',
@@ -902,7 +1045,7 @@ export async function parseStatement(
       try {
         const data = await withRetry(
           () => withTimeout(
-            geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions),
+            geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions, logCtx),
             PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash-vision',
           ),
           'gemini-2.0-flash-vision',
@@ -932,7 +1075,7 @@ export async function parseStatement(
     try {
       const data = await withRetry(
         () => withTimeout(
-          geminiText(geminiKey, 'gemini-2.5-flash', prompt),
+          geminiText(geminiKey, 'gemini-2.5-flash', prompt, logCtx),
           PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.5-flash',
         ),
         'gemini-2.5-flash',
@@ -949,7 +1092,7 @@ export async function parseStatement(
     try {
       const data = await withRetry(
         () => withTimeout(
-          geminiText(geminiKey, 'gemini-2.0-flash', prompt),
+          geminiText(geminiKey, 'gemini-2.0-flash', prompt, logCtx),
           PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash',
         ),
         'gemini-2.0-flash',
@@ -968,7 +1111,7 @@ export async function parseStatement(
     try {
       const data = await withRetry(
         () => withTimeout(
-          groqText(groqKey, prompt),
+          groqText(groqKey, prompt, logCtx),
           PROVIDER_CALL_TIMEOUT_MS, 'groq-llama-3.3',
         ),
         'groq-llama-3.3',

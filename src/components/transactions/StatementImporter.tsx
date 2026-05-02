@@ -336,12 +336,16 @@ export function StatementImporter({ onClose }: Props) {
       ) ?? allCategories.find(c => c.name === 'Outros') ?? allCategories[0]
 
       return {
-        account_id:  resolvedAccount,
-        category_id: cat?.id ?? '',
-        date:        t.date,
-        description: t.description,
-        amount:      t.amount,
-        type:        t.type,
+        account_id:           resolvedAccount,
+        category_id:          cat?.id ?? '',
+        date:                 t.date,
+        description:          t.description,
+        // Send the unmodified bank description so the server can seed the
+        // merchant cache against the original merchant token, not the
+        // user's edited label.
+        original_description: t.original_description,
+        amount:               t.amount,
+        type:                 t.type,
       }
     })
 

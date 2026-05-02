@@ -11,6 +11,9 @@ import { tryDeterministicParse }       from '@/lib/statementParsers'
 import { getServerLocale }             from '@/lib/i18n/server'
 import type { Locale }                 from '@/lib/i18n/translations'
 import { guardUser }                   from '@/lib/rateLimit'
+import {
+  normalizeDescription, getCachedCategoriesBulk,
+} from '@/lib/merchantCache'
 
 // Extended shape used by the UI (adds `selected` for deselection flow)
 export interface ParsedTransaction extends LibParsedTransaction {
@@ -191,7 +194,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    return runParse({ kind: 'pdf', pdfBase64: cleaned, filename }, categoryNames, locale)
+    return runParse({ kind: 'pdf', pdfBase64: cleaned, filename }, categoryNames, locale, user.id)
   }
 
   // Text path
@@ -213,7 +216,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  return runParse({ kind: 'text', content, filename }, categoryNames, locale)
+  return runParse({ kind: 'text', content, filename }, categoryNames, locale, user.id)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -226,6 +229,7 @@ async function runParse(
     | { kind: 'pdf';  pdfBase64: string; filename: string },
   categoryNames: string,
   locale: Locale = 'pt',
+  userId: string | null = null,
 ): Promise<NextResponse> {
   // ── Deterministic parsers FIRST — top-5 PT banks (CGD, Millennium, BPI,
   // Santander, Revolut). Zero AI tokens, ~1s parse time. Falls through to
@@ -234,9 +238,13 @@ async function runParse(
   try {
     const det = await tryDeterministicParse(input)
     if (det) {
+      // Apply merchant cache to upgrade categories from heuristic → cached
+      // (cached entries have validations ≥ 2 OR confidence ≥ 0.8, so they
+      // outrank the heuristic ~75% of the time after a few weeks of usage).
+      const upgraded = await applyMerchantCache(det.result.transactions)
       const withSelected: ImportStatementResult = {
         ...det.result,
-        transactions: det.result.transactions.map(t => ({ ...t, selected: true })),
+        transactions: upgraded.map(t => ({ ...t, selected: true })),
       }
       return NextResponse.json(
         { data: withSelected },
@@ -255,11 +263,16 @@ async function runParse(
   }
 
   try {
-    const result = await parseStatement(input, categoryNames, locale)
+    const result = await parseStatement(input, categoryNames, locale, userId)
+
+    // Apply merchant cache after AI too — when AI hallucinates a wrong
+    // category for a well-known merchant, the cache (validated by other
+    // users) corrects it transparently.
+    const upgraded = await applyMerchantCache(result.data.transactions)
 
     const withSelected: ImportStatementResult = {
       ...result.data,
-      transactions: result.data.transactions.map(t => ({ ...t, selected: true })),
+      transactions: upgraded.map(t => ({ ...t, selected: true })),
     }
 
     return NextResponse.json(
@@ -433,3 +446,38 @@ async function runParse(
     )
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Merchant-cache application
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Walk the parsed transactions, normalize each description, and look up
+ * the global merchant_categories cache in a single round-trip. Where a
+ * trusted entry exists (validations ≥ 2 OR confidence ≥ 0.8) the cached
+ * category overrides whatever the heuristic / AI suggested.
+ *
+ * Why override instead of merge: cached entries are validated by user
+ * confirmations, so they're more reliable than a one-shot guess. Falls
+ * back transparently when the cache is empty (returns input unchanged).
+ *
+ * Errors here NEVER block the user response — bulk-read swallows DB
+ * failures internally. Worst case: cache is bypassed, original categories
+ * stay.
+ */
+async function applyMerchantCache(
+  txs: LibParsedTransaction[],
+): Promise<LibParsedTransaction[]> {
+  if (txs.length === 0) return txs
+
+  const normalized = txs.map(t => normalizeDescription(t.original_description ?? t.description))
+  const cache      = await getCachedCategoriesBulk(normalized)
+  if (cache.size === 0) return txs
+
+  return txs.map((t, i) => {
+    const hit = cache.get(normalized[i])
+    if (!hit) return t
+    return { ...t, category_hint: hit.category }
+  })
+}
+

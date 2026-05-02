@@ -23,6 +23,9 @@ export async function POST(req: NextRequest) {
   // ALLOW_DEMO_IN_PROD is explicitly set (see demoGuard.ts).
   const demo   = isDemoMode()
   const locale = await getServerLocale()
+  // Hoisted so the AI cost log knows which user the scan belongs to.
+  // null in demo mode → ai_calls.user_id is set to NULL via FK on-delete.
+  let internalUserId: string | null = null
 
   if (!demo) {
     const { userId } = await auth()
@@ -32,6 +35,7 @@ export async function POST(req: NextRequest) {
     const { data: user } = await db
       .from('users').select('id, plan').eq('clerk_id', userId).single()
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    internalUserId = user.id
 
     const rank = PLAN_RANK[user.plan ?? 'free'] ?? 0
     if (rank < 1) {
@@ -83,7 +87,7 @@ export async function POST(req: NextRequest) {
 
   // ── Scan (cache → Gemini 2.0 → Gemini 1.5 → Groq) ──
   try {
-    const result = await scanReceipt(imageBase64, mimeType, locale)
+    const result = await scanReceipt(imageBase64, mimeType, locale, internalUserId)
 
     // Expose provider + cache info in response headers for debugging/telemetry.
     // (The body shape stays the same — UI keeps reading `data`.)
