@@ -9,7 +9,7 @@
  * component will prefer over the SVG fallback on next render.
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Upload, Check, AlertTriangle, Loader2, RefreshCcw } from 'lucide-react'
 
 type Gender = 'voltix' | 'penny'
@@ -127,6 +127,51 @@ export default function MascotUploadPage() {
   const [slots, setSlots] = useState<Record<string, SlotState>>({})
 
   function key(gender: Gender, evo: number) { return `${gender}-${evo}` }
+
+  // On mount, probe each /mascot/{gender}/{n}.webp to see which already
+  // exist. If we don't preload these, the page renders 12 empty drop-zones
+  // and the operator thinks the mascots "disappeared" when they're really
+  // there in /public/mascot/. We use HEAD requests and inline the URL as a
+  // preview when the asset responds 200.
+  useEffect(() => {
+    const all: Array<{ gender: Gender; evo: number }> = []
+    for (const evo of [1, 2, 3, 4, 5, 6]) {
+      all.push({ gender: 'voltix', evo })
+      all.push({ gender: 'penny',  evo })
+    }
+    let cancelled = false
+    ;(async () => {
+      const checks = await Promise.allSettled(
+        all.map(async ({ gender, evo }) => {
+          const url = `/mascot/${gender}/${evo}.webp`
+          const res = await fetch(url, { method: 'HEAD' })
+          if (!res.ok) return null
+          const sizeHeader = res.headers.get('content-length')
+          const sizeKb = sizeHeader ? Math.round(+sizeHeader / 1024) : undefined
+          return { gender, evo, url, sizeKb }
+        }),
+      )
+      if (cancelled) return
+      setSlots(prev => {
+        const next = { ...prev }
+        for (const c of checks) {
+          if (c.status !== 'fulfilled' || !c.value) continue
+          const { gender, evo, url, sizeKb } = c.value
+          const k = key(gender, evo)
+          // Don't overwrite an in-flight upload or a freshly-saved file
+          if (next[k]?.status === 'uploading' || next[k]?.status === 'success') continue
+          next[k] = {
+            status:     'success',
+            previewUrl: url,
+            serverUrl:  url,
+            sizeKb,
+          }
+        }
+        return next
+      })
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   async function handleFile(gender: Gender, evo: number, file: File) {
     const k = key(gender, evo)
