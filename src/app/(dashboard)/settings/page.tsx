@@ -99,14 +99,25 @@ export default async function SettingsPage() {
             </p>
           </div>
           {isPaid ? (
-            <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-lg">
+            // Premium users get a clickable badge that lands on /settings/billing
+            // where the "Gerir subscrição" CTA opens the Stripe Customer Portal
+            // (cancel, change card, view invoices). Without this link the page
+            // was a dead-end — user reported "não consigo cancelar, não surge
+            // a opção" because there's no other way to reach the portal.
+            <Link
+              href="/settings/billing"
+              className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-500/20 transition-colors min-h-[44px]"
+              aria-label={t('settings.plan_manage_aria')}
+            >
               <Check className="w-4 h-4" />
-              {t('settings.plan_active')}
-            </div>
+              <span>{t('settings.plan_active')}</span>
+              <span className="text-white/50">·</span>
+              <span className="underline-offset-2 hover:underline">{t('settings.plan_manage')}</span>
+            </Link>
           ) : (
             <Link
               href="/settings/billing"
-              className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-500/20 transition-colors"
+              className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-500/20 transition-colors min-h-[44px]"
             >
               <Crown className="w-4 h-4" />
               {t('settings.plan_upgrade')}
