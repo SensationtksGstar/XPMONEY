@@ -42,25 +42,62 @@ export async function POST(req: NextRequest) {
   const db = createSupabaseAdmin()
   const { data: user } = await db
     .from('users')
-    .select('id')
+    .select('id, email, plan')
     .eq('clerk_id', userId)
     .maybeSingle()
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
+  // Primary lookup — fast path when the webhook has run successfully.
   const { data: sub } = await db
     .from('subscriptions')
     .select('stripe_customer_id')
     .eq('user_id', user.id)
     .maybeSingle()
 
-  if (!sub?.stripe_customer_id) {
+  let stripeCustomerId = sub?.stripe_customer_id ?? null
+
+  // Fallback: webhook may have missed the checkout.session.completed event,
+  // OR the user's plan was promoted manually (admin testing). In both
+  // cases the Stripe Customer Portal can still work IF a Stripe Customer
+  // record exists for this email. Look it up directly.
+  if (!stripeCustomerId && user.email) {
+    try {
+      const list = await stripe.customers.list({ email: user.email, limit: 1 })
+      if (list.data.length > 0) {
+        stripeCustomerId = list.data[0].id
+        // Best-effort persist so the next click is fast. Don't block the
+        // portal redirect on this — failure here is non-fatal.
+        db.from('subscriptions').upsert({
+          user_id:            user.id,
+          stripe_customer_id: stripeCustomerId,
+          plan:               user.plan,
+          status:             'active',
+          updated_at:         new Date().toISOString(),
+        }).then(({ error }) => {
+          if (error) console.warn('[billing/portal] backfill subscriptions row failed:', error)
+        })
+      }
+    } catch (err) {
+      console.warn('[billing/portal] customer lookup by email failed:', err)
+      // Carry on — the friendly error below is fine.
+    }
+  }
+
+  if (!stripeCustomerId) {
+    // Distinct message: the plan flag is set in our DB but Stripe has no
+    // record of this email. Most likely cause: plan was manually toggled
+    // (e.g. an admin SQL update for testing) without an actual checkout.
+    // Telling the user "aguarda alguns segundos" was misleading because
+    // the webhook will never arrive — there's no payment to wait for.
     return NextResponse.json(
       {
         error:
-          'Não encontrámos uma subscrição activa. Se acabaste de pagar, ' +
-          'aguarda alguns segundos e tenta novamente — ou contacta o suporte.',
+          'Plano marcado como Premium mas sem subscrição Stripe associada — ' +
+          'provavelmente foi atribuído manualmente. ' +
+          'Para cancelar, usa "Voltar ao Free" abaixo ou contacta o suporte.',
+        code: 'no_stripe_customer',
       },
       { status: 404 },
     )
@@ -70,7 +107,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const session = await stripe.billingPortal.sessions.create({
-      customer:   sub.stripe_customer_id,
+      customer:   stripeCustomerId,
       return_url: `${appUrl}/settings/billing`,
     })
     return NextResponse.json({ url: session.url })

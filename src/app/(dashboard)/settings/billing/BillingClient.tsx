@@ -98,26 +98,61 @@ export default function BillingClient({ currentPlan }: Props) {
   const [cycle, setCycle]     = useState<BillingCycle>('yearly')
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError]     = useState<string | null>(null)
+  // When the portal returns code='no_stripe_customer' (plan was manually
+  // promoted with no Stripe checkout behind it), surface a manual-downgrade
+  // path instead of leaving the user stranded with the cryptic error.
+  const [showManualDowngrade, setShowManualDowngrade] = useState(false)
 
   // Open Stripe Customer Portal — Stripe-hosted UI for cancel / update
   // card / view invoices. Setting `loading='portal'` so the badge button
   // shows a spinner; same setError() flow as checkout for consistency.
   async function handleManageSubscription() {
     setError(null)
+    setShowManualDowngrade(false)
     setLoading('portal')
     try {
       const res = await fetch('/api/billing/portal', { method: 'POST' })
-      let payload: { url?: string; error?: string } = {}
+      let payload: { url?: string; error?: string; code?: string } = {}
       try { payload = await res.json() } catch { /* non-JSON */ }
 
       if (!res.ok || !payload.url) {
         setError(payload.error ?? `HTTP ${res.status}`)
+        if (payload.code === 'no_stripe_customer') {
+          setShowManualDowngrade(true)
+        }
         return
       }
       window.location.href = payload.url
     } catch (err) {
       console.warn('[billing] portal failed:', err)
       setError(err instanceof Error ? err.message : 'Falha ao abrir portal.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  // Drop users.plan back to 'free' for the manual-promotion case. The
+  // server side double-checks Stripe — if a real subscription exists it
+  // refuses, so this can never silently keep Stripe charging while the
+  // user loses access.
+  async function handleManualDowngrade() {
+    if (!confirm('Voltar ao plano Free? Esta acção remove o Premium imediatamente.')) return
+    setError(null)
+    setLoading('manual-downgrade')
+    try {
+      const res = await fetch('/api/billing/manual-downgrade', { method: 'POST' })
+      let payload: { ok?: boolean; error?: string; code?: string } = {}
+      try { payload = await res.json() } catch { /* non-JSON */ }
+
+      if (!res.ok || !payload.ok) {
+        setError(payload.error ?? `HTTP ${res.status}`)
+        return
+      }
+      // Refresh so the page re-fetches user.plan and the badge updates.
+      window.location.reload()
+    } catch (err) {
+      console.warn('[billing] manual-downgrade failed:', err)
+      setError(err instanceof Error ? err.message : 'Falha a voltar ao Free.')
     } finally {
       setLoading(null)
     }
@@ -227,10 +262,27 @@ export default function BillingClient({ currentPlan }: Props) {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-red-300">{t('billing.error_title')}</p>
             <p className="text-xs text-red-200/80 mt-0.5 break-words">{error}</p>
+            {showManualDowngrade && (
+              <button
+                type="button"
+                onClick={handleManualDowngrade}
+                disabled={loading === 'manual-downgrade'}
+                className={cn(
+                  'mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all min-h-[36px]',
+                  'bg-white/10 hover:bg-white/15 text-white border border-white/15',
+                  'disabled:opacity-60 disabled:cursor-wait',
+                )}
+              >
+                {loading === 'manual-downgrade' ? (
+                  <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : null}
+                Voltar ao Free
+              </button>
+            )}
           </div>
           <button
             type="button"
-            onClick={() => setError(null)}
+            onClick={() => { setError(null); setShowManualDowngrade(false) }}
             aria-label={t('billing.close_warn_aria')}
             className="text-red-300/60 hover:text-red-200 transition-colors flex-shrink-0 min-h-[28px] min-w-[28px]"
           >
