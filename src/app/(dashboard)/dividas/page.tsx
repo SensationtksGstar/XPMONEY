@@ -496,11 +496,29 @@ function Planeador({
           to converge (interest > min payment) are filtered out so the
           row doesn't lie. */}
       {(() => {
-        const base    = parseFloat(monthlyExtra) || 0
-        const ladder  = base === 0
+        // Use parseAmountLocale (PT decimal-comma + thousand-dot aware) for
+        // consistency with the rest of the page. parseFloat alone gives
+        // wrong results on "1.234,56"-shaped input.
+        const base = parseAmountLocale(monthlyExtra) || 0
+
+        // Sanity-cap: if the user has typed an absurdly high extra (e.g.
+        // missing decimal — "437400" intended as €4 374,00), the ladder
+        // runs ×3 = €1 312 200/mês which trivially clears any debt in 1
+        // month. Every scenario above the "instant kill" threshold then
+        // produces identical numbers, making the ladder useless.
+        //
+        // Clamp the base used for ladder generation to "what could
+        // realistically pay off the largest debt in 1 month" — that's the
+        // upper bound where any extra makes a different outcome.
+        const totalBalance  = debts.reduce((s, d) => s + Number(d.current_amount), 0)
+        const totalMinMonth = debts.reduce((s, d) => s + Number(d.min_payment), 0)
+        const cap           = Math.max(500, totalBalance + totalMinMonth)
+        const baseClamped   = Math.min(base, cap)
+
+        const ladder  = baseClamped === 0
           ? [0, 50, 100, 200, 500]
-          : [0, Math.round(base / 2), Math.round(base), Math.round(base * 2), Math.round(base * 3)]
-        const amounts = Array.from(new Set(ladder)).sort((a, b) => a - b)
+          : [0, Math.round(baseClamped / 2), Math.round(baseClamped), Math.round(baseClamped * 2), Math.round(baseClamped * 3)]
+        const amounts = Array.from(new Set(ladder.map(a => Math.min(a, cap)))).sort((a, b) => a - b)
         const sims    = amounts.map(amt => ({
           amt,
           ...simulatePlan(debts, amt, strategy),
@@ -508,9 +526,22 @@ function Planeador({
         const noExtra = sims.find(s => s.amt === 0 && !s.infinite)
         const baseline = noExtra?.totalInterest ?? null
 
+        // Drop scenarios that produce IDENTICAL outcomes (months + interest
+        // both match a previously-shown row). Anything beyond the
+        // "instant kill" threshold collapses to the same numbers — showing
+        // 4 rows with the same answer reads as a UI bug.
+        const seen   = new Set<string>()
+        const unique = sims.filter(s => {
+          if (s.infinite) return true   // distinguishable as "não chega"
+          const key = `${s.monthsToFree}|${s.totalInterest.toFixed(2)}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+
         // If everything diverges (e.g. user has only crippling debts), don't
         // show the table — would be confusing. Need at least 2 viable rows.
-        const viable = sims.filter(s => !s.infinite)
+        const viable = unique.filter(s => !s.infinite)
         if (viable.length < 2) return null
 
         return (
@@ -520,10 +551,18 @@ function Planeador({
               E se pagares mais por mês?
             </p>
             <div className="space-y-1">
-              {sims.map(s => {
+              {unique.map(s => {
                 const isCurrent = Math.abs(s.amt - Math.round(base)) < 0.5
                 const savings   = baseline !== null ? baseline - s.totalInterest : null
                 const isBetter  = savings !== null && savings > 0.5
+                // Format the amount with PT thousand separator so 4374 reads
+                // as "€4 374" instead of the unreadable "€4374" / "€218700"
+                // that surfaced when the input was set to a typo (e.g.
+                // missing decimal). 4-digit and below stay unsegmented for
+                // visual rhythm.
+                const amtLabel = s.amt < 10_000
+                  ? `€${s.amt}/mês`
+                  : `€${s.amt.toLocaleString('pt-PT')}/mês`
 
                 if (s.infinite) {
                   return (
@@ -531,7 +570,7 @@ function Planeador({
                       key={s.amt}
                       className="flex items-center gap-2 text-[11px] text-white/35 px-2 py-1.5 rounded-lg"
                     >
-                      <span className="font-semibold tabular-nums w-16">€{s.amt}/mês</span>
+                      <span className="font-semibold tabular-nums w-20 truncate">{amtLabel}</span>
                       <span className="italic">não chega para os juros</span>
                     </div>
                   )
@@ -548,8 +587,8 @@ function Planeador({
                         : 'bg-white/3 hover:bg-white/8 border border-white/5 text-white/75'
                     }`}
                   >
-                    <span className={`font-semibold tabular-nums w-16 ${isCurrent ? 'text-yellow-200' : ''}`}>
-                      €{s.amt}/mês
+                    <span className={`font-semibold tabular-nums w-24 truncate ${isCurrent ? 'text-yellow-200' : ''}`}>
+                      {amtLabel}
                     </span>
                     <span className="text-white/50 tabular-nums w-20">
                       {formatMonths(s.monthsToFree)}
