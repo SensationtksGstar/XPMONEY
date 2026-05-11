@@ -13,6 +13,7 @@
 
 import { useId } from 'react'
 import type { VoltixMood } from '@/types'
+import { MascotPolishWrap } from './MascotPolishWrap'
 
 type Mood = VoltixMood
 
@@ -148,6 +149,19 @@ function Evo1({ palette, uid }: { palette: PennyPalette; mood: Mood; uid: string
           <stop offset="100%" stopColor={palette.furShade} />
         </radialGradient>
       </defs>
+      {/* Coral ribbon orbiting — Saturn-ring effect.
+          Drawn FIRST so the egg body below it covers the front-of-the-body
+          portion of the ring; only the left/right tips (and a sliver above/
+          below the body silhouette) remain visible. This v2 ordering fixes
+          the v1 bug where the ring drew on top of the body and read as a
+          flat coloured band cutting the egg in half.
+          Pulled lower (cy 145 → ring sits closer to the bottom) so the
+          visible halo reads as a base pedestal rather than a waist belt.
+          Opacity reduced from 0.95 → 0.55 so the ring functions as a
+          gentle accent, not a focal element. */}
+      <ellipse cx="100" cy="145" rx="74" ry="20" stroke={palette.ribbon} strokeWidth="3" fill="none" opacity="0.55" />
+      <ellipse cx="100" cy="145" rx="74" ry="20" stroke={palette.ribbon} strokeWidth="1.5" fill="none" opacity="0.3"
+        transform="rotate(8 100 145)" />
       {/* Egg body */}
       <ellipse cx="100" cy="120" rx="58" ry="72" fill={`url(#${uid}_egg)`} stroke={palette.furShade} strokeWidth="2" />
       {/* Crack */}
@@ -156,10 +170,6 @@ function Evo1({ palette, uid }: { palette: PennyPalette; mood: Mood; uid: string
       {/* Lilac ear-tufts peeking out */}
       <ellipse cx="82"  cy="58" rx="11" ry="14" fill={palette.tuft} transform="rotate(-18 82 58)" />
       <ellipse cx="118" cy="58" rx="11" ry="14" fill={palette.tuft} transform="rotate(18 118 58)" />
-      {/* Coral ribbon orbiting — simulated with tilted ellipse ring */}
-      <ellipse cx="100" cy="130" rx="72" ry="22" stroke={palette.ribbon} strokeWidth="4" fill="none" opacity="0.95" />
-      <ellipse cx="100" cy="130" rx="72" ry="22" stroke={palette.ribbon} strokeWidth="2" fill="none" opacity="0.4"
-        transform="rotate(8 100 130)" />
       {/* Closed eyes (sleeping) */}
       <path d="M85 78 Q92 82 98 78" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" fill="none" />
       <path d="M102 78 Q109 82 115 78" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" fill="none" />
@@ -576,18 +586,31 @@ export function PennyCreature({ evo, mood, className = '', animate = true }: Pro
     evo === 2 ? <Evo2 {...props} /> :
     <Evo1 {...props} />
 
-  if (!animate) return <div className={`relative ${className}`}>{creature}</div>
+  if (!animate) {
+    return (
+      <div className={`relative ${className}`}>
+        <MascotPolishWrap accentColor={palette.accent} className="w-full h-full">
+          {creature}
+        </MascotPolishWrap>
+      </div>
+    )
+  }
 
   return (
     <div className={`relative ${className} animate-mascot-float`}>
-      {/* Aura pool */}
+      {/* Aura pool — narrower + softer than v1 so the new polish drop-
+          shadow remains the primary weight cue, not a competing colour
+          puddle. Matches the tightened version in VoltixCreature. */}
       <div
-        className="absolute -bottom-2 left-1/2 w-3/5 h-6 blur-2xl rounded-full animate-mascot-aura transition-colors duration-700"
+        className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-1/2 h-5 blur-3xl rounded-full animate-mascot-aura transition-colors duration-700 opacity-70"
         style={{ backgroundColor: palette.accent }}
       />
-      {/* Breathing inner layer */}
-      <div className="animate-mascot-breathe">
-        {creature}
+      {/* Breathing inner layer wrapped in Apple-style polish (drop shadow
+          + glass sheen + chromatic rim). */}
+      <div className="animate-mascot-breathe w-full h-full">
+        <MascotPolishWrap accentColor={palette.accent} className="w-full h-full">
+          {creature}
+        </MascotPolishWrap>
       </div>
       {/* Ambient sparkles — upper evos */}
       {evo >= 3 && (

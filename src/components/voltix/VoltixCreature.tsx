@@ -16,16 +16,36 @@
 
 import { useId } from 'react'
 import type { VoltixMood } from '@/types'
+import { MascotPolishWrap } from './MascotPolishWrap'
 
 type Mood = VoltixMood
 interface C { body: string; shade: string; light: string; accent: string }
 
+/**
+ * Mood palette — Apple-style polish (May 2026).
+ *
+ * v1 used pure Tailwind 500-shade colors (red-500, green-500, etc.) which
+ * read as cartoony / amateur because they're maximum-saturation primaries.
+ * v2 desaturates and adds cool undertones to every stop so the mascot
+ * looks like polished sea-glass / frosted gem rather than a Saturday-
+ * morning sticker.
+ *
+ * Recipe per mood: ~10-15 % less saturation, ~5-10 % cooler hue shift,
+ * `light` brought closer to `body` so the radial gradient reads as a
+ * single-material highlight (not a paint stripe). `shade` darkened with
+ * a slate cast so the underside feels weighted.
+ */
 export const MOOD_PALETTE: Record<Mood, C> = {
-  sad:         { body:'#ef4444', shade:'#b91c1c', light:'#fca5a5', accent:'#f87171' },
-  neutral:     { body:'#64748b', shade:'#334155', light:'#cbd5e1', accent:'#94a3b8' },
-  happy:       { body:'#22c55e', shade:'#15803d', light:'#86efac', accent:'#4ade80' },
-  excited:     { body:'#f59e0b', shade:'#92400e', light:'#fde68a', accent:'#fbbf24' },
-  celebrating: { body:'#a855f7', shade:'#6b21a8', light:'#e9d5ff', accent:'#c084fc' },
+  // Slate-blue melancholic — Apple's actual "sad" cue is cool, not red.
+  sad:         { body:'#7a8db5', shade:'#3e4d6b', light:'#c8d3e6', accent:'#a8b6d2' },
+  // Platinum / brushed-titanium — Apple's neutral grey cast.
+  neutral:     { body:'#7c8694', shade:'#3a4150', light:'#d5dae2', accent:'#9ba4b1' },
+  // Muted sage — happy without screaming "kindergarten green".
+  happy:       { body:'#5fb37b', shade:'#2c6741', light:'#bce0c8', accent:'#86c79c' },
+  // Warm honey amber — celebratory but rich, not neon.
+  excited:     { body:'#e0a951', shade:'#86541a', light:'#f6dfaa', accent:'#ecc079' },
+  // Dusty lilac — Apple's "premium festive" purple.
+  celebrating: { body:'#a98cd1', shade:'#5e3f87', light:'#dec8ed', accent:'#c4abdd' },
 }
 
 export const EVO_NAMES: Record<number, string> = {
@@ -800,18 +820,32 @@ export function VoltixCreature({ evo, mood, className = '', animate = true }: Pr
     evo === 2 ? <Evo2 {...props} /> :
     <Evo1 {...props} />
 
-  if (!animate) return <div className={`relative ${className}`}>{creature}</div>
+  if (!animate) {
+    return (
+      <div className={`relative ${className}`}>
+        <MascotPolishWrap accentColor={c.body} className="w-full h-full">
+          {creature}
+        </MascotPolishWrap>
+      </div>
+    )
+  }
 
   return (
     <div className={`relative ${className} animate-mascot-float`}>
-      {/* Mood glow pool — pulses with breathing */}
+      {/* Mood glow pool — pulses with breathing. Now sits BELOW the polish
+          drop-shadow so the two read as one weighted pedestal instead of
+          competing for visual mass. Slightly narrower + more diffuse to
+          match the new desaturated palette. */}
       <div
-        className="absolute -bottom-2 left-1/2 w-3/5 h-6 blur-2xl rounded-full animate-mascot-aura transition-colors duration-700"
+        className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-1/2 h-5 blur-3xl rounded-full animate-mascot-aura transition-colors duration-700 opacity-70"
         style={{ backgroundColor: c.body }}
       />
-      {/* Inner breath layer — subtle scale sway */}
-      <div className="animate-mascot-breathe">
-        {creature}
+      {/* Inner breath layer — subtle scale sway, wrapped in the Apple-
+          style polish layer (drop shadow + glass sheen + chromatic rim). */}
+      <div className="animate-mascot-breathe w-full h-full">
+        <MascotPolishWrap accentColor={c.body} className="w-full h-full">
+          {creature}
+        </MascotPolishWrap>
       </div>
       {/* Ambient sparkles — only on upper evos */}
       {evo >= 3 && (
