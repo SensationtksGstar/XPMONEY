@@ -11,6 +11,7 @@ import { LocaleProvider }  from '@/lib/i18n/LocaleProvider'
 import { SiteBackground }  from '@/components/wallpaper/SiteBackground'
 import { CookieConsentBanner } from '@/components/common/CookieConsentBanner'
 import { PWAInstallPrompt }    from '@/components/common/PWAInstallPrompt'
+import { ServiceWorkerRegistrar } from '@/components/common/ServiceWorkerRegistrar'
 import { JsonLd }              from '@/components/seo/JsonLd'
 import { organization, website } from '@/lib/seo/jsonLd'
 import { SpeedInsights }       from '@vercel/speed-insights/next'
@@ -140,6 +141,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               Product, BreadcrumbList) are injected in their own page.tsx. */}
           <JsonLd schema={organization()} />
           <JsonLd schema={website(locale)} />
+
+          {/* Preconnect to third-party origins the app hits on every load.
+              Saves ~100-300 ms of DNS + TLS handshake on mobile cold start,
+              which on a slow 4G connection was the biggest chunk of the
+              user-reported "5 s PWA boot". Clerk + Supabase are unavoidable
+              for any authenticated route. PostHog is gated by consent so
+              `dns-prefetch` (cheaper than `preconnect`) is enough until
+              the user accepts. */}
+          <link rel="preconnect" href="https://clerk.com" crossOrigin="anonymous" />
+          <link rel="preconnect" href="https://clerk.xp-money.com" crossOrigin="anonymous" />
+          {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+            <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="anonymous" />
+          )}
+          <link rel="dns-prefetch" href="https://eu.i.posthog.com" />
+          <link rel="dns-prefetch" href="https://js.stripe.com" />
         </head>
         <body className="font-sans antialiased">
           {ADSENSE_CLIENT && (
@@ -173,6 +189,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     standalone), so unconditionally mounting is cheap. */}
                 <CookieConsentBanner />
                 <PWAInstallPrompt />
+                {/* Register the service worker eagerly so every user (not
+                    just push-opt-in ones) benefits from the static-asset +
+                    app-shell cache. Defers itself to idle so it never
+                    delays first paint. */}
+                <ServiceWorkerRegistrar />
               </LocaleProvider>
               {/* Vercel Speed Insights — Web Vitals (LCP, CLS, INP, FCP)
                   measured on real visitors. No cookies, no fingerprinting,
