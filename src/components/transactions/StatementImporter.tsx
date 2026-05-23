@@ -529,9 +529,15 @@ export function StatementImporter({ onClose }: Props) {
           </button>
         </div>
 
-        {/* ── UPLOAD step ── */}
+        {/* ── UPLOAD step ──
+            flex-1 + min-h-0 are essential here: without them the body
+            takes its natural height, which can exceed the panel's max-h
+            on desktop windows (especially when the "Como exportar"
+            details are expanded). User had to scroll the page itself to
+            reach the drop zone. With flex-1 the body fills the
+            remaining panel height and scrolls INTERNALLY. */}
         {step === 'upload' && (
-          <div className="p-5 space-y-4 overflow-y-auto">
+          <div className="p-5 space-y-4 overflow-y-auto flex-1 min-h-0">
             {/* Info banner */}
             <div className="flex gap-3 bg-blue-500/8 border border-blue-500/20 rounded-xl p-3">
               <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -763,9 +769,12 @@ export function StatementImporter({ onClose }: Props) {
           </div>
         )}
 
-        {/* ── ERROR step ── */}
+        {/* ── ERROR step ──
+            Same flex-1 + min-h-0 + overflow-y-auto recipe so the
+            "Detalhes técnicos" expander (long attempts list) scrolls
+            internally instead of pushing the close buttons off-screen. */}
         {step === 'error' && (
-          <div className="p-8 flex flex-col items-center gap-5 text-center" role="alert">
+          <div className="p-8 flex flex-col items-center gap-5 text-center overflow-y-auto flex-1 min-h-0" role="alert">
             <div className="w-20 h-20 rounded-full bg-red-500/15 border border-red-500/25 flex items-center justify-center">
               {errorMsg.includes('Plano') || errorMsg.includes('plano')
                 ? <Lock className="w-10 h-10 text-red-400" />

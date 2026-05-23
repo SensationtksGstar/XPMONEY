@@ -3,20 +3,24 @@
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { TrendingDown, ArrowRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { formatCurrency, formatMonth } from '@/lib/utils'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
+import { usePeriod } from '@/lib/contexts/PeriodContext'
 import type { MonthlySummaryData } from '@/app/api/summary/route'
 
 /**
  * ExpenseBreakdown — widget do dashboard que mostra as top 6 categorias de
- * despesa do mês corrente em barras horizontais.
+ * despesa do período seleccionado em barras horizontais.
  *
- * Reutiliza o mesmo queryKey ['summary'] do MonthlySummary para evitar
- * double-fetch — a API já inclui `top_categories` no mesmo payload.
+ * Reutiliza o mesmo queryKey ['summary', qs] do MonthlySummary para evitar
+ * double-fetch — a API já inclui `top_categories` no mesmo payload. O
+ * `qs` (query string) inclui o período global, por isso ambos os widgets
+ * actualizam em sincronia quando o user troca o filtro.
  */
 
-async function fetchSummary(): Promise<MonthlySummaryData | null> {
-  const res = await fetch('/api/summary')
+async function fetchSummary(qs: string): Promise<MonthlySummaryData | null> {
+  const res = await fetch(`/api/summary?${qs}`)
   if (!res.ok) return null
   const { data } = await res.json()
   return data
@@ -34,9 +38,11 @@ const BAR_COLORS = [
 
 export function ExpenseBreakdown() {
   const { t, locale } = useLocale()
+  const { queryString } = usePeriod()
+  const qs = queryString()
   const { data: summary, isLoading } = useQuery({
-    queryKey:             ['summary'],
-    queryFn:              fetchSummary,
+    queryKey:             ['summary', qs],
+    queryFn:              () => fetchSummary(qs),
     staleTime:            5 * 60 * 1000,
     refetchOnWindowFocus: false,
   })
@@ -83,15 +89,20 @@ export function ExpenseBreakdown() {
   }
 
   const amount = formatCurrency(summary.expense, 'EUR', locale)
-  const totalLabel = summary.month === summary.currentMonth
-    ? t('breakdown.amount_this_month', { amount })
-    : t('breakdown.amount_in_month', {
-        amount,
-        month: formatMonth(
-          new Date(Number(summary.month.split('-')[0]), Number(summary.month.split('-')[1]) - 1, 1),
-          locale,
-        ),
-      })
+  // Period label comes from the server-resolved window (e.g. "Últimos 3
+  // meses"). Falls back to the legacy single-month text when the API
+  // hasn't been redeployed yet.
+  const totalLabel = summary.period?.label
+    ? `${amount} · ${summary.period.label}`
+    : (summary.month === summary.currentMonth
+        ? t('breakdown.amount_this_month', { amount })
+        : t('breakdown.amount_in_month', {
+            amount,
+            month: formatMonth(
+              new Date(Number(summary.month.split('-')[0]), Number(summary.month.split('-')[1]) - 1, 1),
+              locale,
+            ),
+          }))
 
   return (
     <div className="glass-card p-5">
@@ -105,9 +116,25 @@ export function ExpenseBreakdown() {
         </span>
       </div>
 
-      <div className="space-y-2.5">
+      {/* key=qs re-runs the stagger when period flips. Bar widths animate
+          from 0 → pct so the user sees them "grow" — much more legible
+          than a snap on data refresh. */}
+      <motion.div
+        key={qs}
+        className="space-y-2.5"
+        initial="hidden"
+        animate="visible"
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
+      >
         {cats.map((cat, i) => (
-          <div key={cat.name} className="flex items-center gap-3">
+          <motion.div
+            key={cat.name}
+            className="flex items-center gap-3"
+            variants={{
+              hidden:  { opacity: 0, x: -8 },
+              visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+            }}
+          >
             {/* Ícone + nome */}
             <div className="flex items-center gap-2 flex-shrink-0 w-32 sm:w-36">
               <span aria-hidden className="text-base">
@@ -116,11 +143,13 @@ export function ExpenseBreakdown() {
               <span className="text-sm text-white/85 truncate">{cat.name}</span>
             </div>
 
-            {/* Barra proporcional */}
+            {/* Barra proporcional — grow-from-zero */}
             <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-              <div
+              <motion.div
                 className={`h-full rounded-full bg-gradient-to-r ${BAR_COLORS[i % BAR_COLORS.length]}`}
-                style={{ width: `${Math.max(4, cat.pct)}%` }}
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.max(4, cat.pct)}%` }}
+                transition={{ duration: 0.6, ease: [0.2, 0.9, 0.3, 1], delay: 0.05 * i }}
                 title={t('breakdown.bar_title', { pct: cat.pct.toFixed(1) })}
               />
             </div>
@@ -134,9 +163,9 @@ export function ExpenseBreakdown() {
                 {cat.pct.toFixed(0)}%
               </p>
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <Link
         href="/transactions"

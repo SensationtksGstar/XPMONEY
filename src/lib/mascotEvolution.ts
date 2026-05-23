@@ -3,18 +3,25 @@
  *
  * Evolution is driven by the user's financial score (0-100), not level.
  *
- * Tuning history (April 2026):
- *   The original 2:35 threshold took a realistic fresh user 2-3 weeks of
- *   daily logging to hit, which means the "wow, my pet evolved" moment —
- *   the core retention pull of the gamification loop — landed AFTER most
- *   churn had happened. Lowered to 2:20 so the first evolution is a
- *   week-1 (sometimes day-1) payoff: a user who logs 3-4 transactions,
- *   sets one savings goal with any deposit, and has income > expenses
- *   can reliably trip it. Everything from Evo 3 onwards stays tuned to
- *   reward genuine financial improvement.
+ * Tuning history:
+ *   • Original (Feb 2026): 35/55/72/85/95 — first evo too late (2-3
+ *     weeks), most users churned before seeing it.
+ *   • April 2026: 20/48/68/85/95 — moved evo 2 to week-1, but the
+ *     20 → 48 jump (+28) was the steepest in the whole curve. Bad
+ *     pacing: easy first win, then immediate cliff that discouraged
+ *     committed users.
+ *   • May 2026 (current): 18/38/60/80/95. Two principles:
+ *     1. First evo even easier (~3 days of light usage). The dopamine
+ *        hit needs to land FAST or the user never feels the loop.
+ *     2. Increasing absolute jumps (+20, +22, +20, +15) so each
+ *        evolution costs noticeably more than the last in real-world
+ *        effort. Final +15 looks small but those last 5-20 points of
+ *        score are the HARDEST to gain (perfect category control +
+ *        high savings rate + daily consistency + multiple goals
+ *        completed).
  *
- *   Evo 2 XP bonus also bumped from 200 → 350 so the first celebration
- *   has more punch. Late-game bonuses untouched.
+ *   XP bonuses scale with difficulty — first evo small punch, top
+ *   evo a massive payoff so the long climb feels paid off.
  *
  * Evolution is strictly monotonic: the server never downgrades a pet,
  * even if the score drops. Hitting the threshold once is forever.
@@ -25,20 +32,24 @@ export type EvoStage = 1 | 2 | 3 | 4 | 5 | 6
 
 /** Minimum score required to unlock each evolution stage. */
 export const EVO_SCORE_THRESHOLDS: Record<Exclude<EvoStage, 1>, number> = {
-  2: 20,   // was 35 — "first evolution" is now a week-1 reward
-  3: 48,   // was 55 — smoother climb after the first win
-  4: 68,   // was 72 — small smoothing, still "committed user" tier
-  5: 85,   // unchanged — aspirational
-  6: 95,   // unchanged — top 1%
+  2: 18,   // was 20 — first dopamine hit within ~3 days of light usage
+  3: 38,   // was 48 — smoother +20 jump instead of the old +28 cliff
+  4: 60,   // was 68 — +22 (slightly bigger jump, "committed user" tier)
+  5: 80,   // was 85 — +20 (sustained discipline tier)
+  6: 95,   // unchanged — top tier, last 15 pts are objectively hardest
 }
 
-/** One-shot XP bonus granted the first time the user reaches each stage. */
+/** One-shot XP bonus granted the first time the user reaches each stage.
+ *
+ * Curve doubles every two stages so the climb feels increasingly worth
+ * it. Final stage at 3000 deliberately disproportionate — a single
+ * milestone that bumps even a fully-levelled user noticeably. */
 export const EVO_XP_BONUS: Record<Exclude<EvoStage, 1>, number> = {
-  2: 350,   // was 200 — bigger first-evolution celebration
-  3: 500,   // was 400
-  4: 800,   // was 700
-  5: 1200,  // was 1000
-  6: 2500,  // was 2000 — peak reward scaled up with the rest
+  2: 300,   // first evo — small celebratory punch
+  3: 500,
+  4: 900,   // was 800 — wider gap to evo 3 reflects bigger commitment
+  5: 1500,  // was 1200
+  6: 3000,  // was 2500 — top-tier deserves a real reward
 }
 
 /** Maximum evo the score `s` unlocks (independent of current stored stage). */

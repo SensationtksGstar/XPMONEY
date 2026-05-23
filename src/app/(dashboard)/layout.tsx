@@ -6,6 +6,7 @@ import { Sidebar }          from '@/components/layout/Sidebar'
 import { TopBar }           from '@/components/layout/TopBar'
 import { MobileNav }        from '@/components/layout/MobileNav'
 import { UserPlanProvider } from '@/lib/contexts/UserPlanContext'
+import { PeriodProvider }   from '@/lib/contexts/PeriodContext'
 import { MascotEvolutionWatcher } from '@/components/voltix/MascotEvolutionWatcher'
 // FAB lazy-loaded behind a tiny client wrapper — Next.js 15 forbids
 // `dynamic({ssr:false})` in server components, and this layout is one.
@@ -53,6 +54,7 @@ export default async function DashboardLayout({
 
   return (
     <UserPlanProvider plan={plan}>
+      <PeriodProvider>
       <div className="min-h-screen dashboard-bg flex overflow-x-hidden">
         {/* Sidebar desktop */}
         <Sidebar />
@@ -77,6 +79,7 @@ export default async function DashboardLayout({
         {/* Persistent Dragon Coin chat FAB — available across the dashboard. */}
         <DragonCoinFABLazy />
       </div>
+      </PeriodProvider>
     </UserPlanProvider>
   )
 }

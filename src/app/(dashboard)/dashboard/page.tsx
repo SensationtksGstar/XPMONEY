@@ -6,6 +6,7 @@ import { PlusCircle, Crown }           from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
 import { useUserPlan }                 from '@/lib/contexts/UserPlanContext'
 import { QuickActions }                from '@/components/dashboard/QuickActions'
+import { PeriodFilter }                from '@/components/dashboard/PeriodFilter'
 import { ProToolsShowcase }            from '@/components/dashboard/ProToolsShowcase'
 import { StreakBanner }                from '@/components/dashboard/StreakBanner'
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
@@ -173,6 +174,11 @@ export default function DashboardPage() {
 
       {/* Streak */}
       <StreakBanner />
+
+      {/* Period filter — global across MonthlySummary + ExpenseBreakdown
+          (and any future analytics widget that reads usePeriod). User
+          selection persists per-device in localStorage. */}
+      <PeriodFilter />
 
       {/* Quick actions */}
       <QuickActions />
