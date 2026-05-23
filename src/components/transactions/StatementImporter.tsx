@@ -489,11 +489,22 @@ export function StatementImporter({ onClose }: Props) {
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden />
 
-      {/* Panel */}
+      {/* Panel
+          Mobile: fills the entire dynamic viewport (h-[100dvh]) so every
+          step's content has room to show without being clipped by the
+          bottom URL bar — the user reported that with the previous
+          80dvh / 92dvh caps the upload screen and error details
+          disappeared below the fold. Header + footer are sticky inside,
+          middle scrolls.
+          Desktop (sm+): goes back to the centered modal with sensible
+          max-heights so it doesn't dominate large screens. */}
       <div className={cn(
-        'relative z-10 bg-[#0f1117] border border-white/10 rounded-t-3xl sm:rounded-2xl w-full',
+        'relative z-10 bg-[#0f1117] border border-white/10 sm:rounded-2xl w-full',
         'flex flex-col overflow-hidden transition-all duration-300',
-        step === 'preview' ? 'sm:max-w-3xl max-h-[92dvh]' : 'sm:max-w-md max-h-[80dvh]',
+        // Mobile: full-height sheet with safe-area inset so iOS notch
+        // and home-indicator never clip the rounded top / footer.
+        'h-[100dvh] sm:h-auto rounded-none sm:rounded-2xl',
+        step === 'preview' ? 'sm:max-w-3xl sm:max-h-[92dvh]' : 'sm:max-w-md sm:max-h-[80dvh]',
       )}>
 
         {/* Header */}

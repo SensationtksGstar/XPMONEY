@@ -369,10 +369,15 @@ async function withRetry<T>(fn: () => Promise<T>, label: string, maxAttempts = 3
       lastErr = err
       const msg  = err instanceof Error ? err.message : String(err)
       const kind = classifyError(msg)
-      // Only retry quota/rate issues; auth and bad-input are permanent
-      if (kind !== 'quota' || attempt === maxAttempts) throw err
-      const delay = 1000 * Math.pow(2, attempt - 1) + Math.random() * 500
-      console.warn(`[ai:${label}] attempt ${attempt} quota-limited, retrying in ${Math.round(delay)}ms`)
+      // Don't retry quota on the SAME provider — Gemini 2.5 / 2.0 share
+      // the same RPM pool, so a retry will almost always re-hit the limit
+      // and waste 3-7s of backoff per attempt. The chain in parseStatement
+      // already moves to the next provider on error; that IS the retry.
+      // For non-quota issues (transient network, 5xx) we keep one backoff
+      // retry so a single packet drop doesn't fail the whole call.
+      if (kind === 'quota' || attempt === maxAttempts) throw err
+      const delay = 600 * Math.pow(2, attempt - 1) + Math.random() * 300
+      console.warn(`[ai:${label}] attempt ${attempt} transient ${kind}, retrying in ${Math.round(delay)}ms`)
       await new Promise(r => setTimeout(r, delay))
     }
   }
@@ -984,11 +989,25 @@ export async function parseStatement(
       )
     }
 
+    // Track Gemini quota state across the WHOLE chain — Gemini 2.5 and
+    // 2.0 share the same project-level RPM/RPD pool, so once we see a
+    // quota error on one Gemini call, retrying the other is pure waste
+    // (same outcome, +60 s of wasted user time). Same for the vision
+    // fallback below — same project, same quota pool. Reset implicitly
+    // per request (geminiQuotaHit lives in this function's scope only).
+    let geminiQuotaHit = false
+    const noteAttempt = (label: string, err: unknown): void => {
+      attempts.push(`${label}: ${err instanceof Error ? err.message : err}`)
+      if (classifyError(err instanceof Error ? err.message : String(err)) === 'quota') {
+        geminiQuotaHit = label.startsWith('gemini')
+      }
+    }
+
     // Caminho texto — preferido
     if (extractedText && extractedText.trim().length > 50) {
       const textPrompt = buildStatementPromptWithContent(extractedText, input.filename, categoryNames, locale)
 
-      if (geminiKey) {
+      if (geminiKey && !geminiQuotaHit) {
         try {
           const data = await withRetry(
             () => withTimeout(
@@ -999,21 +1018,27 @@ export async function parseStatement(
           )
           return { data, provider: 'gemini-2.5-flash-text', cache_hit: false, attempts }
         } catch (err) {
-          attempts.push(`gemini-2.5-flash-text: ${err instanceof Error ? err.message : err}`)
+          noteAttempt('gemini-2.5-flash-text', err)
         }
 
-        try {
-          const data = await withRetry(
-            () => withTimeout(
-              geminiText(geminiKey, 'gemini-2.0-flash', textPrompt, logCtx),
-              PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash-text',
-            ),
-            'gemini-2.0-flash-text',
-          )
-          return { data, provider: 'gemini-2.0-flash-text', cache_hit: false, attempts }
-        } catch (err) {
-          attempts.push(`gemini-2.0-flash-text: ${err instanceof Error ? err.message : err}`)
+        if (!geminiQuotaHit) {
+          try {
+            const data = await withRetry(
+              () => withTimeout(
+                geminiText(geminiKey, 'gemini-2.0-flash', textPrompt, logCtx),
+                PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash-text',
+              ),
+              'gemini-2.0-flash-text',
+            )
+            return { data, provider: 'gemini-2.0-flash-text', cache_hit: false, attempts }
+          } catch (err) {
+            noteAttempt('gemini-2.0-flash-text', err)
+          }
+        } else {
+          attempts.push('gemini-2.0-flash-text: skipped (Gemini quota already hit on 2.5)')
         }
+      } else if (geminiQuotaHit) {
+        attempts.push('gemini-text: skipped (quota hit on previous Gemini call this request)')
       }
 
       if (groqKey) {
@@ -1027,15 +1052,16 @@ export async function parseStatement(
           )
           return { data, provider: 'groq-llama-text', cache_hit: false, attempts }
         } catch (err) {
-          attempts.push(`groq-llama-text: ${err instanceof Error ? err.message : err}`)
+          noteAttempt('groq-llama-text', err)
         }
       }
     } else if (extractedText != null) {
       attempts.push(`unpdf-extract: too-little-text (${extractedText.trim().length} chars) — scanned PDF?`)
     }
 
-    // Fallback vision — só se texto falhou ou PDF é scanned
-    if (geminiKey) {
+    // Fallback vision — só se texto falhou ou PDF é scanned, e só se a
+    // quota Gemini ainda não foi atingida (vision usa o mesmo pool).
+    if (geminiKey && !geminiQuotaHit) {
       try {
         const data = await withRetry(
           () => withTimeout(
@@ -1046,21 +1072,25 @@ export async function parseStatement(
         )
         return { data, provider: 'gemini-2.5-flash-vision', cache_hit: false, attempts }
       } catch (err) {
-        attempts.push(`gemini-2.5-flash-vision: ${err instanceof Error ? err.message : err}`)
+        noteAttempt('gemini-2.5-flash-vision', err)
       }
 
-      try {
-        const data = await withRetry(
-          () => withTimeout(
-            geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions, logCtx),
-            PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash-vision',
-          ),
-          'gemini-2.0-flash-vision',
-        )
-        return { data, provider: 'gemini-2.0-flash-vision', cache_hit: false, attempts }
-      } catch (err) {
-        attempts.push(`gemini-2.0-flash-vision: ${err instanceof Error ? err.message : err}`)
+      if (!geminiQuotaHit) {
+        try {
+          const data = await withRetry(
+            () => withTimeout(
+              geminiPdfStatement(geminiKey, 'gemini-2.0-flash', input.pdfBase64, instructions, logCtx),
+              PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash-vision',
+            ),
+            'gemini-2.0-flash-vision',
+          )
+          return { data, provider: 'gemini-2.0-flash-vision', cache_hit: false, attempts }
+        } catch (err) {
+          noteAttempt('gemini-2.0-flash-vision', err)
+        }
       }
+    } else if (geminiQuotaHit) {
+      attempts.push('gemini-vision: skipped (quota hit on previous Gemini call this request)')
     }
 
     const kind = classifyError(attempts.join(' | '))
@@ -1078,6 +1108,10 @@ export async function parseStatement(
   const EMPTY_RESULT_HINT = 'zero-transactions-despite-content'
   let bestEmpty: StatementParseResult | null = null  // guardamos o último vazio caso nenhum provider dê resultado
 
+  // Same Gemini-quota-skip behaviour as the PDF path above. Avoids
+  // burning ~5-7s of pointless retries on a shared-quota pool.
+  let textGeminiQuotaHit = false
+
   if (geminiKey) {
     try {
       const data = await withRetry(
@@ -1094,23 +1128,31 @@ export async function parseStatement(
       attempts.push(`gemini-2.5-flash: ${EMPTY_RESULT_HINT}`)
     } catch (err) {
       attempts.push(`gemini-2.5-flash: ${err instanceof Error ? err.message : err}`)
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (classifyError(errMsg) === 'quota') textGeminiQuotaHit = true
     }
 
-    try {
-      const data = await withRetry(
-        () => withTimeout(
-          geminiText(geminiKey, 'gemini-2.0-flash', prompt, logCtx),
-          PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash',
-        ),
-        'gemini-2.0-flash',
-      )
-      if (data.transactions.length > 0 || !contentLikelyHasData) {
-        return { data, provider: 'gemini-2.0-flash', cache_hit: false, attempts }
+    if (!textGeminiQuotaHit) {
+      try {
+        const data = await withRetry(
+          () => withTimeout(
+            geminiText(geminiKey, 'gemini-2.0-flash', prompt, logCtx),
+            PROVIDER_CALL_TIMEOUT_MS, 'gemini-2.0-flash',
+          ),
+          'gemini-2.0-flash',
+        )
+        if (data.transactions.length > 0 || !contentLikelyHasData) {
+          return { data, provider: 'gemini-2.0-flash', cache_hit: false, attempts }
+        }
+        bestEmpty = data
+        attempts.push(`gemini-2.0-flash: ${EMPTY_RESULT_HINT}`)
+      } catch (err) {
+        attempts.push(`gemini-2.0-flash: ${err instanceof Error ? err.message : err}`)
+        const errMsg = err instanceof Error ? err.message : String(err)
+        if (classifyError(errMsg) === 'quota') textGeminiQuotaHit = true
       }
-      bestEmpty = data
-      attempts.push(`gemini-2.0-flash: ${EMPTY_RESULT_HINT}`)
-    } catch (err) {
-      attempts.push(`gemini-2.0-flash: ${err instanceof Error ? err.message : err}`)
+    } else {
+      attempts.push('gemini-2.0-flash: skipped (shared Gemini quota exhausted)')
     }
   }
 

@@ -351,8 +351,14 @@ async function runParse(
               'A quota diária da IA foi atingida. Reinicia à meia-noite (Pacífico) ou exporta o extrato em CSV no site do banco — CSV é instantâneo, não consome IA e funciona mesmo com a quota esgotada.',
               'The AI daily quota has been reached. It resets at midnight (Pacific time). Alternatively, export the statement as CSV from your bank — CSV is instant, does not consume AI quota and works even when the quota is exhausted.')
           : L(locale,
-              'Muitos pedidos ao mesmo tempo — o plano gratuito da IA tem limite por minuto. Tenta novamente daqui a 60 segundos. Se persistir, usa CSV em vez de PDF.',
-              'Too many requests at once — the free AI tier has a per-minute limit. Try again in 60 seconds. If it persists, use CSV instead of PDF.')
+              'O plano gratuito de IA atingiu o limite de pedidos por minuto. ' +
+              'Importação instantânea sem usar IA: exporta CSV no site do banco — ' +
+              'CGD, Millennium, BPI, Santander, Montepio, Crédito Agrícola/Moey e Revolut estão totalmente suportados. ' +
+              'Em alternativa, aguarda 60 segundos e tenta de novo.',
+              'The free AI tier has hit its per-minute request limit. ' +
+              'Instant import without using AI: export CSV from your bank — ' +
+              'CGD, Millennium, BPI, Santander, Montepio, Crédito Agrícola/Moey and Revolut are fully supported. ' +
+              'Alternatively, wait 60 seconds and try again.')
 
         return NextResponse.json(
           {
