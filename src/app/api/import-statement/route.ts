@@ -110,16 +110,22 @@ export async function POST(req: NextRequest) {
 
   // Per-user AI cost guard. Statement parsing is the most expensive AI call
   // we make (a 300-transaction PDF can burn 30k+ output tokens on Gemini
-  // paid tier). Honest users import 1-2 statements per month — these limits
-  // are 10× any realistic case while still capping a malicious paid user
-  // at ~€4.5/month worst case in Gemini billed quota.
+  // paid tier). Honest users import 1-2 statements per month — these tight
+  // limits are 5-10× any realistic case while keeping the worst-case spend
+  // bounded even if 100 abusive accounts hit every cap every day.
+  //
+  // With 2/h + 5/d + 30/month + paid Gemini (~$0.012/import) the absolute
+  // worst case is 30 imports × $0.012 = $0.36/user/month. 100 attackers
+  // would peak at $36/month total — well inside any reasonable Google Cloud
+  // budget cap. Tightened May 2026 after user surfaced billing-anxiety.
   const limited = await guardUser(user.id, 'import-statement', [
-    { limit: 5,  windowMs: 60 * 60 * 1000 },        // 5/hour
-    { limit: 15, windowMs: 24 * 60 * 60 * 1000 },   // 15/day
+    { limit: 2,  windowMs: 60 * 60 * 1000 },           // 2/hour
+    { limit: 5,  windowMs: 24 * 60 * 60 * 1000 },      // 5/day
+    { limit: 30, windowMs: 30 * 24 * 60 * 60 * 1000 }, // 30/month
   ], {
     error: L(locale,
-      'Atingiste o limite diário de importações (15/dia). Reinicia em 24h. Se precisares mesmo de mais, contacta o suporte.',
-      'Daily statement import limit reached (15/day). It resets in 24h. If you genuinely need more, contact support.'),
+      'Atingiste o limite de importações (máx 2/h, 5/dia, 30/mês). Cap pensado para protecção contra abuso — se precisares mesmo de mais, contacta o suporte. Entretanto, podes exportar CSV no site do banco e usar import determinístico (instantâneo, sem limite).',
+      'You hit the import limit (max 2/h, 5/day, 30/month). Cap designed against abuse — if you genuinely need more, contact support. Meanwhile, you can export CSV from your bank and use the deterministic import (instant, no limit).'),
     code: 'rate_limit',
   })
   if (limited) return limited

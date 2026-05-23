@@ -51,15 +51,21 @@ export async function POST(req: NextRequest) {
 
     // Per-user AI cost guard. Honest users scan ~5-10 receipts/day. The
     // hourly cap absorbs reasonable bursts (e.g. processing a stack of
-    // receipts at the end of the month); the daily cap puts a hard ceiling
-    // on what a single subscription can cost us in Gemini paid quota.
+    // receipts at the end of the month); the daily and monthly caps put
+    // hard ceilings on Gemini paid quota for a single subscription.
+    //
+    // With 10/h + 30/d + 100/month + paid Gemini Flash (~$0.0001/scan
+    // because receipts are tiny), the absolute worst case is 100 scans ×
+    // $0.0001 = $0.01/user/month. 100 attackers peak at $1/month total.
+    // Tightened May 2026 after billing-anxiety feedback.
     const limited = await guardUser(user.id, 'scan-receipt', [
-      { limit: 30,  windowMs: 60 * 60 * 1000 },        // 30/hour
-      { limit: 100, windowMs: 24 * 60 * 60 * 1000 },   // 100/day
+      { limit: 10,  windowMs: 60 * 60 * 1000 },           // 10/hour
+      { limit: 30,  windowMs: 24 * 60 * 60 * 1000 },      // 30/day
+      { limit: 100, windowMs: 30 * 24 * 60 * 60 * 1000 }, // 100/month
     ], {
       error: locale === 'en'
-        ? 'Daily scan limit reached (100/day). It resets in 24h. If you genuinely need more, contact support.'
-        : 'Atingiste o limite diário de scans (100/dia). Reinicia em 24h. Se precisares mesmo de mais, contacta o suporte.',
+        ? 'Scan limit reached (max 10/h, 30/day, 100/month). Cap is anti-abuse. Add transactions manually meanwhile; if you genuinely need more, contact support.'
+        : 'Atingiste o limite de scans (máx 10/h, 30/dia, 100/mês). Cap pensado para protecção contra abuso. Entretanto adiciona transações manualmente; se precisares mesmo de mais, contacta o suporte.',
       code: 'rate_limit',
     })
     if (limited) return limited

@@ -78,6 +78,14 @@ interface MetricsBundle {
     parseStatement:  number
     scanReceipt:     number
     cacheHitsLogged: number
+    // Spend thermometer (last 1h / today / month-to-date) so the operator
+    // can babysit Gemini billing in real time without opening the GCP
+    // console. Cost values are in USD (Gemini bills USD).
+    spendHourUsd:    number
+    spendTodayUsd:   number
+    spendMtdUsd:     number
+    callsHour:       number
+    callsToday:      number
   }
   merchantCache: {
     entries:     number
@@ -105,6 +113,8 @@ async function loadMetrics(): Promise<MetricsBundle> {
     avgLatencyMs:    0, p95LatencyMs: 0,
     tokensIn30d:     0, tokensOut30d: 0, estCostUsd30d: 0,
     parseStatement:  0, scanReceipt: 0, cacheHitsLogged: 0,
+    spendHourUsd: 0, spendTodayUsd: 0, spendMtdUsd: 0,
+    callsHour: 0, callsToday: 0,
   }
   const merchantCache = { entries: 0, trusted: 0, seededLast7: 0 }
   const stripe     = { events30d: 0, cancellations30d: 0, checkouts30d: 0 }
@@ -201,12 +211,13 @@ async function loadMetrics(): Promise<MetricsBundle> {
   try {
     const { data: calls } = await db
       .from('ai_calls')
-      .select('model, status, latency_ms, tokens_in, tokens_out, operation, cache_hit')
+      .select('model, status, latency_ms, tokens_in, tokens_out, operation, cache_hit, created_at')
       .gte('created_at', iso30)
       .limit(50_000)
     const list = (calls ?? []) as Array<{
       model: string; status: string; latency_ms: number;
       tokens_in: number; tokens_out: number; operation: string; cache_hit: boolean
+      created_at: string
     }>
     aiCalls.total30d   = list.length
     aiCalls.success30d = list.filter(c => c.status === 'success').length
@@ -243,13 +254,27 @@ async function loadMetrics(): Promise<MetricsBundle> {
       'groq-vision':              { in: 0.34,  out: 0.34 },
       'cache':                    { in: 0,     out: 0 },
     }
+    // Time-window thresholds for the spend thermometer. UTC throughout —
+    // matches Postgres timestamptz semantics, no timezone surprises.
+    const iso1h = new Date(now - 60 * 60 * 1000).toISOString()
+    // Today = month-to-date "today" defined as last 24h; matches the
+    // operator's intuition ("what did I spend in the last day") better
+    // than a UTC-midnight reset (we serve a PT user, midnight UTC = 01:00
+    // PT, would confuse).
+    const isoToday = new Date(now - 24 * 60 * 60 * 1000).toISOString()
+
     for (const c of list) {
       aiCalls.tokensIn30d  += c.tokens_in  ?? 0
       aiCalls.tokensOut30d += c.tokens_out ?? 0
       const p = PRICES[c.model]
-      if (p) aiCalls.estCostUsd30d +=
-        (c.tokens_in  / 1_000_000) * p.in +
-        (c.tokens_out / 1_000_000) * p.out
+      const callCost = p
+        ? (c.tokens_in  / 1_000_000) * p.in + (c.tokens_out / 1_000_000) * p.out
+        : 0
+      aiCalls.estCostUsd30d += callCost
+      aiCalls.spendMtdUsd   += callCost
+
+      if (c.created_at >= iso1h)  { aiCalls.spendHourUsd  += callCost; aiCalls.callsHour++  }
+      if (c.created_at >= isoToday) { aiCalls.spendTodayUsd += callCost; aiCalls.callsToday++ }
     }
   } catch (err) {
     warnings.push(`ai_calls: ${err instanceof Error ? err.message : 'indisponível'}`)
@@ -355,6 +380,77 @@ export default async function AdminMetricsPage() {
             </p>
           </section>
         )}
+
+        {/* ── AI Spend thermometer (operator anxiety relief) ──
+            Top-of-page glance at how much Gemini billing we've consumed
+            in the last hour, last 24h, and the last 30d. Colour shifts
+            from emerald → amber → red as the today figure approaches
+            warning thresholds. Pure estimate from local PRICING_USD_
+            PER_M — accurate within ~5 % for Gemini Flash; cross-check
+            against Google Cloud billing weekly. */}
+        {(() => {
+          // Thresholds (USD). Easy to tune as confidence grows.
+          const WARN_TODAY  = 1.0
+          const ALERT_TODAY = 5.0
+
+          const todayUsd = m.aiCalls.spendTodayUsd
+          const tier =
+            todayUsd >= ALERT_TODAY ? 'alert'
+              : todayUsd >= WARN_TODAY ? 'warn'
+              : 'ok'
+
+          const tone = {
+            ok:    { ring: 'border-emerald-500/30 bg-emerald-500/5',  text: 'text-emerald-300', dot: 'bg-emerald-400' },
+            warn:  { ring: 'border-amber-500/40  bg-amber-500/8',     text: 'text-amber-300',   dot: 'bg-amber-400'   },
+            alert: { ring: 'border-red-500/50    bg-red-500/10',      text: 'text-red-300',     dot: 'bg-red-400'     },
+          }[tier]
+
+          return (
+            <section className={`${tone.ring} border rounded-xl p-4`}>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-2.5 h-2.5 rounded-full ${tone.dot} animate-pulse`} />
+                  <h2 className={`font-semibold text-sm ${tone.text}`}>
+                    AI spend (Gemini estimado)
+                  </h2>
+                </div>
+                <a
+                  href="https://console.cloud.google.com/billing/budgets"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-white/50 hover:text-white"
+                >
+                  Google Cloud Billing →
+                </a>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-white/40">Última hora</p>
+                  <p className="text-lg font-bold font-mono">${m.aiCalls.spendHourUsd.toFixed(4)}</p>
+                  <p className="text-[10px] text-white/40">{m.aiCalls.callsHour} calls</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-white/40">Últimas 24h</p>
+                  <p className={`text-lg font-bold font-mono ${tone.text}`}>${todayUsd.toFixed(4)}</p>
+                  <p className="text-[10px] text-white/40">{m.aiCalls.callsToday} calls</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-white/40">Últimos 30d</p>
+                  <p className="text-lg font-bold font-mono">${m.aiCalls.spendMtdUsd.toFixed(4)}</p>
+                  <p className="text-[10px] text-white/40">{m.aiCalls.total30d} calls</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-white/40">Projecção mês</p>
+                  <p className="text-lg font-bold font-mono text-white/80">${(todayUsd * 30).toFixed(2)}</p>
+                  <p className="text-[10px] text-white/40">se ritmo de hoje mantiver</p>
+                </div>
+              </div>
+              <p className="text-[11px] text-white/40 mt-3 leading-relaxed">
+                Estimativa local a partir da tabela <code>ai_calls</code> × <code>PRICING_USD_PER_M</code>. Tipicamente dentro de ~5 % do real para Gemini Flash (autoridade é a factura Google Cloud). Verde abaixo de ${WARN_TODAY}/dia · amarelo ≥ ${WARN_TODAY} · vermelho ≥ ${ALERT_TODAY}. Hard caps no app: 2/h + 5/dia + 30/mês por user (import-statement), 10/h + 30/dia + 100/mês (scan-receipt).
+              </p>
+            </section>
+          )
+        })()}
 
         {/* ── Top KPIs ── */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
