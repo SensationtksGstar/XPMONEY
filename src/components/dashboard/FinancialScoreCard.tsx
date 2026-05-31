@@ -1,8 +1,10 @@
 'use client'
 
 import { useFinancialScore } from '@/hooks/useFinancialScore'
-import { getScoreLevel, SCORE_LABELS } from '@/types'
+import { getScoreLevel, type ScoreLevel } from '@/types'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 const SCORE_COLORS: Record<string, string> = {
   critical: '#ef4444',
@@ -12,9 +14,19 @@ const SCORE_COLORS: Record<string, string> = {
   elite:    '#8b5cf6',
 }
 
+// Locale-aware level labels — replaces the PT-only SCORE_LABELS from types.
+const SCORE_LEVEL_KEY: Record<ScoreLevel, TranslationKey> = {
+  critical: 'score.level_critical',
+  low:      'score.level_low',
+  medium:   'score.level_medium',
+  good:     'score.level_good',
+  elite:    'score.level_elite',
+}
+
 interface Props { userId: string }
 
 export function FinancialScoreCard({ userId }: Props) {
+  const t = useT()
   const { score, loading } = useFinancialScore(userId)
 
   if (loading) {
@@ -29,7 +41,7 @@ export function FinancialScoreCard({ userId }: Props) {
   const value    = score?.score ?? 0
   const level    = getScoreLevel(value)
   const color    = SCORE_COLORS[level]
-  const label    = SCORE_LABELS[level]
+  const label    = t(SCORE_LEVEL_KEY[level])
   const radius   = 45
   const circ     = 2 * Math.PI * radius
   const offset   = circ - (value / 100) * circ
@@ -37,7 +49,7 @@ export function FinancialScoreCard({ userId }: Props) {
   return (
     <div className="glass-card p-6 flex flex-col items-center">
       <div className="flex items-center justify-between w-full mb-4">
-        <h2 className="text-sm font-semibold text-white/60">Score Financeiro</h2>
+        <h2 className="text-sm font-semibold text-white/60">{t('score.title')}</h2>
         <span
           className="text-xs font-bold px-2 py-0.5 rounded-full"
           style={{ color, backgroundColor: `${color}20`, border: `1px solid ${color}40` }}
@@ -72,7 +84,7 @@ export function FinancialScoreCard({ userId }: Props) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-4xl font-bold text-white">{value}</span>
-          <span className="text-xs text-white/40">de 100</span>
+          <span className="text-xs text-white/40">{t('score.of_100')}</span>
         </div>
       </div>
 
@@ -80,10 +92,10 @@ export function FinancialScoreCard({ userId }: Props) {
       {score?.breakdown && (
         <div className="w-full mt-4 space-y-2">
           {[
-            { label: 'Poupança',        value: score.breakdown.savings_rate },
-            { label: 'Controlo',        value: score.breakdown.expense_control },
-            { label: 'Consistência',    value: score.breakdown.consistency },
-            { label: 'Objetivos',       value: score.breakdown.goals_progress },
+            { label: t('summary.savings'),    value: score.breakdown.savings_rate },
+            { label: t('score.control'),      value: score.breakdown.expense_control },
+            { label: t('score.consistency'),  value: score.breakdown.consistency },
+            { label: t('score.goals'),        value: score.breakdown.goals_progress },
           ].map(item => (
             <div key={item.label} className="flex items-center gap-2">
               <span className="text-xs text-white/40 w-24">{item.label}</span>
@@ -106,9 +118,9 @@ export function FinancialScoreCard({ userId }: Props) {
           'text-red-400':   score.trend === 'down',
           'text-white/40':  score.trend === 'stable',
         })}>
-          {score.trend === 'up'     && '↑ A subir'}
-          {score.trend === 'down'   && '↓ A descer'}
-          {score.trend === 'stable' && '→ Estável'}
+          {score.trend === 'up'     && t('score.trend_up')}
+          {score.trend === 'down'   && t('score.trend_down')}
+          {score.trend === 'stable' && t('score.trend_stable')}
         </div>
       )}
     </div>

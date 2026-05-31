@@ -8,6 +8,7 @@ import {
   type DebtStrategy,
 } from '@/lib/killDebt'
 import { formatCurrency } from '@/lib/utils'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 /**
  * DebtWidget — card compacto no dashboard que promove e resume o
@@ -25,6 +26,7 @@ import { formatCurrency } from '@/lib/utils'
  * página /dividas — zero double-fetch.
  */
 export function DebtWidget() {
+  const { t, locale } = useLocale()
   const { debts, loading } = useDebts()
 
   if (loading) {
@@ -65,10 +67,10 @@ export function DebtWidget() {
             </div>
             <div>
               <p className="font-bold text-emerald-200">
-                {killed.length} {killed.length === 1 ? 'dívida abatida' : 'dívidas abatidas'}
+                {t(killed.length === 1 ? 'debt.killed_one' : 'debt.killed_other', { n: killed.length })}
               </p>
               <p className="text-xs text-white/55">
-                Livre de dívidas — mantém assim.
+                {t('debt.free')}
               </p>
             </div>
           </div>
@@ -98,13 +100,13 @@ export function DebtWidget() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sword className="w-4 h-4 text-red-400" />
-          <h3 className="font-semibold text-white text-sm">Mata-Dívidas</h3>
+          <h3 className="font-semibold text-white text-sm">{t('debt.title')}</h3>
           <span className="text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded-full uppercase">
             Pro
           </span>
         </div>
         <span className="text-[11px] text-white/50 flex items-center gap-1 group-hover:text-white/80 transition-colors">
-          Ver
+          {t('debt.see')}
           <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
         </span>
       </div>
@@ -113,17 +115,17 @@ export function DebtWidget() {
       <div className="flex items-end justify-between mb-2">
         <div>
           <p className="text-2xl font-black text-white tabular-nums">
-            {formatCurrency(currentTotal)}
+            {formatCurrency(currentTotal, 'EUR', locale)}
           </p>
           <p className="text-[11px] text-white/50">
-            em {active.length} {active.length === 1 ? 'dívida' : 'dívidas'} activas
+            {t(active.length === 1 ? 'debt.active_one' : 'debt.active_other', { n: active.length })}
           </p>
         </div>
         <div className="text-right">
           <p className="text-sm font-bold text-emerald-300 tabular-nums">
-            {formatCurrency(paidOff)}
+            {formatCurrency(paidOff, 'EUR', locale)}
           </p>
-          <p className="text-[10px] text-white/45">já abatido</p>
+          <p className="text-[10px] text-white/45">{t('debt.paid_off')}</p>
         </div>
       </div>
 
@@ -143,11 +145,11 @@ export function DebtWidget() {
             <div className="flex items-center gap-2">
               <p className="text-xs font-semibold text-white truncate">{next.name}</p>
               <span className="text-[9px] font-bold bg-red-500/15 text-red-300 border border-red-500/30 px-1 py-px rounded-full whitespace-nowrap">
-                Próximo
+                {t('debt.next')}
               </span>
             </div>
             <p className="text-[11px] text-white/50 flex items-center gap-2 mt-0.5">
-              <span className="tabular-nums">{formatCurrency(Number(next.current_amount))}</span>
+              <span className="tabular-nums">{formatCurrency(Number(next.current_amount), 'EUR', locale)}</span>
               {next.interest_rate > 0 && (
                 <>
                   <span className="text-white/30">·</span>
@@ -160,7 +162,7 @@ export function DebtWidget() {
               {proj && (
                 <>
                   <span className="text-white/30">·</span>
-                  <span className="text-white/60">só mínimo: {formatMonths(proj.months)}</span>
+                  <span className="text-white/60">{t('debt.min_only', { months: formatMonths(proj.months) })}</span>
                 </>
               )}
             </p>

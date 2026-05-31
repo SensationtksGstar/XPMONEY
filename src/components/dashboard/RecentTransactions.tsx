@@ -5,6 +5,7 @@ import { useTransactions } from '@/hooks/useTransactions'
 import { formatCurrency, formatDate, getTransactionColor, getTransactionSign } from '@/lib/utils'
 import { ArrowRight } from 'lucide-react'
 import { CategoryIcon } from '@/components/ui/CategoryIcon'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 interface Props {
   userId: string
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function RecentTransactions({ userId, limit = 5 }: Props) {
+  const { t, locale } = useLocale()
   const { transactions, loading } = useTransactions(userId)
   const recent = transactions.slice(0, limit)
 
@@ -35,9 +37,9 @@ export function RecentTransactions({ userId, limit = 5 }: Props) {
   if (recent.length === 0) {
     return (
       <div className="glass-card p-8 text-center">
-        <p className="text-white/40 text-sm">Sem transações ainda.</p>
+        <p className="text-white/40 text-sm">{t('recent.empty')}</p>
         <Link href="/transactions" className="text-green-400 text-sm font-medium mt-2 inline-block hover:text-green-300">
-          Adicionar primeira transação →
+          {t('recent.empty_cta')} →
         </Link>
       </div>
     )
@@ -58,9 +60,9 @@ export function RecentTransactions({ userId, limit = 5 }: Props) {
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">
-                {tx.description || tx.category?.name || 'Transação'}
+                {tx.description || tx.category?.name || t('recent.fallback_name')}
               </p>
-              <p className="text-xs text-white/35 mt-0.5">{formatDate(tx.date)}</p>
+              <p className="text-xs text-white/35 mt-0.5">{formatDate(tx.date, locale)}</p>
             </div>
 
             <span className={`text-sm font-bold tabular-nums ${getTransactionColor(tx.type)}`}>
@@ -71,7 +73,7 @@ export function RecentTransactions({ userId, limit = 5 }: Props) {
       </div>
       <div className="px-4 py-3 border-t border-white/5">
         <Link href="/transactions" className="flex items-center justify-center gap-1 text-xs text-white/40 hover:text-white transition-colors">
-          Ver todas as transações
+          {t('breakdown.see_all')}
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>

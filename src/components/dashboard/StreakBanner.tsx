@@ -3,26 +3,30 @@
 import { Flame, Zap } from 'lucide-react'
 import { useVoltix } from '@/hooks/useVoltix'
 import { useUser }   from '@clerk/nextjs'
+import { useT }      from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 import Link          from 'next/link'
 
-const STREAK_MESSAGES: Record<number, string> = {
-  0:  'Regista hoje e começa a tua sequência! 🚀',
-  1:  'Primeiro dia! Volta amanhã para manter o streak.',
-  3:  '3 dias seguidos! Estás a criar o hábito.',
-  7:  'Uma semana perfeita! 🏆 +100 XP de bónus.',
-  14: 'Duas semanas imparáveis!',
-  30: '30 dias! Lenda absoluta. 👑',
-}
+// Milestones (desc) → translation key. Resolved with t() in the component
+// so the copy follows the active locale.
+const STREAK_MILESTONES: Array<{ at: number; key: TranslationKey }> = [
+  { at: 30, key: 'streak.msg_30' },
+  { at: 14, key: 'streak.msg_14' },
+  { at: 7,  key: 'streak.msg_7'  },
+  { at: 3,  key: 'streak.msg_3'  },
+  { at: 1,  key: 'streak.msg_1'  },
+  { at: 0,  key: 'streak.msg_0'  },
+]
 
-function getMessage(streak: number): string {
-  const keys = Object.keys(STREAK_MESSAGES).map(Number).sort((a, b) => b - a)
-  for (const k of keys) {
-    if (streak >= k) return STREAK_MESSAGES[k]
+function messageKey(streak: number): TranslationKey {
+  for (const m of STREAK_MILESTONES) {
+    if (streak >= m.at) return m.key
   }
-  return 'Mantém o streak para ganhar XP bónus!'
+  return 'streak.msg_default'
 }
 
 export function StreakBanner() {
+  const t                   = useT()
   const { user }            = useUser()
   const { voltix, loading } = useVoltix(user?.id ?? '')
 
@@ -38,10 +42,10 @@ export function StreakBanner() {
             <Flame className="w-5 h-5 text-white/30" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white">Começa o teu streak hoje</p>
-            <p className="text-xs text-white/40">Regista uma transação e ganha +20 XP</p>
+            <p className="text-sm font-semibold text-white">{t('streak.start_title')}</p>
+            <p className="text-xs text-white/40">{t('streak.start_sub')}</p>
           </div>
-          <span className="text-xs text-green-400 font-bold flex-shrink-0">Registar →</span>
+          <span className="text-xs text-green-400 font-bold flex-shrink-0">{t('streak.start_cta')} →</span>
         </div>
       </Link>
     )
@@ -65,9 +69,12 @@ export function StreakBanner() {
 
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-bold ${textColor}`}>
-          {isLegend ? '👑' : '🔥'} {streak} {streak === 1 ? 'dia' : 'dias'} consecutivos!
+          {t(streak === 1 ? 'streak.consecutive_one' : 'streak.consecutive_other', {
+            emoji: isLegend ? '👑' : '🔥',
+            n:     streak,
+          })}
         </p>
-        <p className="text-xs text-white/40 truncate">{getMessage(streak)}</p>
+        <p className="text-xs text-white/40 truncate">{t(messageKey(streak))}</p>
       </div>
 
       {/* XP bonus indicator at milestone */}

@@ -2,11 +2,13 @@
 
 import { useXP } from '@/hooks/useXP'
 import { getLevelFromXP, getNextLevel, getXPPercentage, calculateXPProgress, formatXP } from '@/lib/gamification'
+import { useT } from '@/lib/i18n/LocaleProvider'
 import { Zap } from 'lucide-react'
 
 interface Props { userId: string }
 
 export function XPProgressBar({ userId }: Props) {
+  const t = useT()
   const { xp, loading } = useXP(userId)
 
   if (loading) {
@@ -29,7 +31,7 @@ export function XPProgressBar({ userId }: Props) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-yellow-400" />
-          <span className="text-sm font-semibold text-white/60">Nível {level.number}</span>
+          <span className="text-sm font-semibold text-white/60">{t('xp.level', { n: level.number })}</span>
         </div>
         <span className="text-sm font-bold text-yellow-400">{level.icon} {level.name}</span>
       </div>
@@ -50,14 +52,14 @@ export function XPProgressBar({ userId }: Props) {
         <span className="text-white/40">{formatXP(progress.xp_in_current_level)}</span>
         <span className="text-white/40">
           {nextLevel
-            ? `${formatXP(progress.xp_to_next_level)} para nível ${nextLevel.number}`
-            : 'Nível máximo!'
+            ? t('xp.to_next', { xp: formatXP(progress.xp_to_next_level), n: nextLevel.number })
+            : t('xp.max_level')
           }
         </span>
       </div>
 
       <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
-        <span className="text-xs text-white/40">XP Total</span>
+        <span className="text-xs text-white/40">{t('xp.total')}</span>
         <span className="text-sm font-bold text-yellow-400">{formatXP(totalXP)}</span>
       </div>
     </div>

@@ -3,6 +3,8 @@
 import Link           from 'next/link'
 import { LineChart, TrendingUp, BookOpen, Lock, Crown } from 'lucide-react'
 import { useUserPlan } from '@/lib/contexts/UserPlanContext'
+import { useT }        from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 const PLAN_RANK: Record<string, number> = {
   free:    0,
@@ -15,8 +17,8 @@ const PLAN_RANK: Record<string, number> = {
 
 interface Tool {
   href:     string
-  label:    string
-  desc:     string
+  labelKey: TranslationKey
+  descKey:  TranslationKey
   icon:     typeof LineChart
   emoji:    string
   gradient: string
@@ -27,24 +29,24 @@ interface Tool {
 const TOOLS: Tool[] = [
   {
     href:     '/perspetiva',
-    label:    'Perspetiva',
-    desc:     'Custo real em horas de trabalho',
+    labelKey: 'protools.perspetiva_label',
+    descKey:  'protools.perspetiva_desc',
     icon:     LineChart,
     emoji:    '👁️',
     gradient: 'from-purple-600 to-indigo-500',
   },
   {
     href:     '/simulador',
-    label:    'Simulador',
-    desc:     'Projeta os teus investimentos',
+    labelKey: 'protools.simulador_label',
+    descKey:  'protools.simulador_desc',
     icon:     TrendingUp,
     emoji:    '📈',
     gradient: 'from-blue-600 to-cyan-500',
   },
   {
     href:     '/cursos',
-    label:    'Academia',
-    desc:     'Cursos com certificado oficial',
+    labelKey: 'protools.academia_label',
+    descKey:  'protools.academia_desc',
     icon:     BookOpen,
     emoji:    '🎓',
     gradient: 'from-emerald-600 to-green-500',
@@ -52,19 +54,20 @@ const TOOLS: Tool[] = [
 ]
 
 export function ProToolsShowcase() {
+  const t = useT()
   const { plan } = useUserPlan()
   const userRank = PLAN_RANK[plan] ?? 0
   const premiumRequired = 1
 
   return (
-    <section aria-label="Ferramentas Premium">
+    <section aria-label={t('protools.title')}>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-semibold text-white flex items-center gap-1.5">
           <Crown className="w-4 h-4 text-purple-400" />
-          Ferramentas Premium
+          {t('protools.title')}
         </h2>
         <Link href="/settings/billing" className="text-xs text-purple-300 hover:text-purple-200">
-          Ver plano →
+          {t('protools.see_plan')} →
         </Link>
       </div>
 
@@ -90,10 +93,10 @@ export function ProToolsShowcase() {
               </div>
               <div className="text-center">
                 <div className={`text-xs font-bold ${locked ? 'text-white/60' : 'text-white'}`}>
-                  {tool.label}
+                  {t(tool.labelKey)}
                 </div>
                 <div className="text-[10px] text-white/40 leading-tight mt-0.5 line-clamp-2 hidden sm:block">
-                  {tool.desc}
+                  {t(tool.descKey)}
                 </div>
               </div>
 

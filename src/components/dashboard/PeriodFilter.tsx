@@ -19,11 +19,25 @@
 import { useState } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { Calendar, X } from 'lucide-react'
-import { usePeriod, PERIOD_LABELS, type PeriodKey } from '@/lib/contexts/PeriodContext'
+import { usePeriod, type PeriodKey } from '@/lib/contexts/PeriodContext'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 const VISIBLE_ORDER: PeriodKey[] = [
   'this-month', 'last-month', 'last-3m', 'last-6m', 'last-12m', 'ytd', 'all',
 ]
+
+// Locale-aware labels — replaces the PT-only PERIOD_LABELS constant.
+const PERIOD_KEY: Record<PeriodKey, TranslationKey> = {
+  'this-month': 'period.this_month',
+  'last-month': 'period.last_month',
+  'last-3m':    'period.last_3m',
+  'last-6m':    'period.last_6m',
+  'last-12m':   'period.last_12m',
+  'ytd':        'period.ytd',
+  'all':        'period.all',
+  'custom':     'period.custom',
+}
 
 function todayIso(): string {
   return new Date().toISOString().split('T')[0]
@@ -35,6 +49,7 @@ function aMonthAgoIso(): string {
 }
 
 export function PeriodFilter() {
+  const t = useT()
   const { key, custom, setPeriod } = usePeriod()
   const [showCustom, setShowCustom] = useState(false)
   // Local editable state for the custom date inputs. Hydrated from the
@@ -78,7 +93,7 @@ export function PeriodFilter() {
                     transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                   />
                 )}
-                <span className="relative">{PERIOD_LABELS[k]}</span>
+                <span className="relative">{t(PERIOD_KEY[k])}</span>
               </button>
             )
           })}
@@ -103,7 +118,7 @@ export function PeriodFilter() {
             <span className="relative">
               {key === 'custom' && custom
                 ? `${custom.from} → ${custom.to}`
-                : 'Personalizado'}
+                : t('period.custom')}
             </span>
           </button>
         </div>
@@ -123,7 +138,7 @@ export function PeriodFilter() {
           >
             <div className="mt-3 flex flex-wrap items-end gap-2 pt-3 border-t border-white/8">
               <label className="flex flex-col gap-1 text-[10px] uppercase tracking-wider text-white/40">
-                De
+                {t('period.from')}
                 <input
                   type="date"
                   value={from}
@@ -132,7 +147,7 @@ export function PeriodFilter() {
                 />
               </label>
               <label className="flex flex-col gap-1 text-[10px] uppercase tracking-wider text-white/40">
-                Até
+                {t('period.to')}
                 <input
                   type="date"
                   value={to}
@@ -145,12 +160,12 @@ export function PeriodFilter() {
                 onClick={applyCustom}
                 className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-4 py-1.5 rounded-lg text-xs min-h-[36px] active:scale-95 transition-transform"
               >
-                Aplicar
+                {t('period.apply')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowCustom(false)}
-                aria-label="Fechar selector"
+                aria-label={t('period.close')}
                 className="text-white/40 hover:text-white p-1.5 ml-auto min-h-[36px] min-w-[36px]"
               >
                 <X className="w-4 h-4" />
