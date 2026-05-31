@@ -495,6 +495,11 @@ export const pt = {
   'networth.see_details':     'Ver património',
   'networth.trend_title':     'Evolução',
   'networth.trend_hint':      'O teu histórico aparece aqui à medida que vais actualizando os saldos.',
+  'recurring.title':          'Despesas recorrentes',
+  'recurring.subtitle':       'O teu custo fixo mensal estimado',
+  'recurring.estimate_label': 'estimativa mensal',
+  'recurring.in_months':      'em {n} meses',
+  'recurring.note':           'Estimado a partir dos últimos 6 meses.',
 
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'Como funciona',
@@ -2087,6 +2092,11 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'networth.see_details':     'View net worth',
   'networth.trend_title':     'Trend',
   'networth.trend_hint':      'Your history builds here as you keep updating your balances.',
+  'recurring.title':          'Recurring expenses',
+  'recurring.subtitle':       'Your estimated monthly fixed cost',
+  'recurring.estimate_label': 'monthly estimate',
+  'recurring.in_months':      'in {n} months',
+  'recurring.note':           'Estimated from the last 6 months.',
 
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'How it works',

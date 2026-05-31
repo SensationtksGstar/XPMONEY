@@ -52,6 +52,10 @@ const NetWorthWidget = dynamic(
   () => import('@/components/dashboard/NetWorthWidget').then(m => ({ default: m.NetWorthWidget })),
   { ssr: false, loading: () => null },
 )
+const RecurringExpenses = dynamic(
+  () => import('@/components/dashboard/RecurringExpenses').then(m => ({ default: m.RecurringExpenses })),
+  { ssr: false, loading: () => null },
+)
 const DebtWidget = dynamic(
   () => import('@/components/dashboard/DebtWidget').then(m => ({ default: m.DebtWidget })),
   { ssr: false, loading: () => null },
@@ -252,6 +256,10 @@ export default function DashboardPage() {
           (por categoria) expondo a compra única grande. Período-aware via
           usePeriod; partilha o cache ['summary', qs] com os outros widgets. */}
       <BiggestExpenses />
+
+      {/* Despesas recorrentes — custo fixo mensal estimado dos últimos 6
+          meses. Render condicional (devolve null se nada detectado). */}
+      <RecurringExpenses />
 
       {/* Fluxo de caixa — única leitura de TENDÊNCIA temporal do dashboard
           (receitas vs despesas nos últimos 6 meses). Janela fixa de 6 meses
