@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
 import { LandingChat } from '@/components/landing/LandingChat'
 
 /**
@@ -111,28 +110,22 @@ export function DragonCoinFAB() {
 
           {/* Chat card — slides up from bottom on mobile, anchored
               bottom-right on desktop. Max dimensions keep it readable on
-              large screens without becoming a full-page modal. */}
+              large screens without becoming a full-page modal.
+              animate-slide-up-fast is the snappier 200 ms variant — the
+              old 320 ms felt sluggish on cold-tap. */}
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="dragon-coin-title"
-            className="fixed z-[100] inset-x-4 bottom-4 lg:inset-auto lg:right-6 lg:bottom-6 lg:w-[400px] animate-slide-up shadow-2xl shadow-black/60 rounded-2xl overflow-hidden"
+            className="fixed z-[100] inset-x-4 bottom-4 lg:inset-auto lg:right-6 lg:bottom-6 lg:w-[400px] animate-slide-up-fast shadow-2xl shadow-black/60 rounded-2xl overflow-hidden"
           >
-            {/* Close button — floating above the chat so it's reachable
-                even when the chat header scrolls internally. */}
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Fechar chat"
-              className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 flex items-center justify-center transition-colors z-10"
-            >
-              <X className="w-4 h-4 text-white" />
-            </button>
-
-            {/* Hidden heading for screen readers */}
+            {/* Hidden heading for screen readers. The visible X close
+                button is rendered INSIDE the chat header (LandingChat
+                receives `onClose`) so it's discoverable in the natural
+                top-right spot rather than floating off-card above. */}
             <h2 id="dragon-coin-title" className="sr-only">Dragon Coin — chat</h2>
 
-            <LandingChat />
+            <LandingChat onClose={() => setOpen(false)} />
           </div>
         </>
       )}

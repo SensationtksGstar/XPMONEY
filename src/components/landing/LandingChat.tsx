@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Send, User, MessageSquare } from 'lucide-react'
+import { Send, User, MessageSquare, X } from 'lucide-react'
 
 /** Avatar do Dragon Coin — retrato sozinho, sem moldura verde, apenas com
  *  glow delicado via drop-shadow. Usado no header e em cada mensagem do
@@ -62,7 +62,14 @@ const QUICK_PROMPTS = [
   'Como cancelo a subscrição?',
 ]
 
-export function LandingChat() {
+interface ChatProps {
+  /** When provided, an X button appears in the header that calls back to
+   *  whoever embedded the chat (e.g. the floating DragonCoinFAB so the
+   *  user can dismiss without hunting for an off-card close button). */
+  onClose?: () => void
+}
+
+export function LandingChat({ onClose }: ChatProps = {}) {
   const [messages, setMessages] = useState<Message[]>([SEED_ASSISTANT])
   const [input,    setInput]    = useState('')
   const [loading,  setLoading]  = useState(false)
@@ -132,8 +139,22 @@ export function LandingChat() {
           className="text-[11px] text-white/60 hover:text-white transition-colors inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/5"
         >
           <MessageSquare className="w-3.5 h-3.5" />
-          Falar com humano
+          <span className="hidden sm:inline">Falar com humano</span>
+          <span className="sm:hidden">Humano</span>
         </Link>
+        {/* Close X — only rendered when the chat is embedded as an
+            overlay (DragonCoinFAB). Inline embedding (the FAQ section)
+            keeps the chat permanently visible, so no close button. */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar conversa"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/8 transition-colors -mr-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Messages */}

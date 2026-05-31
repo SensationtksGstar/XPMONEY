@@ -90,7 +90,7 @@ export class AIProvidersError extends Error {
 // Keep this contract if you edit the prompts.
 
 const RECEIPT_PROMPT_PT = `És um extrator de dados de recibos/facturas portuguesas.
-Categorias disponíveis: Alimentação, Transporte, Saúde, Lazer, Educação, Casa, Roupas, Tecnologia, Salário, Freelance, Outros.
+Categorias disponíveis: Alimentação, Restaurante, Transporte, Combustível, Saúde, Lazer, Viagens, Educação, Casa, Serviços, Subscrições, Impostos, Seguros, Animais, Roupas, Tecnologia, Salário, Freelance, Investimentos, Dividendos, Renda, Reembolsos, Vendas, Prémios, Transferência, Outros.
 Para category_hint, escolhe a categoria mais adequada com base no comerciante/itens.
 Para date, usa formato YYYY-MM-DD. Se não houver ano visível, assume o ano actual.
 
@@ -109,7 +109,7 @@ Devolve APENAS este JSON (sem markdown, sem texto extra):
 // EN variant — behaviourally identical. Categories stay in PT (stored in DB,
 // see note at top of section). `description` is emitted in English.
 const RECEIPT_PROMPT_EN = `You are a data extractor for Portuguese receipts and invoices.
-Available categories (Portuguese — output them VERBATIM in the PT form, do NOT translate): Alimentação, Transporte, Saúde, Lazer, Educação, Casa, Roupas, Tecnologia, Salário, Freelance, Outros.
+Available categories (Portuguese — output them VERBATIM in the PT form, do NOT translate): Alimentação, Restaurante, Transporte, Combustível, Saúde, Lazer, Viagens, Educação, Casa, Serviços, Subscrições, Impostos, Seguros, Animais, Roupas, Tecnologia, Salário, Freelance, Investimentos, Dividendos, Renda, Reembolsos, Vendas, Prémios, Transferência, Outros.
 For category_hint, pick the closest semantic match from the list above based on the merchant/items, and output the Portuguese name exactly as written.
 For date, use format YYYY-MM-DD. If no year is visible, assume the current year.
 

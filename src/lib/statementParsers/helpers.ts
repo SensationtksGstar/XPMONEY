@@ -103,37 +103,65 @@ export function categorize(description: string, type: 'income' | 'expense'): str
   if (type === 'income') {
     if (/\b(SALARIO|ORDENADO|VENCIMENTO|PROCESSAMENTO\s*SALAR)\b/.test(d)) return 'Salário'
     if (/\b(FREELANC|HONORARI|RECIBO\s*VERDE)\b/.test(d))                  return 'Freelance'
+    if (/\b(REEMBOLSO|REEMB[.\s]|RESTITUI[CÇ][AÃ]O\s*IRS|DEVOLU[CÇ][AÃ]O)\b/.test(d)) return 'Reembolsos'
+    if (/\b(DIVIDENDO|RENDIMENTO\s*CAPITAIS|JUROS\s*POSITIVOS)\b/.test(d)) return 'Dividendos'
+    if (/\b(ARRENDAMENTO|RECEB[.\s].*RENDA|RENDA\s*HABITACAO)\b/.test(d))  return 'Renda'
+    if (/\b(VENDA\b|VENDIDO|OLX|VINTED)\b/.test(d))                       return 'Vendas'
+    if (/\b(PREMIO|BONUS|GRATIFICAC|LOTARI|EUROMILHOES)\b/.test(d))       return 'Prémios'
     return 'Outros'
   }
 
-  // Food / supermarkets / restaurants
+  // ── Restaurante (split do antigo "Alimentação")
+  if (/\b(MCDONALD|BURGER\s*KING|KFC|TELEPIZZA|PIZZA\s*HUT|STARBUCKS|H3\b|VITAMINAS|TGI|WOK\s*TO\s*WALK)\b/.test(d))           return 'Restaurante'
+  if (/\b(CAFE|PASTELARIA|RESTAURANTE|CHURRASQUEIRA|SNACK|TASCA|TASQUINHA|PADARIA)\b/.test(d))                                  return 'Restaurante'
+  if (/\b(GLOVO|UBER\s*EATS|BOLT\s*FOOD)\b/.test(d))                                                                            return 'Restaurante'
+
+  // Alimentação — supermercados
   if (/\b(PINGO\s*DOCE|CONTINENTE|LIDL|ALDI|AUCHAN|MERCADONA|INTERMARCH|MINI[\s-]?PRECO|EL\s*CORTE|APOLONIA|JUMBO)\b/.test(d)) return 'Alimentação'
-  if (/\b(MCDONALD|BURGER\s*KING|KFC|TELEPIZZA|PIZZA\s*HUT|STARBUCKS|H3\b|VITAMINAS|TGI|WOK\s*TO\s*WALK)\b/.test(d))           return 'Alimentação'
-  if (/\b(CAFE|PASTELARIA|RESTAURANTE|CHURRASQUEIRA|SNACK|TASCA|TASQUINHA|PADARIA)\b/.test(d))                                  return 'Alimentação'
-  if (/\b(GLOVO|UBER\s*EATS|BOLT\s*FOOD)\b/.test(d))                                                                            return 'Alimentação'
 
-  // Transport: fuel
-  if (/\b(GALP|REPSOL|CEPSA|PRIO\b|BP\s|ESTACAO\s*SERVICO|POSTO\s*COMBUST)\b/.test(d)) return 'Transportes'
-  // Transport: rideshare / public
-  if (/\b(UBER\b|BOLT\b|FREE\s*NOW|CABIFY|TAXI)\b/.test(d))                            return 'Transportes'
-  if (/\b(CP\b|METRO\b|CARRIS|VIVA\s*VIAGEM|PASSE\s*MENSAL|NAVEGANTE|CARRISTUR)\b/.test(d)) return 'Transportes'
-  if (/\b(VIA\s*VERDE|PORTAGEM|BRISA|LUSOPONTE|ASCENDI)\b/.test(d))                    return 'Transportes'
+  // Combustível (split do antigo "Transportes")
+  if (/\b(GALP|REPSOL|CEPSA|PRIO\b|BP\s|ESTACAO\s*SERVICO|POSTO\s*COMBUST)\b/.test(d)) return 'Combustível'
 
-  // Home: utilities + rent
+  // Transportes — rideshare / público / portagens (Combustível já foi acima)
+  if (/\b(UBER\b|BOLT\b|FREE\s*NOW|CABIFY|TAXI)\b/.test(d))                            return 'Transporte'
+  if (/\b(CP\b|METRO\b|CARRIS|VIVA\s*VIAGEM|PASSE\s*MENSAL|NAVEGANTE|CARRISTUR)\b/.test(d)) return 'Transporte'
+  if (/\b(VIA\s*VERDE|PORTAGEM|BRISA|LUSOPONTE|ASCENDI)\b/.test(d))                    return 'Transporte'
+
+  // Subscrições — streaming + recurring digital (split do antigo "Lazer")
+  if (/\b(NETFLIX|SPOTIFY|HBO|DISNEY|AMAZON\s*PRIME|YOUTUBE\s*PREMIUM|APPLE\.COM\/BILL|APPLE\s*MUSIC|TIDAL|DEEZER|ICLOUD)\b/.test(d)) return 'Subscrições'
+  if (/\b(GOOGLE\s*ONE|MICROSOFT\s*365|OFFICE\s*365|ADOBE|CANVA|NOTION|FIGMA|DROPBOX)\b/.test(d))                                     return 'Subscrições'
+  if (/\b(GINASIO|FITNESS|FITUP|HOLMES\s*PLACE|VIVA\s*GYM|SOLINCA|VITAL\s*BODY)\b/.test(d))                                            return 'Subscrições'
+
+  // Lazer — entretenimento pontual
+  if (/\b(CINEMA|NOS\s*CINEMAS|UCI\b|TEATRO|FNAC\s*LIVE|TICKETLINE|BLUETICKET|CASINO)\b/.test(d))                              return 'Lazer'
+  if (/\b(STEAM\b|PLAYSTATION|XBOX|NINTENDO|EPIC\s*GAMES)\b/.test(d))                                                          return 'Lazer'
+
+  // Viagens
+  if (/\b(TAP\b|RYANAIR|EASYJET|VUELING|LUFTHANSA|BOOKING|AIRBNB|EXPEDIA|HOTEL\b|POUSADA|RESORT)\b/.test(d)) return 'Viagens'
+
+  // Casa — utilities + renda (despesa)
   if (/\b(EDP|GALP\s*POWER|GOLDENERGY|IBERDROLA|ENDESA)\b/.test(d))                    return 'Casa'
   if (/\b(MEO\b|NOS\b|VODAFONE|NOWO|MEO\s*FIBRA|DIGI\b)\b/.test(d))                    return 'Casa'
   if (/\b(AGUAS\s*DE|EPAL|SMAS|INDAQUA|VEOLIA)\b/.test(d))                              return 'Casa'
-  if (/\b(RENDA\b|CONDOMINIO|IMOBILIAR|AIRBNB)\b/.test(d))                              return 'Casa'
+  if (/\b(RENDA\b|CONDOMINIO|IMOBILIAR)\b/.test(d))                                     return 'Casa'
   if (/\b(IKEA|LEROY\s*MERLIN|AKI\b|BRICODEPOT)\b/.test(d))                            return 'Casa'
 
-  // Health
+  // Serviços (técnicos / profissionais)
+  if (/\b(CANALIZ|ELECTRICIST|MECANIC|REPARAC|MUDANCAS|LIMPEZA|JARDINAGEM)\b/.test(d)) return 'Serviços'
+  if (/\b(NOTARIO|ADVOGADO|CONTABILIST|CONSULTOR)\b/.test(d))                          return 'Serviços'
+
+  // Seguros
+  if (/\b(SEGUROS?\b|TRANQUILIDADE|FIDELIDADE|ZURICH|ALLIANZ|GENERALI|LIBERTY\s*SEG|MAPFRE|AGEAS)\b/.test(d)) return 'Seguros'
+
+  // Impostos
+  if (/\b(AT\s+|FINANCAS|IUC\b|IMI\b|IRS\b|SS\s+|SEGURANCA\s+SOCIAL|DGCI|IGSS)\b/.test(d)) return 'Impostos'
+
+  // Animais
+  if (/\b(VETERINARI|PETSHOP|PET\s*SHOP|ZOOMARK|ROYAL\s*CANIN|PURINA)\b/.test(d)) return 'Animais'
+
+  // Saúde
   if (/\b(FARMACIA|PHARMACIE|BENU|HOLON\b)\b/.test(d))                                  return 'Saúde'
   if (/\b(CLINICA|HOSPITAL|MEDICO|DENTIS|LUSIADAS|CUF\b|TROFA\s*SAUDE|MULTIOPTICAS)\b/.test(d)) return 'Saúde'
-
-  // Entertainment / subscriptions
-  if (/\b(NETFLIX|SPOTIFY|HBO|DISNEY|AMAZON\s*PRIME|YOUTUBE\s*PREMIUM|APPLE\.COM\/BILL|APPLE\s*MUSIC|TIDAL|DEEZER)\b/.test(d)) return 'Lazer'
-  if (/\b(CINEMA|NOS\s*CINEMAS|UCI\b|TEATRO|FNAC\s*LIVE|TICKETLINE|BLUETICKET)\b/.test(d))                                       return 'Lazer'
-  if (/\b(STEAM\b|PLAYSTATION|XBOX|NINTENDO|EPIC\s*GAMES)\b/.test(d))                                                            return 'Lazer'
 
   // Tech / electronics
   if (/\b(WORTEN|FNAC\b|MEDIAMARKT|PCDIGA|PCSTORE|RADIO\s*POPULAR|GLOBALDATA)\b/.test(d)) return 'Tecnologia'

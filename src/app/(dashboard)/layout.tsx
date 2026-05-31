@@ -62,7 +62,19 @@ export default async function DashboardLayout({
         {/* Conteúdo principal */}
         <div className="flex-1 flex flex-col min-h-screen lg:ml-64 min-w-0">
           <TopBar />
-          <main className="flex-1 px-4 md:px-6 py-6 pb-24 lg:pb-6 max-w-7xl mx-auto w-full min-w-0 overflow-x-hidden">
+          {/* px-* alone wasn't enough on landscape iPhone with the notch
+              on the side — content drifted under the safe-area inset and
+              read as "off-centre" to one user. Adding safe-area-inset-*
+              to the side padding centers correctly on every device
+              orientation. The calc keeps the existing px-4/md:px-6 as a
+              floor so non-notched devices look the same as before. */}
+          <main
+            className="flex-1 py-6 pb-24 lg:pb-6 max-w-7xl mx-auto w-full min-w-0 overflow-x-hidden"
+            style={{
+              paddingLeft:  'max(env(safe-area-inset-left), 1rem)',
+              paddingRight: 'max(env(safe-area-inset-right), 1rem)',
+            }}
+          >
             {children}
           </main>
         </div>
