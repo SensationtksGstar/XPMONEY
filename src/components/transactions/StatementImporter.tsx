@@ -11,6 +11,8 @@ import { useAccounts }      from '@/hooks/useAccounts'
 import { useUserPlan }      from '@/lib/contexts/UserPlanContext'
 import { useQueryClient }   from '@tanstack/react-query'
 import { cn }               from '@/lib/utils'
+import { useLocale }        from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 import type { ParsedTransaction, ImportStatementResult } from '@/app/api/import-statement/route'
 
 interface Props { onClose: () => void }
@@ -96,6 +98,7 @@ function isPdfFile(file: File): boolean {
  * a espera parecer menos ansiosa.
  */
 function ParsingPanel({ startedAt }: { startedAt: number | null }) {
+  const { t } = useLocale()
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
     if (!startedAt) return
@@ -105,13 +108,14 @@ function ParsingPanel({ startedAt }: { startedAt: number | null }) {
     return () => clearInterval(id)
   }, [startedAt])
 
-  const hint = elapsed < 15
-    ? 'A identificar o banco e extrair movimentos…'
+  const hintKey: TranslationKey = elapsed < 15
+    ? 'import.hint_1'
     : elapsed < 45
-    ? 'PDFs com muitas páginas demoram 1-2 min. Não feches a janela.'
+    ? 'import.hint_2'
     : elapsed < 90
-    ? 'Ainda a processar — a IA está a categorizar cada linha.'
-    : 'Quase lá. Se passar dos 3 min, o teu PDF pode ser demasiado grande.'
+    ? 'import.hint_3'
+    : 'import.hint_4'
+  const hint = t(hintKey)
 
   // Barra de progresso visual: cresce com o tempo mas nunca chega aos 100%
   // até a resposta voltar. Mapeia 0-180s → 0-90%.
@@ -126,9 +130,9 @@ function ParsingPanel({ startedAt }: { startedAt: number | null }) {
         <Loader2 className="w-6 h-6 text-blue-400 absolute -top-1 -right-1 animate-spin" />
       </div>
       <div className="text-center max-w-xs">
-        <p className="text-white font-semibold">A IA está a analisar…</p>
+        <p className="text-white font-semibold">{t('import.parsing_title')}</p>
         <p className="text-white/50 text-sm mt-1">{hint}</p>
-        <p className="text-white/30 text-xs mt-2 tabular-nums">{elapsed}s decorridos</p>
+        <p className="text-white/30 text-xs mt-2 tabular-nums">{t('import.elapsed', { n: elapsed })}</p>
       </div>
       <div className="w-full max-w-xs bg-white/5 rounded-full h-1.5 overflow-hidden">
         <div
@@ -142,6 +146,7 @@ function ParsingPanel({ startedAt }: { startedAt: number | null }) {
 
 export function StatementImporter({ onClose }: Props) {
   const { isFree, plan } = useUserPlan()
+  const { t, locale }    = useLocale()
   const titleId          = useId()
 
   const [step,      setStep]     = useState<Step>(isFree ? 'upload' : 'upload')
@@ -151,6 +156,9 @@ export function StatementImporter({ onClose }: Props) {
   const [accountId, setAccountId]= useState('')
   const [errorMsg,  setErrorMsg] = useState('')
   const [errorAttempts, setErrorAttempts] = useState<string[]>([])
+  // Tracked explicitly instead of sniffing errorMsg for "Plano" — string
+  // matching breaks under i18n (the EN error never contains "Plano").
+  const [planError, setPlanError] = useState(false)
   const [doneMsg,   setDoneMsg]  = useState('')
   const [parsingStart, setParsingStart] = useState<number | null>(null)
   const fileRef  = useRef<HTMLInputElement>(null)
@@ -175,16 +183,12 @@ export function StatementImporter({ onClose }: Props) {
     const maxBytes = isPdf ? MAX_PDF_BYTES : MAX_TEXT_BYTES
 
     if (file.size > maxBytes) {
-      setErrorMsg(
-        isPdf
-          ? 'PDF demasiado grande. Máximo 3 MB. Experimenta exportar só as páginas com movimentos.'
-          : 'Ficheiro demasiado grande. Máximo 200 KB.'
-      )
+      setErrorMsg(t(isPdf ? 'import.err_pdf_too_big' : 'import.err_text_too_big'))
       setStep('error')
       return
     }
     if (file.size < 50) {
-      setErrorMsg('Ficheiro vazio ou demasiado pequeno.')
+      setErrorMsg(t('import.err_empty'))
       setStep('error')
       return
     }
@@ -206,7 +210,7 @@ export function StatementImporter({ onClose }: Props) {
           ? { pdfBase64: await fileToBase64(file),     filename: file.name }
           : { content:   await readTextWithEncoding(file), filename: file.name }
       } catch {
-        throw new Error('Não foi possível ler o ficheiro. Verifica se não está corrompido.')
+        throw new Error(t('import.err_read'))
       }
 
       const res = await fetch('/api/import-statement', {
@@ -226,16 +230,17 @@ export function StatementImporter({ onClose }: Props) {
       } catch {
         // Non-JSON body — most likely Vercel's edge error page
         if (res.status === 413) {
-          throw new Error('Ficheiro demasiado grande para o servidor. Reduz para menos de 3 MB.')
+          throw new Error(t('import.err_413'))
         }
         if (res.status === 504 || res.status === 502 || res.status === 408) {
-          throw new Error('O servidor demorou demasiado a responder. Tenta um ficheiro mais pequeno.')
+          throw new Error(t('import.err_timeout_server'))
         }
-        throw new Error(`Erro inesperado do servidor (${res.status}). Tenta novamente em alguns minutos.`)
+        throw new Error(t('import.err_unexpected', { status: res.status }))
       }
 
       if (res.status === 403 && json.code === 'plan_required') {
-        setErrorMsg(json.error ?? 'Plano insuficiente.')
+        setPlanError(true)
+        setErrorMsg(json.error ?? t('import.err_plan'))
         setStep('error')
         return
       }
@@ -245,7 +250,7 @@ export function StatementImporter({ onClose }: Props) {
         if (json.attempts && json.attempts.length > 0) {
           setErrorAttempts(json.attempts)
         }
-        throw new Error(json.error ?? `Erro ${res.status}`)
+        throw new Error(json.error ?? t('import.err_status', { status: res.status }))
       }
 
       const data = json.data as ImportStatementResult | undefined
@@ -253,12 +258,7 @@ export function StatementImporter({ onClose }: Props) {
         // Acontece tipicamente quando o CSV tem formato muito atípico ou
         // o PDF é totalmente scan sem camada de texto. Damos uma mensagem
         // mais útil com passos concretos.
-        setErrorMsg(
-          'Não consegui extrair movimentos deste ficheiro. Verifica:\n' +
-          '• CSV: o separador é ";" ou ","? tens cabeçalhos Data/Descrição/Valor?\n' +
-          '• PDF: é texto pesquisável (tenta Ctrl+F)? Se não, é um scan de imagem e precisa de OCR externo.\n' +
-          '• Se o banco exporta em Excel, usa "Guardar como CSV" no teu cliente de folha de cálculo.',
-        )
+        setErrorMsg(t('import.err_no_tx'))
         setStep('error')
         return
       }
@@ -268,11 +268,7 @@ export function StatementImporter({ onClose }: Props) {
       setStep('preview')
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
-        setErrorMsg(
-          'A análise ultrapassou 4 minutos. A forma mais fiável: exporta o extrato em ' +
-          'CSV no site do teu banco — importa em segundos, sem limites de tamanho. ' +
-          'Em alternativa, divide o PDF para conter só o último mês.',
-        )
+        setErrorMsg(t('import.err_abort'))
       } else if (e instanceof TypeError) {
         // Safari/iOS surface fetch-level failures as TypeError "Load failed".
         // Could be: network drop mid-request, server crashed before sending
@@ -280,22 +276,16 @@ export function StatementImporter({ onClose }: Props) {
         // instead of the cryptic raw message.
         const msg  = e.message || ''
         const isLoadFailed = /load\s*failed/i.test(msg) || /network/i.test(msg)
-        setErrorMsg(
-          isLoadFailed
-            ? 'A ligação ao servidor caiu durante o envio. ' +
-              'Verifica a ligação à Internet e tenta de novo. Se persistir, ' +
-              'tenta um ficheiro mais pequeno (CSV em vez de PDF, ou só o último mês).'
-            : `Erro de rede: ${msg}`,
-        )
+        setErrorMsg(isLoadFailed ? t('import.err_load_failed') : t('import.err_network', { msg }))
       } else {
-        setErrorMsg(e instanceof Error ? e.message : 'Erro ao analisar ficheiro.')
+        setErrorMsg(e instanceof Error ? e.message : t('import.err_analyze'))
       }
       setStep('error')
     } finally {
       clearTimeout(timer)
       setParsingStart(null)
     }
-  }, [])
+  }, [t])
 
   // ── Drag & drop ───────────────────────────────────────────────────────────
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -323,7 +313,7 @@ export function StatementImporter({ onClose }: Props) {
     const selected = rows.filter(r => r.selected)
     if (!selected.length) return
     if (!resolvedAccount) {
-      setErrorMsg('Seleciona uma conta antes de importar.')
+      setErrorMsg(t('import.err_select_account'))
       return
     }
 
@@ -356,11 +346,11 @@ export function StatementImporter({ onClose }: Props) {
         body:    JSON.stringify({ transactions: mapped }),
       })
       const json = await res.json()
-      if (!res.ok || json.error) throw new Error(json.error ?? 'Erro ao guardar')
+      if (!res.ok || json.error) throw new Error(json.error ?? t('import.err_save'))
 
       const { inserted, xp_gained, message } = json.data ?? json
       const msg = message
-        ?? `${inserted} transações importadas! +${xp_gained} XP 🎉`
+        ?? t('import.done_default', { inserted, xp: xp_gained })
 
       // Invalida TODAS as queries que agregam transações — antes só
       // mexíamos em score/xp/missions e o user via: "importei 178 mas
@@ -380,7 +370,7 @@ export function StatementImporter({ onClose }: Props) {
       setDoneMsg(msg)
       setStep('done')
     } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : 'Erro ao guardar transações.')
+      setErrorMsg(e instanceof Error ? e.message : t('import.err_save_tx'))
       setStep('error')
     }
   }
@@ -402,9 +392,9 @@ export function StatementImporter({ onClose }: Props) {
         <div className="relative z-10 bg-[#0f1117] border border-white/10 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
             <h2 id={titleId} className="font-bold text-white text-base flex items-center gap-2">
-              <Crown className="w-4 h-4 text-yellow-400" /> Importar Extrato
+              <Crown className="w-4 h-4 text-yellow-400" /> {t('import.title')}
             </h2>
-            <button onClick={onClose} aria-label="Fechar"
+            <button onClick={onClose} aria-label={t('dividas.close')}
               className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
               <X className="w-4 h-4" />
             </button>
@@ -424,18 +414,17 @@ export function StatementImporter({ onClose }: Props) {
               <div className="inline-flex items-center gap-1.5 bg-yellow-400/15 border border-yellow-400/30 text-yellow-300 text-[10px] font-bold px-2.5 py-1 rounded-full mb-2">
                 <Crown className="w-2.5 h-2.5" /> PREMIUM
               </div>
-              <p className="text-white font-bold text-lg">Importa extratos com IA</p>
+              <p className="text-white font-bold text-lg">{t('import.premium_title')}</p>
               <p className="text-white/55 text-sm mt-2 leading-relaxed">
-                Arrasta o PDF do banco — a IA extrai e categoriza tudo em
-                segundos. <strong className="text-white">Zero digitação.</strong>
+                {t('import.premium_body')} <strong className="text-white">{t('import.premium_body_strong')}</strong>
               </p>
             </div>
 
             <ul className="text-left space-y-1.5 text-white/65 text-xs mx-auto max-w-xs">
               <li>✓ CGD, Millennium, BPI, Santander, Revolut, Wise</li>
-              <li>✓ Categorização automática por IA</li>
-              <li>✓ Deteta receitas e despesas</li>
-              <li>✓ Ignora saldos e cabeçalhos</li>
+              <li>✓ {t('import.feat_2')}</li>
+              <li>✓ {t('import.feat_3')}</li>
+              <li>✓ {t('import.feat_4')}</li>
             </ul>
 
             {/* Primary CTA — outcome + price in a single line. "Fazer
@@ -447,31 +436,31 @@ export function StatementImporter({ onClose }: Props) {
               className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-400 hover:from-yellow-400 hover:to-amber-300 text-black font-bold px-5 py-3.5 rounded-xl transition-all min-h-[48px] shadow-[0_10px_32px_-10px_rgba(234,179,8,0.6)] hover:scale-[1.02]"
             >
               <Crown className="w-4 h-4" />
-              Desbloquear por €3,33/mês
+              {t('import.unlock_cta')}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
 
             {/* Price anchor + no-risk row under the button. */}
             <p className="text-[11px] text-white/55 leading-relaxed">
-              €3,33/mês no anual · menos que um café · cancelas quando quiseres
+              {t('import.price_anchor')}
             </p>
 
             {/* Social proof + secondary link (the "hesitant" exit). */}
             <div className="pt-3 border-t border-white/10 space-y-2">
               <p className="text-[11px] text-white/55 flex items-center justify-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-emerald-400" />
-                +1.200 utilizadores já fizeram upgrade
+                {t('import.social_proof')}
               </p>
               <Link
                 href="/#precos"
                 onClick={onClose}
                 className="inline-block text-[11px] font-semibold text-yellow-300 hover:text-yellow-200 transition-colors"
               >
-                Ver tudo o que incluo no Premium →
+                {t('import.see_premium')} →
               </Link>
             </div>
 
-            <p className="text-white/30 text-[10px] pt-1">Plano actual: <span className="uppercase">{plan}</span></p>
+            <p className="text-white/30 text-[10px] pt-1">{t('import.current_plan')} <span className="uppercase">{plan}</span></p>
           </div>
         </div>
       </div>
@@ -514,16 +503,16 @@ export function StatementImporter({ onClose }: Props) {
               <FileText className="w-4 h-4 text-blue-400" />
             </div>
             <div>
-              <h2 id={titleId} className="font-bold text-white text-base">Importar Extrato</h2>
+              <h2 id={titleId} className="font-bold text-white text-base">{t('import.title')}</h2>
               <p className="text-white/40 text-xs">
                 {step === 'preview'
-                  ? `${result?.bank} · ${result?.transactions.length} movimentos detectados`
-                  : 'CSV · PDF · Qualquer banco português'}
+                  ? t('import.header_preview', { bank: result?.bank ?? '', n: result?.transactions.length ?? 0 })
+                  : t('import.header_sub')}
               </p>
             </div>
           </div>
           <button onClick={onClose}
-            aria-label="Fechar importação"
+            aria-label={t('import.close_aria')}
             className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
             <X className="w-4 h-4" />
           </button>
@@ -542,9 +531,7 @@ export function StatementImporter({ onClose }: Props) {
             <div className="flex gap-3 bg-blue-500/8 border border-blue-500/20 rounded-xl p-3">
               <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
               <p className="text-blue-300/80 text-xs leading-relaxed">
-                Envia o extrato do teu banco em <strong className="text-blue-300">CSV/TXT</strong> ou <strong className="text-blue-300">PDF</strong>.
-                A IA analisa e categoriza automaticamente cada movimento.
-                Os dados <strong className="text-blue-300">nunca são armazenados</strong> além das transações confirmadas.
+                {t('import.upload_info')}
               </p>
             </div>
 
@@ -557,7 +544,7 @@ export function StatementImporter({ onClose }: Props) {
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click() }}
               role="button"
               tabIndex={0}
-              aria-label="Seleccionar ficheiro de extrato bancário"
+              aria-label={t('import.drop_aria')}
               className={cn(
                 'border-2 border-dashed rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all',
                 dragOver
@@ -571,9 +558,9 @@ export function StatementImporter({ onClose }: Props) {
               </div>
               <div className="text-center">
                 <p className="text-white font-medium text-sm">
-                  {dragOver ? 'Larga aqui' : 'Arrasta o ficheiro ou clica para seleccionar'}
+                  {dragOver ? t('import.drop_here') : t('import.drop_prompt')}
                 </p>
-                <p className="text-white/35 text-xs mt-1">CSV · TXT · PDF — texto até 200 KB · PDF até 3 MB</p>
+                <p className="text-white/35 text-xs mt-1">{t('import.drop_hint')}</p>
               </div>
               <input ref={fileRef} type="file" accept={ACCEPTED}
                 className="hidden"
@@ -582,7 +569,7 @@ export function StatementImporter({ onClose }: Props) {
 
             {/* Supported banks */}
             <div>
-              <p className="text-white/30 text-xs mb-2">Bancos compatíveis:</p>
+              <p className="text-white/30 text-xs mb-2">{t('import.banks_label')}</p>
               <div className="flex flex-wrap gap-1.5">
                 {BANKS.map(b => (
                   <span key={b.id}
@@ -597,16 +584,16 @@ export function StatementImporter({ onClose }: Props) {
             <details className="group">
               <summary className="flex items-center gap-2 text-white/40 text-xs cursor-pointer hover:text-white/60 transition-colors list-none">
                 <Download className="w-3.5 h-3.5" />
-                Como exportar o extrato do meu banco?
+                {t('import.how_export')}
                 <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180 ml-auto" />
               </summary>
               <div className="mt-2 space-y-2 text-white/45 text-xs leading-relaxed pl-5 border-l border-white/8">
-                <p><strong className="text-white/60">CGD (Caixa):</strong> Netcaixa → Movimentos → Exportar → CSV ou PDF</p>
-                <p><strong className="text-white/60">Millennium:</strong> Site → Conta → Movimentos → Exportar Excel/CSV/PDF</p>
-                <p><strong className="text-white/60">BPI:</strong> BPI Net → Consultas → Movimentos → Exportar</p>
-                <p><strong className="text-white/60">Santander:</strong> Online → Conta corrente → Movimentos → Download</p>
-                <p><strong className="text-white/60">Revolut:</strong> App → Conta → Declaração → CSV ou PDF</p>
-                <p><strong className="text-white/60">Wise:</strong> Account → Statements → Download CSV ou PDF</p>
+                <p>{t('import.guide_cgd')}</p>
+                <p>{t('import.guide_millennium')}</p>
+                <p>{t('import.guide_bpi')}</p>
+                <p>{t('import.guide_santander')}</p>
+                <p>{t('import.guide_revolut')}</p>
+                <p>{t('import.guide_wise')}</p>
               </div>
             </details>
           </div>
@@ -622,7 +609,7 @@ export function StatementImporter({ onClose }: Props) {
           <>
             {/* Account selector */}
             <div className="px-5 py-3 border-b border-white/8 flex-shrink-0 flex items-center gap-3">
-              <label htmlFor="import-account" className="text-white/50 text-sm whitespace-nowrap">Importar para:</label>
+              <label htmlFor="import-account" className="text-white/50 text-sm whitespace-nowrap">{t('import.import_to')}</label>
               <select
                 id="import-account"
                 value={resolvedAccount}
@@ -633,7 +620,7 @@ export function StatementImporter({ onClose }: Props) {
                   <option key={a.id} value={a.id} className="bg-[#1a1d27]">{a.name}</option>
                 ))}
                 {(!accounts || accounts.length === 0) && (
-                  <option value="acc-1" className="bg-[#1a1d27]">Conta Principal (demo)</option>
+                  <option value="acc-1" className="bg-[#1a1d27]">{t('import.demo_account')}</option>
                 )}
               </select>
             </div>
@@ -646,7 +633,7 @@ export function StatementImporter({ onClose }: Props) {
                   onChange={toggleAll}
                   className="w-4 h-4 rounded accent-blue-500 cursor-pointer" />
                 <span className="text-white/70 text-sm">
-                  {selectedCount} de {rows.length} seleccionados
+                  {t('import.selected_count', { n: selectedCount, total: rows.length })}
                 </span>
               </label>
               <div className="flex items-center gap-2">
@@ -663,10 +650,10 @@ export function StatementImporter({ onClose }: Props) {
                 <thead className="sticky top-0 bg-[#0f1117] border-b border-white/8">
                   <tr>
                     <th className="w-10 px-4 py-2.5" />
-                    <th className="text-left px-2 py-2.5 text-white/40 font-medium text-xs">Data</th>
-                    <th className="text-left px-2 py-2.5 text-white/40 font-medium text-xs">Descrição</th>
-                    <th className="text-left px-2 py-2.5 text-white/40 font-medium text-xs hidden sm:table-cell">Categoria</th>
-                    <th className="text-right px-4 py-2.5 text-white/40 font-medium text-xs">Valor</th>
+                    <th className="text-left px-2 py-2.5 text-white/40 font-medium text-xs">{t('scan.date')}</th>
+                    <th className="text-left px-2 py-2.5 text-white/40 font-medium text-xs">{t('import.col_desc')}</th>
+                    <th className="text-left px-2 py-2.5 text-white/40 font-medium text-xs hidden sm:table-cell">{t('dividas.category')}</th>
+                    <th className="text-right px-4 py-2.5 text-white/40 font-medium text-xs">{t('import.col_amount')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -679,7 +666,7 @@ export function StatementImporter({ onClose }: Props) {
                       )}>
                       <td className="px-4 py-3">
                         <input type="checkbox" checked={row.selected} readOnly
-                          aria-label={`${row.selected ? 'Desmarcar' : 'Marcar'} ${row.description}`}
+                          aria-label={`${row.selected ? t('import.uncheck') : t('import.check')} ${row.description}`}
                           className="w-4 h-4 rounded accent-blue-500 pointer-events-none" />
                       </td>
                       <td className="px-2 py-3 text-white/50 text-xs whitespace-nowrap">
@@ -693,7 +680,7 @@ export function StatementImporter({ onClose }: Props) {
                         <select
                           value={row.category_hint}
                           onChange={e => setCategory(i, e.target.value)}
-                          aria-label={`Categoria para ${row.description}`}
+                          aria-label={t('import.cat_for', { desc: row.description })}
                           className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white/70 text-xs outline-none focus:border-blue-500/50 max-w-[130px] appearance-none"
                         >
                           {allCategories
@@ -713,8 +700,8 @@ export function StatementImporter({ onClose }: Props) {
                           row.type === 'transfer' && 'text-purple-300',
                         )}>
                           {row.type === 'transfer'
-                            ? <>🔁 {row.amount.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} €</>
-                            : <>{row.type === 'income' ? '+' : '-'}{row.amount.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} €</>}
+                            ? <>🔁 {row.amount.toLocaleString(locale === 'en' ? 'en-US' : 'pt-PT', { minimumFractionDigits: 2 })} €</>
+                            : <>{row.type === 'income' ? '+' : '-'}{row.amount.toLocaleString(locale === 'en' ? 'en-US' : 'pt-PT', { minimumFractionDigits: 2 })} €</>}
                         </span>
                       </td>
                     </tr>
@@ -727,7 +714,7 @@ export function StatementImporter({ onClose }: Props) {
             <div className="px-5 py-4 border-t border-white/8 flex-shrink-0 flex items-center gap-3">
               <button onClick={onClose}
                 className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/25 transition-all text-sm font-medium min-h-[44px]">
-                Cancelar
+                {t('budget.cancel')}
               </button>
               <button
                 onClick={confirm}
@@ -738,7 +725,9 @@ export function StatementImporter({ onClose }: Props) {
                     ? 'bg-blue-500 hover:bg-blue-400 text-white active:scale-[0.98]'
                     : 'bg-white/5 text-white/20 cursor-not-allowed'
                 )}>
-                Importar {selectedCount > 0 ? `${selectedCount} movimento${selectedCount > 1 ? 's' : ''}` : '—'}
+                {selectedCount > 0
+                  ? t(selectedCount === 1 ? 'import.import_one' : 'import.import_other', { n: selectedCount })
+                  : t('import.import_zero')}
               </button>
             </div>
           </>
@@ -748,7 +737,7 @@ export function StatementImporter({ onClose }: Props) {
         {step === 'saving' && (
           <div className="p-8 flex flex-col items-center gap-4" role="status" aria-live="polite">
             <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
-            <p className="text-white font-medium">A guardar transações...</p>
+            <p className="text-white font-medium">{t('import.saving')}</p>
           </div>
         )}
 
@@ -759,12 +748,12 @@ export function StatementImporter({ onClose }: Props) {
               <CheckCircle2 className="w-10 h-10 text-green-400" />
             </div>
             <div>
-              <p className="text-white font-bold text-lg">Importação concluída!</p>
+              <p className="text-white font-bold text-lg">{t('import.done_title')}</p>
               <p className="text-white/50 text-sm mt-1">{doneMsg}</p>
             </div>
             <button onClick={onClose}
               className="w-full max-w-xs py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl transition-all min-h-[44px]">
-              Fechar
+              {t('dividas.close')}
             </button>
           </div>
         )}
@@ -776,32 +765,31 @@ export function StatementImporter({ onClose }: Props) {
         {step === 'error' && (
           <div className="p-8 flex flex-col items-center gap-5 text-center overflow-y-auto flex-1 min-h-0" role="alert">
             <div className="w-20 h-20 rounded-full bg-red-500/15 border border-red-500/25 flex items-center justify-center">
-              {errorMsg.includes('Plano') || errorMsg.includes('plano')
+              {planError
                 ? <Lock className="w-10 h-10 text-red-400" />
                 : <AlertCircle className="w-10 h-10 text-red-400" />}
             </div>
             <div>
               <p className="text-white font-bold">
-                {errorMsg.includes('Plano') || errorMsg.includes('plano') ? 'Plano insuficiente' : 'Ocorreu um erro'}
+                {planError ? t('import.err_plan_title') : t('import.err_title')}
               </p>
               <p className="text-white/50 text-sm mt-1 whitespace-pre-line">{errorMsg}</p>
             </div>
             <div className="flex gap-3 w-full max-w-xs">
               <button onClick={onClose}
                 className="flex-1 py-3 border border-white/10 text-white/60 rounded-xl text-sm hover:border-white/25 hover:text-white transition-all min-h-[44px]">
-                Fechar
+                {t('dividas.close')}
               </button>
-              <button onClick={() => { setStep('upload'); setErrorMsg(''); setErrorAttempts([]) }}
+              <button onClick={() => { setStep('upload'); setErrorMsg(''); setErrorAttempts([]); setPlanError(false) }}
                 className="flex-1 py-3 bg-white/10 hover:bg-white/15 text-white rounded-xl text-sm font-medium transition-all min-h-[44px]">
-                Tentar de novo
+                {t('import.err_retry')}
               </button>
             </div>
             {errorMsg.toLowerCase().includes('manutenção') && (
               <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-left">
                 <TriangleAlert className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <p className="text-amber-300/80 text-xs leading-relaxed">
-                  Enquanto a IA está a recarregar, podes adicionar as transações manualmente
-                  em poucos segundos — ainda assim ganhas XP.
+                  {t('import.maint')}
                 </p>
               </div>
             )}
@@ -812,7 +800,7 @@ export function StatementImporter({ onClose }: Props) {
             {errorAttempts.length > 0 && (
               <details className="w-full text-left bg-white/3 border border-white/8 rounded-xl overflow-hidden">
                 <summary className="cursor-pointer px-3 py-2 text-[11px] text-white/50 hover:text-white transition-colors select-none">
-                  Detalhes técnicos ({errorAttempts.length} {errorAttempts.length === 1 ? 'tentativa' : 'tentativas'})
+                  {t(errorAttempts.length === 1 ? 'import.tech_one' : 'import.tech_other', { n: errorAttempts.length })}
                 </summary>
                 <div className="border-t border-white/5 px-3 py-2 space-y-1.5 font-mono text-[10px] text-white/60 break-all">
                   {errorAttempts.map((a, i) => (

@@ -6,6 +6,8 @@ import {
   ReceiptText, ChevronRight, AlertCircle,
 } from 'lucide-react'
 import type { ReceiptScanResult } from '@/app/api/scan-receipt/route'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 interface Props {
   onResult: (data: ReceiptScanResult) => void
@@ -14,15 +16,13 @@ interface Props {
 
 type ScanState = 'idle' | 'scanning' | 'done' | 'error'
 
-const MESSAGES = [
-  'A analisar a imagem…',
-  'A extrair o valor…',
-  'A identificar o comerciante…',
-  'A reconhecer os produtos…',
-  'Quase pronto…',
+// Rotating progress messages — keyed so they follow the active locale.
+const MESSAGE_KEYS: TranslationKey[] = [
+  'scan.msg_1', 'scan.msg_2', 'scan.msg_3', 'scan.msg_4', 'scan.msg_5',
 ]
 
 export function ReceiptScanner({ onResult, onClose }: Props) {
+  const { t, locale }         = useLocale()
   const fileRef               = useRef<HTMLInputElement>(null)
   const cameraRef             = useRef<HTMLInputElement>(null)
   const [state, setState]     = useState<ScanState>('idle')
@@ -33,12 +33,12 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
 
   async function processFile(file: File) {
     if (!file.type.startsWith('image/')) {
-      setErrMsg('Por favor seleciona uma imagem.')
+      setErrMsg(t('scan.err_not_image'))
       setState('error')
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      setErrMsg('Imagem demasiado grande. Máximo 10MB.')
+      setErrMsg(t('scan.err_too_big'))
       setState('error')
       return
     }
@@ -51,7 +51,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
     // Cycle through messages
     let idx = 0
     const interval = setInterval(() => {
-      idx = (idx + 1) % MESSAGES.length
+      idx = (idx + 1) % MESSAGE_KEYS.length
       setMsgIdx(idx)
     }, 900)
 
@@ -74,7 +74,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
 
       if (!res.ok) {
         const { error } = await res.json()
-        throw new Error(error ?? 'Erro ao processar a fatura.')
+        throw new Error(error ?? t('scan.err_process'))
       }
 
       const { data } = await res.json()
@@ -82,7 +82,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
       setState('done')
     } catch (err: unknown) {
       clearInterval(interval)
-      setErrMsg(err instanceof Error ? err.message : 'Erro desconhecido.')
+      setErrMsg(err instanceof Error ? err.message : t('scan.err_unknown'))
       setState('error')
     }
   }
@@ -132,9 +132,9 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center mx-auto mb-3">
                 <ReceiptText className="w-7 h-7 text-white" />
               </div>
-              <h3 className="font-bold text-white text-base">Scanner de Fatura</h3>
+              <h3 className="font-bold text-white text-base">{t('scan.title')}</h3>
               <p className="text-white/50 text-xs mt-1">
-                A IA extrai automaticamente valor, data, loja e produtos
+                {t('scan.subtitle')}
               </p>
             </div>
 
@@ -144,8 +144,8 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
             >
               <Camera className="w-5 h-5 text-green-400 flex-shrink-0" />
               <div className="text-left">
-                <p className="font-semibold text-sm">Tirar Foto</p>
-                <p className="text-white/40 text-xs">Usa a câmara do telemóvel</p>
+                <p className="font-semibold text-sm">{t('scan.take_photo')}</p>
+                <p className="text-white/40 text-xs">{t('scan.take_photo_sub')}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-white/30 ml-auto" />
             </button>
@@ -156,8 +156,8 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
             >
               <Upload className="w-5 h-5 text-white/60 flex-shrink-0" />
               <div className="text-left">
-                <p className="font-semibold text-sm">Carregar Imagem</p>
-                <p className="text-white/40 text-xs">Galeria ou ficheiro (JPG, PNG, WebP)</p>
+                <p className="font-semibold text-sm">{t('scan.upload')}</p>
+                <p className="text-white/40 text-xs">{t('scan.upload_sub')}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-white/30 ml-auto" />
             </button>
@@ -166,7 +166,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
               onClick={onClose}
               className="w-full py-2.5 text-white/40 hover:text-white text-sm transition-colors"
             >
-              Cancelar
+              {t('budget.cancel')}
             </button>
           </div>
         )}
@@ -178,10 +178,10 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
             {preview && (
               <div className="relative mx-auto w-32 h-44 rounded-xl overflow-hidden border border-white/15 shadow-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt="Fatura" className="w-full h-full object-cover" />
+                <img src={preview} alt={t('scan.img_alt')} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-2 left-0 right-0 flex justify-center">
-                  <span className="text-[10px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full">A analisar…</span>
+                  <span className="text-[10px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full">{t('scan.analyzing')}</span>
                 </div>
               </div>
             )}
@@ -194,9 +194,9 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
             <div>
               <Loader2 className="w-8 h-8 text-purple-400 animate-spin mx-auto mb-3" />
               <p key={msgIdx} className="text-white/70 text-sm font-medium animate-fade-in">
-                {MESSAGES[msgIdx]}
+                {t(MESSAGE_KEYS[msgIdx])}
               </p>
-              <p className="text-white/30 text-xs mt-1">Claude AI · Processamento seguro</p>
+              <p className="text-white/30 text-xs mt-1">{t('scan.secure')}</p>
             </div>
           </div>
         )}
@@ -206,7 +206,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
           <div className="space-y-3 animate-fade-in-up">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <h3 className="font-bold text-white text-sm">Dados extraídos com sucesso!</h3>
+              <h3 className="font-bold text-white text-sm">{t('scan.success')}</h3>
             </div>
 
             {/* Extracted data card */}
@@ -214,7 +214,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
               {/* Amount */}
               {result.amount !== null && (
                 <div className="flex items-center justify-between">
-                  <span className="text-white/50 text-xs">Valor total</span>
+                  <span className="text-white/50 text-xs">{t('scan.amount')}</span>
                   <span className="text-green-400 font-bold text-lg tabular-nums">
                     {result.currency ?? 'EUR'} {result.amount.toFixed(2)}
                   </span>
@@ -224,7 +224,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
               {/* Merchant */}
               {result.merchant && (
                 <div className="flex items-center justify-between">
-                  <span className="text-white/50 text-xs">Comerciante</span>
+                  <span className="text-white/50 text-xs">{t('scan.merchant')}</span>
                   <span className="text-white font-semibold text-sm">{result.merchant}</span>
                 </div>
               )}
@@ -232,9 +232,9 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
               {/* Date */}
               {result.date && (
                 <div className="flex items-center justify-between">
-                  <span className="text-white/50 text-xs">Data</span>
+                  <span className="text-white/50 text-xs">{t('scan.date')}</span>
                   <span className="text-white/80 text-sm">
-                    {new Date(result.date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date(result.date).toLocaleDateString(locale === 'en' ? 'en-US' : 'pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
               )}
@@ -242,7 +242,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
               {/* Category */}
               {result.category_hint && (
                 <div className="flex items-center justify-between">
-                  <span className="text-white/50 text-xs">Categoria sugerida</span>
+                  <span className="text-white/50 text-xs">{t('scan.category_hint')}</span>
                   <span className="text-purple-300 text-xs font-semibold bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 rounded-full">
                     {result.category_hint}
                   </span>
@@ -252,7 +252,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
               {/* Items */}
               {result.items && result.items.length > 0 && (
                 <div>
-                  <p className="text-white/50 text-xs mb-2">Produtos detectados</p>
+                  <p className="text-white/50 text-xs mb-2">{t('scan.items')}</p>
                   <div className="space-y-1 max-h-32 overflow-y-auto">
                     {result.items.slice(0, 8).map((item, i) => (
                       <div key={i} className="flex items-center justify-between text-xs">
@@ -265,7 +265,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
                       </div>
                     ))}
                     {result.items.length > 8 && (
-                      <p className="text-white/30 text-xs">+{result.items.length - 8} produtos</p>
+                      <p className="text-white/30 text-xs">{t('scan.more_items', { n: result.items.length - 8 })}</p>
                     )}
                   </div>
                 </div>
@@ -276,13 +276,13 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
               onClick={handleUseResult}
               className="w-full py-3.5 bg-green-500 hover:bg-green-400 text-black font-bold rounded-2xl text-sm transition-all active:scale-95"
             >
-              ✓ Usar estes dados
+              ✓ {t('scan.use_data')}
             </button>
             <button
               onClick={reset}
               className="w-full py-2 text-white/40 hover:text-white text-xs transition-colors"
             >
-              Digitalizar outra fatura
+              {t('scan.scan_another')}
             </button>
           </div>
         )}
@@ -292,20 +292,20 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
           <div className="text-center py-4 space-y-4 animate-fade-in">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
             <div>
-              <h3 className="font-bold text-white">Não foi possível processar</h3>
+              <h3 className="font-bold text-white">{t('scan.error_title')}</h3>
               <p className="text-white/50 text-xs mt-1">{errMsg}</p>
             </div>
             <button
               onClick={reset}
               className="px-6 py-2.5 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl text-sm transition-all"
             >
-              Tentar novamente
+              {t('scan.retry')}
             </button>
             <button
               onClick={onClose}
               className="block w-full text-white/40 text-xs hover:text-white transition-colors"
             >
-              Cancelar
+              {t('budget.cancel')}
             </button>
           </div>
         )}
