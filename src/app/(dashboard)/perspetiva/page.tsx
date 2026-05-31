@@ -3,6 +3,7 @@ import { redirect }           from 'next/navigation'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { PremiumFeatureLock } from '@/components/common/PremiumFeatureLock'
 import { getServerT }          from '@/lib/i18n/server'
+import type { TranslationKey } from '@/lib/i18n/translations'
 import PerspectivaClient       from './PerspectivaClient'
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -46,7 +47,7 @@ export default async function PerspectivaPage() {
           t('perspective.lock.b3'),
           t('perspective.lock.b4'),
         ]}
-        preview={<FauxPerspectivaPreview />}
+        preview={<FauxPerspectivaPreview t={t} />}
       />
     )
   }
@@ -101,21 +102,21 @@ export default async function PerspectivaPage() {
  * FauxPerspectivaPreview — silhouetted leaderboard + stat card used as the
  * blurred backdrop for the PremiumFeatureLock. Deliberately data-less.
  */
-function FauxPerspectivaPreview() {
+function FauxPerspectivaPreview({ t }: { t: (k: TranslationKey) => string }) {
   const rows = [
-    { name: 'Cristiano Ronaldo', v: '€ 200M' },
-    { name: 'Elon Musk',         v: '€ 2.4B' },
-    { name: 'Tu (previsão)',     v: '€ 28k'  },
-    { name: 'Média EU',          v: '€ 31k'  },
+    { name: 'Cristiano Ronaldo',     v: '€ 200M' },
+    { name: 'Elon Musk',             v: '€ 2.4B' },
+    { name: t('perspective.faux.you'), v: '€ 28k'  },
+    { name: t('perspective.faux.eu'),  v: '€ 31k'  },
   ]
   return (
     <div className="w-full h-full p-8">
       <div className="w-full h-full rounded-2xl bg-gradient-to-br from-yellow-500/10 via-purple-500/10 to-transparent p-8 flex flex-col gap-6">
         {/* Hero KPI */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-          <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Horas de trabalho</div>
-          <div className="text-4xl font-bold text-white">Esse iPhone = 62h</div>
-          <div className="text-sm text-white/50 mt-2">Uma semana e meia só para pagar o telefone.</div>
+          <div className="text-xs text-white/40 uppercase tracking-wider mb-1">{t('perspective.faux.hours')}</div>
+          <div className="text-4xl font-bold text-white">{t('perspective.faux.iphone')}</div>
+          <div className="text-sm text-white/50 mt-2">{t('perspective.faux.sub')}</div>
         </div>
         {/* Leaderboard */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex-1">
