@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, FileText, Sparkles, X } from 'lucide-react'
+import { Search, FileText, Sparkles, X, Download } from 'lucide-react'
 import { TransactionForm }     from '@/components/transactions/TransactionForm'
 import { TransactionList }     from '@/components/transactions/TransactionList'
 import { StatementImporter }   from '@/components/transactions/StatementImporter'
@@ -69,6 +69,15 @@ export default function TransactionsPage() {
           >
             <Search className="w-4 h-4" />
           </button>
+          {/* CSV export — plain download link (no JS); the browser saves the
+              attachment streamed by /api/transactions/export. */}
+          <a
+            href="/api/transactions/export"
+            aria-label={t('transactions.export_aria')}
+            className="w-11 h-11 flex items-center justify-center rounded-xl border bg-white/5 border-white/10 text-white/50 hover:text-white transition-all"
+          >
+            <Download className="w-4 h-4" />
+          </a>
           {/* Import statement button — gradient + sparkle to make the feature
               discoverable. Mobile: square 44x44 icon to match the search
               button next to it (was 38x44 with px-3 → looked off-axis). */}
