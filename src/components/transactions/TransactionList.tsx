@@ -15,11 +15,12 @@ import {
 import { useT } from '@/lib/i18n/LocaleProvider'
 
 interface Props {
-  search:     string
-  typeFilter: string
+  search:         string
+  typeFilter:     string
+  categoryFilter?: string
 }
 
-export function TransactionList({ search, typeFilter }: Props) {
+export function TransactionList({ search, typeFilter, categoryFilter = 'all' }: Props) {
   const { transactions, loading, deleteTransaction } = useTransactions()
   const { toast }   = useToast()
   const t           = useT()
@@ -27,11 +28,12 @@ export function TransactionList({ search, typeFilter }: Props) {
   const [confirmId,  setConfirmId]  = useState<string | null>(null)
 
   const filtered = transactions.filter(tx => {
-    const matchesType   = typeFilter === 'all' || tx.type === typeFilter
+    const matchesType     = typeFilter === 'all' || tx.type === typeFilter
+    const matchesCategory = categoryFilter === 'all' || tx.category?.name === categoryFilter
     const matchesSearch = !search ||
       tx.description.toLowerCase().includes(search.toLowerCase()) ||
       tx.category?.name.toLowerCase().includes(search.toLowerCase())
-    return matchesType && matchesSearch
+    return matchesType && matchesCategory && matchesSearch
   })
 
   const grouped     = groupBy(filtered, 'date')
@@ -76,7 +78,7 @@ export function TransactionList({ search, typeFilter }: Props) {
   }
 
   if (filtered.length === 0) {
-    const hasFilters = !!search || typeFilter !== 'all'
+    const hasFilters = !!search || typeFilter !== 'all' || categoryFilter !== 'all'
     return (
       <EmptyState
         icon={hasFilters ? '🔍' : '💸'}

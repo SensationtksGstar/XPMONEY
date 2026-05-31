@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Search, FileText, Sparkles, X, Download } from 'lucide-react'
 import { TransactionForm }     from '@/components/transactions/TransactionForm'
 import { TransactionList }     from '@/components/transactions/TransactionList'
 import { StatementImporter }   from '@/components/transactions/StatementImporter'
+import { useTransactions }     from '@/hooks/useTransactions'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n/LocaleProvider'
 import dynamic from 'next/dynamic'
@@ -27,8 +28,19 @@ export default function TransactionsPage() {
   const [showImporter,  setShowImporter] = useState(false)
   const [search,        setSearch]       = useState('')
   const [typeFilter,    setTypeFilter]   = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
   const [showSearch,    setShowSearch]   = useState(false)
   const [showHint,      setShowHint]     = useState(false)
+
+  // Categories the user actually has transactions in — derived from the
+  // shared ['transactions'] cache (no extra fetch), so the dropdown never
+  // lists empty categories. Sorted locale-aware.
+  const { transactions } = useTransactions()
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const tx of transactions) if (tx.category?.name) set.add(tx.category.name)
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-PT', { sensitivity: 'base' }))
+  }, [transactions])
 
   // Promote the import feature — show a dismissable banner the first time a
   // user lands on this page. Killed for good after they dismiss or use it.
@@ -162,28 +174,50 @@ export default function TransactionsPage() {
       )}
 
       {/* Filtros rápidos */}
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-        {FILTERS.map(f => (
-          <button
-            key={f.value}
-            onClick={() => setTypeFilter(f.value)}
+      <div className="flex items-center gap-2 mb-5">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide flex-1 min-w-0">
+          {FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setTypeFilter(f.value)}
+              className={cn(
+                'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border',
+                typeFilter === f.value
+                  ? 'bg-green-500/15 border-green-500/40 text-green-400'
+                  : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Category filter — only when the user actually has categorised tx */}
+        {categoryOptions.length > 0 && (
+          <select
+            value={categoryFilter}
+            onChange={e => setCategoryFilter(e.target.value)}
+            aria-label={t('transactions.filter.category_aria')}
             className={cn(
-              'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border',
-              typeFilter === f.value
+              'flex-shrink-0 max-w-[42vw] sm:max-w-[200px] px-3 py-2 rounded-full text-sm font-medium border appearance-none outline-none cursor-pointer transition-all',
+              categoryFilter !== 'all'
                 ? 'bg-green-500/15 border-green-500/40 text-green-400'
-                : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                : 'bg-white/5 border-white/10 text-white/60 hover:text-white',
             )}
           >
-            {f.label}
-          </button>
-        ))}
+            <option value="all" className="bg-[#1a1d27] text-white">{t('transactions.filter.category_all')}</option>
+            {categoryOptions.map(c => (
+              <option key={c} value={c} className="bg-[#1a1d27] text-white">{c}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* AD — free users only */}
       <AdBanner variant="feed" />
 
       {/* Lista */}
-      <TransactionList search={search} typeFilter={typeFilter} />
+      <TransactionList search={search} typeFilter={typeFilter} categoryFilter={categoryFilter} />
 
       {showForm     && <TransactionForm    onClose={() => setShowForm(false)} />}
       {showImporter && <StatementImporter onClose={() => setShowImporter(false)} />}

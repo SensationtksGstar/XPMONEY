@@ -969,6 +969,8 @@ export const pt = {
   'transactions.filter.all':         'Todas',
   'transactions.filter.expense':     'Despesas',
   'transactions.filter.income':      'Receitas',
+  'transactions.filter.category_all':'Todas as categorias',
+  'transactions.filter.category_aria':'Filtrar por categoria',
 
   // ── TransactionForm ──────────────────────────────────────────────
   'txform.title_scan':          'Digitalizar Fatura',
@@ -2562,6 +2564,8 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'transactions.filter.all':         'All',
   'transactions.filter.expense':     'Expenses',
   'transactions.filter.income':      'Income',
+  'transactions.filter.category_all':'All categories',
+  'transactions.filter.category_aria':'Filter by category',
 
   // ── TransactionForm ──────────────────────────────────────────────
   'txform.title_scan':          'Scan Receipt',
