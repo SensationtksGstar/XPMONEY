@@ -146,6 +146,18 @@ export const pt = {
   'cashflow.empty_title':   'Sem fluxo para mostrar',
   'cashflow.empty_subtitle':'Regista alguns meses de movimentos e vê aqui se estás a poupar ou a queimar dinheiro.',
 
+  // ── Spending Velocity widget ───────────────────────────────────────
+  'velocity.title':         'Ritmo de gasto',
+  'velocity.projection':    'Projeção fim do mês',
+  'velocity.over':          '{pct}% acima da média',
+  'velocity.under':         '{pct}% abaixo da média',
+  'velocity.on_track':      'No ritmo da tua média',
+  'velocity.pace':          '{spent} em {days} dias · {daily}/dia',
+  'velocity.month_elapsed': '{pct}% do mês',
+  'velocity.no_baseline':   'A recolher histórico para comparar com a tua média.',
+  'velocity.empty_title':   'Ainda sem gastos este mês',
+  'velocity.empty_subtitle':'Assim que registares despesas, projetamos onde vais fechar o mês.',
+
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'Como funciona',
   'landing.nav.features':     'Funcionalidades',
@@ -1373,6 +1385,18 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'cashflow.out':           'Out',
   'cashflow.empty_title':   'No cash flow to show',
   'cashflow.empty_subtitle':'Log a few months of transactions to see whether you are saving or burning money.',
+
+  // ── Spending Velocity widget ───────────────────────────────────────
+  'velocity.title':         'Spending pace',
+  'velocity.projection':    'Month-end projection',
+  'velocity.over':          '{pct}% above average',
+  'velocity.under':         '{pct}% below average',
+  'velocity.on_track':      'On pace with your average',
+  'velocity.pace':          '{spent} in {days} days · {daily}/day',
+  'velocity.month_elapsed': '{pct}% of month',
+  'velocity.no_baseline':   'Gathering history to compare against your average.',
+  'velocity.empty_title':   'No spending yet this month',
+  'velocity.empty_subtitle':'Once you log expenses, we project where you will end the month.',
 
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'How it works',
