@@ -79,6 +79,7 @@ The app is **flow-based** (tracks transactions, computes score from flow); `acco
 - **Hook**: `useAccounts()` now exposes `createAccount` / `updateAccount` / `deleteAccount` mutations (invalidate `['accounts']`).
 - **Dashboard**: `NetWorthWidget` renders ONLY when a non-zero balance exists (else `null`) so users who never set balances don't see a noise "€0". Shares the `['accounts']` cache → no extra fetch.
 - Balance edits commit on blur (inline), use `parseAmountLocale` (PT comma + EN dot). Fully PT/EN.
+- **Trend** (`NetWorthTrend` on `/contas`): net-worth area chart over time. Built from `net_worth_snapshots` — `recordNetWorthSnapshot(db, userId, today)` (`src/lib/netWorthSnapshot.ts`) upserts one row/day **on every account create/update/delete** (no cron — each balance edit is a data point). Read via `GET /api/networth/history?days=N`. **Both the writer and reader degrade silently when the `net_worth_snapshots` table is absent** (migration `database/net_worth_snapshots_2026_05.sql` — see Pending user actions), so `/contas` works before the migration; the chart just stays empty (and shows a "history builds here" hint at 1 point, nothing at 0).
 
 ## Gamification primitives
 
@@ -305,6 +306,7 @@ TODOs that require the user to act on a third-party dashboard — code is alread
   - `database/stripe_events_2026_04.sql` (webhook idempotency)
   - `database/bug_reports.sql` (bug-report + contact submission table)
   - `database/newsletter_2026_04.sql` (newsletter subscribers — `/api/newsletter/*` returns friendly 503 without it)
+- **`database/net_worth_snapshots_2026_05.sql`** — OPTIONAL. `/contas` (Património) works fully without it; only the net-worth *trend chart* needs it. Writer + reader degrade silently when the table is absent.
 - **Stripe Customer Portal**: enable at https://dashboard.stripe.com/settings/billing/portal so the "Gerir subscrição" button works.
 - **Stripe payment methods**: enable Multibanco + MBWay at https://dashboard.stripe.com/settings/payment_methods so PT customers see the right options at checkout.
 

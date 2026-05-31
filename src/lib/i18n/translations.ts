@@ -493,6 +493,8 @@ export const pt = {
   'networth.delete_blocked':  'Esta conta tem transações associadas. Move ou apaga essas transações antes de a eliminar.',
   'networth.hint':            'Actualiza os saldos quando quiseres — é um retrato manual, não uma ligação ao banco.',
   'networth.see_details':     'Ver património',
+  'networth.trend_title':     'Evolução',
+  'networth.trend_hint':      'O teu histórico aparece aqui à medida que vais actualizando os saldos.',
 
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'Como funciona',
@@ -2081,6 +2083,8 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'networth.delete_blocked':  'This account has transactions. Move or delete those transactions before removing it.',
   'networth.hint':            'Update the balances whenever you like — it’s a manual snapshot, not a bank connection.',
   'networth.see_details':     'View net worth',
+  'networth.trend_title':     'Trend',
+  'networth.trend_hint':      'Your history builds here as you keep updating your balances.',
 
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'How it works',

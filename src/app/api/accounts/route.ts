@@ -2,6 +2,7 @@ import { auth }                    from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
+import { recordNetWorthSnapshot }    from '@/lib/netWorthSnapshot'
 import { z }                         from 'zod'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
 import { DEMO_ACCOUNT }              from '@/lib/demo/mockData'
@@ -52,5 +53,9 @@ export async function POST(req: NextRequest) {
     .select('*').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Snapshot net worth for the trend chart (best-effort, never blocks).
+  await recordNetWorthSnapshot(db, internalId, new Date().toISOString().split('T')[0])
+
   return NextResponse.json({ data, error: null }, { status: 201 })
 }

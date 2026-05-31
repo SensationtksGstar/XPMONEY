@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/toaster'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { NetWorthTrend } from '@/components/dashboard/NetWorthTrend'
 
 export default function ContasPage() {
   const { t, locale } = useLocale()
@@ -95,6 +96,10 @@ export default function ContasPage() {
               </span>
             </div>
           </div>
+
+          {/* Trend — renders only once ≥2 snapshots exist (needs the
+              net_worth_snapshots migration; degrades to nothing otherwise). */}
+          <NetWorthTrend />
 
           {/* Accounts */}
           <div>

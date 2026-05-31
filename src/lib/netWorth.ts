@@ -1,4 +1,4 @@
-import type { Account, AccountType } from '@/types'
+import type { AccountType } from '@/types'
 import { toNumber } from '@/lib/safeNumber'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
@@ -36,7 +36,11 @@ export interface NetWorth {
   net:         number
 }
 
-export function computeNetWorth(accounts: Account[]): NetWorth {
+/** Accepts full `Account` rows OR raw `{ balance, type }` from a DB select
+ *  (where `balance` comes back as a string) — `toNumber` normalises both. */
+export function computeNetWorth(
+  accounts: ReadonlyArray<{ balance: number | string | null | undefined; type: AccountType }>,
+): NetWorth {
   let assets = 0
   let liabilities = 0
   for (const a of accounts) {

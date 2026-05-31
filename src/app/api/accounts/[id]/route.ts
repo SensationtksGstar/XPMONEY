@@ -2,6 +2,7 @@ import { auth }                      from '@clerk/nextjs/server'
 import { NextRequest, NextResponse }   from 'next/server'
 import { createSupabaseAdmin }         from '@/lib/supabase'
 import { resolveUser }                 from '@/lib/resolveUser'
+import { recordNetWorthSnapshot }      from '@/lib/netWorthSnapshot'
 import { z }                           from 'zod'
 
 /**
@@ -52,6 +53,10 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!data)  return NextResponse.json({ error: 'Account not found' }, { status: 404 })
+
+  // Snapshot net worth for the trend chart (best-effort, never blocks).
+  await recordNetWorthSnapshot(db, internalId, new Date().toISOString().split('T')[0])
+
   return NextResponse.json({ data, error: null })
 }
 
@@ -91,5 +96,9 @@ export async function DELETE(
     .eq('user_id', internalId)   // ownership guard
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Net worth changed — snapshot it (best-effort).
+  await recordNetWorthSnapshot(db, internalId, new Date().toISOString().split('T')[0])
+
   return NextResponse.json({ success: true })
 }
