@@ -32,7 +32,8 @@ const GoalChart = dynamic(
 )
 import { CelebrationModal }    from '@/components/ui/CelebrationModal'
 import { formatCurrency, formatPercent } from '@/lib/utils'
-import { useT }                 from '@/lib/i18n/LocaleProvider'
+import { formatMonths }         from '@/lib/killDebt'
+import { useT, useLocale }      from '@/lib/i18n/LocaleProvider'
 import type { Goal, GoalDeposit } from '@/types'
 
 const GOAL_ICONS = ['🏠', '🚗', '✈️', '📱', '💻', '🎓', '💍', '🏖️', '💰', '🎯', '🛡️', '🏋️', '🏦', '🎸', '🐕', '👶']
@@ -70,8 +71,28 @@ function buildChartData(deposits: GoalDeposit[], targetAmount: number) {
 
 function GoalHistoryPanel({ goal }: { goal: Goal }) {
   const { data: deposits = [], isLoading } = useGoalDeposits(goal.id)
-  const t = useT()
+  const { t, locale } = useLocale()
   const chartData = useMemo(() => buildChartData(deposits, goal.target_amount), [deposits, goal.target_amount])
+
+  // Projection from the goal's OWN deposit pace: average monthly contribution
+  // over the span since the first deposit → months to cover the remaining
+  // amount. Honest (uses real behaviour, not a guess) and free (deposits are
+  // already loaded here). Skipped when there's too little history (<14 days
+  // span) so a single deposit doesn't extrapolate to an absurd rate.
+  const projection = useMemo(() => {
+    if (goal.current_amount >= goal.target_amount) return null
+    const positives = deposits.filter(d => Number(d.amount) > 0)
+    if (positives.length === 0) return null
+    const dates = positives.map(d => new Date(d.date).getTime())
+    const spanDays = (Date.now() - Math.min(...dates)) / 86_400_000
+    if (spanDays < 14) return null
+    const total      = positives.reduce((s, d) => s + Number(d.amount), 0)
+    const perMonth   = total / (spanDays / 30.44)
+    if (perMonth <= 0) return null
+    const remaining  = goal.target_amount - goal.current_amount
+    const months     = Math.max(1, Math.ceil(remaining / perMonth))
+    return { perMonth, months }
+  }, [deposits, goal.current_amount, goal.target_amount])
 
   if (isLoading) {
     return (
@@ -92,6 +113,19 @@ function GoalHistoryPanel({ goal }: { goal: Goal }) {
 
   return (
     <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
+      {/* Pace projection from real deposit history */}
+      {projection && (
+        <div className="flex items-start gap-2 bg-green-500/8 border border-green-500/20 rounded-xl px-3 py-2.5 text-xs text-green-200/90">
+          <TrendingUp className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-green-400" />
+          <span className="leading-relaxed">
+            {t('goals.pace_actual', {
+              rate: formatCurrency(projection.perMonth, 'EUR', locale),
+              when: formatMonths(projection.months, locale),
+            })}
+          </span>
+        </div>
+      )}
+
       {/* Evolution chart */}
       {chartData.length > 1 && (
         <div>
@@ -149,6 +183,16 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
   const days       = daysUntil(goal.deadline)
   const isUrgent   = days !== null && days <= 30 && days > 0
   const isOverdue  = days !== null && days < 0
+
+  // Required monthly pace to hit the deadline — deterministic, uses only
+  // data already on the card. Shown for active, on-time goals with a
+  // deadline still ahead. Gives the user the one number that matters:
+  // "save €X/month and you make it".
+  const remaining       = Math.max(0, goal.target_amount - goal.current_amount)
+  const monthsToDeadline = days !== null && days > 0 ? Math.max(1, Math.round(days / 30)) : null
+  const requiredPerMonth = !isComplete && monthsToDeadline && remaining > 0
+    ? remaining / monthsToDeadline
+    : null
 
   return (
     <div
@@ -217,6 +261,14 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
           </span>
         )}
       </div>
+
+      {/* Required monthly pace to hit the deadline */}
+      {requiredPerMonth !== null && (
+        <p className={`text-[11px] mt-2 flex items-center gap-1 ${isUrgent ? 'text-orange-300' : 'text-white/45'}`}>
+          <TrendingUp className="w-3 h-3 flex-shrink-0" />
+          {t('goals.pace_needed', { amount: formatCurrency(requiredPerMonth) })}
+        </p>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-2 mt-4">
