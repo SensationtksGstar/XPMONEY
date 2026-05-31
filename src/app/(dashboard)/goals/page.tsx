@@ -46,12 +46,12 @@ function daysUntil(deadline: string | null): number | null {
   return Math.ceil(diff / 86_400_000)
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: '2-digit' })
+function fmtDate(iso: string, locale: 'pt' | 'en' = 'pt') {
+  return new Date(iso).toLocaleDateString(locale === 'en' ? 'en-US' : 'pt-PT', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
 // Build cumulative chart data from deposits
-function buildChartData(deposits: GoalDeposit[], targetAmount: number) {
+function buildChartData(deposits: GoalDeposit[], targetAmount: number, locale: 'pt' | 'en' = 'pt') {
   if (!deposits.length) return []
   let cumulative = 0
   return deposits
@@ -60,7 +60,7 @@ function buildChartData(deposits: GoalDeposit[], targetAmount: number) {
     .map(d => {
       cumulative = Math.max(0, cumulative + Number(d.amount))
       return {
-        date:  fmtDate(d.date),
+        date:  fmtDate(d.date, locale),
         value: cumulative,
         goal:  targetAmount,
       }
@@ -72,7 +72,7 @@ function buildChartData(deposits: GoalDeposit[], targetAmount: number) {
 function GoalHistoryPanel({ goal }: { goal: Goal }) {
   const { data: deposits = [], isLoading } = useGoalDeposits(goal.id)
   const { t, locale } = useLocale()
-  const chartData = useMemo(() => buildChartData(deposits, goal.target_amount), [deposits, goal.target_amount])
+  const chartData = useMemo(() => buildChartData(deposits, goal.target_amount, locale), [deposits, goal.target_amount, locale])
 
   // Projection from the goal's OWN deposit pace: average monthly contribution
   // over the span since the first deposit → months to cover the remaining
@@ -150,7 +150,7 @@ function GoalHistoryPanel({ goal }: { goal: Goal }) {
                   }
                   <div>
                     <span className="text-xs text-white/70">{dep.note || t('goals.deposit_fallback')}</span>
-                    <span className="text-[10px] text-white/30 ml-2">{fmtDate(dep.date)}</span>
+                    <span className="text-[10px] text-white/30 ml-2">{fmtDate(dep.date, locale)}</span>
                   </div>
                 </div>
                 <span className={`text-xs font-bold tabular-nums ${Number(dep.amount) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -174,7 +174,7 @@ interface GoalCardProps {
 }
 
 function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
-  const t = useT()
+  const { t, locale } = useLocale()
   const [expanded, setExpanded] = useState(false)
   const progress   = goal.target_amount > 0
     ? Math.min(100, (goal.current_amount / goal.target_amount) * 100)
@@ -227,7 +227,7 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
           {goal.deadline && (
             <p className="text-xs text-white/35 flex items-center gap-1 mt-0.5">
               <Calendar className="w-3 h-3" />
-              {new Date(goal.deadline).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
+              {new Date(goal.deadline).toLocaleDateString(locale === 'en' ? 'en-US' : 'pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
             </p>
           )}
         </div>

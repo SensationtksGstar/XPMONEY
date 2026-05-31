@@ -65,10 +65,11 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
   issuedAt:     string
   onMintClick?: () => void
 }) {
-  const t = useT()
+  const { t, locale } = useLocale()
+  const intl = locale === 'en' ? 'en-US' : 'pt-PT'
   const code = certCode(course.id, userName, issuedAt)
-  const dateLong = new Date(issuedAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
-  const dateShort = new Date(issuedAt).toLocaleDateString('pt-PT')
+  const dateLong = new Date(issuedAt).toLocaleDateString(intl, { day: '2-digit', month: 'long', year: 'numeric' })
+  const dateShort = new Date(issuedAt).toLocaleDateString(intl)
 
   return (
     <div className="space-y-4">
