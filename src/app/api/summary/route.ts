@@ -50,6 +50,20 @@ export interface MonthlySummaryData {
     total:  number
     pct:    number  // % do total de despesas
   }>
+  /**
+   * Top 5 despesas INDIVIDUAIS (transação a transação) por valor descendente.
+   * Complementa o top_categories: o breakdown por categoria dilui uma compra
+   * única grande (ex.: €400 numa categoria de €600), este campo expõe-a.
+   * Alimenta o widget BiggestExpenses no dashboard.
+   */
+  top_expenses: Array<{
+    id:          string
+    description: string | null
+    icon:        string | null
+    category:    string | null
+    date:        string   // YYYY-MM-DD
+    amount:      number
+  }>
 }
 
 // Helper — builds "YYYY-MM" for the given Date in local time
@@ -173,6 +187,13 @@ export async function GET(req: NextRequest) {
         { name: 'Saúde',        icon: '💊', total:  85.90, pct:  9.1 },
         { name: 'Outros',       icon: '📎', total:  37.99, pct:  4.0 },
       ],
+      top_expenses: [
+        { id: 'demo-1', description: 'Renda',         icon: '🏠', category: 'Casa',        date: `${currentMonth}-03`, amount: 120.00 },
+        { id: 'demo-2', description: 'Supermercado',  icon: '🍽️', category: 'Alimentação', date: `${currentMonth}-12`, amount:  98.40 },
+        { id: 'demo-3', description: 'Gasolina',      icon: '🚗', category: 'Transportes', date: `${currentMonth}-08`, amount:  72.50 },
+        { id: 'demo-4', description: 'Jantar fora',   icon: '🎉', category: 'Lazer',       date: `${currentMonth}-19`, amount:  64.20 },
+        { id: 'demo-5', description: 'Farmácia',      icon: '💊', category: 'Saúde',       date: `${currentMonth}-22`, amount:  45.90 },
+      ],
     }
     return demoResponse(DEMO_SUMMARY)
   }
@@ -239,7 +260,7 @@ export async function GET(req: NextRequest) {
   // resolved window.
   let queryBuilder = db
     .from('transactions')
-    .select('amount, type, category:category_id(name, icon)')
+    .select('id, description, date, amount, type, category:category_id(name, icon)')
     .eq('user_id', internalId)
 
   if (!isAll) {
@@ -254,16 +275,25 @@ export async function GET(req: NextRequest) {
   // Como o join de `category:category_id(...)` é tipado como array pelo
   // PostgREST JS client mesmo sendo 1-to-1, precisamos de normalizar.
   type RawRow = {
+    id:          string
+    description: string | null
+    date:        string
     amount: unknown
     type:   'income' | 'expense'
     category: { name: string | null; icon: string | null } | Array<{ name: string | null; icon: string | null }> | null
   }
   type Row = {
+    id:          string
+    description: string | null
+    date:        string
     amount: unknown
     type:   'income' | 'expense'
     category: { name: string | null; icon: string | null } | null
   }
   const rows: Row[] = ((data ?? []) as unknown as RawRow[]).map(r => ({
+    id:          r.id,
+    description: r.description,
+    date:        r.date,
     amount: r.amount,
     type:   r.type,
     category: Array.isArray(r.category) ? (r.category[0] ?? null) : r.category,
@@ -300,6 +330,21 @@ export async function GET(req: NextRequest) {
     }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 6)
+
+  // Top 5 despesas individuais por valor — expõe a compra única grande que
+  // o breakdown por categoria dilui. Reutiliza as mesmas `rows` já carregadas.
+  const top_expenses = rows
+    .filter(r => r.type === 'expense')
+    .map(r => ({
+      id:          r.id,
+      description: r.description,
+      icon:        r.category?.icon ?? null,
+      category:    r.category?.name ?? null,
+      date:        r.date,
+      amount:      toNumber(r.amount),
+    }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5)
 
   // ── Compare-to-prev: same-duration window immediately before this one.
   // Only computed for bounded ranges (not for "all"). Cheap: one extra
@@ -359,6 +404,7 @@ export async function GET(req: NextRequest) {
     compareToPrev,
     fallbackUsed: !isAll && fallbackUsed,
     top_categories,
+    top_expenses,
   }
   return NextResponse.json({ data: summary })
 }

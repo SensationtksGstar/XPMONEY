@@ -36,6 +36,10 @@ const ExpenseBreakdown = dynamic(
   () => import('@/components/dashboard/ExpenseBreakdown').then(m => ({ default: m.ExpenseBreakdown })),
   { ssr: false, loading: () => <div className="h-56 bg-white/5 rounded-2xl animate-pulse" /> },
 )
+const BiggestExpenses = dynamic(
+  () => import('@/components/dashboard/BiggestExpenses').then(m => ({ default: m.BiggestExpenses })),
+  { ssr: false, loading: () => <div className="h-56 bg-white/5 rounded-2xl animate-pulse" /> },
+)
 const DebtWidget = dynamic(
   () => import('@/components/dashboard/DebtWidget').then(m => ({ default: m.DebtWidget })),
   { ssr: false, loading: () => null },
@@ -222,6 +226,11 @@ export default function DashboardPage() {
 
       {/* Resumo mensal */}
       <MonthlySummary userId={user?.id ?? ''} />
+
+      {/* Maiores despesas individuais — complementa o ExpenseBreakdown
+          (por categoria) expondo a compra única grande. Período-aware via
+          usePeriod; partilha o cache ['summary', qs] com os outros widgets. */}
+      <BiggestExpenses />
 
       {/* Widget de Kill Debt — só renderiza se o user tiver dívidas
           (devolve null caso contrário, sem ocupar espaço). */}

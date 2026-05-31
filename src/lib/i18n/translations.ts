@@ -129,6 +129,14 @@ export const pt = {
   'breakdown.bar_title':         '{pct}% das despesas',
   'breakdown.see_all':           'Ver todas as transações',
 
+  // ── Biggest Expenses widget ────────────────────────────────────────
+  'biggest.title':         'Maiores despesas',
+  'biggest.subtitle':      'Transações mais caras do período',
+  'biggest.no_category':   'Sem categoria',
+  'biggest.empty_title':   'Sem despesas para mostrar',
+  'biggest.empty_subtitle':'As tuas maiores compras aparecem aqui assim que registares movimentos.',
+  'biggest.see_all':       'Ver todas as transações',
+
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'Como funciona',
   'landing.nav.features':     'Funcionalidades',
@@ -1339,6 +1347,14 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'breakdown.empty_cta':         'Go to Transactions',
   'breakdown.bar_title':         '{pct}% of expenses',
   'breakdown.see_all':           'See all transactions',
+
+  // ── Biggest Expenses widget ────────────────────────────────────────
+  'biggest.title':         'Biggest expenses',
+  'biggest.subtitle':      'Most expensive transactions this period',
+  'biggest.no_category':   'Uncategorized',
+  'biggest.empty_title':   'No expenses to show',
+  'biggest.empty_subtitle':'Your largest purchases show up here once you log some transactions.',
+  'biggest.see_all':       'See all transactions',
 
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'How it works',
