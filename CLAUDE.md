@@ -70,6 +70,16 @@ The `Planeador` panel is a deliberately-dense decision tool, not just a status c
 
 If you add new debt-related UI, route it through `simulatePlan` / `compareStrategies` / `orderByStrategy` from `src/lib/killDebt.ts` — never re-implement the math.
 
+## Património / Net Worth (`/contas`)
+
+The app is **flow-based** (tracks transactions, computes score from flow); `accounts.balance` was vestigial (onboarding makes one `'Conta Principal'` at €0, no UI ever set it, transactions never touch it). The `/contas` page makes it an **honest manual net-worth SNAPSHOT** — NOT a reconciled real-time balance (the flow model can't guarantee that, so we don't pretend). User sets each account's balance; net worth = assets − liabilities.
+
+- **Math + type metadata**: `src/lib/netWorth.ts` — `computeNetWorth(accounts)`, `ACCOUNT_TYPE_META` (label key + icon + `isLiability`), `ACCOUNT_TYPES`. `credit` is the only liability type (balance = money owed → subtracts).
+- **API**: `/api/accounts` (GET+POST, existing) + `/api/accounts/[id]` (PATCH balance/name/type/icon/colour, DELETE). **DELETE is blocked (409 `account_has_transactions`) when the account has transactions** — the FK is `ON DELETE CASCADE`, so deleting would silently wipe history. Both ownership-guarded via `resolveUser` + `.eq('user_id', internalId)`.
+- **Hook**: `useAccounts()` now exposes `createAccount` / `updateAccount` / `deleteAccount` mutations (invalidate `['accounts']`).
+- **Dashboard**: `NetWorthWidget` renders ONLY when a non-zero balance exists (else `null`) so users who never set balances don't see a noise "€0". Shares the `['accounts']` cache → no extra fetch.
+- Balance edits commit on blur (inline), use `parseAmountLocale` (PT comma + EN dot). Fully PT/EN.
+
 ## Gamification primitives
 
 | Thing | Hook | API |

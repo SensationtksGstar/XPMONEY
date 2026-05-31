@@ -48,6 +48,10 @@ const SpendingVelocity = dynamic(
   () => import('@/components/dashboard/SpendingVelocity').then(m => ({ default: m.SpendingVelocity })),
   { ssr: false, loading: () => <div className="h-36 bg-white/5 rounded-2xl animate-pulse" /> },
 )
+const NetWorthWidget = dynamic(
+  () => import('@/components/dashboard/NetWorthWidget').then(m => ({ default: m.NetWorthWidget })),
+  { ssr: false, loading: () => null },
+)
 const DebtWidget = dynamic(
   () => import('@/components/dashboard/DebtWidget').then(m => ({ default: m.DebtWidget })),
   { ssr: false, loading: () => null },
@@ -234,6 +238,10 @@ export default function DashboardPage() {
 
       {/* Resumo mensal */}
       <MonthlySummary userId={user?.id ?? ''} />
+
+      {/* Património — só renderiza quando o user já definiu saldos (devolve
+          null caso contrário). Partilha o cache ['accounts'] com /contas. */}
+      <NetWorthWidget />
 
       {/* Ritmo de gasto — projeção predictiva do fim-de-mês vs média.
           Reutiliza o cache ['cashflow', 6] do CashFlowChart (zero rede

@@ -6,7 +6,7 @@ import { UserButton }  from '@clerk/nextjs'
 import {
   LayoutDashboard, ArrowLeftRight, Crosshair,
   Zap, Target, Settings, Crown, Trophy,
-  Star, TrendingUp, BookOpen, Sword, PiggyBank,
+  Star, TrendingUp, BookOpen, Sword, PiggyBank, Wallet,
 } from 'lucide-react'
 import { cn }    from '@/lib/utils'
 import { Logo }  from '@/components/ui/Logo'
@@ -25,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/transactions', labelKey: 'nav.transactions', icon: ArrowLeftRight,  pro: false },
   { href: '/missions',     labelKey: 'nav.missions',     icon: Crosshair,       pro: false },
   { href: '/goals',        labelKey: 'nav.goals',        icon: Target,          pro: false },
+  { href: '/contas',       labelKey: 'nav.networth',     icon: Wallet,          pro: false },
   { href: '/orcamento',    labelKey: 'nav.budget',       icon: PiggyBank,       pro: false },
   { href: '/dividas',      labelKey: 'nav.debt_killer',  icon: Sword,           pro: true  },
   { href: '/badges',       labelKey: 'nav.badges',       icon: Trophy,          pro: false },

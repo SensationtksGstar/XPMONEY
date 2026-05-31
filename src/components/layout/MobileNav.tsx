@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ArrowLeftRight,
   Target, BookOpen, Plus, MoreHorizontal,
   Swords, Trophy, Zap, LineChart, TrendingUp,
-  Settings, X, PiggyBank,
+  Settings, X, PiggyBank, Wallet,
 } from 'lucide-react'
 import { cn }              from '@/lib/utils'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
@@ -39,6 +39,7 @@ interface MoreItem {
 }
 
 const MORE_ITEMS: MoreItem[] = [
+  { href: '/contas',     labelKey: 'nav.networth',    icon: Wallet,     badge: null                 },
   { href: '/orcamento',  labelKey: 'nav.budget',      icon: PiggyBank,  badge: null                 },
   { href: '/cursos',     labelKey: 'nav.academy',     icon: BookOpen,   badge: null                 },
   { href: '/missions',   labelKey: 'nav.missions',    icon: Swords,     badge: null                 },
