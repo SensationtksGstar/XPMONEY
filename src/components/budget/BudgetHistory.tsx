@@ -8,6 +8,7 @@ import {
 } from 'recharts'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 import type { BudgetHistoryResponse } from '@/app/api/budget/history/route'
 
 /**
@@ -37,12 +38,28 @@ const COLORS = {
 }
 
 export function BudgetHistory() {
+  const { t, locale } = useLocale()
   const { data, isLoading } = useQuery({
     queryKey:  ['budget-history', 6],
     queryFn:   fetchHistory,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   })
+
+  // Locale-aware short month labels, computed client-side from the raw
+  // YYYY-MM key so the API can stay language-neutral (it returns PT labels
+  // for legacy callers, which we deliberately ignore here).
+  const points = useMemo(() => {
+    if (!data) return []
+    const intl = locale === 'en' ? 'en-US' : 'pt-PT'
+    return data.points.map(p => {
+      const [y, m] = p.month.split('-').map(Number)
+      const label = new Date(y, m - 1, 1)
+        .toLocaleDateString(intl, { month: 'short' })
+        .replace('.', '')
+      return { ...p, label: label.charAt(0).toUpperCase() + label.slice(1) }
+    })
+  }, [data, locale])
 
   const trend = useMemo(() => {
     if (!data || data.points.length < 2) return null
@@ -66,10 +83,9 @@ export function BudgetHistory() {
   if (!data || data.points.every(p => p.total === 0)) {
     return (
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
-        <h3 className="font-semibold text-white text-sm mb-1">Histórico — 6 meses</h3>
+        <h3 className="font-semibold text-white text-sm mb-1">{t('budget.history_empty_title')}</h3>
         <p className="text-xs text-white/45 max-w-xs mx-auto">
-          Assim que registares despesas durante alguns meses, vês aqui a evolução
-          visual entre necessidades, desejos e poupança.
+          {t('budget.history_empty_body')}
         </p>
       </div>
     )
@@ -79,9 +95,9 @@ export function BudgetHistory() {
     <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
         <div className="min-w-0">
-          <h3 className="font-semibold text-white text-sm">Histórico · últimos 6 meses</h3>
+          <h3 className="font-semibold text-white text-sm">{t('budget.history_title')}</h3>
           <p className="text-[11px] text-white/45 mt-0.5">
-            Barras empilhadas por bucket · linha tracejada = rendimento mensal
+            {t('budget.history_subtitle')}
           </p>
         </div>
         {trend && (
@@ -97,7 +113,7 @@ export function BudgetHistory() {
               : trend.diff > 0
               ? <TrendingUp className="w-3 h-3" />
               : <TrendingDown className="w-3 h-3" />}
-            {trend.diff > 0 ? '+' : ''}{trend.pct.toFixed(0)}% vs mês anterior
+            {t('budget.history_vs_prev', { pct: `${trend.diff > 0 ? '+' : ''}${trend.pct.toFixed(0)}` })}
           </span>
         )}
       </div>
@@ -112,13 +128,13 @@ export function BudgetHistory() {
       {data.income > 0 && (
         <div className="flex items-center gap-2 mb-3 text-[11px] text-white/55">
           <span aria-hidden className="inline-block w-6 h-px border-t border-dashed border-white/45" />
-          <span>Rendimento mensal: <strong className="text-white/80 tabular-nums">{formatCurrency(data.income)}</strong></span>
+          <span>{t('budget.history_income')}: <strong className="text-white/80 tabular-nums">{formatCurrency(data.income, 'EUR', locale)}</strong></span>
         </div>
       )}
 
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data.points} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <BarChart data={points} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
             <XAxis
               dataKey="label"
               axisLine={false}
@@ -144,19 +160,19 @@ export function BudgetHistory() {
               itemStyle={{ color: '#fff' }}
               formatter={(value: number, name: string) => {
                 const label =
-                  name === 'needs'   ? 'Necessidades' :
-                  name === 'wants'   ? 'Desejos'      :
-                  name === 'savings' ? 'Poupança'     : name
-                return [formatCurrency(value), label]
+                  name === 'needs'   ? t('budget.pct_needs')   :
+                  name === 'wants'   ? t('budget.pct_wants')   :
+                  name === 'savings' ? t('budget.pct_savings') : name
+                return [formatCurrency(value, 'EUR', locale), label]
               }}
-              labelFormatter={label => `Mês: ${label}`}
+              labelFormatter={label => `${t('budget.history_month')}: ${label}`}
             />
             <Legend
               wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
               formatter={(v: string) =>
-                v === 'needs'   ? <span className="text-white/70">Necessidades</span> :
-                v === 'wants'   ? <span className="text-white/70">Desejos</span>      :
-                v === 'savings' ? <span className="text-white/70">Poupança</span>     :
+                v === 'needs'   ? <span className="text-white/70">{t('budget.pct_needs')}</span>   :
+                v === 'wants'   ? <span className="text-white/70">{t('budget.pct_wants')}</span>   :
+                v === 'savings' ? <span className="text-white/70">{t('budget.pct_savings')}</span> :
                 v
               }
             />
