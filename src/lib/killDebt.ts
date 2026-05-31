@@ -7,6 +7,8 @@
  * entrar em loops infinitos se a prestação mínima não cobrir os juros.
  */
 
+import type { Locale } from '@/lib/i18n/translations'
+
 /** Categorias pré-definidas em PT-PT. O user pode adicionar novas — o
  *  campo é apenas texto livre limitado a 40 chars. Esta lista é usada
  *  para sugestões no formulário e para escolher o ícone/cor. */
@@ -207,22 +209,24 @@ export function compareStrategies(
 }
 
 /**
- * Formata meses num label legível em PT-PT.
- *   0  → "Já está!"
- *   1  → "1 mês"
- *   5  → "5 meses"
- *   14 → "1 ano e 2 meses"
+ * Formata meses num label legível, locale-aware (default PT-PT).
+ *   PT: 0 → "Já está!" · 1 → "1 mês" · 5 → "5 meses" · 14 → "1 ano e 2 meses"
+ *   EN: 0 → "Done!"     · 1 → "1 month" · 5 → "5 months" · 14 → "1 year and 2 months"
+ *
+ * `locale` é opcional e default 'pt' para manter compatibilidade com os
+ * call sites ainda não traduzidos (páginas /dividas).
  */
-export function formatMonths(months: number): string {
-  if (months <= 0) return 'Já está!'
-  if (months === 1) return '1 mês'
-  if (months < 12) return `${months} meses`
+export function formatMonths(months: number, locale: Locale = 'pt'): string {
+  const en = locale === 'en'
+  if (months <= 0)  return en ? 'Done!' : 'Já está!'
+  if (months === 1) return en ? '1 month' : '1 mês'
+  if (months < 12)  return en ? `${months} months` : `${months} meses`
   const y = Math.floor(months / 12)
   const m = months % 12
-  if (m === 0) return y === 1 ? '1 ano' : `${y} anos`
-  const yearPart = y === 1 ? '1 ano' : `${y} anos`
-  const monthPart = m === 1 ? '1 mês' : `${m} meses`
-  return `${yearPart} e ${monthPart}`
+  const yearPart  = en ? (y === 1 ? '1 year'  : `${y} years`)  : (y === 1 ? '1 ano' : `${y} anos`)
+  if (m === 0) return yearPart
+  const monthPart = en ? (m === 1 ? '1 month' : `${m} months`) : (m === 1 ? '1 mês' : `${m} meses`)
+  return en ? `${yearPart} and ${monthPart}` : `${yearPart} e ${monthPart}`
 }
 
 /**

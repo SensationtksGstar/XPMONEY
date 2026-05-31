@@ -162,7 +162,7 @@ export function DebtWidget() {
               {proj && (
                 <>
                   <span className="text-white/30">·</span>
-                  <span className="text-white/60">{t('debt.min_only', { months: formatMonths(proj.months) })}</span>
+                  <span className="text-white/60">{t('debt.min_only', { months: formatMonths(proj.months, locale) })}</span>
                 </>
               )}
             </p>

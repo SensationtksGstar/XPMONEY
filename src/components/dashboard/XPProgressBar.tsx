@@ -3,7 +3,15 @@
 import { useXP } from '@/hooks/useXP'
 import { getLevelFromXP, getNextLevel, getXPPercentage, calculateXPProgress, formatXP } from '@/lib/gamification'
 import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 import { Zap } from 'lucide-react'
+
+// Locale-aware level names — keyed by level number (LEVELS uses 1-10 + 20).
+const LEVEL_NAME_KEY: Record<number, TranslationKey> = {
+  1: 'level.name_1',  2: 'level.name_2',  3: 'level.name_3',  4: 'level.name_4',
+  5: 'level.name_5',  6: 'level.name_6',  7: 'level.name_7',  8: 'level.name_8',
+  9: 'level.name_9',  10: 'level.name_10', 20: 'level.name_20',
+}
 
 interface Props { userId: string }
 
@@ -33,7 +41,9 @@ export function XPProgressBar({ userId }: Props) {
           <Zap className="w-4 h-4 text-yellow-400" />
           <span className="text-sm font-semibold text-white/60">{t('xp.level', { n: level.number })}</span>
         </div>
-        <span className="text-sm font-bold text-yellow-400">{level.icon} {level.name}</span>
+        <span className="text-sm font-bold text-yellow-400">
+          {level.icon} {LEVEL_NAME_KEY[level.number] ? t(LEVEL_NAME_KEY[level.number]) : level.name}
+        </span>
       </div>
 
       {/* Barra XP */}
