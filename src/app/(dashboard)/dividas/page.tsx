@@ -25,26 +25,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
 import { useToast } from '@/components/ui/toaster'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
-import type { TranslationKey } from '@/lib/i18n/translations'
-
-// Predefined debt-category id → translation key. Custom categories (free
-// text typed by the user) fall back to their raw label.
-const DEBT_CAT_KEY: Record<string, TranslationKey> = {
-  cartao:     'debtcat.cartao',
-  pessoal:    'debtcat.pessoal',
-  carro:      'debtcat.carro',
-  hipoteca:   'debtcat.hipoteca',
-  educacao:   'debtcat.educacao',
-  prestacoes: 'debtcat.prestacoes',
-  familia:    'debtcat.familia',
-  outro:      'debtcat.outro',
-}
-
-/** Locale-aware category label — known ids translate, custom ids show raw. */
-function catLabel(id: string, rawLabel: string, t: (k: TranslationKey) => string): string {
-  const key = DEBT_CAT_KEY[id]
-  return key ? t(key) : rawLabel
-}
+import { catLabel } from '@/lib/debtCategoryLabel'
 
 /**
  * /dividas — página principal do Kill Debt.

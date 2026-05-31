@@ -17,6 +17,8 @@ import { parseAmountLocale } from '@/lib/safeNumber'
 import { Spinner } from '@/components/ui/Spinner'
 import { useToast } from '@/components/ui/toaster'
 import { useQuery } from '@tanstack/react-query'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
+import { catLabel } from '@/lib/debtCategoryLabel'
 
 /**
  * /dividas/[id] — página de batalha com uma dívida específica.
@@ -49,6 +51,7 @@ export default function DebtDetailPage() {
   const { debts, loading, updateDebt, deleteDebt } = useDebts()
   const attackMutation = useDebtAttack()
   const { toast } = useToast()
+  const { t, locale } = useLocale()
 
   const debt = useMemo(
     () => debts.find(d => d.id === params.id),
@@ -87,7 +90,7 @@ export default function DebtDetailPage() {
     if (!debt) return
     const n = parseAmountLocale(amount)
     if (!Number.isFinite(n) || n <= 0) {
-      toast('Valor inválido', 'error')
+      toast(t('dividas.invalid_amount'), 'error')
       return
     }
     try {
@@ -101,29 +104,33 @@ export default function DebtDetailPage() {
       if (res.killed) {
         setShowKillModal({ xp: res.xp_earned })
       } else {
-        toast(`+${res.xp_earned} XP — saldo ${formatCurrency(res.new_balance)}`, 'xp', res.xp_earned)
+        toast(
+          t('dividas.attack_toast', { xp: res.xp_earned, balance: formatCurrency(res.new_balance, 'EUR', locale) }),
+          'xp',
+          res.xp_earned,
+        )
       }
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'Erro ao registar', 'error')
+      toast(err instanceof Error ? err.message : t('dividas.attack_error'), 'error')
     }
   }
 
   async function manualKill() {
     if (!debt) return
-    if (!confirm('Marcar esta dívida como totalmente paga?')) return
+    if (!confirm(t('dividas.confirm_paid'))) return
     await updateDebt({ id: debt.id, status: 'killed' })
-    toast('Dívida marcada como abatida', 'success')
+    toast(t('dividas.toast_marked_paid'), 'success')
   }
 
   async function reactivate() {
     if (!debt) return
     await updateDebt({ id: debt.id, status: 'active', current_amount: initial })
-    toast('Dívida reactivada', 'info')
+    toast(t('dividas.toast_reactivated'), 'info')
   }
 
   async function handleDelete() {
     if (!debt) return
-    if (!confirm('Eliminar esta dívida e todo o histórico?')) return
+    if (!confirm(t('dividas.confirm_delete'))) return
     await deleteDebt(debt.id)
     router.push('/dividas')
   }
@@ -137,7 +144,7 @@ export default function DebtDetailPage() {
         <Link
           href="/dividas"
           className="text-white/40 hover:text-white p-1 -ml-1"
-          aria-label="Voltar à lista"
+          aria-label={t('dividas.back')}
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
@@ -147,11 +154,11 @@ export default function DebtDetailPage() {
             <h1 className="text-xl font-black text-white truncate">{debt.name}</h1>
             {isKilled && (
               <span className="text-[10px] font-bold bg-green-500/20 text-green-300 border border-green-500/40 px-2 py-0.5 rounded-full uppercase">
-                Abatida
+                {t('dividas.killed_badge')}
               </span>
             )}
           </div>
-          <p className="text-xs text-white/50">{cat.label}</p>
+          <p className="text-xs text-white/50">{catLabel(debt.category, cat.label, t)}</p>
         </div>
       </div>
 
@@ -162,19 +169,19 @@ export default function DebtDetailPage() {
           : 'bg-gradient-to-br from-red-500/10 via-orange-500/5 to-transparent border-red-500/25'
       }`}>
         <div className="flex items-baseline gap-2 mb-3">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Saldo actual</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">{t('dividas.current_balance')}</p>
           {debt.interest_rate > 0 && (
             <span className="ml-auto text-[10px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full">
-              {debt.interest_rate.toFixed(2)}% TAEG
+              {t('dividas.apr', { rate: debt.interest_rate.toFixed(2) })}
             </span>
           )}
         </div>
         <div className="flex items-end gap-2 mb-4">
           <p className={`text-4xl sm:text-5xl font-black ${isKilled ? 'text-green-300' : 'text-white'}`}>
-            {formatCurrency(current)}
+            {formatCurrency(current, 'EUR', locale)}
           </p>
           <p className="text-sm text-white/40 mb-2">
-            de {formatCurrency(initial)}
+            {t('dividas.of_initial', { amount: formatCurrency(initial, 'EUR', locale) })}
           </p>
         </div>
         <div className="h-3 bg-black/30 rounded-full overflow-hidden mb-2">
@@ -188,8 +195,8 @@ export default function DebtDetailPage() {
           />
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-white/50">{pctPaid.toFixed(1)}% abatido</span>
-          <span className="text-white/50">{formatCurrency(paidOff)} pago</span>
+          <span className="text-white/50">{t('dividas.pct_paid', { pct: pctPaid.toFixed(1) })}</span>
+          <span className="text-white/50">{t('dividas.paid_amount', { amount: formatCurrency(paidOff, 'EUR', locale) })}</span>
         </div>
       </div>
 
@@ -198,35 +205,35 @@ export default function DebtDetailPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
             <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1 flex items-center gap-1">
-              <Clock className="w-3 h-3" /> Só com o mínimo
+              <Clock className="w-3 h-3" /> {t('dividas.min_only_label')}
             </p>
             {projMinOnly ? (
               <>
-                <p className="text-lg font-black text-white">{formatMonths(projMinOnly.months)}</p>
+                <p className="text-lg font-black text-white">{formatMonths(projMinOnly.months, locale)}</p>
                 <p className="text-[11px] text-orange-300 mt-0.5">
-                  +{formatCurrency(projMinOnly.totalInterest)} juros
+                  {t('dividas.plus_interest', { amount: formatCurrency(projMinOnly.totalInterest, 'EUR', locale) })}
                 </p>
               </>
             ) : (
               <p className="text-xs text-red-300 leading-snug flex items-start gap-1">
                 <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                Mínimo não cobre juros — dívida infinita
+                {t('dividas.min_infinite')}
               </p>
             )}
           </div>
           <div className="bg-gradient-to-br from-green-500/10 to-transparent border border-green-500/25 rounded-2xl p-4">
             <p className="text-[10px] uppercase tracking-wider text-green-300 mb-1 flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Com +€100/mês
+              <Zap className="w-3 h-3" /> {t('dividas.with_100')}
             </p>
             {projWith100 ? (
               <>
-                <p className="text-lg font-black text-white">{formatMonths(projWith100.months)}</p>
+                <p className="text-lg font-black text-white">{formatMonths(projWith100.months, locale)}</p>
                 <p className="text-[11px] text-green-300 mt-0.5">
-                  +{formatCurrency(projWith100.totalInterest)} juros
+                  {t('dividas.plus_interest', { amount: formatCurrency(projWith100.totalInterest, 'EUR', locale) })}
                 </p>
               </>
             ) : (
-              <p className="text-xs text-white/50">Aumenta o extra</p>
+              <p className="text-xs text-white/50">{t('dividas.raise_extra')}</p>
             )}
           </div>
         </div>
@@ -240,10 +247,10 @@ export default function DebtDetailPage() {
         >
           <div className="flex items-center gap-2 mb-1">
             <Sword className="w-4 h-4 text-red-400" />
-            <h2 className="text-base font-bold text-white">Atacar dívida</h2>
+            <h2 className="text-base font-bold text-white">{t('dividas.attack_title')}</h2>
           </div>
           <p className="text-xs text-white/50">
-            Regista um pagamento extra. Ganhas XP por cada €2 pagos, bonus de 20% se acima do mínimo.
+            {t('dividas.attack_help')}
           </p>
 
           <div className="flex items-center gap-2 bg-black/30 border border-white/10 rounded-lg px-3 py-3 focus-within:border-red-500/50">
@@ -270,7 +277,7 @@ export default function DebtDetailPage() {
             value={note}
             onChange={e => setNote(e.target.value)}
             maxLength={200}
-            placeholder="Nota (opcional) — Ex: salário, 13º mês…"
+            placeholder={t('dividas.note_ph')}
             className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-red-500/50"
           />
 
@@ -281,7 +288,7 @@ export default function DebtDetailPage() {
           >
             {attackMutation.isPending
               ? <Spinner size="sm" />
-              : <><Sword className="w-4 h-4" /> Atacar</>}
+              : <><Sword className="w-4 h-4" /> {t('dividas.attack')}</>}
           </button>
         </form>
       )}
@@ -295,7 +302,7 @@ export default function DebtDetailPage() {
             className="inline-flex items-center gap-1.5 text-green-300 hover:text-green-200 bg-green-500/5 border border-green-500/20 px-3 py-2 rounded-lg font-semibold"
           >
             <Check className="w-3.5 h-3.5" />
-            Marcar como paga
+            {t('dividas.mark_paid')}
           </button>
         ) : (
           <button
@@ -304,7 +311,7 @@ export default function DebtDetailPage() {
             className="inline-flex items-center gap-1.5 text-orange-300 hover:text-orange-200 bg-orange-500/5 border border-orange-500/20 px-3 py-2 rounded-lg font-semibold"
           >
             <Flame className="w-3.5 h-3.5" />
-            Reactivar
+            {t('dividas.reactivate')}
           </button>
         )}
         <button
@@ -313,14 +320,14 @@ export default function DebtDetailPage() {
           className="inline-flex items-center gap-1.5 text-white/50 hover:text-red-300 bg-white/3 border border-white/10 px-3 py-2 rounded-lg font-semibold ml-auto"
         >
           <TrendingDown className="w-3.5 h-3.5" />
-          Eliminar
+          {t('dividas.del_confirm')}
         </button>
       </div>
 
       {/* Histórico de ataques */}
       {attacks.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-white mb-2">Histórico de pagamentos</h2>
+          <h2 className="text-sm font-semibold text-white mb-2">{t('dividas.payment_history')}</h2>
           <div className="space-y-1.5">
             {attacks.map(a => (
               <div
@@ -329,13 +336,13 @@ export default function DebtDetailPage() {
               >
                 <Zap className="w-4 h-4 text-yellow-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white">{formatCurrency(Number(a.amount))}</p>
+                  <p className="font-semibold text-white">{formatCurrency(Number(a.amount), 'EUR', locale)}</p>
                   {a.note && <p className="text-[11px] text-white/50 truncate">{a.note}</p>}
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-[11px] text-yellow-300 font-bold">+{a.xp_earned} XP</p>
                   <p className="text-[10px] text-white/40">
-                    {new Date(a.created_at).toLocaleDateString('pt-PT')}
+                    {new Date(a.created_at).toLocaleDateString(locale === 'en' ? 'en-US' : 'pt-PT')}
                   </p>
                 </div>
               </div>
@@ -361,6 +368,7 @@ export default function DebtDetailPage() {
 function KillCelebration({
   debtName, xp, onClose,
 }: { debtName: string; xp: number; onClose: () => void }) {
+  const { t } = useLocale()
   useEffect(() => {
     const t = setTimeout(onClose, 8000)
     return () => clearTimeout(t)
@@ -381,24 +389,24 @@ function KillCelebration({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Fechar"
+          aria-label={t('dividas.close')}
           className="absolute top-4 right-4 text-white/50 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>
         <div className="text-6xl mb-3">🎯</div>
         <h2 id="kill-title" className="text-2xl font-black text-white mb-2">
-          Dívida abatida!
+          {t('dividas.kill_title')}
         </h2>
         <p className="text-white/70 mb-4 break-words">
-          <strong className="text-green-300">{debtName}</strong> está completamente paga.
+          <strong className="text-green-300">{debtName}</strong>{' '}{t('dividas.kill_body_rest')}
         </p>
         <div className="inline-flex items-center gap-2 bg-yellow-500/15 border border-yellow-500/40 rounded-2xl px-5 py-2.5">
           <Zap className="w-5 h-5 text-yellow-400" />
           <span className="text-yellow-300 font-black text-lg">+{xp} XP</span>
         </div>
         <p className="text-[11px] text-white/40 mt-4">
-          Uma a menos. Vai lá tratar da próxima.
+          {t('dividas.kill_footer')}
         </p>
       </div>
     </div>
