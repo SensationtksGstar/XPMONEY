@@ -42,6 +42,7 @@ Core loop: log transactions → score climbs → mascot evolves → XP/badges/mi
 - **Shared debt-category labels**: `src/lib/debtCategoryLabel.ts` exports `DEBT_CAT_KEY` + `catLabel(id, rawLabel, t)`. Reused by `/dividas` + `/dividas/[id]`.
 - **Don't branch UI logic on error-message text** (`errorMsg.includes('Plano')` breaks under i18n). Track a boolean state instead (see `StatementImporter` `planError`).
 - **Coverage as of May 2026**: dashboard widgets (all), Mata-Dívidas (`/dividas` + `[id]`), AI import flow (`ReceiptScanner` + `StatementImporter`), `BudgetHistory`, `BugReportCard`, `LandingChat` are fully PT/EN. **Still PT-only**: `FauxPerspectivaPreview` (decorative blurred backdrop behind the perspetiva paywall — low priority).
+- **Validation guards** (run after any i18n change — they catch what `tsc` can't): `node scripts/check-i18n-placeholders.mjs` (PT↔EN placeholder parity across the dict) + `node scripts/check-i18n-callsites.mjs` (every `t('key', {…})` passes args matching the key's `{placeholders}`). The interpolation `{n}`/`{amount}` mismatch bug is invisible to `tsc` — these scripts are the net.
 
 ## Don't-re-discover rules
 
