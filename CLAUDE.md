@@ -121,7 +121,7 @@ Two mascots × 6 evolutions: **Voltix** (male, thunder dragon — names Voltini�
 
 `DELETE /api/transactions/reset` requires `{ confirm: "APAGAR" }`. Updated April 2026 — true factory wipe (was: kept badges + completed missions; user reported it as a bug because Mata-Dívidas + missions stayed):
 
-**Wipes (full delete):** `transactions`, `xp_history`, `financial_scores`, `goal_deposits`, `goals`, `debts` (cascades to `debt_attacks`), `missions` (active AND completed), `user_badges`, `budgets`.
+**Wipes (full delete):** `transactions`, `xp_history`, `financial_scores`, `goal_deposits`, `goals`, `debts` (cascades to `debt_attacks`), `missions` (active AND completed), `user_badges`, `budgets`, `net_worth_snapshots` (accounts + balances kept, but the net-worth trend history is post-onboarding activity → wiped).
 
 **Resets in-place:** `xp_progress` (xp_total → 0, level → 1, streak → 0), `voltix_states` (evo 1, mood neutral, streak 0).
 
@@ -142,7 +142,7 @@ Done LAST so a Clerk outage doesn't leave half-erased data; on Clerk failure ret
 
 ## Data export (RGPD Art. 20)
 
-`GET /api/account/export` streams a `xpmoney-export-YYYY-MM-DD.json` with every user-scoped row across 14 tables. Each secondary table wrapped in try/catch → missing migration produces partial file with `_warnings` array, never 500. Strips `clerk_id` from the user row before emitting (internal reference, not user data).
+`GET /api/account/export` streams a `xpmoney-export-YYYY-MM-DD.json` with every user-scoped row across 15 tables (incl. `net_worth_snapshots`). Each secondary table wrapped in try/catch → missing migration produces partial file with `_warnings` array, never 500. Strips `clerk_id` from the user row before emitting (internal reference, not user data).
 
 ## Blog (`/blog`)
 

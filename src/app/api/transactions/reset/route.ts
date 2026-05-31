@@ -22,6 +22,8 @@ import { isDemoMode }                from '@/lib/demo/demoGuard'
  *   - missions       (TODAS — activas + concluídas)
  *   - user_badges    (todas as conquistas — fica como user novo)
  *   - budgets        (orçamento 50/30/20 e overrides reaplicam-se em zero)
+ *   - net_worth_snapshots (histórico da tendência de Património — as contas
+ *                    e os saldos ficam, o histórico de evolução é apagado)
  *
  * Reseta in-place (mantém a row, zera os valores):
  *   - xp_progress    (xp_total → 0, level → 1, streak → 0)
@@ -97,6 +99,7 @@ export async function DELETE(req: NextRequest) {
     db.from('missions').delete().eq('user_id', internalId),       // ALL of them — completed and active
     db.from('user_badges').delete().eq('user_id', internalId),    // start fresh, no carry-over achievements
     db.from('budgets').delete().eq('user_id', internalId),        // 50/30/20 config + overrides clear
+    db.from('net_worth_snapshots').delete().eq('user_id', internalId), // net-worth trend history (accounts kept, history wiped)
   ])
 
   // Goals last — FKs from goal_deposits must be cleared first. A plain delete
@@ -180,6 +183,7 @@ export async function DELETE(req: NextRequest) {
       missions: true,
       badges:   true,
       budgets:  true,
+      networth: true,
     },
   })
 }

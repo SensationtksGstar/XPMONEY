@@ -15,7 +15,7 @@ import { isDemoMode }                  from '@/lib/demo/demoGuard'
  *   users · accounts · categories (user-created only) · transactions ·
  *   financial_scores · xp_progress · xp_history · missions · user_badges ·
  *   voltix_states · goals · goal_deposits · subscriptions · budgets ·
- *   bug_reports
+ *   bug_reports · net_worth_snapshots
  *
  * NOT included:
  *   - System categories (is_default = true) — they're not the user's data
@@ -69,7 +69,7 @@ export async function GET() {
   const [
     accounts, transactions, financialScores, xpProgress, xpHistory,
     missions, userBadges, voltixStates, goals, goalDeposits,
-    subscriptions, budgets, bugReports,
+    subscriptions, budgets, bugReports, netWorthSnapshots,
   ] = await Promise.all([
     pull('accounts'),
     pull('transactions'),
@@ -84,6 +84,7 @@ export async function GET() {
     pull('subscriptions'),
     pull('budgets'),
     pull('bug_reports'),
+    pull('net_worth_snapshots'),
   ])
 
   // Categories — only the ones the user created themselves (not system seeds)
@@ -118,6 +119,7 @@ export async function GET() {
     subscriptions,
     budgets,
     bug_reports: bugReports,
+    net_worth_snapshots: netWorthSnapshots,
   }
 
   const filename = `xpmoney-export-${new Date().toISOString().split('T')[0]}.json`
