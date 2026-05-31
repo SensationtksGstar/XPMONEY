@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Send, User, MessageSquare, X } from 'lucide-react'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 /** Avatar do Dragon Coin — retrato sozinho, sem moldura verde, apenas com
  *  glow delicado via drop-shadow. Usado no header e em cada mensagem do
@@ -50,16 +52,8 @@ interface Message {
 const MAX_INPUT = 500
 const MAX_HISTORY = 8
 
-const SEED_ASSISTANT: Message = {
-  role: 'assistant',
-  content: 'Olá! Sou o Dragon Coin 🐲 — o assistente da XP-Money. Pergunta-me sobre como funciona, preços, privacidade ou features Premium. Estou cá para te ajudar a decidir antes de criares conta.',
-}
-
-const QUICK_PROMPTS = [
-  'Como funciona o score financeiro?',
-  'O que entra no plano Premium?',
-  'Preciso ligar o meu banco?',
-  'Como cancelo a subscrição?',
+const QUICK_PROMPT_KEYS: TranslationKey[] = [
+  'chat.q1', 'chat.q2', 'chat.q3', 'chat.q4',
 ]
 
 interface ChatProps {
@@ -70,7 +64,8 @@ interface ChatProps {
 }
 
 export function LandingChat({ onClose }: ChatProps = {}) {
-  const [messages, setMessages] = useState<Message[]>([SEED_ASSISTANT])
+  const t = useT()
+  const [messages, setMessages] = useState<Message[]>(() => [{ role: 'assistant', content: t('chat.seed') }])
   const [input,    setInput]    = useState('')
   const [loading,  setLoading]  = useState(false)
   const [err,      setErr]      = useState<string | null>(null)
@@ -103,7 +98,7 @@ export function LandingChat({ onClose }: ChatProps = {}) {
       const json = await res.json().catch(() => ({}))
 
       if (!res.ok) {
-        setErr(json?.error ?? 'Agente indisponível. Tenta novamente.')
+        setErr(json?.error ?? t('chat.err_unavailable'))
         setLoading(false)
         return
       }
@@ -111,7 +106,7 @@ export function LandingChat({ onClose }: ChatProps = {}) {
       setMessages(prev => [...prev, { role: 'assistant', content: json.reply }])
     } catch (e) {
       console.warn('[LandingChat] request failed:', e)
-      setErr('Sem ligação. Verifica a internet.')
+      setErr(t('chat.err_offline'))
     } finally {
       setLoading(false)
     }
@@ -131,7 +126,7 @@ export function LandingChat({ onClose }: ChatProps = {}) {
           <p className="font-semibold text-white text-sm">Dragon Coin</p>
           <p className="text-[11px] text-white/50 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            Online · respostas em segundos
+            {t('chat.online')}
           </p>
         </div>
         <Link
@@ -139,8 +134,8 @@ export function LandingChat({ onClose }: ChatProps = {}) {
           className="text-[11px] text-white/60 hover:text-white transition-colors inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/5"
         >
           <MessageSquare className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Falar com humano</span>
-          <span className="sm:hidden">Humano</span>
+          <span className="hidden sm:inline">{t('chat.human_full')}</span>
+          <span className="sm:hidden">{t('chat.human_short')}</span>
         </Link>
         {/* Close X — only rendered when the chat is embedded as an
             overlay (DragonCoinFAB). Inline embedding (the FAQ section)
@@ -149,7 +144,7 @@ export function LandingChat({ onClose }: ChatProps = {}) {
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fechar conversa"
+            aria-label={t('chat.close')}
             className="w-9 h-9 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/8 transition-colors -mr-1"
           >
             <X className="w-4 h-4" />
@@ -201,16 +196,19 @@ export function LandingChat({ onClose }: ChatProps = {}) {
       {/* Quick prompts (only shown at start) */}
       {messages.length === 1 && !loading && (
         <div className="px-5 pt-3 pb-2 border-t border-white/5 flex flex-wrap gap-2">
-          {QUICK_PROMPTS.map(q => (
-            <button
-              key={q}
-              type="button"
-              onClick={() => send(q)}
-              className="text-[11px] text-white/70 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition-colors"
-            >
-              {q}
-            </button>
-          ))}
+          {QUICK_PROMPT_KEYS.map(qk => {
+            const label = t(qk)
+            return (
+              <button
+                key={qk}
+                type="button"
+                onClick={() => send(label)}
+                className="text-[11px] text-white/70 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition-colors"
+              >
+                {label}
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -228,13 +226,13 @@ export function LandingChat({ onClose }: ChatProps = {}) {
           onChange={e => setInput(e.target.value.slice(0, MAX_INPUT))}
           maxLength={MAX_INPUT}
           disabled={loading}
-          placeholder="Pergunta o que quiseres…"
+          placeholder={t('chat.input_ph')}
           className="flex-1 bg-white/5 border border-white/10 focus:border-green-400/50 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition-colors disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={!input.trim() || loading}
-          aria-label="Enviar mensagem"
+          aria-label={t('chat.send_aria')}
           className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-green-500 hover:bg-green-400 disabled:bg-white/10 disabled:text-white/40 text-black rounded-lg transition-colors disabled:cursor-not-allowed"
         >
           <Send className="w-4 h-4" />
@@ -242,8 +240,8 @@ export function LandingChat({ onClose }: ChatProps = {}) {
       </form>
 
       <p className="px-4 py-2 text-[10px] text-white/30 text-center border-t border-white/5">
-        As respostas são geradas por IA. Para pedidos formais usa o{' '}
-        <Link href="/contacto" className="underline hover:text-white/60">formulário de contacto</Link>.
+        {t('chat.footer_pre')}{' '}
+        <Link href="/contacto" className="underline hover:text-white/60">{t('chat.footer_link')}</Link>.
       </p>
     </section>
   )

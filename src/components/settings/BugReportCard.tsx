@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Bug, Check, Send } from 'lucide-react'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 /**
  * BugReportCard — settings card that lets any user report a bug to the admin
@@ -18,6 +19,7 @@ import { Bug, Check, Send } from 'lucide-react'
  *     issue occurred. No tracking beyond that.
  */
 export function BugReportCard() {
+  const t = useT()
   const [title,       setTitle]       = useState('')
   const [description, setDescription] = useState('')
   const [status,      setStatus]      = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
@@ -35,12 +37,12 @@ export function BugReportCard() {
     const descTrim  = description.trim()
     if (titleTrim.length < 3) {
       setStatus('error')
-      setErrorMsg('Escreve um título com pelo menos 3 caracteres.')
+      setErrorMsg(t('bug.err_title_short'))
       return
     }
     if (descTrim.length < 10) {
       setStatus('error')
-      setErrorMsg('A descrição precisa de pelo menos 10 caracteres — conta-nos o que aconteceu.')
+      setErrorMsg(t('bug.err_desc_short'))
       return
     }
 
@@ -64,7 +66,7 @@ export function BugReportCard() {
 
       if (!res.ok) {
         setStatus('error')
-        setErrorMsg(json?.error ?? 'Falha ao enviar. Tenta novamente.')
+        setErrorMsg(json?.error ?? t('bug.err_send'))
         return
       }
 
@@ -76,7 +78,7 @@ export function BugReportCard() {
     } catch (err) {
       console.warn('[BugReportCard] submit failed:', err)
       setStatus('error')
-      setErrorMsg('Sem ligação. Verifica a internet e tenta de novo.')
+      setErrorMsg(t('bug.err_offline'))
     }
   }
 
@@ -89,11 +91,10 @@ export function BugReportCard() {
     <div className="bg-white/5 border border-white/10 rounded-xl p-5">
       <h2 className="font-semibold text-white mb-1 flex items-center gap-2">
         <Bug className="w-4 h-4 text-orange-400" />
-        Reportar um bug
+        {t('bug.title')}
       </h2>
       <p className="text-sm text-white/50 mb-4 leading-relaxed">
-        Encontraste algo estranho? Conta-nos — vamos corrigir o mais rápido possível.
-        Respondemos pelo teu email da conta.
+        {t('bug.subtitle')}
       </p>
 
       {status === 'sent' ? (
@@ -105,15 +106,15 @@ export function BugReportCard() {
             <Check className="w-4 h-4" strokeWidth={3} />
           </span>
           <div>
-            <p className="font-semibold">Report enviado, obrigado!</p>
-            <p className="text-xs text-green-300/75">Vamos analisar e entrar em contacto se precisarmos de mais detalhes.</p>
+            <p className="font-semibold">{t('bug.sent_title')}</p>
+            <p className="text-xs text-green-300/75">{t('bug.sent_body')}</p>
           </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label htmlFor="bug-title" className="block text-xs font-medium text-white/60 mb-1.5">
-              Título do problema
+              {t('bug.field_title')}
             </label>
             <input
               id="bug-title"
@@ -121,7 +122,7 @@ export function BugReportCard() {
               value={title}
               onChange={e => setTitle(e.target.value)}
               maxLength={120}
-              placeholder="Ex: O botão de guardar não funciona"
+              placeholder={t('bug.title_ph')}
               className="w-full bg-white/5 border border-white/10 focus:border-orange-400/50 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors"
               required
             />
@@ -129,7 +130,7 @@ export function BugReportCard() {
 
           <div>
             <label htmlFor="bug-desc" className="block text-xs font-medium text-white/60 mb-1.5">
-              Descrição (o que aconteceu? O que esperavas?)
+              {t('bug.field_desc')}
             </label>
             <textarea
               id="bug-desc"
@@ -137,7 +138,7 @@ export function BugReportCard() {
               onChange={e => setDescription(e.target.value)}
               maxLength={4000}
               rows={4}
-              placeholder="Descreve o que estavas a fazer quando o bug apareceu e, se possível, como reproduzi-lo."
+              placeholder={t('bug.desc_ph')}
               className="w-full bg-white/5 border border-white/10 focus:border-orange-400/50 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors resize-none"
               required
             />
@@ -160,19 +161,18 @@ export function BugReportCard() {
             {status === 'sending' ? (
               <>
                 <span className="w-4 h-4 rounded-full border-2 border-orange-300/30 border-t-orange-300 animate-spin" />
-                A enviar…
+                {t('bug.sending')}
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                Enviar report
+                {t('bug.send')}
               </>
             )}
           </button>
 
           <p className="text-[10px] text-white/30 leading-snug">
-            Enviamos apenas o título, descrição, URL actual, versão da app e o teu email para podermos responder.
-            Nunca partilhamos estes dados.
+            {t('bug.privacy')}
           </p>
         </form>
       )}

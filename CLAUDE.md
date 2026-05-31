@@ -33,7 +33,15 @@ Core loop: log transactions → score climbs → mascot evolves → XP/badges/mi
 - `generateMetadata()` in root layout flips `<title>`/`<meta description>`/`og:locale`/keywords per locale.
 - Course content: PT in `src/lib/courses.ts` (source); EN overrides keyed by id in `src/lib/courses.en.ts`. Pages call `getCourseById(id, locale)` from `coursesAccess.ts`.
 - `LanguageToggle` (compact PT/EN segmented control) lives in landing nav + mobile TopBar.
-- Format helpers (`formatCurrency`/`formatMonth`/`formatDate`) accept optional `Locale`.
+- Format helpers (`formatCurrency`/`formatMonth`/`formatDate`) accept optional `Locale`. `formatMonths` (killDebt) also takes optional `locale` (default `'pt'`).
+
+**i18n patterns (May 2026 — follow these, don't re-discover):**
+- **`t()` is typed to `TranslationKey` (= `keyof` the PT dict).** Referencing a key not defined in PT is a **tsc error** — this is the safety net for every i18n sweep. EN is `Partial`, so a missing EN key silently falls back to PT (never broken, just untranslated). Always mirror PT→EN.
+- **Module-level label arrays / PT-only constant maps** (e.g. `SCORE_LABELS`, `PERIOD_LABELS`, `DEBT_CATEGORIES.label`, `LEVELS.name`) can't call `t()`. Pattern: a `Record<id, TranslationKey>` resolved with `t()` in render, with a fallback for unknown ids (e.g. user-created categories). See `XPProgressBar` (`LEVEL_NAME_KEY`), `FinancialScoreCard` (`SCORE_LEVEL_KEY`), `PeriodFilter` (`PERIOD_KEY`).
+- **Locale-aware short month / date labels** computed client-side via `toLocaleDateString(locale === 'en' ? 'en-US' : 'pt-PT', …)` so APIs stay language-neutral (return raw `YYYY-MM`). See `CashFlowChart`, `BudgetHistory`.
+- **Shared debt-category labels**: `src/lib/debtCategoryLabel.ts` exports `DEBT_CAT_KEY` + `catLabel(id, rawLabel, t)`. Reused by `/dividas` + `/dividas/[id]`.
+- **Don't branch UI logic on error-message text** (`errorMsg.includes('Plano')` breaks under i18n). Track a boolean state instead (see `StatementImporter` `planError`).
+- **Coverage as of May 2026**: dashboard widgets (all), Mata-Dívidas (`/dividas` + `[id]`), AI import flow (`ReceiptScanner` + `StatementImporter`), `BudgetHistory`, `BugReportCard`, `LandingChat` are fully PT/EN. **Still PT-only**: `FauxPerspectivaPreview` (decorative blurred backdrop behind the perspetiva paywall — low priority).
 
 ## Don't-re-discover rules
 
