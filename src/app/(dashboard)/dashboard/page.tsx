@@ -40,6 +40,10 @@ const BiggestExpenses = dynamic(
   () => import('@/components/dashboard/BiggestExpenses').then(m => ({ default: m.BiggestExpenses })),
   { ssr: false, loading: () => <div className="h-56 bg-white/5 rounded-2xl animate-pulse" /> },
 )
+const CashFlowChart = dynamic(
+  () => import('@/components/dashboard/CashFlowChart').then(m => ({ default: m.CashFlowChart })),
+  { ssr: false, loading: () => <div className="h-72 bg-white/5 rounded-2xl animate-pulse" /> },
+)
 const DebtWidget = dynamic(
   () => import('@/components/dashboard/DebtWidget').then(m => ({ default: m.DebtWidget })),
   { ssr: false, loading: () => null },
@@ -231,6 +235,11 @@ export default function DashboardPage() {
           (por categoria) expondo a compra única grande. Período-aware via
           usePeriod; partilha o cache ['summary', qs] com os outros widgets. */}
       <BiggestExpenses />
+
+      {/* Fluxo de caixa — única leitura de TENDÊNCIA temporal do dashboard
+          (receitas vs despesas nos últimos 6 meses). Janela fixa de 6 meses
+          por design, não segue o PeriodFilter. */}
+      <CashFlowChart />
 
       {/* Widget de Kill Debt — só renderiza se o user tiver dívidas
           (devolve null caso contrário, sem ocupar espaço). */}

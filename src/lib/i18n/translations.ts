@@ -137,6 +137,15 @@ export const pt = {
   'biggest.empty_subtitle':'As tuas maiores compras aparecem aqui assim que registares movimentos.',
   'biggest.see_all':       'Ver todas as transações',
 
+  // ── Cash Flow widget ───────────────────────────────────────────────
+  'cashflow.title':         'Fluxo de caixa',
+  'cashflow.subtitle':      'Receitas vs despesas · últimos 6 meses',
+  'cashflow.net_label':     'Saldo',
+  'cashflow.in':            'Entrou',
+  'cashflow.out':           'Saiu',
+  'cashflow.empty_title':   'Sem fluxo para mostrar',
+  'cashflow.empty_subtitle':'Regista alguns meses de movimentos e vê aqui se estás a poupar ou a queimar dinheiro.',
+
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'Como funciona',
   'landing.nav.features':     'Funcionalidades',
@@ -1355,6 +1364,15 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'biggest.empty_title':   'No expenses to show',
   'biggest.empty_subtitle':'Your largest purchases show up here once you log some transactions.',
   'biggest.see_all':       'See all transactions',
+
+  // ── Cash Flow widget ───────────────────────────────────────────────
+  'cashflow.title':         'Cash flow',
+  'cashflow.subtitle':      'Income vs expenses · last 6 months',
+  'cashflow.net_label':     'Net',
+  'cashflow.in':            'In',
+  'cashflow.out':           'Out',
+  'cashflow.empty_title':   'No cash flow to show',
+  'cashflow.empty_subtitle':'Log a few months of transactions to see whether you are saving or burning money.',
 
   // ── Landing navigation ─────────────────────────────────────────────
   'landing.nav.how_it_works': 'How it works',
