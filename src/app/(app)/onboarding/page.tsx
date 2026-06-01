@@ -6,35 +6,38 @@ import { ArrowRight, Check, Target, TrendingUp, PlusCircle } from 'lucide-react'
 import { track } from '@/lib/posthog'
 import { MascotCreature, type MascotGender } from '@/components/voltix/MascotCreature'
 import { saveMascotGenderLocal } from '@/lib/mascotGender'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 type Challenge = {
-  id:   string
-  icon: string
-  text: string
+  id:      string
+  icon:    string
+  textKey: TranslationKey
 }
 
 const CHALLENGES: Challenge[] = [
-  { id: 'overspend',  icon: '😬', text: 'Gasto mais do que ganho' },
-  { id: 'notrack',    icon: '🤷', text: 'Não sei onde vai o dinheiro' },
-  { id: 'nosavings',  icon: '💸', text: 'Não consigo poupar' },
-  { id: 'debts',      icon: '📉', text: 'Tenho dívidas para gerir' },
-  { id: 'planning',   icon: '🗺️', text: 'Quero planear o futuro' },
+  { id: 'overspend',  icon: '😬', textKey: 'onboarding.challenge_overspend' },
+  { id: 'notrack',    icon: '🤷', textKey: 'onboarding.challenge_notrack' },
+  { id: 'nosavings',  icon: '💸', textKey: 'onboarding.challenge_nosavings' },
+  { id: 'debts',      icon: '📉', textKey: 'onboarding.challenge_debts' },
+  { id: 'planning',   icon: '🗺️', textKey: 'onboarding.challenge_planning' },
 ]
 
-const GOALS = [
-  { id: 'emergency', icon: '🛡️', text: 'Fundo de emergência' },
-  { id: 'travel',    icon: '✈️', text: 'Viagem de sonho' },
-  { id: 'house',     icon: '🏠', text: 'Casa própria' },
-  { id: 'car',       icon: '🚗', text: 'Carro novo' },
-  { id: 'invest',    icon: '📈', text: 'Começar a investir' },
-  { id: 'debt',      icon: '⛓️', text: 'Pagar dívidas' },
-  { id: 'other',     icon: '🎯', text: 'Outro objetivo' },
+const GOALS: { id: string; icon: string; textKey: TranslationKey }[] = [
+  { id: 'emergency', icon: '🛡️', textKey: 'onboarding.goal_emergency' },
+  { id: 'travel',    icon: '✈️', textKey: 'onboarding.goal_travel' },
+  { id: 'house',     icon: '🏠', textKey: 'onboarding.goal_house' },
+  { id: 'car',       icon: '🚗', textKey: 'onboarding.goal_car' },
+  { id: 'invest',    icon: '📈', textKey: 'onboarding.goal_invest' },
+  { id: 'debt',      icon: '⛓️', textKey: 'onboarding.goal_debt' },
+  { id: 'other',     icon: '🎯', textKey: 'onboarding.goal_other' },
 ]
 
 type Step = 1 | 2 | 3 | 4
 
 export default function OnboardingPage() {
   const { user } = useUser()
+  const t = useT()
   const [step, setStep]             = useState<Step>(1)
   const [mascot, setMascot]         = useState<MascotGender | ''>('')
   const [challenge, setChallenge]   = useState<string>('')
@@ -43,7 +46,11 @@ export default function OnboardingPage() {
   const [loading, setLoading]       = useState(false)
   const [errorMsg, setErrorMsg]     = useState<string | null>(null)
 
-  const firstName = user?.firstName ?? 'explorador'
+  const firstName = user?.firstName ?? t('onboarding.fallback_name')
+  // Mascot name WITH its PT article ("O Voltix" / "A Penny"); EN drops the article.
+  const mascotName = mascot === 'penny'
+    ? t('onboarding.mascot_penny')
+    : t('onboarding.mascot_voltix')
 
   function handleMascotSelect(g: MascotGender) {
     setMascot(g)
@@ -130,7 +137,7 @@ export default function OnboardingPage() {
             </div>
           ))}
         </div>
-        <p className="text-white/30 text-xs text-center">Passo {step} de 4</p>
+        <p className="text-white/30 text-xs text-center">{t('onboarding.step_progress', { step })}</p>
       </div>
 
       <div className="w-full max-w-md">
@@ -140,10 +147,10 @@ export default function OnboardingPage() {
             <div key="step1" className="animate-fade-in-up">
               <div className="text-center mb-6">
                 <h1 className="text-2xl font-bold text-white mb-2">
-                  Olá, {firstName}! Escolhe o teu companheiro
+                  {t('onboarding.s1_title', { name: firstName })}
                 </h1>
                 <p className="text-white/60">
-                  Vai crescer e evoluir contigo à medida que dominas as tuas finanças.
+                  {t('onboarding.s1_subtitle')}
                 </p>
               </div>
 
@@ -173,11 +180,11 @@ export default function OnboardingPage() {
                   </div>
                   <div className="text-center">
                     <p className="text-white font-bold">Voltix</p>
-                    <p className="text-xs text-white/50 mt-0.5">Ovo de dragão-trovão</p>
+                    <p className="text-xs text-white/50 mt-0.5">{t('onboarding.voltix_tagline')}</p>
                   </div>
                   {mascot === 'voltix' && (
                     <span className="text-xs text-green-400 font-semibold flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Escolhido
+                      <Check className="w-3 h-3" /> {t('onboarding.chosen_m')}
                     </span>
                   )}
                 </button>
@@ -201,18 +208,18 @@ export default function OnboardingPage() {
                   </div>
                   <div className="text-center">
                     <p className="text-white font-bold">Penny</p>
-                    <p className="text-xs text-white/50 mt-0.5">Ovo de gata-anjo</p>
+                    <p className="text-xs text-white/50 mt-0.5">{t('onboarding.penny_tagline')}</p>
                   </div>
                   {mascot === 'penny' && (
                     <span className="text-xs text-pink-300 font-semibold flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Escolhida
+                      <Check className="w-3 h-3" /> {t('onboarding.chosen_f')}
                     </span>
                   )}
                 </button>
               </div>
 
               <p className="text-white/30 text-xs text-center mt-5">
-                Podes trocar mais tarde nas definições.
+                {t('onboarding.s1_switch_hint')}
               </p>
             </div>
           )}
@@ -223,10 +230,10 @@ export default function OnboardingPage() {
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4">👋</div>
                 <h1 className="text-2xl font-bold text-white mb-2">
-                  Qual é o teu maior desafio?
+                  {t('onboarding.s2_title')}
                 </h1>
                 <p className="text-white/60">
-                  {mascot === 'penny' ? 'A Penny' : 'O Voltix'} vai ajudar-te a ultrapassá-lo.
+                  {t('onboarding.s2_subtitle', { mascot: mascotName })}
                 </p>
               </div>
 
@@ -242,7 +249,7 @@ export default function OnboardingPage() {
                     }`}
                   >
                     <span className="text-2xl">{c.icon}</span>
-                    <span className="font-medium">{c.text}</span>
+                    <span className="font-medium">{t(c.textKey)}</span>
                     {challenge === c.id && (
                       <Check className="w-4 h-4 text-green-400 ml-auto" />
                     )}
@@ -258,10 +265,10 @@ export default function OnboardingPage() {
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4">🎯</div>
                 <h1 className="text-2xl font-bold text-white mb-2">
-                  Qual é o teu próximo objetivo?
+                  {t('onboarding.s3_title')}
                 </h1>
                 <p className="text-white/60">
-                  {mascot === 'penny' ? 'A Penny' : 'O Voltix'} vai ajudar-te a chegar lá.
+                  {t('onboarding.s3_subtitle', { mascot: mascotName })}
                 </p>
               </div>
 
@@ -277,7 +284,7 @@ export default function OnboardingPage() {
                     }`}
                   >
                     <span className="text-3xl">{g.icon}</span>
-                    <span className="text-xs font-medium text-center leading-tight">{g.text}</span>
+                    <span className="text-xs font-medium text-center leading-tight">{t(g.textKey)}</span>
                     {goal === g.id && (
                       <Check className="w-3.5 h-3.5 text-green-400" />
                     )}
@@ -290,7 +297,7 @@ export default function OnboardingPage() {
                 disabled={!goal}
                 className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold py-4 rounded-xl transition-all"
               >
-                Continuar
+                {t('onboarding.continue')}
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
@@ -302,17 +309,17 @@ export default function OnboardingPage() {
               <div className="text-center mb-8">
                 <div className="text-5xl mb-4 animate-bounce">⚡</div>
                 <h1 className="text-2xl font-bold text-white mb-2">
-                  Estás quase lá!
+                  {t('onboarding.s4_title')}
                 </h1>
                 <p className="text-white/60">
-                  Define quanto queres poupar para começar a tua missão.
+                  {t('onboarding.s4_subtitle')}
                 </p>
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
                 <label className="block text-sm text-white/60 mb-3 font-medium">
                   <Target className="w-4 h-4 inline mr-2" />
-                  Quanto queres poupar este mês?
+                  {t('onboarding.s4_amount_label')}
                 </label>
                 <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus-within:border-green-500/50 transition-colors">
                   <span className="text-white/40 font-medium">€</span>
@@ -325,7 +332,7 @@ export default function OnboardingPage() {
                     className="flex-1 bg-transparent text-white placeholder-white/30 outline-none text-xl font-bold"
                   />
                 </div>
-                <p className="text-xs text-white/30 mt-2">Podes alterar isto a qualquer momento.</p>
+                <p className="text-xs text-white/30 mt-2">{t('onboarding.s4_amount_hint')}</p>
               </div>
 
               {/* Preview do que vai acontecer */}
@@ -333,9 +340,9 @@ export default function OnboardingPage() {
                 <div className="flex items-center gap-3">
                   <PlusCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-green-400">Missão criada automaticamente</p>
+                    <p className="text-sm font-medium text-green-400">{t('onboarding.s4_mission_title')}</p>
                     <p className="text-xs text-white/60 mt-0.5">
-                      &quot;Regista 5 transações esta semana&quot; — +150 XP
+                      {t('onboarding.s4_mission_desc')}
                     </p>
                   </div>
                 </div>
@@ -345,9 +352,9 @@ export default function OnboardingPage() {
                 <div className="flex items-center gap-3">
                   <TrendingUp className="w-5 h-5 text-yellow-400 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-yellow-400">+100 XP de bónus</p>
+                    <p className="text-sm font-medium text-yellow-400">{t('onboarding.s4_bonus_title')}</p>
                     <p className="text-xs text-white/60 mt-0.5">
-                      Por completares o onboarding — bem-vindo ao XP-Money!
+                      {t('onboarding.s4_bonus_desc')}
                     </p>
                   </div>
                 </div>
@@ -362,7 +369,7 @@ export default function OnboardingPage() {
                   <span className="animate-spin text-xl">⚡</span>
                 ) : (
                   <>
-                    Entrar no XP-Money
+                    {t('onboarding.s4_cta')}
                     <ArrowRight className="w-5 h-5" />
                   </>
                 )}
@@ -370,7 +377,7 @@ export default function OnboardingPage() {
 
               {errorMsg && (
                 <div className="mt-4 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 text-sm break-words">
-                  <p className="font-semibold mb-1">Não foi possível concluir o onboarding:</p>
+                  <p className="font-semibold mb-1">{t('onboarding.error_title')}</p>
                   <p className="font-mono text-xs leading-relaxed opacity-90">{errorMsg}</p>
                 </div>
               )}
