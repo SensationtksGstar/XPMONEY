@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Bell, X, Zap, Flame, Trophy, Star, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
 
 interface XPEntry {
   id:        string
@@ -11,21 +13,26 @@ interface XPEntry {
   earned_at: string
 }
 
-function reasonLabel(reason: string): { label: string; icon: React.ReactNode } {
-  if (reason.includes('transaction'))  return { label: 'Transação registada',   icon: <TrendingUp className="w-3.5 h-3.5 text-green-400" /> }
-  if (reason.includes('streak'))       return { label: 'Streak diário',          icon: <Flame       className="w-3.5 h-3.5 text-orange-400" /> }
-  if (reason.includes('mission'))      return { label: 'Missão concluída',       icon: <Star        className="w-3.5 h-3.5 text-yellow-400" /> }
-  if (reason.includes('badge'))        return { label: 'Badge desbloqueado',     icon: <Trophy      className="w-3.5 h-3.5 text-purple-400" /> }
-  if (reason.includes('onboarding'))   return { label: 'Bónus de boas-vindas',  icon: <Zap         className="w-3.5 h-3.5 text-blue-400" /> }
+// Module-level: can't call t() here, so return a translation key + icon and let
+// the component resolve the label with t(). `key: null` → fall back to the raw
+// reason string (an XP reason we don't have a label for yet).
+function reasonMeta(reason: string): { key: TranslationKey | null; icon: React.ReactNode } {
+  if (reason.includes('transaction'))  return { key: 'notif.reason.transaction', icon: <TrendingUp className="w-3.5 h-3.5 text-green-400" /> }
+  if (reason.includes('streak'))       return { key: 'notif.reason.streak',      icon: <Flame       className="w-3.5 h-3.5 text-orange-400" /> }
+  if (reason.includes('mission'))      return { key: 'notif.reason.mission',     icon: <Star        className="w-3.5 h-3.5 text-yellow-400" /> }
+  if (reason.includes('badge'))        return { key: 'notif.reason.badge',       icon: <Trophy      className="w-3.5 h-3.5 text-purple-400" /> }
+  if (reason.includes('onboarding'))   return { key: 'notif.reason.onboarding',  icon: <Zap         className="w-3.5 h-3.5 text-blue-400" /> }
   if (reason.includes('checkin') || reason.includes('login'))
-                                        return { label: 'Check-in diário',        icon: <Zap         className="w-3.5 h-3.5 text-yellow-400" /> }
-  return { label: reason,              icon: <Zap className="w-3.5 h-3.5 text-white/40" /> }
+                                        return { key: 'notif.reason.checkin',     icon: <Zap         className="w-3.5 h-3.5 text-yellow-400" /> }
+  return { key: null,                  icon: <Zap className="w-3.5 h-3.5 text-white/40" /> }
 }
 
-function timeAgo(iso: string): string {
+// `nowLabel` is passed in (the "now" string is locale-dependent); the m/h/d
+// unit suffixes are language-neutral so they stay inline.
+function timeAgo(iso: string, nowLabel: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1)   return 'agora'
+  if (m < 1)   return nowLabel
   if (m < 60)  return `${m}m`
   const h = Math.floor(m / 60)
   if (h < 24)  return `${h}h`
@@ -42,6 +49,7 @@ export function NotificationPanel() {
   // Start false — flip true only once we've confirmed there's unseen activity.
   const [hasNew, setHasNew]   = useState(false)
   const panelRef              = useRef<HTMLDivElement>(null)
+  const t                     = useT()
 
   // ── Poll once on mount for the latest entry, so the dot is accurate ──
   useEffect(() => {
@@ -113,7 +121,7 @@ export function NotificationPanel() {
       {/* Bell button — 44×44 for touch a11y */}
       <button
         onClick={handleOpen}
-        aria-label={open ? 'Fechar notificações' : 'Abrir notificações'}
+        aria-label={open ? t('notif.close') : t('notif.open')}
         aria-expanded={open}
         aria-haspopup="dialog"
         className={cn(
@@ -134,14 +142,14 @@ export function NotificationPanel() {
           <div
             role="dialog"
             aria-modal="false"
-            aria-label="Atividade recente"
+            aria-label={t('notif.title')}
             className="absolute right-0 top-12 z-50 w-72 max-w-[calc(100vw-1rem)] bg-[#0f1829] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-              <span className="text-sm font-bold text-white">Atividade recente</span>
+              <span className="text-sm font-bold text-white">{t('notif.title')}</span>
               <button
                 onClick={() => setOpen(false)}
-                aria-label="Fechar notificações"
+                aria-label={t('notif.close')}
                 className="w-8 h-8 -m-1 flex items-center justify-center text-white/30 hover:text-white transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
@@ -166,12 +174,13 @@ export function NotificationPanel() {
               {!loading && items.length === 0 && (
                 <div className="p-6 text-center">
                   <Zap className="w-8 h-8 text-white/15 mx-auto mb-2" />
-                  <p className="text-sm text-white/40">Ainda sem atividade</p>
+                  <p className="text-sm text-white/40">{t('notif.empty')}</p>
                 </div>
               )}
 
               {!loading && items.map(item => {
-                const { label, icon } = reasonLabel(item.reason)
+                const { key, icon } = reasonMeta(item.reason)
+                const label = key ? t(key) : item.reason
                 return (
                   <div
                     key={item.id}
@@ -182,7 +191,7 @@ export function NotificationPanel() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-white/80 truncate">{label}</p>
-                      <p className="text-[10px] text-white/30">{timeAgo(item.earned_at)}</p>
+                      <p className="text-[10px] text-white/30">{timeAgo(item.earned_at, t('notif.now'))}</p>
                     </div>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                       <span className="text-xs font-bold text-yellow-400">+{item.amount}</span>

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n/LocaleProvider'
+import { missionTitle, missionDescription } from '@/lib/missionLabel'
 
 interface Props {
   userId: string
@@ -67,9 +68,9 @@ export function MissionCard({ userId, limit = 3 }: Props) {
                   {mission.is_premium && (
                     <Lock className="w-3 h-3 text-purple-400 flex-shrink-0" />
                   )}
-                  <h3 className="text-sm font-semibold text-white truncate">{mission.title}</h3>
+                  <h3 className="text-sm font-semibold text-white truncate">{missionTitle(mission, t)}</h3>
                 </div>
-                <p className="text-xs text-white/40 leading-relaxed">{mission.description}</p>
+                <p className="text-xs text-white/40 leading-relaxed">{missionDescription(mission, t)}</p>
               </div>
               <div className="flex items-center gap-1 ml-3 flex-shrink-0">
                 <Zap className="w-3 h-3 text-yellow-400" />

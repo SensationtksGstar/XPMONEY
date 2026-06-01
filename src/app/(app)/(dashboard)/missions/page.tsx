@@ -10,6 +10,7 @@ import { formatPercent }   from '@/lib/utils'
 import Link                from 'next/link'
 import { cn }              from '@/lib/utils'
 import { useT }            from '@/lib/i18n/LocaleProvider'
+import { missionTitle, missionDescription } from '@/lib/missionLabel'
 
 export default function MissionsPage() {
   const { missions, loading } = useMissions()
@@ -77,6 +78,7 @@ export default function MissionsPage() {
               const pct = Math.min(100, mission.target_value > 0
                 ? (mission.current_value / mission.target_value) * 100 : 0)
               const canComplete = pct >= 100 && mission.status === 'active'
+              const locTitle    = missionTitle(mission, t)
 
               return (
                 <div
@@ -93,14 +95,14 @@ export default function MissionsPage() {
                         {mission.is_premium && (
                           <Lock className="w-3 h-3 text-purple-400 flex-shrink-0" />
                         )}
-                        <h3 className="text-sm font-semibold text-white truncate">{mission.title}</h3>
+                        <h3 className="text-sm font-semibold text-white truncate">{locTitle}</h3>
                         {canComplete && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full flex-shrink-0 animate-pulse">
                             {t('missions.ready')}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-white/40 leading-relaxed">{mission.description}</p>
+                      <p className="text-xs text-white/40 leading-relaxed">{missionDescription(mission, t)}</p>
                     </div>
                     <div className="flex items-center gap-1 ml-3 flex-shrink-0">
                       <Zap className="w-3 h-3 text-yellow-400" />
@@ -124,7 +126,7 @@ export default function MissionsPage() {
                     </span>
                     {canComplete ? (
                       <button
-                        onClick={() => handleComplete(mission.id, mission.xp_reward, mission.title)}
+                        onClick={() => handleComplete(mission.id, mission.xp_reward, locTitle)}
                         disabled={completing === mission.id}
                         className="flex items-center gap-1.5 bg-green-500 hover:bg-green-400 text-black text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-60 active:scale-95"
                       >
@@ -172,7 +174,7 @@ export default function MissionsPage() {
                 className="flex items-center gap-3 px-4 py-3 bg-white/3 border border-white/5 rounded-xl opacity-60"
               >
                 <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
-                <span className="text-sm text-white/60 flex-1">{mission.title}</span>
+                <span className="text-sm text-white/60 flex-1">{missionTitle(mission, t)}</span>
                 <div className="flex items-center gap-1">
                   <Zap className="w-3 h-3 text-yellow-400/60" />
                   <span className="text-xs text-yellow-400/60 font-bold">+{mission.xp_reward}</span>
