@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter }         from 'next/font/google'
-import { ClerkProvider } from '@clerk/nextjs'
-import { ptPT, enUS }    from '@clerk/localizations'
 import Script            from 'next/script'
 import './globals.css'
 import { PostHogProvider } from '@/components/providers/PostHogProvider'
@@ -115,25 +113,17 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Resolve locale server-side from the xpmoney-locale cookie (+ Accept-
-  // Language fallback). Drives TWO things that MUST be rendered correctly
-  // on the first paint: the <html lang> attribute (screen readers, Google
-  // Translate, browser auto-translate, SEO) and the Clerk UI localization
-  // bundle (sign-in/up form labels and error strings).
+  // Language fallback). Drives the <html lang> attribute (screen readers,
+  // Google Translate, browser auto-translate, SEO) on the first paint.
+  // NOTE: ClerkProvider no longer lives here — it moved into the `(app)`
+  // route group's layout (see src/app/(app)/layout.tsx) so the public
+  // marketing routes that render under this root layout don't ship the
+  // ~120 KB Clerk client SDK. Clerk's locale-aware localization is resolved
+  // there from the same getServerLocale().
   const locale = await getServerLocale()
 
   return (
-    <ClerkProvider
-      localization={locale === 'en' ? enUS : ptPT}
-      appearance={{
-        variables: {
-          colorPrimary:    '#22c55e',
-          colorBackground: '#0a0f1e',
-          colorText:       '#f8fafc',
-          borderRadius:    '0.75rem',
-        },
-      }}
-    >
-      <html lang={locale} className={inter.variable} suppressHydrationWarning>
+    <html lang={locale} className={inter.variable} suppressHydrationWarning>
         <head>
           {/* Site-wide JSON-LD — Organization + WebSite live in <head> so
               every page (including authenticated ones) inherits the brand
@@ -203,6 +193,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </PostHogProvider>
         </body>
       </html>
-    </ClerkProvider>
   )
 }
