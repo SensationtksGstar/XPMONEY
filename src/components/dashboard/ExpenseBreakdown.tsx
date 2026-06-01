@@ -92,17 +92,18 @@ export function ExpenseBreakdown() {
   // Period label comes from the server-resolved window (e.g. "Últimos 3
   // meses"). Falls back to the legacy single-month text when the API
   // hasn't been redeployed yet.
+  // Hoisted out of the t() args object so the i18n call-site guard sees a clean
+  // {amount, month} — inlining formatMonth(…, locale) made its `locale` arg look
+  // like an extra t() placeholder to the guard's static parser (false positive).
+  const monthLabel = formatMonth(
+    new Date(Number(summary.month.split('-')[0]), Number(summary.month.split('-')[1]) - 1, 1),
+    locale,
+  )
   const totalLabel = summary.period?.label
     ? `${amount} · ${summary.period.label}`
     : (summary.month === summary.currentMonth
         ? t('breakdown.amount_this_month', { amount })
-        : t('breakdown.amount_in_month', {
-            amount,
-            month: formatMonth(
-              new Date(Number(summary.month.split('-')[0]), Number(summary.month.split('-')[1]) - 1, 1),
-              locale,
-            ),
-          }))
+        : t('breakdown.amount_in_month', { amount, month: monthLabel }))
 
   return (
     <div className="glass-card p-5">
