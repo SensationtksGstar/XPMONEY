@@ -247,7 +247,7 @@ Rate-limit response includes `Retry-After` + locale-aware error message.
 - `tsc --noEmit` does NOT catch this — only `next build` does. **Run `npx next build` locally before pushing changes that touch dynamic imports or server/client boundaries.**
 - Local build fails at "Collecting page data: supabaseUrl is required" because the worktree has no `.env.local` — irrelevant to Vercel where the env vars exist. The "Compiled successfully" line above that is the signal.
 
-## Mobile perf (rounds 1+2 shipped, round 3 deferred)
+## Mobile perf (rounds 1+2+3 shipped)
 
 Round 1 (commit bb74adb) + Round 2 (eb9d7ef + b4e9b83) shaved ~35-50 KB gzipped off the mobile critical path. Combined changes:
 
@@ -256,7 +256,10 @@ Round 1 (commit bb74adb) + Round 2 (eb9d7ef + b4e9b83) shaved ~35-50 KB gzipped 
 - `LandingFAQ` rewritten as async server component using native `<details>` / `<summary>` (was `'use client'` with React state). FAQ entries now in SSR HTML at first byte.
 - `LandingPricing` split into async server component + tiny `PricingPeriodToggle` client island. Yearly/monthly variants both server-rendered, toggled via Tailwind `group-data-[period=…]/p:` descendant variants — no JS round-trip.
 
-**Round 3 (deferred):** ClerkProvider in root layout ships ~120 KB gzipped to every public route (landing, blog, legal). Splitting `(marketing)` / `(app)` route groups would drop it from non-auth routes. **High value (~25-30% mobile JS reduction) but high risk** — any Clerk hook used outside the provider crashes. Needs full audit of the 30+ files importing Clerk hooks, ~2-3h focused work in a clean window.
+**Round 3 (SHIPPED June 2026, commit 3837314):** ClerkProvider moved out of the root layout into a new **`(app)` route group** (`src/app/(app)/layout.tsx` is the sole mount point). The four Clerk-dependent route trees — `(dashboard)`, `sign-in`, `sign-up`, `onboarding` — were `git mv`'d under `(app)` (route groups don't change URLs). Root layout keeps `getServerLocale()` for `<html lang>` but no longer imports Clerk. **Result (next build):** legal pages dropped to 103 kB First Load JS (= 102 kB shared baseline + 301 B), proving Clerk left the shared chunk; landing/blog/contacto/newsletter all shed it too; `(app)` routes correctly still carry it (sign-in 146 kB, dashboard 324 kB).
+- **The audit that de-risked it (re-run before touching this structure):** a repo-wide grep for client Clerk hooks/components (`useUser|useAuth|useClerk|useSession|<SignIn|<SignUp|<UserButton|…|from '@clerk/nextjs'`) returns a CLOSED set — every consumer already sits under `(app)`. `AdBanner` (uses `useUserPlan`) renders only in `(dashboard)`; `UserPlanProvider` is mounted in `(dashboard)/layout.tsx`. `admin/*` + `reports/*` + all `/api/*` use only server `auth()` from `@clerk/nextjs/server` (middleware-based, provider-independent) → they correctly stay OUTSIDE `(app)` with no Clerk client bundle. No public/marketing component touches Clerk.
+- **Gotcha:** after the move, `tsc --noEmit` errors with stale `.next/types/**/page.js not found` referencing OLD paths — it's the cached route-type validator, NOT real source errors. `rm -rf .next` then re-run `tsc` (and `next build` regenerates them clean).
+- **Don't re-add a provider to root.** If a NEW public route ever needs a Clerk hook, that's a design smell — public routes are providerless by design; gate the feature behind an `(app)` route instead.
 
 ## Security baseline (April 2026)
 
@@ -323,7 +326,6 @@ TODOs that require the user to act on a third-party dashboard — code is alread
 ## Backlog (cosmetic / non-blocking / data-bound)
 
 **Code-side, doable when there's a janela limpa:**
-- **Round 3 perf — Clerk split** (~120 KB gzipped off public routes): move `<ClerkProvider>` out of root layout into `(app)` route group; `(marketing)` group keeps no provider. Needs full audit of files importing Clerk hooks (any usage outside the provider crashes). High value, high risk, ~2-3h focused work.
 - 4 unused shaders in `shaders.ts` (~400 LOC) — keep as theme-picker seed or delete.
 - Dashboard layout has its own `dashboard-bg` solid which covers the Neon Grid (intentional).
 - Strict CSP — currently NOT set (Clerk + PostHog + AdSense + Turnstile mix needs nonce infra; deferred).
