@@ -58,3 +58,6 @@ apply-schema.mjs
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# internal marketing planning — local only, never commit (repo is PUBLIC)
+MARKETING.md
