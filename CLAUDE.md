@@ -165,13 +165,16 @@ Frontmatter (gray-matter): `title`, `description`, `date`, `keywords[]`, `author
 - Tailwind `prose prose-invert prose-emerald` (via `@tailwindcss/typography` plugin) styles the content.
 - Soft conversion CTA ("Try it free") at the foot of every post.
 
-**Currently published (6 articles, all PT-only):**
+**Currently published (7 articles, all PT-only):**
 1. `ynab-alternativas-portugal-2026` — comparison content
 2. `irs-2026-7-deducoes-esquecidas` — seasonal SEO (April-June)
 3. `extracto-cgd-30-segundos-ia` — feature demo, drives Premium
 4. `regra-50-30-20-salario-portugues-1300` — authority + drives `/orçamento`
 5. `porque-apps-financas-desistem-de-ti` — contrarian, viral on socials
 6. `subsidio-de-ferias-2026-o-que-fazer` — seasonal SEO (June, subsídio de férias lands), high-intent windfall guide → funnels to goals/Mata-Dívidas; cross-links #4 + #2
+7. `reembolso-irs-2026-o-que-fazer` — seasonal SEO (June/July, IRS refunds land), contrarian "refund = you lent the State at 0%" angle + PT-specific withholding nuance; forms a 2-piece windfall cluster with #6 (mutual cross-links) + links #2
+
+**Seasonal cluster (#6 + #7):** the subsídio-de-férias and IRS-reembolso pieces cross-link each other + #2 — a June/July "double cash window" content cluster. Distribution kit (LinkedIn/X/IG/communities copy + UTM-per-channel advice) was delivered in-chat, not committed.
 
 Marketing roadmap planning lives in MARKETING.md (gitignored).
 
