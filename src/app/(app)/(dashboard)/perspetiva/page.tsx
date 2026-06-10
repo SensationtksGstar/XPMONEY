@@ -1,6 +1,7 @@
 import { auth }               from '@clerk/nextjs/server'
 import { redirect }           from 'next/navigation'
 import { createSupabaseAdmin } from '@/lib/supabase'
+import { fetchPlanRow }        from '@/lib/plan'
 import { PremiumFeatureLock } from '@/components/common/PremiumFeatureLock'
 import { getServerT }          from '@/lib/i18n/server'
 import type { TranslationKey } from '@/lib/i18n/translations'
@@ -24,18 +25,14 @@ export default async function PerspectivaPage() {
   // Direct DB query — never cached — ensures paywall sees authoritative plan.
   // Demo visitors are always treated as free-plan so they hit the teaser.
   const profile = DEMO_MODE
-    ? { id: null as string | null, plan: 'free' as const }
-    : (await db
-        .from('users')
-        .select('id, plan')
-        .eq('clerk_id', userId as string)
-        .single()).data
+    ? { id: null as string | null, isPremium: false }
+    : await fetchPlanRow(db, 'clerk_id', userId as string)
 
   if (!profile) redirect('/dashboard')
 
-  // Paywall: Perspetiva só para Premium (inclui antigos plus/pro/family)
-  const paidPlans = new Set(['premium', 'plus', 'pro', 'family'])
-  if (!paidPlans.has(profile.plan ?? 'free')) {
+  // Paywall: Perspetiva só para Premium — subscrição OU passe anual ativo
+  // (isPremiumActive cobre também os antigos plus/pro/family).
+  if (!profile.isPremium) {
     return (
       <PremiumFeatureLock
         icon="crown"

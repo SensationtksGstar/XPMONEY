@@ -35,7 +35,7 @@ export async function POST() {
   ])
   if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-  const isPremium = profile?.plan !== 'free'
+  const isPremium = profile?.isPremium ?? false
   const templates = MISSION_TEMPLATES.filter(m => !m.is_premium || isPremium).slice(0, 3)
   const missions  = templates.map(t => ({
     user_id: internalId, type: t.type, title: t.title, description: t.description,

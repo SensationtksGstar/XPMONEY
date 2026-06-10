@@ -1,6 +1,6 @@
 import { auth, currentUser }      from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { createCheckoutSession, STRIPE_PRICES } from '@/lib/stripe'
+import { createCheckoutSession, createPassCheckoutSession, STRIPE_PRICES } from '@/lib/stripe'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
   // engolia o erro sem mostrar nada. Agora listamos o que está em falta.
   if (!priceId) {
     const expectedEnv = plan === 'premium'
-      ? (cycle === 'yearly' ? 'STRIPE_PREMIUM_YEARLY_PRICE_ID' : 'STRIPE_PREMIUM_MONTHLY_PRICE_ID')
+      ? (cycle === 'pass'   ? 'STRIPE_PREMIUM_PASS_PRICE_ID'
+       : cycle === 'yearly' ? 'STRIPE_PREMIUM_YEARLY_PRICE_ID'
+       :                      'STRIPE_PREMIUM_MONTHLY_PRICE_ID')
       : '(plano desconhecido)'
     console.warn('[billing/checkout] missing price id for', priceKey, '— expected env:', expectedEnv)
     return NextResponse.json(
@@ -65,13 +67,24 @@ export async function POST(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
   try {
-    const session = await createCheckoutSession({
-      userId,
-      email,
-      priceId,
-      successUrl: `${appUrl}/dashboard?upgraded=true`,
-      cancelUrl:  `${appUrl}/settings/billing`,
-    })
+    // Passe anual one-time (Multibanco/MB WAY/cartão) vs subscrição recorrente.
+    // O passe volta para /settings/billing?pass=pending porque o Multibanco só
+    // confirma 24-72h depois — a página avisa que o Premium ativa quando pagar.
+    const session = cycle === 'pass'
+      ? await createPassCheckoutSession({
+          userId,
+          email,
+          priceId,
+          successUrl: `${appUrl}/settings/billing?pass=pending`,
+          cancelUrl:  `${appUrl}/settings/billing`,
+        })
+      : await createCheckoutSession({
+          userId,
+          email,
+          priceId,
+          successUrl: `${appUrl}/dashboard?upgraded=true`,
+          cancelUrl:  `${appUrl}/settings/billing`,
+        })
 
     if (!session.url) {
       return NextResponse.json(

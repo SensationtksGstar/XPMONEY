@@ -2,6 +2,7 @@ import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
+import { fetchPlanRow }              from '@/lib/plan'
 import { awardXP }                   from '@/lib/awardXP'
 import { XP_REWARDS }                from '@/types'
 import { z }                         from 'zod'
@@ -22,7 +23,6 @@ const GoalSchema = z.object({
 // already have 3+ active goals keep them; this gate only blocks the
 // next creation. Premium (and legacy plus/pro/family) is unlimited.
 const FREE_GOAL_LIMIT = 2
-const PAID_PLANS = new Set(['premium', 'plus', 'pro', 'family'])
 
 export async function GET() {
   if (isDemoMode()) return demoResponse(DEMO_GOALS)
@@ -62,9 +62,8 @@ export async function POST(req: NextRequest) {
   // copy promises "2 savings goals" for Free / unlimited for Premium —
   // before this gate the API didn't enforce it and free users could create
   // goals indefinitely (mismatch flagged April 2026 audit).
-  const { data: planRow } = await db
-    .from('users').select('plan').eq('id', internalId).maybeSingle()
-  const isPaid = PAID_PLANS.has(planRow?.plan ?? 'free')
+  const planRow = await fetchPlanRow(db, 'id', internalId)
+  const isPaid  = planRow?.isPremium ?? false
   if (!isPaid) {
     const { count: activeCount } = await db
       .from('goals')

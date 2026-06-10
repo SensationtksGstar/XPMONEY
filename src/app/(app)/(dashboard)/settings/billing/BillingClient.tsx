@@ -3,9 +3,9 @@
 import { useState }  from 'react'
 import { Crown, Check, Zap, ArrowLeft, Settings as SettingsIcon } from 'lucide-react'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
+import { cn, formatDateFull } from '@/lib/utils'
 import { track } from '@/lib/posthog'
-import { useT } from '@/lib/i18n/LocaleProvider'
+import { useT, useLocale } from '@/lib/i18n/LocaleProvider'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
 type BillingCycle = 'monthly' | 'yearly'
@@ -90,11 +90,16 @@ const PLAN_RANK: Record<string, number> = {
 }
 
 interface Props {
-  currentPlan: Plan
+  currentPlan:   Plan
+  /** Set when Premium came from a one-time Annual Pass (vs a subscription). */
+  premiumUntil?: string | null
+  /** True after returning from a pass checkout (?pass=pending). */
+  passPending?:  boolean
 }
 
-export default function BillingClient({ currentPlan }: Props) {
+export default function BillingClient({ currentPlan, premiumUntil = null, passPending = false }: Props) {
   const t = useT()
+  const { locale } = useLocale()
   const [cycle, setCycle]     = useState<BillingCycle>('yearly')
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError]     = useState<string | null>(null)
@@ -158,17 +163,18 @@ export default function BillingClient({ currentPlan }: Props) {
     }
   }
 
-  async function handleUpgrade(planId: string) {
+  async function handleUpgrade(planId: string, opts?: { cycle?: BillingCycle | 'pass'; key?: string }) {
     if (planId === 'free') return
+    const loadingKey = opts?.key ?? planId
     setError(null)
-    setLoading(planId)
-    track.upgrade_clicked('billing_page', planId)
+    setLoading(loadingKey)
+    track.upgrade_clicked('billing_page', opts?.cycle ? `${planId}_${opts.cycle}` : planId)
 
     try {
       const res = await fetch('/api/billing/checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ plan: planId, cycle }),
+        body:    JSON.stringify({ plan: planId, cycle: opts?.cycle ?? cycle }),
       })
 
       // Antes engolíamos o erro com catch silencioso → o botão parava de
@@ -228,23 +234,44 @@ export default function BillingClient({ currentPlan }: Props) {
             <Check className="w-5 h-5 text-purple-400 flex-shrink-0" />
             <p className="text-sm text-purple-300 font-medium" dangerouslySetInnerHTML={{ __html: t('billing.current_premium') }} />
           </div>
-          <button
-            type="button"
-            onClick={handleManageSubscription}
-            disabled={loading === 'portal'}
-            className={cn(
-              'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all min-h-[40px] flex-shrink-0',
-              'bg-purple-500 hover:bg-purple-400 text-white',
-              'disabled:opacity-60 disabled:cursor-wait',
-            )}
-          >
-            {loading === 'portal' ? (
-              <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-            ) : (
-              <SettingsIcon className="w-3.5 h-3.5" />
-            )}
-            {t('billing.manage_subscription')}
-          </button>
+          {premiumUntil ? (
+            // Passe Anual one-time: não há subscrição Stripe para "gerir" (o portal
+            // daria erro) — mostramos a data de expiração em vez do botão.
+            <span className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs font-semibold text-purple-200 bg-purple-500/15 border border-purple-500/30 flex-shrink-0">
+              {t('billing.pass_expires_on', { date: formatDateFull(premiumUntil, locale) })}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleManageSubscription}
+              disabled={loading === 'portal'}
+              className={cn(
+                'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all min-h-[40px] flex-shrink-0',
+                'bg-purple-500 hover:bg-purple-400 text-white',
+                'disabled:opacity-60 disabled:cursor-wait',
+              )}
+            >
+              {loading === 'portal' ? (
+                <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <SettingsIcon className="w-3.5 h-3.5" />
+              )}
+              {t('billing.manage_subscription')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Aviso pós-checkout do passe — Multibanco confirma de forma assíncrona,
+          por isso NÃO afirmamos "Premium ativado", apenas que o pagamento entrou. */}
+      {passPending && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-start gap-3 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3"
+        >
+          <span aria-hidden className="text-xl leading-none">⏳</span>
+          <p className="text-sm text-green-200/90">{t('billing.annual_pass_async_notice')}</p>
         </div>
       )}
 
@@ -424,6 +451,39 @@ export default function BillingClient({ currentPlan }: Props) {
           )
         })}
       </div>
+
+      {/* Passe Anual — via de pagamento alternativa para quem prefere Multibanco
+          ou MB WAY (métodos que não funcionam numa subscrição recorrente). Só
+          se mostra a quem ainda não é Premium. */}
+      {currentPlan === 'free' && (
+        <div className="border border-purple-500/30 bg-purple-500/5 rounded-2xl p-5">
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-2xl">🇵🇹</span>
+            <div className="min-w-0">
+              <h3 className="text-base font-bold text-white">{t('billing.annual_pass_title')}</h3>
+              <p className="text-xs text-white/60 mt-1 leading-relaxed">{t('billing.annual_pass_desc')}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => handleUpgrade('premium', { cycle: 'pass', key: 'pass' })}
+            disabled={!!loading}
+            className={cn(
+              'w-full flex items-center justify-center gap-2 font-bold px-4 py-3 rounded-xl transition-all active:scale-95 text-sm min-h-[44px]',
+              'bg-purple-500 hover:bg-purple-400 text-white',
+              loading && 'opacity-50 cursor-not-allowed',
+            )}
+          >
+            {loading === 'pass' ? (
+              <span className="animate-spin">⚡</span>
+            ) : (
+              <>
+                <Crown className="w-4 h-4" />
+                {t('billing.annual_pass_button')}
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Garantia */}
       <div className="flex items-center justify-center gap-2 text-white/30 text-xs">

@@ -2,6 +2,7 @@ import { Suspense }         from 'react'
 import { auth }              from '@clerk/nextjs/server'
 import { redirect }          from 'next/navigation'
 import { createSupabaseAdmin } from '@/lib/supabase'
+import { fetchPlanRow }       from '@/lib/plan'
 import { Sidebar }          from '@/components/layout/Sidebar'
 import { TopBar }           from '@/components/layout/TopBar'
 import { MobileNav }        from '@/components/layout/MobileNav'
@@ -35,21 +36,19 @@ export default async function DashboardLayout({
     const { userId } = await auth()
     if (!userId) redirect('/sign-in')
 
-    // Direct DB query — never cached — prevents stale plan from blocking premium access
-    const db = createSupabaseAdmin()
-    const { data: user } = await db
-      .from('users')
-      .select('id, plan, onboarding_completed')
-      .eq('clerk_id', userId)
-      .single()
+    // Direct DB query — never cached — prevents stale plan from blocking premium access.
+    // fetchPlanRow resolves the effective plan (subscription OR unexpired Annual
+    // Pass) and degrades gracefully if premium_until isn't migrated yet.
+    const db   = createSupabaseAdmin()
+    const user = await fetchPlanRow(db, 'clerk_id', userId)
 
     if (!user || !user.onboarding_completed) {
       redirect('/onboarding')
     }
 
-    // Legacy tiers (plus/pro/family) mapeiam para 'premium' no novo modelo.
-    const raw = user.plan ?? 'free'
-    plan = raw === 'free' ? 'free' : 'premium'
+    // isPremium covers subscription premium, an active one-time pass, and the
+    // legacy plus/pro/family aliases (all non-'free' → premium).
+    plan = user.isPremium ? 'premium' : 'free'
   }
 
   return (

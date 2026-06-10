@@ -27,6 +27,11 @@ export const STRIPE_PRICES: Record<string, string> = {
     ?? process.env.STRIPE_PRO_YEARLY_PRICE_ID
     ?? process.env.STRIPE_PLUS_YEARLY_PRICE_ID
     ?? '',
+  // Passe Anual one-time (mode:'payment') — único checkout que pode oferecer
+  // Multibanco + MB WAY (métodos que NÃO recorrem). Price tem de ser one-time
+  // (não recorrente) no Stripe. Concede Premium por 1 ano via webhook.
+  premium_pass:
+    process.env.STRIPE_PREMIUM_PASS_PRICE_ID ?? '',
 }
 
 export function getPlanFromPriceId(priceId: string): Plan {
@@ -64,6 +69,43 @@ export async function createCheckoutSession({
     subscription_data: {
       metadata: { userId },
     },
+    allow_promotion_codes: true,
+  })
+}
+
+// Checkout do Passe Anual (pagamento ÚNICO). É o único modo que pode oferecer
+// Multibanco + MB WAY: estes métodos não suportam débito recorrente, logo o
+// Stripe esconde-os em mode:'subscription'. Concede Premium por 1 ano — a data
+// de expiração é gravada em users.premium_until pelo webhook quando o pagamento
+// é confirmado (Multibanco confirma de forma assíncrona, 24-72h).
+export async function createPassCheckoutSession({
+  userId,
+  email,
+  priceId,
+  successUrl,
+  cancelUrl,
+}: {
+  userId: string
+  email: string
+  priceId: string
+  successUrl: string
+  cancelUrl: string
+}) {
+  return stripe.checkout.sessions.create({
+    mode: 'payment',
+    customer_email: email,
+    line_items: [{ price: priceId, quantity: 1 }],
+    // Cartão (instantâneo) + Multibanco (referência, paga em 24-72h) + MB WAY
+    // (push mobile). Multibanco/MB WAY têm de estar ativados em
+    // dashboard.stripe.com/settings/payment_methods (conta PT/EUR) ou o Stripe
+    // devolve erro ao criar a sessão. `mb_way` pode faltar na união de tipos
+    // desta versão do SDK embora a API o suporte — cast através de unknown.
+    payment_method_types:
+      ['card', 'multibanco', 'mb_way'] as unknown as Stripe.Checkout.SessionCreateParams.PaymentMethodType[],
+    success_url: successUrl,
+    cancel_url:  cancelUrl,
+    metadata: { userId, kind: 'premium_pass' },
+    payment_intent_data: { metadata: { userId, kind: 'premium_pass' } },
     allow_promotion_codes: true,
   })
 }

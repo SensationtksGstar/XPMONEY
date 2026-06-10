@@ -25,6 +25,56 @@ function toIsoOrNull(unixSeconds: unknown): string | null {
   return new Date(unixSeconds * 1000).toISOString()
 }
 
+/**
+ * Grant a 1-year Annual Pass (one-time Multibanco/MB WAY/card purchase).
+ * EXTENDS rather than resets: if the user already has a future premium_until,
+ * we add a year on top of it (buying a 2nd pass stacks). `clerkUserId` is the
+ * Clerk id carried in the checkout session metadata.
+ *
+ * Tolerates the premium_until column not being migrated yet — degrades to
+ * granting `plan='premium'` (no expiry) and logs loudly so the admin runs the
+ * migration. We never let a missing column make the webhook 500 (Stripe would
+ * retry forever and the customer paid but got nothing).
+ */
+async function grantPass(
+  db: ReturnType<typeof createSupabaseAdmin>,
+  clerkUserId: string,
+): Promise<void> {
+  let internalId: string | null = null
+  let currentMs  = 0
+
+  const probe = await db
+    .from('users').select('id, premium_until').eq('clerk_id', clerkUserId).maybeSingle()
+  if (!probe.error) {
+    internalId = (probe.data as { id?: string } | null)?.id ?? null
+    const pu = (probe.data as { premium_until?: string | null } | null)?.premium_until
+    currentMs = pu ? new Date(pu).getTime() : 0
+  } else if (probe.error.code === '42703') {
+    const fb = await db.from('users').select('id').eq('clerk_id', clerkUserId).maybeSingle()
+    internalId = (fb.data as { id?: string } | null)?.id ?? null
+  } else {
+    console.warn('[webhook] grantPass lookup failed:', probe.error)
+    return
+  }
+
+  if (!internalId) {
+    console.warn('[webhook] grantPass: user not found for', clerkUserId)
+    return
+  }
+
+  const YEAR_MS = 365 * 24 * 60 * 60 * 1000
+  const until   = new Date(Math.max(Date.now(), currentMs) + YEAR_MS).toISOString()
+
+  const upd = await db
+    .from('users').update({ plan: 'premium', premium_until: until }).eq('id', internalId)
+  if (upd.error?.code === '42703') {
+    console.warn('[webhook] premium_until column missing — granted plan only. RUN database/premium_until_column_2026_06.sql')
+    await db.from('users').update({ plan: 'premium' }).eq('id', internalId)
+  } else if (upd.error) {
+    console.warn('[webhook] grantPass update failed:', upd.error)
+  }
+}
+
 export async function POST(req: NextRequest) {
   const body      = await req.text()
   const signature = req.headers.get('stripe-signature')
@@ -79,6 +129,17 @@ export async function POST(req: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session
       const userId  = session.metadata?.userId
       if (!userId) break
+
+      // One-time Annual Pass (mode:'payment'). Grant ONLY when actually paid:
+      // Multibanco fires this event immediately with payment_status='unpaid'
+      // (reference issued, not yet paid) — the grant happens later on
+      // checkout.session.async_payment_succeeded. Card/MB WAY are 'paid' here.
+      if (session.mode === 'payment') {
+        if (session.payment_status === 'paid' && session.metadata?.kind === 'premium_pass') {
+          await grantPass(db, userId)
+        }
+        break
+      }
 
       const { data: user } = await db
         .from('users').select('id').eq('clerk_id', userId).single()
@@ -152,6 +213,23 @@ export async function POST(req: NextRequest) {
       }).eq('stripe_subscription_id', subscription.id)
 
       await db.from('users').update({ plan: 'free' }).eq('id', sub.user_id)
+      break
+    }
+
+    // Multibanco confirma de forma assíncrona (24-72h após a referência ser
+    // emitida). Este é o evento que concede o passe quando o pagamento entra.
+    case 'checkout.session.async_payment_succeeded': {
+      const session = event.data.object as Stripe.Checkout.Session
+      const userId  = session.metadata?.userId
+      if (userId && session.metadata?.kind === 'premium_pass') {
+        await grantPass(db, userId)
+      }
+      break
+    }
+
+    case 'checkout.session.async_payment_failed': {
+      const session = event.data.object as Stripe.Checkout.Session
+      console.warn('[webhook] async pass payment failed:', session.id, session.metadata?.userId)
       break
     }
 
