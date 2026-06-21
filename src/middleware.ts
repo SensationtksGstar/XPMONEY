@@ -69,6 +69,12 @@ export const config = {
     // intercepts `/icon` and 307-redirects to `/sign-in`, leaving the browser
     // to fall back to a default favicon ("X" — the first letter of the
     // page title in Chrome/Edge).
-    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    //
+    // `sitemap.xml` + `robots.txt` are the SAME class of bug: produced by
+    // src/app/sitemap.ts / robots.ts, served at extensionless-ish paths that
+    // Clerk was intercepting → Googlebot got a 307 to /sign-in instead of the
+    // file. They are NOT in isPublicRoute either, so they MUST be excluded
+    // here or search engines can never read the sitemap (June 2026 SEO audit).
+    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

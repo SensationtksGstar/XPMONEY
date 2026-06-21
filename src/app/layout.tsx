@@ -106,8 +106,10 @@ export const viewport: Viewport = {
   themeColor:   '#060b14',
   width:        'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // NOTE: we intentionally do NOT set maximumScale/userScalable. Locking zoom
+  // (maximumScale:1 + userScalable:false) fails WCAG 1.4.4 and is flagged by
+  // Lighthouse as not mobile-friendly. To stop iOS auto-zooming form inputs,
+  // the modern fix is font-size:16px on inputs — not disabling pinch-zoom.
   viewportFit:  'cover',
 }
 
