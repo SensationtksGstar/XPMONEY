@@ -169,8 +169,10 @@ export function PWAInstallPrompt() {
       >
         <div className="mx-auto max-w-sm pointer-events-auto bg-[#0d1424]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl shadow-black/60 p-5">
           <div className="flex items-start justify-between gap-2">
-            <h2 id={titleId} className="font-semibold text-white text-base">
-              📱 {t('pwa.install_ios.title')}
+            <h2 id={titleId} className="font-semibold text-white text-base flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/app-icon.webp" alt="" className="w-7 h-7 rounded-lg flex-shrink-0" />
+              {t('pwa.install_ios.title')}
             </h2>
             <button
               type="button"
@@ -215,8 +217,10 @@ export function PWAInstallPrompt() {
     >
       <div className="mx-auto max-w-sm pointer-events-auto bg-[#0d1424]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl shadow-black/60 p-5">
         <div className="flex items-start justify-between gap-2">
-          <h2 id={titleId} className="font-semibold text-white text-base">
-            ⚡ {t('pwa.install.title')}
+          <h2 id={titleId} className="font-semibold text-white text-base flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/app-icon.webp" alt="" className="w-7 h-7 rounded-lg flex-shrink-0" />
+            {t('pwa.install.title')}
           </h2>
           <button
             type="button"

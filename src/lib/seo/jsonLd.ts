@@ -34,7 +34,7 @@ export function organization() {
     '@type':    'Organization',
     name:       BRAND,
     url:        SITE_URL,
-    logo:       `${SITE_URL}/logo-icon.webp`,
+    logo:       `${SITE_URL}/app-icon.webp`,
     // Empty until we have real social profiles — schema.org accepts
     // an empty array but we omit the field rather than mislead crawlers.
     // Add `sameAs: ['https://instagram.com/...', ...]` when handles exist.
@@ -209,7 +209,7 @@ export function article(input: {
       name:    BRAND,
       logo: {
         '@type': 'ImageObject',
-        url:     `${SITE_URL}/logo-icon.webp`,
+        url:     `${SITE_URL}/app-icon.webp`,
       },
     },
   }
