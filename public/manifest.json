@@ -9,16 +9,16 @@
   "theme_color": "#060b14",
   "icons": [
     {
-      "src": "/logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/logo-icon.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
       "purpose": "any"
     },
     {
       "src": "/icon",
-      "sizes": "64x64",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["finance", "productivity"],
@@ -29,14 +29,14 @@
       "short_name": "Adicionar",
       "description": "Regista uma transação rapidamente",
       "url": "/transactions?new=true",
-      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/logo-icon.webp", "sizes": "512x512", "type": "image/webp" }]
     },
     {
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "Ver o teu dashboard financeiro",
       "url": "/dashboard",
-      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/logo-icon.webp", "sizes": "512x512", "type": "image/webp" }]
     }
   ]
 }

@@ -110,8 +110,9 @@ Two mascots × 6 evolutions: **Voltix** (male, thunder dragon — names Voltini�
   - Thresholds: `{2:20, 3:48, 4:68, 5:85, 6:95}` (Evo 2 dramatically easier so users see the "wow moment" in week 1)
   - XP bonuses: `{2:350, 3:500, 4:800, 5:1200, 6:2500}`
   - Late-game (5/6) intentionally untouched — keeps top-tier aspirational.
-- Cinematic: 5-stage framer-motion timeline in `MascotEvolutionCinematic.tsx` + Web Audio SFX. Preview via `?previewEvo=2-3`.
-- **Landing hero** uses `PlatedMascot` (`src/components/landing/PlatedMascot.tsx`) — 8-layer monochrome deep-blue plate with iridescence + rim light + specular core + chromatic fringe + idle Lissajous when no pointer activity.
+- Cinematic: 5-stage framer-motion timeline in `MascotEvolutionCinematic.tsx` + Web Audio SFX. Preview via `?previewEvo=2-3`. (The old per-evolution `evo-*.mp4` clips were removed in the June 2026 art refresh — they don't drive the cinematic and went stale when the mascots were redesigned. New clips TBD.)
+- **Landing hero** (`LandingHero.tsx`) shows `/mascot/hero.webp` (the "imagem de abertura" — Voltix warrior form) in **full colour** with a radial glow. The old `PlatedMascot` (8-layer monochrome deep-blue plate) was retired — it buried the gold/orange of the new brand art.
+- **Visual identity refresh (June 2026):** all 12 mascot WebPs + hero + evolution sheets (`evolucoes-{voltix,penny}.webp`) were replaced with professionally-designed art. **Pipeline (reproducible, Python):** source PNGs → `rembg` (u2net) for clean alpha (the sources had a baked checkerboard "fake-transparency" background that colour-keying can't remove) → autocrop → `sharp`/PIL fit into 512×512 transparent canvas → WebP q90. **GOTCHA for re-processing Voltix:** the source filenames are SWAPPED — `IMPERIALVOLTIX.png` is actually evo-5 (Magnavoltix, muscular single-head) and `MAGNAVOLTIX.png` is evo-6 (Imperivoltix, 3-headed armored boss). Map by the visual power-order, not the filename.
 - Raw PNGs in `public/mascot/raw/` + `raw-clean/` are **gitignored** — commit only processed WebPs.
 
 ## Site-wide visuals
@@ -291,8 +292,10 @@ Round 1 (commit bb74adb) + Round 2 (eb9d7ef + b4e9b83) shaved ~35-50 KB gzipped 
 
 ## Brand
 
-- Master logo: `public/logo.svg` (512×512).
-- Favicon: `src/app/icon.svg` · Apple touch: `apple-icon.tsx` (180×180) · OG: `opengraph-image.tsx` (1200×630, uses `clip-path` — Satori doesn't support `<mask>`).
+- **Brand kit refreshed June 2026** (raster, professionally designed — no longer the hand-coded SVG Digivice). `Logo.tsx` now renders `<img src="/logo-icon.webp">` (the green "XP" power-bolt tile), NOT inline SVG — the new mark is a detailed gradient raster that can't be faithfully traced to vectors. `showText` still appends the "XP-Money" wordmark.
+- Favicon: `src/app/icon.png` · Apple touch: `src/app/apple-icon.png` (180×180) · OG + Twitter card: static `src/app/opengraph-image.png` (1200×630, the `REDES SOCIAIS` brand card — replaced the Satori-generated `opengraph-image.tsx`). All convention files are static images now; the old `icon.svg`/`apple-icon.tsx`/`opengraph-image.tsx` were deleted.
+- Org/Product JSON-LD `logo` points to `/logo-icon.webp` (`src/lib/seo/jsonLd.ts`). The old `public/logo.svg` was deleted.
+- Spare brand assets live in `public/brand/` (`favicon.png`, `app-icon.png`, `notification.png`, `logo-horizontal.webp`, `social.png`) for future wiring (web-push icon, light-bg contexts, etc.).
 
 ## Workflow
 

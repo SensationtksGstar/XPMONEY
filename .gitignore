@@ -61,3 +61,5 @@ apply-schema.mjs
 
 # internal marketing planning — local only, never commit (repo is PUBLIC)
 MARKETING.md
+
+.env*.local
