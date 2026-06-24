@@ -168,27 +168,18 @@ export async function LandingHero() {
             <div className="absolute w-[320px] h-[320px] rounded-full bg-yellow-500/10 blur-2xl" />
           </div>
 
-          {/* Main mascot — the "imagem de abertura" hero render (Voltix in its
-              warrior form), shown in full colour. The old PlatedMascot pushed
-              everything to monochrome deep-blue, which buried the gold/orange
-              detail of the new brand art, so we present it directly with a soft
-              radial glow + drop shadow instead. */}
+          {/* Main mascot — the "imagem de abertura" hero render (Voltix warrior
+              holding the app). Shown as the plain image: NO glow, NO drop shadow
+              (the user found those effects worsened it). Just the clean photo. */}
           <div className="relative z-20 -mb-10 pointer-events-none flex justify-center">
-            <div className="relative">
-              <div
-                aria-hidden
-                className="absolute inset-0 -z-10 blur-3xl opacity-60"
-                style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.45), transparent 70%)' }}
-              />
-              <Image
-                src="/mascot/hero.webp"
-                alt={t('landing.hero.voltix_alt')}
-                width={420}
-                height={420}
-                priority
-                className="w-[240px] sm:w-[300px] md:w-[360px] h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.55)]"
-              />
-            </div>
+            <Image
+              src="/mascot/hero.webp"
+              alt={t('landing.hero.voltix_alt')}
+              width={420}
+              height={420}
+              priority
+              className="w-[240px] sm:w-[300px] md:w-[360px] h-auto"
+            />
           </div>
 
           {/* Device card */}
