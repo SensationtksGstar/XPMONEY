@@ -29,7 +29,7 @@ export function Logo({ size = 28, showText = false, textClass, className }: Prop
     <span className={cn('inline-flex items-center gap-2', className)}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo-icon.webp"
+        src="/app-icon.webp"
         width={size}
         height={size}
         alt="XP-Money"
