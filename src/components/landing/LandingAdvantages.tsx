@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import {
   ScanLine, FileText, Zap, Trophy, Target, Award,
   BarChart3, Crown, Bot, Shield, BookOpen, Sparkles,
@@ -190,62 +189,6 @@ export async function LandingAdvantages() {
               </div>
             )
           })}
-        </div>
-
-        {/* Evolution chart banner — uses the real line-up art so visitors
-            can SEE the 6 stages side-by-side. Toggles between Voltix and
-            Penny by rendering both stacked on mobile / side-by-side on
-            wide screens. Soft overlay + caption keeps it readable. */}
-        <div className="relative rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent p-6 overflow-hidden mb-12">
-          <div className="text-center mb-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-300 font-bold mb-1">
-              {t('landing.adv.evo_eyebrow')}
-            </p>
-            <h3 className="text-xl md:text-2xl font-bold text-white">
-              {t('landing.adv.evo_title_a')}{' '}
-              <span className="text-emerald-300">{t('landing.adv.evo_title_egg')}</span>{' '}
-              {t('landing.adv.evo_title_sep')}{' '}
-              <span className="text-yellow-300">{t('landing.adv.evo_title_leg')}</span>
-            </h3>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="relative rounded-2xl bg-[#060b14]/50 border border-white/5 overflow-hidden">
-              {/* Label posicionado no canto superior direito sobre o sprite —
-                  a evolução 1 (ovo) está no canto esquerdo, pelo que colocar
-                  o label aí cria sobreposição de cores. Mantemos um backdrop
-                  com blur + solid fill para legibilidade mesmo que a última
-                  evolução tenha tons fortes. */}
-              <div className="absolute top-3 right-3 z-10 text-[10px] font-bold text-green-300 bg-[#060b14]/80 backdrop-blur-sm border border-green-500/40 px-2.5 py-1 rounded-full shadow-lg shadow-black/40">
-                VOLTIX ⚡
-              </div>
-              <Image
-                src="/mascot/evolucoes-voltix.webp"
-                alt={t('landing.adv.evo_voltix_alt')}
-                width={1920}
-                height={600}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="w-full h-auto object-contain"
-              />
-            </div>
-            <div className="relative rounded-2xl bg-[#060b14]/50 border border-white/5 overflow-hidden">
-              <div className="absolute top-3 right-3 z-10 text-[10px] font-bold text-pink-300 bg-[#060b14]/80 backdrop-blur-sm border border-pink-500/40 px-2.5 py-1 rounded-full shadow-lg shadow-black/40">
-                PENNY ✨
-              </div>
-              <Image
-                src="/mascot/evolucoes-penny.webp"
-                alt={t('landing.adv.evo_penny_alt')}
-                width={1920}
-                height={600}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="w-full h-auto object-contain"
-              />
-            </div>
-          </div>
-
-          <p className="text-center text-[11px] text-white/45 mt-4">
-            {t('landing.adv.evo_caption_a')} <strong className="text-emerald-300">{t('landing.adv.evo_caption_em')}</strong> {t('landing.adv.evo_caption_b')}
-          </p>
         </div>
 
         {/* Mid-section annual savings callout — repeats the hero CTA here
