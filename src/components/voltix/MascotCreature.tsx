@@ -41,9 +41,13 @@ interface Props {
   animate?: boolean
 }
 
-/** Where the optional raster asset lives for a given evo. */
+/** Where the optional raster asset lives for a given evo.
+ *  `?v=` is a cache-buster — the mascot WebPs were re-cut (clean alpha, no
+ *  white fringe) but keep the same filenames, so browsers/CDN would serve the
+ *  stale cached version without it. Bump the number when the art changes. */
+const MASCOT_ASSET_VER = '3'
 function assetPath(gender: MascotGender, evo: number): string {
-  return `/mascot/${gender}/${evo}.webp`
+  return `/mascot/${gender}/${evo}.webp?v=${MASCOT_ASSET_VER}`
 }
 
 /**
