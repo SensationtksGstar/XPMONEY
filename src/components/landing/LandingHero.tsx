@@ -173,7 +173,7 @@ export async function LandingHero() {
               (the user found those effects worsened it). Just the clean photo. */}
           <div className="relative z-20 -mb-10 pointer-events-none flex justify-center">
             <Image
-              src="/mascot/hero.webp"
+              src="/mascot/hero-v2.webp"
               alt={t('landing.hero.voltix_alt')}
               width={420}
               height={420}
