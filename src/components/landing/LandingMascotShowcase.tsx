@@ -53,7 +53,7 @@ function EvoRow({
             <div key={evo} className="text-center">
               <div className="relative w-full aspect-square bg-gradient-to-b from-white/5 to-transparent rounded-xl flex items-center justify-center border border-white/5 overflow-hidden mb-1.5">
                 <Image
-                  src={`/mascot/${gender}/${evo}.webp?v=5`}
+                  src={`/mascot/${gender}/${evo}.webp?v=6`}
                   alt={t('landing.mascot.evo_alt', { name, evo, label })}
                   width={96}
                   height={96}

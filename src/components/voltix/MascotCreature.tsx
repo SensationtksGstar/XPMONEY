@@ -45,7 +45,7 @@ interface Props {
  *  `?v=` is a cache-buster — the mascot WebPs were re-cut (clean alpha, no
  *  white fringe) but keep the same filenames, so browsers/CDN would serve the
  *  stale cached version without it. Bump the number when the art changes. */
-const MASCOT_ASSET_VER = '5'
+const MASCOT_ASSET_VER = '6'
 function assetPath(gender: MascotGender, evo: number): string {
   return `/mascot/${gender}/${evo}.webp?v=${MASCOT_ASSET_VER}`
 }
