@@ -69,13 +69,16 @@ export async function POST(req: NextRequest) {
         stripeCustomerId = list.data[0].id
         // Best-effort persist so the next click is fast. Don't block the
         // portal redirect on this — failure here is non-fatal.
+        // onConflict user_id — the table's UNIQUE is user_id, not the PK the
+        // upsert would default to; without it this insert conflicts for any
+        // user that already has a row.
         db.from('subscriptions').upsert({
           user_id:            user.id,
           stripe_customer_id: stripeCustomerId,
           plan:               user.plan,
           status:             'active',
           updated_at:         new Date().toISOString(),
-        }).then(({ error }) => {
+        }, { onConflict: 'user_id' }).then(({ error }) => {
           if (error) console.warn('[billing/portal] backfill subscriptions row failed:', error)
         })
       }
