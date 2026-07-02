@@ -15,21 +15,30 @@
  */
 
 import { useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import {
-  VoltixCreature,
   EVO_NAMES,
   EVO_DESCRIPTIONS,
   EVO_REQUIREMENTS,
   MOOD_PALETTE,
-} from './VoltixCreature'
-import {
-  PennyCreature,
   PENNY_EVO_NAMES,
   PENNY_EVO_DESCRIPTIONS,
   PENNY_EVO_REQUIREMENTS,
   PENNY_PALETTE,
-} from './PennyCreature'
+} from './mascotMeta'
 import type { VoltixMood } from '@/types'
+
+// The hand-crafted SVG mascots (~17 KB gz combined) only render when a
+// WebP 404s — in production the WebPs exist, so the chunk loads lazily on
+// the (rare) fallback path instead of shipping with every consumer.
+const VoltixCreature = dynamic(
+  () => import('./VoltixCreature').then(m => ({ default: m.VoltixCreature })),
+  { ssr: false, loading: () => null },
+)
+const PennyCreature = dynamic(
+  () => import('./PennyCreature').then(m => ({ default: m.PennyCreature })),
+  { ssr: false, loading: () => null },
+)
 
 export type MascotGender = 'voltix' | 'penny'
 

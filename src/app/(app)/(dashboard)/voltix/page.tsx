@@ -8,7 +8,7 @@ import { useXP }     from '@/hooks/useXP'
 import { useToast }  from '@/components/ui/toaster'
 import { Zap, Star, TrendingUp, MessageCircle, Flame, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MOOD_PALETTE } from '@/components/voltix/VoltixCreature'
+import { MOOD_PALETTE } from '@/components/voltix/mascotMeta'
 import {
   MascotCreature,
   getMascotEvoName,
@@ -49,11 +49,13 @@ export default function VoltixPage() {
   const { toast }           = useToast()
   const checkinDone         = useRef(false)
 
-  // Daily check-in
+  // Daily check-in — AbortController cleanup (project rule) so a toast
+  // can't fire after the user navigates away mid-request.
   useEffect(() => {
     if (checkinDone.current) return
     checkinDone.current = true
-    fetch('/api/daily-checkin', { method: 'POST' })
+    const ctrl = new AbortController()
+    fetch('/api/daily-checkin', { method: 'POST', signal: ctrl.signal })
       .then(r => r.ok ? r.json() : null)
       .then(res => {
         if (!res) return
@@ -62,8 +64,9 @@ export default function VoltixPage() {
         )
       })
       .catch(err => {
-        console.warn('[voltix] daily-checkin failed:', err)
+        if (!ctrl.signal.aborted) console.warn('[voltix] daily-checkin failed:', err)
       })
+    return () => ctrl.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast])
 

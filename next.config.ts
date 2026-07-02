@@ -83,6 +83,17 @@ const nextConfig: NextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
+      {
+        // Mascot art is version-busted (`?v=` — MASCOT_ASSET_VER), so the
+        // files themselves are immutable: a re-cut always ships under a new
+        // query string. Without this, Vercel serves public/ files with
+        // `max-age=0, must-revalidate` → one revalidation round-trip per
+        // mascot per session until the service worker takes over.
+        source: '/mascot/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
     ]
   },
 }

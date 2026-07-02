@@ -62,14 +62,19 @@ export async function POST(req: NextRequest) {
   // copy promises "2 savings goals" for Free / unlimited for Premium —
   // before this gate the API didn't enforce it and free users could create
   // goals indefinitely (mismatch flagged April 2026 audit).
-  const planRow = await fetchPlanRow(db, 'id', internalId)
-  const isPaid  = planRow?.isPremium ?? false
-  if (!isPaid) {
-    const { count: activeCount } = await db
+  // Plan row + count are independent — parallel (the head count is nearly
+  // free; paying it unconditionally beats a second sequential round-trip
+  // for every free user, which is most of them).
+  const [planRow, { count: activeCount }] = await Promise.all([
+    fetchPlanRow(db, 'id', internalId),
+    db
       .from('goals')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', internalId)
-      .eq('status', 'active')
+      .eq('status', 'active'),
+  ])
+  const isPaid = planRow?.isPremium ?? false
+  if (!isPaid) {
     if ((activeCount ?? 0) >= FREE_GOAL_LIMIT) {
       const locale = await getServerLocale()
       return NextResponse.json(

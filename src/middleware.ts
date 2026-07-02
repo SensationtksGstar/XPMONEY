@@ -45,9 +45,11 @@ function demoMiddleware(request: NextRequest) {
 export default DEMO_MODE
   ? (request: NextRequest) => demoMiddleware(request)
   : clerkMiddleware(async (auth, request) => {
-      const { userId } = await auth()
-
+      // Public routes skip session resolution entirely — auth() does real
+      // work (cookie parse + JWT verify), so check the cheap matcher first.
       if (isPublicRoute(request)) return NextResponse.next()
+
+      const { userId } = await auth()
 
       if (!userId) {
         const signInUrl = new URL('/sign-in', request.url)
@@ -75,6 +77,10 @@ export const config = {
     // Clerk was intercepting → Googlebot got a 307 to /sign-in instead of the
     // file. They are NOT in isPublicRoute either, so they MUST be excluded
     // here or search engines can never read the sitemap (June 2026 SEO audit).
-    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    //
+    // `sw.js` + `manifest.json` are static files in public/ that the browser
+    // re-fetches on its own cadence — they're already in isPublicRoute, but
+    // excluding them here skips the Clerk middleware invocation entirely.
+    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|sitemap.xml|robots.txt|sw.js|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

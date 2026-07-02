@@ -10,12 +10,14 @@ import { formatPercent }   from '@/lib/utils'
 import Link                from 'next/link'
 import { cn }              from '@/lib/utils'
 import { useT }            from '@/lib/i18n/LocaleProvider'
+import { useToast }        from '@/components/ui/toaster'
 import { missionTitle, missionDescription } from '@/lib/missionLabel'
 
 export default function MissionsPage() {
   const { missions, loading } = useMissions()
   const client  = useQueryClient()
   const t       = useT()
+  const { toast } = useToast()
   const [completing, setCompleting] = useState<string | null>(null)
   const [celebration, setCelebration] = useState<{
     title: string; subtitle: string; xp: number
@@ -37,8 +39,11 @@ export default function MissionsPage() {
         subtitle: t('missions.completed_toast_sub'),
         xp:       xpReward,
       })
-    } catch {
-      /* silent */
+    } catch (err) {
+      // Silent errors are banned (project rule): the user tapped "complete"
+      // and got nothing back — that reads as a broken button on mobile.
+      console.warn('[missions] complete failed:', err)
+      toast(t('common.error'), 'error')
     } finally {
       setCompleting(null)
     }

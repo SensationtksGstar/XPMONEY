@@ -5,9 +5,12 @@ import { fetchPlanRow }        from '@/lib/plan'
 import { PremiumFeatureLock } from '@/components/common/PremiumFeatureLock'
 import { getServerT }          from '@/lib/i18n/server'
 import type { TranslationKey } from '@/lib/i18n/translations'
+import { isDemoMode }          from '@/lib/demo/demoGuard'
 import PerspectivaClient       from './PerspectivaClient'
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+// Safe helper — refuses to enable on production unless ALLOW_DEMO_IN_PROD
+// is also set. Never read NEXT_PUBLIC_DEMO_MODE directly for auth bypasses.
+const DEMO_MODE = isDemoMode()
 
 export const metadata = { title: 'Perspetiva de Riqueza' }
 

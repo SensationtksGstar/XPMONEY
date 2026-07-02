@@ -4,6 +4,12 @@ import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
 import { z }                         from 'zod'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
+import { fetchPlanRow }              from '@/lib/plan'
+import { getServerLocale }           from '@/lib/i18n/server'
+
+/** Free tier allows 1 active debt — the paywall on the 2nd is a Premium
+ *  conversion hook (same class as FREE_GOAL_LIMIT on /api/goals). */
+const FREE_DEBT_LIMIT = 1
 
 /**
  * /api/debts — CRUD de dívidas para a feature Kill Debt.
@@ -73,13 +79,43 @@ export async function POST(req: NextRequest) {
   const internalId = await resolveUser(userId)
   if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
+  const db = createSupabaseAdmin()
+
+  // Free-plan gate: marketing + UI promise "1 dívida ativa" no Grátis
+  // (paywall na 2ª), mas até Junho 2026 só o CLIENTE o impunha — um POST
+  // direto criava dívidas ilimitadas (mesma classe de bug corrigida em
+  // /api/goals em Abril). Plan row + count em paralelo. Se a contagem
+  // falhar (ex.: tabela ainda não migrada), o gate abre — o insert abaixo
+  // devolve o 503 amigável na mesma.
+  const [planRow, countRes] = await Promise.all([
+    fetchPlanRow(db, 'id', internalId),
+    db
+      .from('debts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', internalId)
+      .eq('status', 'active'),
+  ])
+  const isPaid = planRow?.isPremium ?? false
+  if (!isPaid && !countRes.error && (countRes.count ?? 0) >= FREE_DEBT_LIMIT) {
+    const locale = await getServerLocale()
+    return NextResponse.json(
+      {
+        error: locale === 'en'
+          ? `Free plan is limited to ${FREE_DEBT_LIMIT} active debt. Kill it first or upgrade to Premium for unlimited debts.`
+          : `O plano Grátis permite ${FREE_DEBT_LIMIT} dívida ativa. Elimina-a primeiro ou faz upgrade para Premium para dívidas ilimitadas.`,
+        code:   'free_debt_limit',
+        limit:  FREE_DEBT_LIMIT,
+        active: countRes.count ?? 0,
+      },
+      { status: 403 },
+    )
+  }
+
   // current_amount defaulta a initial_amount no momento da criação (ainda
   // não foi abatida nada). O user pode já começar com saldo diferente se
   // estiver a registar uma dívida antiga que já pagou parte.
   const initial = parsed.data.initial_amount
   const current = parsed.data.current_amount ?? initial
-
-  const db = createSupabaseAdmin()
   const { data, error } = await db
     .from('debts')
     .insert({

@@ -3,9 +3,14 @@ import { redirect }           from 'next/navigation'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { PremiumFeatureLock } from '@/components/common/PremiumFeatureLock'
 import { getServerT }          from '@/lib/i18n/server'
+import { isDemoMode }          from '@/lib/demo/demoGuard'
+import { fetchPlanRow }        from '@/lib/plan'
+import { toNumber }            from '@/lib/safeNumber'
 import SimuladorClient         from './SimuladorClient'
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+// Safe helper — refuses to enable on production unless ALLOW_DEMO_IN_PROD
+// is also set. Never read NEXT_PUBLIC_DEMO_MODE directly for auth bypasses.
+const DEMO_MODE = isDemoMode()
 
 export const metadata = { title: 'Simulador de Investimento' }
 
@@ -20,21 +25,18 @@ export default async function SimuladorPage() {
   const db = createSupabaseAdmin()
 
   // Direct DB query — never cached — ensures paywall sees authoritative plan.
+  // fetchPlanRow resolves the EFFECTIVE plan (isPremiumActive respects the
+  // Annual Pass premium_until expiry; legacy plus/pro/family still count).
   // Skipped in demo mode (no Clerk session, so nothing to look up; demo
   // visitors are always treated as free-plan to trigger the teaser lock).
   const profile = DEMO_MODE
-    ? { id: null as string | null, plan: 'free' as const }
-    : (await db
-        .from('users')
-        .select('id, plan')
-        .eq('clerk_id', userId as string)
-        .single()).data
+    ? { id: null as string | null, isPremium: false }
+    : await fetchPlanRow(db, 'clerk_id', userId as string)
 
   if (!profile) redirect('/dashboard')
 
-  // Paywall: simulador só para Premium (inclui antigos plus/pro/family por compat)
-  const paidPlans = new Set(['premium', 'plus', 'pro', 'family'])
-  if (!paidPlans.has(profile.plan ?? 'free')) {
+  // Paywall: simulador só para Premium
+  if (!profile.isPremium) {
     const t = await getServerT()
     return (
       <PremiumFeatureLock
@@ -62,8 +64,10 @@ export default async function SimuladorPage() {
     .eq('user_id', profile.id!)
     .gte('date', dateStr)
 
-  const totalIncome   = txData?.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)   ?? 0
-  const totalExpenses = txData?.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)  ?? 0
+  // toNumber: Supabase numeric columns come back as strings — a bare `+`
+  // here would concatenate instead of summing.
+  const totalIncome   = txData?.filter(t => t.type === 'income').reduce((s, t) => s + toNumber(t.amount), 0)   ?? 0
+  const totalExpenses = txData?.filter(t => t.type === 'expense').reduce((s, t) => s + toNumber(t.amount), 0)  ?? 0
   const avgMonthlySavings = Math.max(0, (totalIncome - totalExpenses) / 3)
 
   return <SimuladorClient suggestedMonthly={Math.round(avgMonthlySavings)} />

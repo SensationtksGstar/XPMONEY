@@ -11,6 +11,7 @@ import { tryDeterministicParse }       from '@/lib/statementParsers'
 import { getServerLocale }             from '@/lib/i18n/server'
 import type { Locale }                 from '@/lib/i18n/translations'
 import { guardUser }                   from '@/lib/rateLimit'
+import { isPremiumActive }             from '@/lib/plan'
 import {
   normalizeDescription, getCachedCategoriesBulk,
 } from '@/lib/merchantCache'
@@ -32,16 +33,6 @@ export interface ImportStatementResult extends Omit<StatementParseResult, 'trans
 // claro.
 export const runtime     = 'nodejs'
 export const maxDuration = 300
-
-// ── Plan gating: Premium can import statements ──────────────────────────────
-const PLAN_RANK: Record<string, number> = {
-  free:    0,
-  premium: 1,
-  // legacy aliases — grandfathered accounts continue working
-  plus:    1,
-  pro:     1,
-  family:  1,
-}
 
 // Text (CSV/TSV/TXT) limits — small, parsed instantly
 const MAX_TEXT_BYTES = 200_000
@@ -89,14 +80,30 @@ export async function POST(req: NextRequest) {
   const db = createSupabaseAdmin()
 
   // Probe with .maybeSingle() — a fresh user won't have a row yet and
-  // .single() throws PGRST116 (500 to the client).
-  const { data: user } = await db
-    .from('users').select('id, plan, name').eq('clerk_id', userId).maybeSingle()
+  // .single() throws PGRST116 (500 to the client). We need `name` (AI prompt
+  // personalisation) alongside the plan fields, so this stays a direct
+  // select instead of fetchPlanRow — but with the same 42703 fallback for
+  // deploys where the premium_until migration hasn't run yet.
+  type UserRow = { id: string; plan: string | null; name: string | null; premium_until?: string | null }
+  let user: UserRow | null = null
+  {
+    const probe = await db
+      .from('users').select('id, plan, name, premium_until').eq('clerk_id', userId).maybeSingle()
+    if (!probe.error) {
+      user = probe.data as UserRow | null
+    } else if (probe.error.code === '42703') {
+      const fb = await db
+        .from('users').select('id, plan, name').eq('clerk_id', userId).maybeSingle()
+      user = fb.data as UserRow | null
+    } else {
+      console.warn('[import-statement] user lookup failed:', probe.error)
+    }
+  }
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-  // Plan gate — Plus or higher. Matches /api/scan-receipt.
-  const rank = PLAN_RANK[user.plan ?? 'free'] ?? 0
-  if (rank < 1) {
+  // Plan gate — effective plan (isPremiumActive respects pass expiry).
+  // Matches /api/scan-receipt.
+  if (!isPremiumActive(user.plan, user.premium_until ?? null)) {
     return NextResponse.json(
       {
         error: L(locale,

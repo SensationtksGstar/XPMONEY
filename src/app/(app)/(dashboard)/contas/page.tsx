@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Wallet, Plus, Trash2, X, Check, TrendingUp, TrendingDown } from 'lucide-react'
 import { useAccounts, type NewAccount } from '@/hooks/useAccounts'
 import {
@@ -14,7 +15,14 @@ import { useToast } from '@/components/ui/toaster'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { NetWorthTrend } from '@/components/dashboard/NetWorthTrend'
+
+// Dynamic import — NetWorthTrend pulls recharts (~90 KB gz); statically it
+// lands in this route's First Load JS even for users whose trend renders
+// null (project rule: recharts consumers are always dynamic()-imported).
+const NetWorthTrend = dynamic(
+  () => import('@/components/dashboard/NetWorthTrend').then(m => ({ default: m.NetWorthTrend })),
+  { ssr: false, loading: () => <div className="h-48 bg-white/5 rounded-2xl animate-pulse" /> },
+)
 
 export default function ContasPage() {
   const { t, locale } = useLocale()

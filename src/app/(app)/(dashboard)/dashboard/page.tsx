@@ -6,7 +6,6 @@ import { PlusCircle, Crown }           from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
 import { useUserPlan }                 from '@/lib/contexts/UserPlanContext'
 import { QuickActions }                from '@/components/dashboard/QuickActions'
-import { PeriodFilter }                from '@/components/dashboard/PeriodFilter'
 import { ProToolsShowcase }            from '@/components/dashboard/ProToolsShowcase'
 import { StreakBanner }                from '@/components/dashboard/StreakBanner'
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
@@ -16,6 +15,13 @@ import { useT }                        from '@/lib/i18n/LocaleProvider'
 import Link                            from 'next/link'
 
 // ── Dynamic imports — only load when needed (reduces mobile JS) ──────────────
+// PeriodFilter pulls framer-motion (~35 KB gz); it was the ONLY statically-
+// reachable framer-motion import on the route, single-handedly defeating the
+// careful dynamic-importing of every other motion consumer below.
+const PeriodFilter = dynamic(
+  () => import('@/components/dashboard/PeriodFilter').then(m => ({ default: m.PeriodFilter })),
+  { ssr: false, loading: () => <div className="h-10 bg-white/5 rounded-xl animate-pulse" /> },
+)
 const FinancialScoreCard = dynamic(
   () => import('@/components/dashboard/FinancialScoreCard').then(m => ({ default: m.FinancialScoreCard })),
   { ssr: false, loading: () => <div className="h-36 bg-white/5 rounded-2xl animate-pulse" /> },

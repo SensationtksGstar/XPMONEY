@@ -1,9 +1,10 @@
 import { auth, clerkClient }   from '@clerk/nextjs/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
 import { isDemoMode }                from '@/lib/demo/demoGuard'
 import { notifyAdmin, escapeHtml }   from '@/lib/email'
+import { guardUser }                 from '@/lib/rateLimit'
 import { z }                         from 'zod'
 
 /**
@@ -56,6 +57,18 @@ export async function POST(req: NextRequest) {
   // internalId may still be null for a brand-new Clerk user who hasn't
   // hit our /api/onboarding — log via clerk_id instead.
 
+  // Rate limit — every submit fires an admin email; without a cap a signed-in
+  // user could flood the inbox + spam bug_reports rows. Keyed on the internal
+  // UUID (falls back to the Clerk id pre-onboarding — still per-user unique).
+  const limited = await guardUser(internalId ?? userId, 'bug-report', [
+    { limit: 5,  windowMs: 60 * 60 * 1000 },      // 5/hour
+    { limit: 20, windowMs: 24 * 60 * 60 * 1000 }, // 20/day
+  ], {
+    error: 'Atingiste o limite de reports. Tenta novamente mais tarde.',
+    code:  'rate_limit',
+  })
+  if (limited) return limited
+
   // Best-effort email fetch from Clerk so the admin has a way to respond
   let email: string | null = null
   try {
@@ -96,10 +109,11 @@ export async function POST(req: NextRequest) {
   }
 
   // Fire-and-forget admin notification. The DB row is the source of truth;
-  // a slow/failing email provider must not delay the user's response. Using
-  // void + .catch handles both "promise rejection" and "promise resolves to
-  // {ok:false}" without coupling either path to the response.
-  void notifyAdmin({
+  // a slow/failing email provider must not delay the user's response.
+  // after() instead of a bare floating promise: on Vercel the lambda can be
+  // frozen as soon as the response is sent, silently dropping the email —
+  // after() keeps the instance alive until the send finishes.
+  after(() => notifyAdmin({
     subject: `[BUG] ${parsed.data.title}`,
     replyTo: email,
     html: `
@@ -115,7 +129,7 @@ export async function POST(req: NextRequest) {
         Triagem em <a href="https://xp-money.com/admin/bugs" style="color:#16a34a;">/admin/bugs</a>.
       </p>
     `,
-  }).catch(err => console.warn('[bug-report] notify failed (non-fatal):', err))
+  }).catch(err => console.warn('[bug-report] notify failed (non-fatal):', err)))
 
   return NextResponse.json({ success: true }, { status: 201 })
 }

@@ -7,6 +7,7 @@ import { Sidebar }          from '@/components/layout/Sidebar'
 import { TopBar }           from '@/components/layout/TopBar'
 import { MobileNav }        from '@/components/layout/MobileNav'
 import { UserPlanProvider } from '@/lib/contexts/UserPlanContext'
+import { isDemoMode }       from '@/lib/demo/demoGuard'
 import { PeriodProvider }   from '@/lib/contexts/PeriodContext'
 import { MascotEvolutionWatcher } from '@/components/voltix/MascotEvolutionWatcher'
 // FAB lazy-loaded behind a tiny client wrapper — Next.js 15 forbids
@@ -18,7 +19,9 @@ import { DragonCoinFABLazy } from '@/components/common/DragonCoinFABLazy'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+// Safe helper — refuses to enable on production unless ALLOW_DEMO_IN_PROD
+// is also set. Never read NEXT_PUBLIC_DEMO_MODE directly for auth bypasses.
+const DEMO_MODE = isDemoMode()
 
 export default async function DashboardLayout({
   children,

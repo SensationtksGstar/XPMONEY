@@ -33,30 +33,35 @@ export function CelebrationModal({
   open, onClose, icon, title, subtitle, xp, autoClose = 4500,
 }: Props) {
   const t = useT()
-  const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const remainingRef = useRef(0)
+  const startedAtRef = useRef(0)
   const [paused, setPaused] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
 
-  // Countdown bar — updates every 50ms, pauses on hover
+  // Reset the auto-close budget whenever the modal (re-)opens. Declared
+  // BEFORE the arming effect below — effect order matters here.
+  useEffect(() => {
+    if (open) remainingRef.current = autoClose || 0
+  }, [open, autoClose])
+
+  // Auto-close via a single timeout; the visible countdown bar is a pure
+  // CSS animation (see globals.css `celebrationCountdown`). The previous
+  // implementation setState'd every 50 ms, re-rendering the whole modal
+  // (confetti + backdrop-blur) at 20 fps for the full 4.5 s — visible jank
+  // on mid-range Android at the exact moment the app tries to celebrate.
+  // Hover-pause: clearing the timeout banks the remaining time; the CSS bar
+  // freezes via animation-play-state.
   useEffect(() => {
     if (!open || !autoClose || paused) return
-
-    const start = Date.now() - elapsed
-    const interval = setInterval(() => {
-      const now = Date.now() - start
-      setElapsed(now)
-      if (now >= autoClose) {
-        clearInterval(interval)
-        onClose()
-      }
-    }, 50)
-    return () => clearInterval(interval)
-  }, [open, autoClose, onClose, paused, elapsed])
-
-  // Reset elapsed when modal re-opens
-  useEffect(() => {
-    if (open) setElapsed(0)
-  }, [open])
+    startedAtRef.current = Date.now()
+    timerRef.current = setTimeout(onClose, remainingRef.current)
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      remainingRef.current = Math.max(
+        0, remainingRef.current - (Date.now() - startedAtRef.current),
+      )
+    }
+  }, [open, autoClose, paused, onClose])
 
   // Keyboard: ESC to close, Enter to dismiss
   useEffect(() => {
@@ -72,8 +77,6 @@ export function CelebrationModal({
   }, [open, onClose])
 
   if (!open) return null
-
-  const progress = autoClose ? Math.min(100, (elapsed / autoClose) * 100) : 0
 
   return (
     <>
@@ -160,8 +163,11 @@ export function CelebrationModal({
               aria-hidden="true"
             >
               <div
-                className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-[50ms] ease-linear"
-                style={{ width: `${100 - progress}%` }}
+                className="h-full bg-gradient-to-r from-green-500 to-emerald-400"
+                style={{
+                  animation: `celebrationCountdown ${autoClose}ms linear forwards`,
+                  animationPlayState: paused ? 'paused' : 'running',
+                }}
               />
             </div>
           )}

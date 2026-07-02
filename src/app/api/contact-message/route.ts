@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { z }                         from 'zod'
 import { guardRequest }              from '@/lib/rateLimit'
@@ -115,8 +115,10 @@ export async function POST(req: NextRequest) {
   // Fire-and-forget admin notification. Same pattern as /api/bug-report:
   // the row is already in `bug_reports`; this is a courtesy ping so the
   // admin sees it without opening Supabase. replyTo points at the user's
-  // email so a click on Reply goes directly back to them.
-  void notifyAdmin({
+  // email so a click on Reply goes directly back to them. after() keeps the
+  // Vercel lambda alive until the send finishes (a bare floating promise
+  // can be dropped when the instance freezes post-response).
+  after(() => notifyAdmin({
     subject: `[Contacto] ${parsed.data.subject}`,
     replyTo: parsed.data.email,
     html: `
@@ -130,7 +132,7 @@ export async function POST(req: NextRequest) {
         Responde a este email para falar diretamente com a pessoa, ou abre <a href="https://xp-money.com/admin/bugs" style="color:#16a34a;">/admin/bugs</a> para gerir o estado.
       </p>
     `,
-  }).catch(err => console.warn('[contact-message] notify failed (non-fatal):', err))
+  }).catch(err => console.warn('[contact-message] notify failed (non-fatal):', err)))
 
   return NextResponse.json({ success: true }, { status: 201 })
 }

@@ -41,12 +41,31 @@ export async function GET(req: Request) {
 
   const db = createSupabaseAdmin()
 
-  // 1. Budget config do user
-  const { data: budget, error: budgetErr } = await db
-    .from('budgets')
-    .select('*')
-    .eq('user_id', internalId)
-    .maybeSingle()
+  // Budget config + current-month expenses are independent — fetch both in
+  // parallel (dashboard hot path: the budget widget hits this on every
+  // mount). Costs one wasted tx query for users with no budget configured;
+  // saves a sequential round-trip for everyone who has one.
+  const startOfMonth = `${month}-01`
+  const startOfNext  = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    .toISOString().split('T')[0]
+
+  const [
+    { data: budget, error: budgetErr },
+    { data: txRaw,  error: txErr },
+  ] = await Promise.all([
+    db
+      .from('budgets')
+      .select('*')
+      .eq('user_id', internalId)
+      .maybeSingle(),
+    db
+      .from('transactions')
+      .select('amount, category:category_id(name, icon)')
+      .eq('user_id', internalId)
+      .eq('type', 'expense')
+      .gte('date', startOfMonth)
+      .lt('date', startOfNext),
+  ])
 
   if (budgetErr) {
     if (/relation .* does not exist/i.test(budgetErr.message)) {
@@ -55,19 +74,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: budgetErr.message }, { status: 500 })
   }
   if (!budget) return NextResponse.json({ data: null, error: null })
-
-  // 2. Transações de despesa do mês corrente
-  const startOfMonth = `${month}-01`
-  const startOfNext  = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    .toISOString().split('T')[0]
-
-  const { data: txRaw, error: txErr } = await db
-    .from('transactions')
-    .select('amount, category:category_id(name, icon)')
-    .eq('user_id', internalId)
-    .eq('type', 'expense')
-    .gte('date', startOfMonth)
-    .lt('date', startOfNext)
 
   if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 })
 

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Sparkles } from 'lucide-react'
 import { useVoltix } from '@/hooks/useVoltix'
-import { MOOD_PALETTE } from './VoltixCreature'
+import { MOOD_PALETTE } from './mascotMeta'
 import {
   MascotCreature,
   getMascotEvoName,

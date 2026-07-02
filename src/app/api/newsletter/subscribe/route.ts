@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { z }                          from 'zod'
 import { randomBytes }                from 'crypto'
 import { createSupabaseAdmin }        from '@/lib/supabase'
@@ -170,11 +170,14 @@ export async function POST(req: NextRequest) {
 
   if (needsEmail) {
     const url = `${siteUrl()}/api/newsletter/confirm?token=${confirmToken}`
-    void sendNewsletterConfirmation({
+    // after(): a bare floating promise can be dropped when the Vercel lambda
+    // freezes post-response — and a lost confirmation email means the user
+    // can never activate the subscription.
+    after(() => sendNewsletterConfirmation({
       to:        email,
       locale,
       actionUrl: url,
-    }).catch(err => console.warn('[newsletter/subscribe] confirmation send failed:', err))
+    }).catch(err => console.warn('[newsletter/subscribe] confirmation send failed:', err)))
   }
 
   return NextResponse.json({ success: true }, { status: 200 })

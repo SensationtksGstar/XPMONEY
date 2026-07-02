@@ -13,7 +13,9 @@ export function useFinancialScore(_userId?: string) {
     queryKey:             ['score'],
     queryFn:              fetchScore,
     staleTime:            10 * 60 * 1000,  // 10 min — score rarely changes
-    refetchInterval:      10 * 60 * 1000,  // background refresh every 10 min
+    // No refetchInterval: the score only changes through mutations that
+    // already invalidate ['score'] (see useTransactions) — polling was pure
+    // redundancy: 6 wasted requests/hour per open tab + mobile radio wakes.
     refetchOnWindowFocus: false,
   })
 

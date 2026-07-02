@@ -54,69 +54,67 @@ export async function checkAllBadges(
     }
   }
 
-  // 1. first_transaction
-  const { count: txCount } = await db
-    .from('transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', internalUserId)
-  await tryAward((txCount ?? 0) > 0, 'first_transaction')
+  // All five condition reads depend only on the user id — batch them.
+  // This helper runs inline on mutation endpoints that return `newBadges`
+  // to the client (course complete, goal deposit, debt attack), so its
+  // latency is user-visible: serial it was ~7-10 round-trips, batched it
+  // is 2. The debts/xp_history queries may hit tables that don't exist in
+  // older installs — supabase-js reports that via `error`, not a throw, so
+  // the batch never rejects; those conditions just resolve to "no".
+  const [txRes, scoreRes, goalsRes, debtsRes, coursesRes] = await Promise.all([
+    db
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', internalUserId),
+    db
+      .from('financial_scores')
+      .select('score')
+      .eq('user_id', internalUserId)
+      .order('calculated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from('goals')
+      .select('current_amount, target_amount')
+      .eq('user_id', internalUserId),
+    db
+      .from('debts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', internalUserId)
+      .eq('status', 'killed'),
+    db
+      .from('xp_history')
+      .select('reason')
+      .eq('user_id', internalUserId)
+      .like('reason', 'course_completed_%'),
+  ])
 
-  // 2. score thresholds
-  const { data: latestScore } = await db
-    .from('financial_scores')
-    .select('score')
-    .eq('user_id', internalUserId)
-    .order('calculated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const score = latestScore?.score ?? 0
-  await tryAward(score >= 50, 'score_50')
-  await tryAward(score >= 75, 'score_75')
-  await tryAward(score >= 90, 'score_90')
+  if (debtsRes.error)   console.warn('[checkAllBadges] debt check skipped:', debtsRes.error.message)
+  if (coursesRes.error) console.warn('[checkAllBadges] course-master check skipped:', coursesRes.error.message)
 
-  // 3. goal_reached (any goal completed)
-  const { data: goals } = await db
-    .from('goals')
-    .select('current_amount, target_amount')
-    .eq('user_id', internalUserId)
-  const normalisedGoals = (goals ?? []).map(g => ({
+  const score = scoreRes.data?.score ?? 0
+
+  const normalisedGoals = (goalsRes.data ?? []).map(g => ({
     current: toNumber(g.current_amount),
     target:  toNumber(g.target_amount),
   }))
   const anyCompleted = normalisedGoals.some(g => g.current >= g.target && g.target > 0)
-  await tryAward(anyCompleted, 'goal_reached')
+  const totalSaved   = normalisedGoals.reduce((s, g) => s + g.current, 0)
 
-  // 4. gold_saver — total current_amount across all goals
-  const totalSaved = normalisedGoals.reduce((s, g) => s + g.current, 0)
-  await tryAward(totalSaved >= GOLD_SAVER_THRESHOLD, 'gold_saver')
+  const distinctCourses = new Set((coursesRes.data ?? []).map(r => r.reason))
 
-  // 5. debt_killed — any killed debt
-  // The `debts` table may not exist in older installs (Mata-Dívidas is a
-  // newer feature). Swallow the "relation does not exist" error quietly
-  // so the rest of the badge check keeps running.
-  try {
-    const { count: killedCount } = await db
-      .from('debts')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', internalUserId)
-      .eq('status', 'killed')
-    await tryAward((killedCount ?? 0) > 0, 'debt_killed')
-  } catch (err) {
-    console.warn('[checkAllBadges] debt check skipped:', err)
-  }
-
-  // 6. academy_master — distinct course_completed rows == COURSES.length
-  try {
-    const { data: xpRows } = await db
-      .from('xp_history')
-      .select('reason')
-      .eq('user_id', internalUserId)
-      .like('reason', 'course_completed_%')
-    const distinctCourses = new Set((xpRows ?? []).map(r => r.reason))
-    await tryAward(distinctCourses.size >= COURSES.length, 'academy_master')
-  } catch (err) {
-    console.warn('[checkAllBadges] course-master check skipped:', err)
-  }
+  // Each award is idempotent and targets a distinct badge code — safe to
+  // run concurrently (pushes into `awarded` are single-threaded in JS).
+  await Promise.all([
+    tryAward((txRes.count ?? 0) > 0,                       'first_transaction'),
+    tryAward(score >= 50,                                  'score_50'),
+    tryAward(score >= 75,                                  'score_75'),
+    tryAward(score >= 90,                                  'score_90'),
+    tryAward(anyCompleted,                                 'goal_reached'),
+    tryAward(totalSaved >= GOLD_SAVER_THRESHOLD,           'gold_saver'),
+    tryAward(!debtsRes.error && (debtsRes.count ?? 0) > 0, 'debt_killed'),
+    tryAward(!coursesRes.error && distinctCourses.size >= COURSES.length, 'academy_master'),
+  ])
 
   return awarded
 }

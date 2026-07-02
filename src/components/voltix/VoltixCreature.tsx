@@ -17,58 +17,13 @@
 import { useId } from 'react'
 import type { VoltixMood } from '@/types'
 import { MascotPolishWrap } from './MascotPolishWrap'
+// Palette + evolution copy moved to mascotMeta.ts (June 2026) so consumers
+// that only need colours/names don't anchor this ~45 KB SVG module into
+// their bundle. This component only renders as an onError fallback.
+import { MOOD_PALETTE, type MascotPaletteC } from './mascotMeta'
 
 type Mood = VoltixMood
-interface C { body: string; shade: string; light: string; accent: string }
-
-/**
- * Mood palette — Apple-style polish (May 2026).
- *
- * v1 used pure Tailwind 500-shade colors (red-500, green-500, etc.) which
- * read as cartoony / amateur because they're maximum-saturation primaries.
- * v2 desaturates and adds cool undertones to every stop so the mascot
- * looks like polished sea-glass / frosted gem rather than a Saturday-
- * morning sticker.
- *
- * Recipe per mood: ~10-15 % less saturation, ~5-10 % cooler hue shift,
- * `light` brought closer to `body` so the radial gradient reads as a
- * single-material highlight (not a paint stripe). `shade` darkened with
- * a slate cast so the underside feels weighted.
- */
-export const MOOD_PALETTE: Record<Mood, C> = {
-  // Slate-blue melancholic — Apple's actual "sad" cue is cool, not red.
-  sad:         { body:'#7a8db5', shade:'#3e4d6b', light:'#c8d3e6', accent:'#a8b6d2' },
-  // Platinum / brushed-titanium — Apple's neutral grey cast.
-  neutral:     { body:'#7c8694', shade:'#3a4150', light:'#d5dae2', accent:'#9ba4b1' },
-  // Muted sage — happy without screaming "kindergarten green".
-  happy:       { body:'#5fb37b', shade:'#2c6741', light:'#bce0c8', accent:'#86c79c' },
-  // Warm honey amber — celebratory but rich, not neon.
-  excited:     { body:'#e0a951', shade:'#86541a', light:'#f6dfaa', accent:'#ecc079' },
-  // Dusty lilac — Apple's "premium festive" purple.
-  celebrating: { body:'#a98cd1', shade:'#5e3f87', light:'#dec8ed', accent:'#c4abdd' },
-}
-
-export const EVO_NAMES: Record<number, string> = {
-  1: 'Voltini', 2: 'Voltito', 3: 'Voltix', 4: 'Voltaryon', 5: 'Magnavoltix', 6: 'Imperivoltix',
-}
-
-export const EVO_DESCRIPTIONS: Record<number, string> = {
-  1: 'Ovo-bebé elétrico. Mal nasceu e já sabe o que é um €.',
-  2: 'A crescer. Ainda chibi mas já com faíscas nos dedos.',
-  3: 'Forma dragão desbloqueada. Escamas safira e raios cianos.',
-  4: 'Campeão armado. Peitoral dourado e aura elétrica azul.',
-  5: 'Divindade do trovão. Quatro asas e capa de plasma elétrico.',
-  6: 'Lenda cósmica. Seis asas de galáxia e coroa imperial.',
-}
-
-export const EVO_REQUIREMENTS: Record<number, string> = {
-  1: 'Estado inicial',
-  2: 'Score ≥ 35',
-  3: 'Score ≥ 55',
-  4: 'Score ≥ 72',
-  5: 'Score ≥ 85',
-  6: 'Score ≥ 95',
-}
+type C = MascotPaletteC
 
 /* ── Iris colors per mood ──────────────────────────────────────────── */
 const IRIS_COLORS: Record<Mood, [string, string]> = {

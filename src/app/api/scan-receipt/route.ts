@@ -5,18 +5,10 @@ import { scanReceipt, AIProvidersError, type ReceiptScanResult } from '@/lib/ai'
 import { getServerLocale }           from '@/lib/i18n/server'
 import { isDemoMode }                from '@/lib/demo/demoGuard'
 import { guardUser }                 from '@/lib/rateLimit'
+import { fetchPlanRow }              from '@/lib/plan'
 
 // Re-export for clients
 export type { ReceiptScanResult }
-
-const PLAN_RANK: Record<string, number> = {
-  free:    0,
-  premium: 1,
-  // legacy aliases — utilizadores migrados de tiers antigos continuam premium
-  plus:    1,
-  pro:     1,
-  family:  1,
-}
 
 export async function POST(req: NextRequest) {
   // Safe demo check — refuses to skip auth on production unless
@@ -32,13 +24,14 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const db = createSupabaseAdmin()
-    const { data: user } = await db
-      .from('users').select('id, plan').eq('clerk_id', userId).single()
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Effective-plan resolution via src/lib/plan.ts — the raw `users.plan`
+    // check used before ignored `premium_until`, so an EXPIRED Annual Pass
+    // kept premium AI features forever (June 2026 audit).
+    const user = await fetchPlanRow(db, 'clerk_id', userId)
+    if (!user?.id) return NextResponse.json({ error: 'User not found' }, { status: 404 })
     internalUserId = user.id
 
-    const rank = PLAN_RANK[user.plan ?? 'free'] ?? 0
-    if (rank < 1) {
+    if (!user.isPremium) {
       return NextResponse.json(
         {
           error: locale === 'en'

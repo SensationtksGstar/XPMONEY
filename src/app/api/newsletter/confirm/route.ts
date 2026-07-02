@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createSupabaseAdmin }        from '@/lib/supabase'
 import { sendNewsletterWelcome }      from '@/lib/email'
 
@@ -68,14 +68,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl()}/newsletter/confirmed?status=invalid`)
   }
 
-  // Fire the welcome email — fire-and-forget, don't block the redirect.
+  // Fire the welcome email — doesn't block the redirect. after() keeps the
+  // Vercel lambda alive until the send finishes (a bare floating promise
+  // can be dropped when the instance freezes post-response).
   const unsubUrl = `${siteUrl()}/api/newsletter/unsubscribe?token=${row.unsubscribe_token}`
-  void sendNewsletterWelcome({
+  after(() => sendNewsletterWelcome({
     to:             row.email,
     locale:         (row.locale === 'en' ? 'en' : 'pt') as 'pt' | 'en',
     actionUrl:      `${siteUrl()}/sign-up`,
     unsubscribeUrl: unsubUrl,
-  }).catch(err => console.warn('[newsletter/confirm] welcome send failed:', err))
+  }).catch(err => console.warn('[newsletter/confirm] welcome send failed:', err)))
 
   return NextResponse.redirect(`${siteUrl()}/newsletter/confirmed?status=ok`)
 }

@@ -81,23 +81,33 @@ export async function POST(req: NextRequest) {
   const accountId  = (parsed.data as { account_id?: string | null }).account_id
   const categoryId = (parsed.data as { category_id?: string | null }).category_id
 
-  if (accountId) {
-    const { data: acc } = await db
-      .from('accounts')
-      .select('id')
-      .eq('id', accountId)
-      .eq('user_id', internalId)
-      .maybeSingle()
-    if (!acc) return NextResponse.json({ error: 'Invalid account' }, { status: 400 })
+  // The two probes are independent — run them in parallel (saves a
+  // round-trip on every transaction create, the hottest write in the app).
+  const [accProbe, catProbe] = await Promise.all([
+    accountId
+      ? db
+          .from('accounts')
+          .select('id')
+          .eq('id', accountId)
+          .eq('user_id', internalId)
+          .maybeSingle()
+      : Promise.resolve(null),
+    categoryId
+      ? db
+          .from('categories')
+          .select('id, is_default, user_id')
+          .eq('id', categoryId)
+          .maybeSingle()
+      : Promise.resolve(null),
+  ])
+
+  if (accountId && !accProbe?.data) {
+    return NextResponse.json({ error: 'Invalid account' }, { status: 400 })
   }
   if (categoryId) {
     // A category is OK if it's the caller's OR a default seeded category
     // (is_default=true + user_id null) that every user can use.
-    const { data: cat } = await db
-      .from('categories')
-      .select('id, is_default, user_id')
-      .eq('id', categoryId)
-      .maybeSingle()
+    const cat = catProbe?.data
     const ownsCategory =
       !!cat && (cat.is_default === true || cat.user_id === internalId)
     if (!ownsCategory) return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
@@ -111,7 +121,11 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // All secondary effects run in parallel — none block the response
+  // Secondary effects run concurrently but ARE awaited: the client
+  // invalidates ['score']/['xp']/['missions']/['voltix'] the moment the 201
+  // lands (useTransactions.ts), so deferring these (e.g. via after()) would
+  // make that refetch read stale values — the score wouldn't move after
+  // logging a transaction. Total latency = slowest branch (recalculateScore).
   await Promise.allSettled([
     awardXP(db, internalId, XP_REWARDS.TRANSACTION_REGISTERED, 'transaction_registered'),
     awardBadge(db, internalId, 'first_transaction'),

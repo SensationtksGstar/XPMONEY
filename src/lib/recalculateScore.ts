@@ -34,7 +34,10 @@ export async function recalculateScore(
   interface TxRow { amount: number | string; type: string; date: string; category_id: string | null }
   interface GoalRow { current_amount: number | string; target_amount: number | string; status: string }
 
-  const [txResult, goalsResult] = await Promise.all([
+  // The previous-score lookup depends only on userId — batching it here
+  // instead of after calculateFinancialScore saves a round-trip on every
+  // score recalc (which runs on every transaction create, the hottest write).
+  const [txResult, goalsResult, prevResult] = await Promise.all([
     db
       .from('transactions')
       .select('amount, type, date, category_id')
@@ -46,6 +49,13 @@ export async function recalculateScore(
       .select('current_amount, target_amount, status')
       .eq('user_id', userId)
       .eq('status', 'active'),
+    db
+      .from('financial_scores')
+      .select('score')
+      .eq('user_id', userId)
+      .order('calculated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const txs   = (txResult.data   ?? []) as TxRow[]
@@ -80,14 +90,8 @@ export async function recalculateScore(
     expense_by_category:    expenseByCategory,
   })
 
-  // Fetch previous score to determine trend
-  const { data: prev } = await db
-    .from('financial_scores')
-    .select('score')
-    .eq('user_id', userId)
-    .order('calculated_at', { ascending: false })
-    .limit(1)
-    .single()
+  // Previous score (fetched in the batch above) determines the trend
+  const prev = prevResult.data
 
   const trend = !prev
     ? 'stable'
@@ -157,7 +161,7 @@ async function maybeEvolveMascot(
     .from('voltix_states')
     .select('evolution_level')
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   if (!vx) return
 

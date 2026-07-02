@@ -5,17 +5,8 @@ import { resolveUser }            from '@/lib/resolveUser'
 import { awardXP }                from '@/lib/awardXP'
 import { checkAllBadges }         from '@/lib/checkAllBadges'
 import { COURSES }                from '@/lib/courses'
+import { fetchPlanRow }           from '@/lib/plan'
 import { z }                      from 'zod'
-
-// Plan ranks — MUST match the constants used on the list page + scan-
-// receipt gate. Duplicated here to keep this route self-contained.
-const PLAN_RANK: Record<string, number> = {
-  free:    0,
-  premium: 1,
-  plus:    1,
-  pro:     1,
-  family:  1,
-}
 
 /**
  * Course completion XP award — called once a user passes the 100 %-quiz.
@@ -81,21 +72,18 @@ export async function POST(
 
   // SERVER-SIDE PLAN GATE — closes the hole where a free user could
   // bypass the UI lock and POST directly to /api/courses/<premium-id>/
-  // complete to farm 250 XP. Load the user's plan and refuse if their
-  // rank is below the course's required rank.
-  const { data: userRow } = await db
-    .from('users')
-    .select('plan')
-    .eq('id', internalId)
-    .single()
-  const userPlan = userRow?.plan ?? 'free'
-  const userRank = PLAN_RANK[userPlan] ?? 0
-  const reqRank  = PLAN_RANK[course.plan] ?? 1
-  if (userRank < reqRank) {
-    return NextResponse.json(
-      { error: 'Este curso requer plano Premium.' },
-      { status: 403 },
-    )
+  // complete to farm 250 XP. Effective plan via src/lib/plan.ts — the raw
+  // `users.plan` read used before ignored `premium_until`, so an EXPIRED
+  // Annual Pass kept unlocking premium courses (June 2026 audit). Free
+  // courses skip the lookup entirely.
+  if (course.plan !== 'free') {
+    const planRow = await fetchPlanRow(db, 'id', internalId)
+    if (!(planRow?.isPremium ?? false)) {
+      return NextResponse.json(
+        { error: 'Este curso requer plano Premium.' },
+        { status: 403 },
+      )
+    }
   }
 
   const reason = `course_completed_${courseId}`

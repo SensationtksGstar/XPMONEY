@@ -227,49 +227,72 @@ export async function GET(req: NextRequest) {
     sp.has('from') || sp.has('to') || sp.has('period') || sp.has('month')
   let fallbackUsed = false
 
-  if (!callerExplicit && window.from && window.to) {
-    const { count } = await db
+  // Main window query — for "all", no date filter.
+  const runMainQuery = (win: { from: string | null; to: string | null }) => {
+    let qb = db
       .from('transactions')
-      .select('id', { count: 'exact', head: true })
+      .select('id, description, date, amount, type, category:category_id(name, icon)')
       .eq('user_id', internalId)
-      .gte('date', window.from)
-      .lt('date',  window.to)
+    if (win.from != null && win.to != null) {
+      qb = qb.gte('date', win.from).lt('date', win.to)
+    }
+    return qb
+  }
 
-    if ((count ?? 0) === 0) {
-      const { data: latest } = await db
-        .from('transactions')
-        .select('date')
-        .eq('user_id', internalId)
-        .order('date', { ascending: false })
-        .limit(1)
+  // Compare-to-prev rows: same-duration window immediately before this one.
+  // Totals only (no category breakdown). Returns null for "all"/degenerate
+  // windows or on error — the comparison is then simply omitted, matching
+  // the old behaviour where the error was silently dropped.
+  const runPrevQuery = async (
+    win: { from: string | null; to: string | null },
+  ): Promise<Array<{ amount: unknown; type: 'income' | 'expense' }> | null> => {
+    if (win.from == null || win.to == null) return null
+    const fromMs = Date.parse(win.from)
+    const toMs   = Date.parse(win.to)
+    const durMs  = toMs - fromMs
+    if (!Number.isFinite(durMs) || durMs <= 0) return null
+    const prevFrom = isoDate(new Date(fromMs - durMs))
+    const { data: prevRows, error: prevErr } = await db
+      .from('transactions')
+      .select('amount, type')
+      .eq('user_id', internalId)
+      .gte('date', prevFrom)
+      .lt('date',  win.from)
+    if (prevErr) return null
+    return (prevRows ?? []) as Array<{ amount: unknown; type: 'income' | 'expense' }>
+  }
 
-      if (latest && latest.length > 0) {
-        const latestMonth = (latest[0].date as string).slice(0, 7)
-        if (latestMonth !== currentMonth) {
-          const { start, end } = monthBoundaries(latestMonth)
-          window = { from: start, to: end, label: latestMonth }
-          fallbackUsed = true
-        }
+  // Fire main + prev windows in parallel — both derive from `window`, known
+  // up front. (Previously: head-count probe → main → prev, three sequential
+  // round-trips on every default dashboard load.)
+  let [mainRes, prevRows] = await Promise.all([runMainQuery(window), runPrevQuery(window)])
+  if (mainRes.error) return NextResponse.json({ error: mainRes.error.message }, { status: 500 })
+
+  // Empty-window fallback — the main query itself tells us the window is
+  // empty (replaces the old dedicated head-count probe, which cost an extra
+  // round-trip even when the month had data, i.e. the common case).
+  if (!callerExplicit && window.from && window.to && (mainRes.data ?? []).length === 0) {
+    const { data: latest } = await db
+      .from('transactions')
+      .select('date')
+      .eq('user_id', internalId)
+      .order('date', { ascending: false })
+      .limit(1)
+
+    if (latest && latest.length > 0) {
+      const latestMonth = (latest[0].date as string).slice(0, 7)
+      if (latestMonth !== currentMonth) {
+        const { start, end } = monthBoundaries(latestMonth)
+        window = { from: start, to: end, label: latestMonth }
+        fallbackUsed = true
+        ;[mainRes, prevRows] = await Promise.all([runMainQuery(window), runPrevQuery(window)])
+        if (mainRes.error) return NextResponse.json({ error: mainRes.error.message }, { status: 500 })
       }
     }
   }
 
   const isAll = window.from == null
-
-  // Build query — for "all", no date filter. Otherwise filter on the
-  // resolved window.
-  let queryBuilder = db
-    .from('transactions')
-    .select('id, description, date, amount, type, category:category_id(name, icon)')
-    .eq('user_id', internalId)
-
-  if (!isAll) {
-    queryBuilder = queryBuilder.gte('date', window.from!).lt('date', window.to!)
-  }
-
-  const { data, error } = await queryBuilder
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const data  = mainRes.data
 
   // Supabase returns numeric columns as strings — always wrap in toNumber().
   // Como o join de `category:category_id(...)` é tipado como array pelo
@@ -346,45 +369,32 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5)
 
-  // ── Compare-to-prev: same-duration window immediately before this one.
-  // Only computed for bounded ranges (not for "all"). Cheap: one extra
-  // sum query for the prior window, totals only (no category breakdown).
+  // ── Compare-to-prev: rows were fetched in parallel with the main window
+  // (runPrevQuery above) — here we only aggregate. null = "all"/degenerate
+  // window or query error → comparison omitted.
   let compareToPrev: MonthlySummaryData['compareToPrev'] = null
-  if (!isAll && window.from && window.to) {
-    const fromMs = Date.parse(window.from)
-    const toMs   = Date.parse(window.to)
-    const durMs  = toMs - fromMs
-    if (Number.isFinite(durMs) && durMs > 0) {
-      const prevFrom = isoDate(new Date(fromMs - durMs))
-      const prevTo   = window.from   // exclusive end = start of current
-      const { data: prevRows } = await db
-        .from('transactions')
-        .select('amount, type')
-        .eq('user_id', internalId)
-        .gte('date', prevFrom)
-        .lt('date',  prevTo)
-      const pl = (prevRows ?? []) as Array<{ amount: unknown; type: 'income' | 'expense' }>
-      const pIn  = pl.filter(r => r.type === 'income').reduce((s, r) => s + toNumber(r.amount), 0)
-      const pEx  = pl.filter(r => r.type === 'expense').reduce((s, r) => s + toNumber(r.amount), 0)
-      const pSav = pIn - pEx
-      // Clamp the % delta to ±999 so a 0→X spike doesn't blow the UI.
-      const pct = (curr: number, prev: number): number => {
-        if (prev === 0) return curr === 0 ? 0 : 999
-        const v = ((curr - prev) / Math.abs(prev)) * 100
-        return Math.max(-999, Math.min(999, Math.round(v * 10) / 10))
-      }
-      // Only emit the comparison when we actually have prior data — a
-      // first-month user has prev = 0 across the board, and the +999 %
-      // delta would be both wrong and depressing.
-      if (pl.length > 0) {
-        compareToPrev = {
-          income:     pIn,
-          expense:    pEx,
-          savings:    pSav,
-          incomePct:  pct(income,  pIn),
-          expensePct: pct(expense, pEx),
-          savingsPct: pct(savings, pSav),
-        }
+  if (!isAll && prevRows) {
+    const pl   = prevRows
+    const pIn  = pl.filter(r => r.type === 'income').reduce((s, r) => s + toNumber(r.amount), 0)
+    const pEx  = pl.filter(r => r.type === 'expense').reduce((s, r) => s + toNumber(r.amount), 0)
+    const pSav = pIn - pEx
+    // Clamp the % delta to ±999 so a 0→X spike doesn't blow the UI.
+    const pct = (curr: number, prev: number): number => {
+      if (prev === 0) return curr === 0 ? 0 : 999
+      const v = ((curr - prev) / Math.abs(prev)) * 100
+      return Math.max(-999, Math.min(999, Math.round(v * 10) / 10))
+    }
+    // Only emit the comparison when we actually have prior data — a
+    // first-month user has prev = 0 across the board, and the +999 %
+    // delta would be both wrong and depressing.
+    if (pl.length > 0) {
+      compareToPrev = {
+        income:     pIn,
+        expense:    pEx,
+        savings:    pSav,
+        incomePct:  pct(income,  pIn),
+        expensePct: pct(expense, pEx),
+        savingsPct: pct(savings, pSav),
       }
     }
   }

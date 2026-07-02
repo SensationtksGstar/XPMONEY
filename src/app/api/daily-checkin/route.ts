@@ -1,5 +1,5 @@
 import { auth }              from '@clerk/nextjs/server'
-import { NextResponse }        from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { resolveUser }         from '@/lib/resolveUser'
 import { awardBadge }          from '@/lib/awardBadge'
@@ -63,21 +63,24 @@ export async function POST() {
   // ── 1. Authoritative guard: already awarded daily_login today? ─────────
   // Read xp_history directly — it's the ledger we write to via awardXP(),
   // so if a row exists, we already paid out today and must not pay again.
-  const { data: alreadyAwarded } = await db
-    .from('xp_history')
-    .select('id')
-    .eq('user_id', internalId)
-    .eq('reason',  'daily_login')
-    .gte('earned_at', todayStartISO)
-    .limit(1)
-    .maybeSingle()
-
-  // Fetch current voltix state (may be null for brand-new users)
-  const { data: voltix } = await db
-    .from('voltix_states')
-    .select('streak_days, last_interaction')
-    .eq('user_id', internalId)
-    .maybeSingle()
+  // Both probes are needed on both branches and are independent — parallel
+  // (this endpoint fires on every app open, so the round-trip matters).
+  const [{ data: alreadyAwarded }, { data: voltix }] = await Promise.all([
+    db
+      .from('xp_history')
+      .select('id')
+      .eq('user_id', internalId)
+      .eq('reason',  'daily_login')
+      .gte('earned_at', todayStartISO)
+      .limit(1)
+      .maybeSingle(),
+    // Current voltix state (may be null for brand-new users)
+    db
+      .from('voltix_states')
+      .select('streak_days, last_interaction')
+      .eq('user_id', internalId)
+      .maybeSingle(),
+  ])
 
   if (alreadyAwarded) {
     return NextResponse.json({
@@ -136,11 +139,19 @@ export async function POST() {
 
   // Tick any active `keep_daily_streak` mission (there can be multiple — the
   // free tier seeds a 7-day one; the premium tier adds a 30-day variant).
-  // Fire-and-forget — mission writes never block the response.
-  updateMissionProgress(db, internalId, {
-    type:   'keep_daily_streak',
-    streak: newStreak,
-  }).catch(err => console.warn('[daily-checkin] mission tick failed:', err))
+  // after() instead of bare fire-and-forget: on Vercel the lambda can be
+  // frozen as soon as the response is sent, silently dropping a floating
+  // promise — after() keeps the instance alive until the work finishes.
+  after(async () => {
+    try {
+      await updateMissionProgress(db, internalId, {
+        type:   'keep_daily_streak',
+        streak: newStreak,
+      })
+    } catch (err) {
+      console.warn('[daily-checkin] mission tick failed:', err)
+    }
+  })
 
   // ── 5. Streak badges — log on failure, don't block response ────────────
   try {

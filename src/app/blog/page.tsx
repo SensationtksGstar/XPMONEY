@@ -11,9 +11,10 @@ import { getServerT, getServerLocale } from '@/lib/i18n/server'
 /**
  * /blog — index page listing every published post in the requested locale.
  *
- * Server component, force-dynamic so a freshly published post shows up
- * without redeploy. Filesystem reads are cheap (a few KB of MDX
- * frontmatter), no need for revalidation tricks.
+ * Server component. No force-dynamic: posts are filesystem MDX baked into
+ * the deployment, so publishing already requires a redeploy — the directive
+ * bought nothing. (The route is request-rendered anyway because the root
+ * layout reads the locale cookie.)
  *
  * Empty state: when `content/blog/` is empty (or all posts are drafts in
  * production), we show a friendly "coming soon" card instead of a
@@ -38,9 +39,6 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: { index: true, follow: true },
   }
 }
-
-export const dynamic    = 'force-dynamic'
-export const revalidate = 0
 
 export default async function BlogIndexPage() {
   const t      = await getServerT()

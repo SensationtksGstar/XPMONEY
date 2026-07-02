@@ -14,66 +14,12 @@
 import { useId } from 'react'
 import type { VoltixMood } from '@/types'
 import { MascotPolishWrap } from './MascotPolishWrap'
+// Palette + evolution copy moved to mascotMeta.ts (June 2026) so consumers
+// that only need colours/names don't anchor this ~33 KB SVG module into
+// their bundle. This component only renders as an onError fallback.
+import { PENNY_PALETTE, type PennyPalette } from './mascotMeta'
 
 type Mood = VoltixMood
-
-/** Palette per-mood — only accents change; body fur stays cream */
-interface PennyPalette {
-  fur:     string          // base cream
-  furShade:string          // darker cream for contour
-  ribbon:  string          // coral ribbon
-  glove:   string          // mustard glove
-  tuft:    string          // lilac ear-tuft
-  accent:  string          // aura + sparkles
-  eyeA:    string          // iris light
-  eyeB:    string          // iris dark
-  cheek:   string
-}
-
-export const PENNY_PALETTE: Record<Mood, PennyPalette> = {
-  sad: {
-    fur:'#f5f0e4', furShade:'#d4cec0', ribbon:'#c48b86', glove:'#b8974a',
-    tuft:'#9a8aaa', accent:'#c48b86', eyeA:'#93c5fd', eyeB:'#1d4ed8', cheek:'#e8a0a0',
-  },
-  neutral: {
-    fur:'#f5f0e4', furShade:'#d4cec0', ribbon:'#e8958e', glove:'#d4a94a',
-    tuft:'#b8a5c9', accent:'#b8a5c9', eyeA:'#6AB6D8', eyeB:'#1e4a6b', cheek:'#f4c7c0',
-  },
-  happy: {
-    fur:'#f8f4ea', furShade:'#d7d1c3', ribbon:'#e8958e', glove:'#d4a94a',
-    tuft:'#b8a5c9', accent:'#e8958e', eyeA:'#7dd3fc', eyeB:'#0369a1', cheek:'#f4c7c0',
-  },
-  excited: {
-    fur:'#fbf8ef', furShade:'#dcd5c5', ribbon:'#f09b90', glove:'#e6b852',
-    tuft:'#c9b5d6', accent:'#f09b90', eyeA:'#fde68a', eyeB:'#b45309', cheek:'#fca5a5',
-  },
-  celebrating: {
-    fur:'#fcf9f0', furShade:'#dcd5c5', ribbon:'#f6a59a', glove:'#f0c65e',
-    tuft:'#d4c2e0', accent:'#f0c65e', eyeA:'#e9d5ff', eyeB:'#7e22ce', cheek:'#fca5a5',
-  },
-}
-
-export const PENNY_EVO_NAMES: Record<number, string> = {
-  1: 'Pennini', 2: 'Pennito', 3: 'Penny', 4: 'Pennyara', 5: 'Pennael', 6: 'Seraphenny',
-}
-
-export const PENNY_EVO_DESCRIPTIONS: Record<number, string> = {
-  1: 'Semente adormecida. Já sonha com moedas a tilintar.',
-  2: 'A despertar para a sabedoria. Capa coral com bordado rúnico.',
-  3: 'Forma felina desbloqueada. Luvas mustard e fitas com runas.',
-  4: 'Sacerdotisa-guerreira. Visor rúnico e arco de luz.',
-  5: 'Anjo ascendido. 6 asas, arco dourado, gema emerald no peito.',
-  6: 'Forma seráfica cósmica. Aura divina e asas de luz estelar.',
-}
-
-export const PENNY_EVO_REQUIREMENTS: Record<number, string> = {
-  1: 'Estado inicial',
-  2: 'Score ≥ 35',
-  3: 'Score ≥ 55',
-  4: 'Score ≥ 72',
-  5: 'Score ≥ 85',
-  6: 'Score ≥ 95',
-}
 
 // ── Shared mini-helpers ──────────────────────────────────────────────────────
 

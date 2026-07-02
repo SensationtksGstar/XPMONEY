@@ -298,6 +298,62 @@ function Planeador({
         )[0]
     : null
 
+  // Sensitivity ladder ("E se pagares mais?") — 5 simulatePlan runs. Memoised
+  // because this used to live in a render IIFE, re-simulating on EVERY
+  // render (including each keystroke in the extra input). Returns null when
+  // fewer than 2 scenarios converge — the table is hidden entirely.
+  const sensitivity = useMemo(() => {
+    // Use parseAmountLocale (PT decimal-comma + thousand-dot aware) for
+    // consistency with the rest of the page. parseFloat alone gives
+    // wrong results on "1.234,56"-shaped input.
+    const base = parseAmountLocale(monthlyExtra) || 0
+
+    // Sanity-cap: if the user has typed an absurdly high extra (e.g.
+    // missing decimal — "437400" intended as €4 374,00), the ladder
+    // runs ×3 = €1 312 200/mês which trivially clears any debt in 1
+    // month. Every scenario above the "instant kill" threshold then
+    // produces identical numbers, making the ladder useless.
+    //
+    // Clamp the base used for ladder generation to "what could
+    // realistically pay off the largest debt in 1 month" — that's the
+    // upper bound where any extra makes a different outcome.
+    const balanceSum  = debts.reduce((s, d) => s + Number(d.current_amount), 0)
+    const minMonthSum = debts.reduce((s, d) => s + Number(d.min_payment), 0)
+    const cap         = Math.max(500, balanceSum + minMonthSum)
+    const baseClamped = Math.min(base, cap)
+
+    const ladder  = baseClamped === 0
+      ? [0, 50, 100, 200, 500]
+      : [0, Math.round(baseClamped / 2), Math.round(baseClamped), Math.round(baseClamped * 2), Math.round(baseClamped * 3)]
+    const amounts = Array.from(new Set(ladder.map(a => Math.min(a, cap)))).sort((a, b) => a - b)
+    const sims    = amounts.map(amt => ({
+      amt,
+      ...simulatePlan(debts, amt, strategy),
+    }))
+    const noExtra  = sims.find(s => s.amt === 0 && !s.infinite)
+    const baseline = noExtra?.totalInterest ?? null
+
+    // Drop scenarios that produce IDENTICAL outcomes (months + interest
+    // both match a previously-shown row). Anything beyond the
+    // "instant kill" threshold collapses to the same numbers — showing
+    // 4 rows with the same answer reads as a UI bug.
+    const seen   = new Set<string>()
+    const unique = sims.filter(s => {
+      if (s.infinite) return true   // distinguishable as "não chega"
+      const key = `${s.monthsToFree}|${s.totalInterest.toFixed(2)}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+
+    // If everything diverges (e.g. user has only crippling debts), don't
+    // show the table — would be confusing. Need at least 2 viable rows.
+    const viable = unique.filter(s => !s.infinite)
+    if (viable.length < 2) return null
+
+    return { base, baseline, unique }
+  }, [debts, monthlyExtra, strategy])
+
   return (
     <div className="bg-gradient-to-br from-red-500/10 via-orange-500/5 to-transparent border border-red-500/20 rounded-2xl p-5 space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -503,53 +559,10 @@ function Planeador({
           to converge (interest > min payment) are filtered out so the
           row doesn't lie. */}
       {(() => {
-        // Use parseAmountLocale (PT decimal-comma + thousand-dot aware) for
-        // consistency with the rest of the page. parseFloat alone gives
-        // wrong results on "1.234,56"-shaped input.
-        const base = parseAmountLocale(monthlyExtra) || 0
-
-        // Sanity-cap: if the user has typed an absurdly high extra (e.g.
-        // missing decimal — "437400" intended as €4 374,00), the ladder
-        // runs ×3 = €1 312 200/mês which trivially clears any debt in 1
-        // month. Every scenario above the "instant kill" threshold then
-        // produces identical numbers, making the ladder useless.
-        //
-        // Clamp the base used for ladder generation to "what could
-        // realistically pay off the largest debt in 1 month" — that's the
-        // upper bound where any extra makes a different outcome.
-        const totalBalance  = debts.reduce((s, d) => s + Number(d.current_amount), 0)
-        const totalMinMonth = debts.reduce((s, d) => s + Number(d.min_payment), 0)
-        const cap           = Math.max(500, totalBalance + totalMinMonth)
-        const baseClamped   = Math.min(base, cap)
-
-        const ladder  = baseClamped === 0
-          ? [0, 50, 100, 200, 500]
-          : [0, Math.round(baseClamped / 2), Math.round(baseClamped), Math.round(baseClamped * 2), Math.round(baseClamped * 3)]
-        const amounts = Array.from(new Set(ladder.map(a => Math.min(a, cap)))).sort((a, b) => a - b)
-        const sims    = amounts.map(amt => ({
-          amt,
-          ...simulatePlan(debts, amt, strategy),
-        }))
-        const noExtra = sims.find(s => s.amt === 0 && !s.infinite)
-        const baseline = noExtra?.totalInterest ?? null
-
-        // Drop scenarios that produce IDENTICAL outcomes (months + interest
-        // both match a previously-shown row). Anything beyond the
-        // "instant kill" threshold collapses to the same numbers — showing
-        // 4 rows with the same answer reads as a UI bug.
-        const seen   = new Set<string>()
-        const unique = sims.filter(s => {
-          if (s.infinite) return true   // distinguishable as "não chega"
-          const key = `${s.monthsToFree}|${s.totalInterest.toFixed(2)}`
-          if (seen.has(key)) return false
-          seen.add(key)
-          return true
-        })
-
-        // If everything diverges (e.g. user has only crippling debts), don't
-        // show the table — would be confusing. Need at least 2 viable rows.
-        const viable = unique.filter(s => !s.infinite)
-        if (viable.length < 2) return null
+        // Computation lives in the `sensitivity` useMemo near the top of the
+        // component — this IIFE only renders it.
+        if (!sensitivity) return null
+        const { base, baseline, unique } = sensitivity
 
         return (
           <div className="bg-black/20 border border-white/8 rounded-xl p-3">
