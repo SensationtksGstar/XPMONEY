@@ -10,6 +10,7 @@ import { SiteBackground }  from '@/components/wallpaper/SiteBackground'
 import { CookieConsentBanner } from '@/components/common/CookieConsentBanner'
 import { PWAInstallPrompt }    from '@/components/common/PWAInstallPrompt'
 import { ServiceWorkerRegistrar } from '@/components/common/ServiceWorkerRegistrar'
+import { ChunkErrorRecovery }     from '@/components/common/ChunkErrorRecovery'
 import { JsonLd }              from '@/components/seo/JsonLd'
 import { organization, website } from '@/lib/seo/jsonLd'
 import { SpeedInsights }       from '@vercel/speed-insights/next'
@@ -186,6 +187,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     app-shell cache. Defers itself to idle so it never
                     delays first paint. */}
                 <ServiceWorkerRegistrar />
+                {/* Auto-heal "Loading chunk failed" after deploys — a tab
+                    (or cached HTML) referencing old chunk hashes reloads
+                    once to pick up the fresh ones. Renders nothing. */}
+                <ChunkErrorRecovery />
               </LocaleProvider>
               {/* Vercel Speed Insights — Web Vitals (LCP, CLS, INP, FCP)
                   measured on real visitors. No cookies, no fingerprinting,

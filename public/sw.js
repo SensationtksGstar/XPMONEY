@@ -11,9 +11,13 @@
 //   • Next.js static chunks (/_next/static/*) — content-hashed by Next,
 //     so they can never go stale. Cache-first, forever.
 //   • Static assets (icons, mascot WebPs, fonts, images) — cache-first.
-//   • HTML navigations — stale-while-revalidate. The browser gets the
-//     cached page instantly, the network response refreshes it for the
-//     next load.
+//   • HTML navigations — NETWORK-FIRST with a short timeout, cache as the
+//     offline fallback. v2 used stale-while-revalidate here, which served
+//     HTML from a PREVIOUS deploy whose content-hashed chunk URLs no
+//     longer exist on the current one → "Loading chunk N failed" on every
+//     first open after a deploy. Fresh HTML always references chunks that
+//     exist; the cached copy only serves when the network genuinely can't
+//     (offline PWA boot / dead connection).
 //   • /api/*  — bypass entirely (the route handlers already set
 //     Cache-Control: no-store; caching would break Stripe webhooks /
 //     auth tokens / per-user data).
@@ -23,8 +27,8 @@
 // Bump these strings whenever the cache logic itself changes so old
 // caches get purged on next activate. NOT tied to app version — Next's
 // static chunks are already content-hashed.
-const STATIC_CACHE  = 'xpmoney-static-v2'
-const RUNTIME_CACHE = 'xpmoney-runtime-v2'
+const STATIC_CACHE  = 'xpmoney-static-v3'
+const RUNTIME_CACHE = 'xpmoney-runtime-v3'
 
 // Files cached on install so the PWA boots even fully offline.
 const PRECACHE_URLS = [
@@ -94,13 +98,13 @@ self.addEventListener('fetch', event => {
     return
   }
 
-  // HTML navigations (page requests) — stale-while-revalidate so the
-  // user sees the previously-rendered shell INSTANTLY, while a fresh
-  // copy fetches in the background for the next open. Accept-header
+  // HTML navigations (page requests) — network-first. Serving cached HTML
+  // first (v2's stale-while-revalidate) caused deploy skew: old HTML asks
+  // for old chunk hashes that 404 on the new deployment. Accept-header
   // sniff is the reliable cross-browser shortcut here.
   const accept = request.headers.get('accept') || ''
   if (request.mode === 'navigate' || accept.includes('text/html')) {
-    event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE))
+    event.respondWith(networkFirst(request, RUNTIME_CACHE))
     return
   }
 
@@ -125,20 +129,31 @@ async function cacheFirst(request, cacheName) {
   }
 }
 
-async function staleWhileRevalidate(request, cacheName) {
-  const cache  = await caches.open(cacheName)
-  const cached = await cache.match(request)
+// Network-first with a timeout: fresh HTML wins (correct chunk refs after a
+// deploy); the cache serves only when the network fails or is pathologically
+// slow. 4 s is generous for a Vercel-edge HTML response even on 3G — beyond
+// that the user is better served by the cached shell than a spinner.
+async function networkFirst(request, cacheName, timeoutMs = 4000) {
+  const cache = await caches.open(cacheName)
 
-  const networkFetch = fetch(request).then(response => {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    const response = await fetch(request, { signal: controller.signal })
+    clearTimeout(timer)
     if (response.ok) {
       // Clone before consuming — Response body can only be read once.
       cache.put(request, response.clone()).catch(() => { /* quota — ignore */ })
     }
     return response
-  }).catch(() => cached)  // Offline → return whatever the cache had.
-
-  // Return cached immediately if we have one; otherwise wait for network.
-  return cached || networkFetch
+  } catch {
+    // Offline / timed out → any cached copy (runtime SWR copy or the
+    // install-time precache, which lives in STATIC_CACHE — hence the
+    // cache-agnostic caches.match fallback).
+    const cached = await cache.match(request) || await caches.match(request)
+    if (cached) return cached
+    throw new Error('offline and not cached')
+  }
 }
 
 // ── Push notification handler (unchanged from v1) ────────────────────────────
