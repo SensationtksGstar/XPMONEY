@@ -239,7 +239,18 @@ export default async function AdminSetupPage() {
     envRow({
       name:     'NEXT_PUBLIC_POSTHOG_KEY',
       required: false,
-      hint:     'PostHog analytics. Já gating por consentimento RGPD (não dispara antes do banner Aceitar).',
+      hint:     'PostHog analytics (client). Já gating por consentimento RGPD (não dispara antes do banner Aceitar). SEM esta env o PostHog não captura NADA — o tráfego total continua no Vercel Analytics.',
+    }),
+    envRow({
+      name:     'POSTHOG_PERSONAL_API_KEY',
+      required: false,
+      hint:     'Personal API key (scope Query Read) — liga a secção "Tráfego & aquisição" do /admin/metrics aos dados PostHog. Server-only, NUNCA NEXT_PUBLIC_.',
+      link:     { href: 'https://eu.posthog.com/settings/user-api-keys', label: 'PostHog API keys' },
+    }),
+    envRow({
+      name:     'POSTHOG_PROJECT_ID',
+      required: false,
+      hint:     'ID numérico do projecto PostHog (Settings → Project). Par com a personal API key acima.',
     }),
     envRow({
       name:     'NEXT_PUBLIC_ADSENSE_CLIENT',

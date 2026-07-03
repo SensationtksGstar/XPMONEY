@@ -1,6 +1,7 @@
 import { auth }                  from '@clerk/nextjs/server'
 import { notFound, redirect }   from 'next/navigation'
 import { createSupabaseAdmin }  from '@/lib/supabase'
+import { fetchTrafficStats }    from '@/lib/trafficStats'
 
 /**
  * /admin/metrics — internal SaaS-metrics dashboard.
@@ -310,7 +311,8 @@ export default async function AdminMetricsPage() {
   if (!userId) redirect('/sign-in')
   if (!process.env.ADMIN_CLERK_ID || userId !== process.env.ADMIN_CLERK_ID) notFound()
 
-  const m = await loadMetrics()
+  // Traffic (PostHog) + business metrics (Supabase) are independent — parallel.
+  const [m, traffic] = await Promise.all([loadMetrics(), fetchTrafficStats()])
 
   // ── Derived metrics ──
   // Under Art. 53.º CIVA isenção: PRICE_NET_OF_VAT === PRICE_GROSS_MONTHLY.
@@ -458,6 +460,78 @@ export default async function AdminMetricsPage() {
           <KpiCard label="ARR"      value={eur(arr)}      hint="MRR × 12" />
           <KpiCard label="ARPU"     value={eur(arpu)}     hint="receita por user pago" />
           <KpiCard label="Conversão" value={pct(conversionRate)} hint={`${m.totals.premium} / ${m.totals.users} users`} />
+        </section>
+
+        {/* ── Tráfego & aquisição ──
+            Duas fontes com papéis diferentes:
+            · Vercel Web Analytics — TODOS os visitantes (cookieless, sem
+              consentimento necessário) = o número autoritativo. Sem API de
+              leitura → link para o dashboard.
+            · PostHog — só visitantes que ACEITARAM cookies (consent-gated)
+              = amostra para comportamento (páginas, referrers), nunca o
+              total. Aparece quando POSTHOG_PERSONAL_API_KEY +
+              POSTHOG_PROJECT_ID estão definidos. */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+            <h2 className="font-semibold text-white/90">🌐 Tráfego & aquisição</h2>
+            <a
+              href="https://vercel.com/sensationtksgstars-projects/xp-money/analytics"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs bg-white/10 hover:bg-white/15 border border-white/15 rounded-lg px-3 py-1.5 font-semibold"
+            >
+              Visitantes totais → Vercel Analytics ↗
+            </a>
+          </div>
+
+          {!traffic.configured ? (
+            <p className="text-xs text-white/50 leading-relaxed">
+              {traffic.reason} A chave é um <em>personal API key</em> do PostHog
+              (Settings → Personal API Keys, scope <code>Query Read</code>);
+              o project id numérico está em Settings → Project.
+            </p>
+          ) : traffic.reason ? (
+            <p className="text-xs text-orange-300/90 leading-relaxed">{traffic.reason}</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                <KpiCard label="Visitantes 7d"  value={fmtNum(traffic.visitors7d)}   hint="PostHog — amostra consentida" />
+                <KpiCard label="Visitantes 30d" value={fmtNum(traffic.visitors30d)}  hint="PostHog — amostra consentida" />
+                <KpiCard label="Pageviews 7d"   value={fmtNum(traffic.pageviews7d)}  hint="PostHog — amostra consentida" />
+                <KpiCard label="Pageviews 30d"  value={fmtNum(traffic.pageviews30d)} hint="PostHog — amostra consentida" />
+              </div>
+              <div className="grid lg:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-white/40 mb-1.5">Top páginas (30d)</p>
+                  <div className="space-y-1">
+                    {traffic.topPages.length === 0 && <p className="text-xs text-white/40">sem dados ainda</p>}
+                    {traffic.topPages.map(p => (
+                      <Row key={p.path} label={p.path} value={fmtNum(p.views)} />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-white/40 mb-1.5">Referrers (30d)</p>
+                  <div className="space-y-1">
+                    {traffic.referrers.length === 0 && <p className="text-xs text-white/40">sem dados ainda (ou tudo direto)</p>}
+                    {traffic.referrers.map(r => (
+                      <Row key={r.domain} label={r.domain} value={fmtNum(r.visitors)} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Quick links — os dashboards externos que compõem o cockpit. */}
+          <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-white/10 text-xs">
+            <ExtLink href="https://vercel.com/sensationtksgstars-projects/xp-money/analytics" label="Vercel Analytics" />
+            <ExtLink href="https://vercel.com/sensationtksgstars-projects/xp-money/speed-insights" label="Speed Insights" />
+            <ExtLink href="https://eu.posthog.com" label="PostHog" />
+            <ExtLink href="https://search.google.com/search-console" label="Search Console" />
+            <ExtLink href="https://www.bing.com/webmasters" label="Bing Webmaster" />
+            <ExtLink href="https://dashboard.stripe.com" label="Stripe" />
+          </div>
         </section>
 
         {/* ── Crescimento ── */}
@@ -612,6 +686,19 @@ export default async function AdminMetricsPage() {
 }
 
 // ── Tiny presentational helpers ─────────────────────────────────────────────
+function ExtLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-2.5 py-1 text-white/70 hover:text-white"
+    >
+      {label} ↗
+    </a>
+  )
+}
+
 function KpiCard(
   { label, value, hint }: { label: string; value: string; hint?: string },
 ) {

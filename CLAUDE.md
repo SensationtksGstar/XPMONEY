@@ -17,6 +17,9 @@ Core loop: log transactions → score climbs → mascot evolves → XP/badges/mi
   - **VAT / IVA:** user is in **regime de isenção Art. 53.º CIVA** — no VAT charged. Stripe price is gross revenue (PRICE_NET_OF_VAT === PRICE_GROSS in `/admin/metrics`). When >€15k/year cross-over → switch to standard regime + add `automatic_tax: true` to checkout (recipe in `src/lib/stripe.ts` comment).
 - **AI chain** (`src/lib/ai.ts`): Gemini 2.5 Flash → Gemini 2.0 Flash → Groq Llama. Env `GOOGLE_GEMINI_API_KEY` (falls back to `GOOGLE_API_KEY`/`GEMINI_API_KEY`). `parseStatement({ kind:'text'|'pdf' })` — PDFs go only to Gemini. **Locale-aware**: pass `locale` arg → builds PT or EN system prompt; the EN variant tells the model to keep DB category names in PT verbatim so historical data stays intact.
 - **PostHog** analytics · web-push (VAPID) · sharp (RUNTIME dep — mascot upload route).
+- **Analytics stack (July 2026) — two tools, two jobs, don't conflate:**
+  - **Vercel Web Analytics** (`<Analytics />` in root layout, `@vercel/analytics/next`) = **the authoritative visitor count**. Cookieless + anonymous → NOT consent-gated → counts ALL visitors. Was enabled on the Vercel project since April but the component was never mounted (dashboard sat empty until 2026-07-03). No read API — numbers live at vercel.com → xp-money → Analytics.
+  - **PostHog** = consent-gated product analytics (a *sample*: only visitors who accept the cookie banner). ⚠️ `NEXT_PUBLIC_POSTHOG_KEY` is NOT set in Vercel prod → PostHog captures nothing until the user adds it. `/admin/metrics` has a "Tráfego & aquisição" section that queries PostHog via HogQL (`src/lib/trafficStats.ts`, needs optional server envs `POSTHOG_PERSONAL_API_KEY` + `POSTHOG_PROJECT_ID`; degrades to a setup hint without them). Never label PostHog numbers as total traffic.
 
 ## Plans (2-tier, April 2026)
 

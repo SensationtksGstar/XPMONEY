@@ -11,6 +11,7 @@ import { CookieConsentBanner } from '@/components/common/CookieConsentBanner'
 import { PWAInstallPrompt }    from '@/components/common/PWAInstallPrompt'
 import { ServiceWorkerRegistrar } from '@/components/common/ServiceWorkerRegistrar'
 import { ChunkErrorRecovery }     from '@/components/common/ChunkErrorRecovery'
+import { Analytics }              from '@vercel/analytics/next'
 import { JsonLd }              from '@/components/seo/JsonLd'
 import { organization, website } from '@/lib/seo/jsonLd'
 import { SpeedInsights }       from '@vercel/speed-insights/next'
@@ -196,6 +197,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   measured on real visitors. No cookies, no fingerprinting,
                   no consent banner needed. Free up to 25k datapoints/mo. */}
               <SpeedInsights />
+              {/* Vercel Web Analytics — visitor/pageview counts for ALL
+                  traffic. Cookieless + anonymous (daily-rotating hash, no
+                  persistent identifier), so unlike PostHog it does NOT sit
+                  behind the consent banner — it's the authoritative visitor
+                  number. Web Analytics was already enabled on the Vercel
+                  project (Apr 2026) but this component was never mounted,
+                  so the dashboard sat empty. Data: vercel.com → xp-money
+                  → Analytics. */}
+              <Analytics />
             </QueryProvider>
           </PostHogProvider>
         </body>
