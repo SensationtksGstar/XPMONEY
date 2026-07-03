@@ -59,8 +59,24 @@ function dateFnsFor(locale?: Locale): DateFnsLocale {
   return ptBR // default for legacy callers
 }
 
-export function formatDate(date: string | Date, locale?: Locale): string {
+/**
+ * Parse to a Date or null. date-fns `format()` THROWS
+ * `RangeError: Invalid time value` on an Invalid Date — and because these
+ * helpers render inside client components, one bad row (null date from a
+ * pre-migration table, malformed URL param, corrupt localStorage) used to
+ * take down the WHOLE app via the root error boundary ("Algo correu mal /
+ * Invalid time value", user-reported July 2026). A date label is cosmetic:
+ * rendering '—' beats a white screen, always.
+ */
+function safeDate(date: string | Date | null | undefined): Date | null {
+  if (date == null || date === '') return null
   const d = new Date(date)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+export function formatDate(date: string | Date, locale?: Locale): string {
+  const d = safeDate(date)
+  if (!d) return '—'
   if (isToday(d))     return locale === 'en' ? 'Today'     : 'Hoje'
   if (isYesterday(d)) return locale === 'en' ? 'Yesterday' : 'Ontem'
   return locale === 'en'
@@ -69,19 +85,24 @@ export function formatDate(date: string | Date, locale?: Locale): string {
 }
 
 export function formatDateFull(date: string | Date, locale?: Locale): string {
+  const d = safeDate(date)
+  if (!d) return '—'
   return locale === 'en'
-    ? format(new Date(date), 'MMMM d, yyyy', { locale: enUS })
-    : format(new Date(date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
+    ? format(d, 'MMMM d, yyyy', { locale: enUS })
+    : format(d, "d 'de' MMMM 'de' yyyy", { locale: ptBR })
 }
 
 export function formatRelativeTime(date: string | Date, locale?: Locale): string {
-  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: dateFnsFor(locale) })
+  const d = safeDate(date)
+  if (!d) return '—'
+  return formatDistanceToNow(d, { addSuffix: true, locale: dateFnsFor(locale) })
 }
 
 export function formatMonth(date: Date = new Date(), locale?: Locale): string {
+  const d = safeDate(date) ?? new Date()
   return locale === 'en'
-    ? format(date, 'MMMM yyyy', { locale: enUS })
-    : format(date, "MMMM 'de' yyyy", { locale: ptBR })
+    ? format(d, 'MMMM yyyy', { locale: enUS })
+    : format(d, "MMMM 'de' yyyy", { locale: ptBR })
 }
 
 // ---- Percentage ─────────────────────────────────────────────────────

@@ -95,10 +95,19 @@ export function ExpenseBreakdown() {
   // Hoisted out of the t() args object so the i18n call-site guard sees a clean
   // {amount, month} — inlining formatMonth(…, locale) made its `locale` arg look
   // like an extra t() placeholder to the guard's static parser (false positive).
-  const monthLabel = formatMonth(
-    new Date(Number(summary.month.split('-')[0]), Number(summary.month.split('-')[1]) - 1, 1),
-    locale,
-  )
+  //
+  // Shape-guard the month: with period "Tudo" the API returns month='all',
+  // and Number('all') → NaN → Invalid Date → date-fns format() threw
+  // "Invalid time value", crashing the WHOLE dashboard via the root error
+  // boundary. Because the period choice persists in localStorage, the crash
+  // repeated on every app open (user-reported July 2026). For non-YYYY-MM
+  // values the period label (or the raw key) is the right text anyway.
+  const monthLabel = /^\d{4}-\d{2}$/.test(summary.month)
+    ? formatMonth(
+        new Date(Number(summary.month.split('-')[0]), Number(summary.month.split('-')[1]) - 1, 1),
+        locale,
+      )
+    : (summary.period?.label ?? summary.month)
   const totalLabel = summary.period?.label
     ? `${amount} · ${summary.period.label}`
     : (summary.month === summary.currentMonth

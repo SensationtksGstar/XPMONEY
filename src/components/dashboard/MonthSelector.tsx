@@ -38,7 +38,12 @@ export function MonthSelector({ value, onChange }: Props) {
 
   const currentYm = useMemo(() => monthKey(new Date()), [])
   const isAll     = value === 'all'
-  const resolvedMonth = value && value !== 'all' ? value : currentYm
+  // Strict shape check — `value` can arrive corrupted (stale persisted state,
+  // malformed URL param). Anything that isn't exactly 'YYYY-MM' falls back to
+  // the current month: feeding garbage into Number() produced an Invalid
+  // Date whose date-fns format() threw "Invalid time value" and took the
+  // whole app down via the root error boundary (user-reported July 2026).
+  const resolvedMonth = value && /^\d{4}-\d{2}$/.test(value) ? value : currentYm
 
   const label = isAll
     ? t('ms.all_history')
