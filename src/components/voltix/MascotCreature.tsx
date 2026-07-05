@@ -113,13 +113,34 @@ function RasterWithFallback({ onFallback, ...props }: Props & { onFallback: () =
       ? { aura: PENNY_PALETTE[mood].accent }
       : { aura: MOOD_PALETTE[mood].body }
 
+  // Mood-reactive motion for eggs (evo 1). Eggs are static rasters, so
+  // without this overlay they'd never express anything beyond colour — the
+  // user specifically called that out as feeling lifeless. Layered onto the
+  // breathing wrapper based on mood; tear/sparkle accents render further down.
+  const eggMoodClass = evo === 1
+    ? mood === 'sad'         ? 'animate-egg-shiver'
+    : mood === 'happy'       ? 'animate-egg-wiggle'
+    : mood === 'excited'     ? 'animate-egg-wiggle-fast'
+    : mood === 'celebrating' ? 'animate-egg-bounce'
+    : '' // neutral — idle nudge below covers it
+    : ''
+
+  // Idle "burst of life" (Tamagotchi pass): an occasional micro-hop (evolved
+  // forms) or in-shell rock (egg) on a long cycle — stillness most of the
+  // time, a flicker of life every ~9-12s. Lives on the <img> so it composes
+  // with the wrapper's breathe transform. Suppressed when a mood animation
+  // is already running, and entirely absent in static (!animate) contexts.
+  const idleBurstClass = !animate || eggMoodClass
+    ? ''
+    : evo === 1 ? 'animate-egg-nudge' : 'animate-mascot-hop'
+
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={assetPath(gender, evo)}
       alt={`${gender} evolution ${evo}`}
       onError={() => setFailed(true)}
-      className="w-full h-full object-contain select-none pointer-events-none"
+      className={`w-full h-full object-contain select-none pointer-events-none ${idleBurstClass}`}
       // Drop-shadow + soft coloured glow "lifts" the mascot off its container.
       // Without it the pet reads as a rectangular sticker slapped on a card —
       // with it, the alpha edges feather into the background and the figure
@@ -152,19 +173,6 @@ function RasterWithFallback({ onFallback, ...props }: Props & { onFallback: () =
   function onPointerLeave() {
     applyTilt(tiltRef.current, 0, 0)
   }
-
-  // Mood-reactive motion for eggs (evo 1). Eggs are static rasters, so
-  // without this overlay they'd never express anything beyond colour — the
-  // user specifically called that out as feeling lifeless. We layer a
-  // subtle animation class onto the breathing wrapper based on mood, plus
-  // render a tear drop when sad and a sparkle halo when celebrating.
-  const eggMoodClass = evo === 1
-    ? mood === 'sad'         ? 'animate-egg-shiver'
-    : mood === 'happy'       ? 'animate-egg-wiggle'
-    : mood === 'excited'     ? 'animate-egg-wiggle-fast'
-    : mood === 'celebrating' ? 'animate-egg-bounce'
-    : '' // neutral — normal breathe is enough
-    : ''
 
   return (
     <div className={`relative ${className} animate-mascot-float`}>

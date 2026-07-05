@@ -223,6 +223,34 @@
   100% { opacity: 0;   transform: translateY(18px) scale(1.1); }
 }
 
+/* ── Idle "bursts of life" (July 2026 Tamagotchi pass) ──
+   Constant motion reads as animation; OCCASIONAL motion reads as being
+   alive. These run on long cycles where the movement occupies only the
+   first ~8% — a tiny hop (evolved forms) or a rock in the shell (egg)
+   every ~9-12s, then stillness. Applied to the <img> itself so they
+   compose with the breathe wrapper instead of fighting its transform. */
+@keyframes mascotHop {
+  0%, 100% { transform: translateY(0)    scaleY(1);    }
+  2%        { transform: translateY(-5px) scaleY(1.03); }
+  4%        { transform: translateY(0)    scaleY(0.97); }
+  6%        { transform: translateY(-2px) scaleY(1.01); }
+  8%        { transform: translateY(0)    scaleY(1);    }
+}
+@keyframes eggNudge {
+  0%, 100% { transform: rotate(0deg);    }
+  2%        { transform: rotate(-2.6deg); }
+  4%        { transform: rotate( 2.6deg); }
+  6%        { transform: rotate(-1.4deg); }
+  8%        { transform: rotate(0deg);    }
+}
+/* Speech-bubble entrance — a quick, springy pop when the mascot "says"
+   a new line (keyed remount per line). */
+@keyframes bubblePop {
+  0%   { opacity: 0; transform: translateY(5px) scale(0.94); }
+  70%  { opacity: 1; transform: translateY(-1px) scale(1.015); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Continuous mascot/egg animations respect the OS accessibility setting —
    the JS pointer-tilt already checks prefers-reduced-motion, but CSS
    keyframes ignored it (and the animated blurred aura is a permanent GPU
@@ -240,6 +268,9 @@
   .animate-egg-wiggle-fast { animation: eggWiggle 1.1s  ease-in-out infinite; transform-origin: center bottom; }
   .animate-egg-bounce      { animation: eggBounce 1.4s  ease-in-out infinite; transform-origin: center bottom; }
   .animate-egg-tear        { animation: eggTear   1.6s  ease-in-out infinite; }
+  .animate-mascot-hop      { animation: mascotHop 9s   ease-in-out infinite; transform-origin: center bottom; }
+  .animate-egg-nudge       { animation: eggNudge  12s  ease-in-out infinite; transform-origin: center bottom; }
+  .animate-bubble-pop      { animation: bubblePop 0.28s cubic-bezier(0.32, 0.72, 0, 1) both; }
 }
 /* transform-origin must apply even without the animation (element layout
    is identical whether motion is enabled or not). */

@@ -1346,6 +1346,13 @@ export const pt = {
   'voltix.mood_celebrating_1':'LENDÁRIO! Top 1% dos utilizadores. Extraordinário! 🏆',
   'voltix.mood_celebrating_2':'Parabéns! Atingiste a máxima saúde financeira.',
   'voltix.mood_celebrating_3':'O Legendrix nunca esteve tão poderoso. Inspiras todos!',
+  // Contextual speak lines (mascotSpeak.ts) — the Tamagotchi retention hooks.
+  'mascot.speak.hatch_close': 'Faltam só {n} pontos para eu chocar! Já ouço o mundo lá fora… 🥚',
+  'mascot.speak.hatch_far':   'Aquece-me: regista movimentos até o score chegar a {target} para eu chocar 🥚',
+  'mascot.speak.next_evo':    'Faltam {n} pontos de score para a minha próxima forma. Ajudas-me?',
+  'mascot.speak.streak':      'Levamos {days} dias seguidos 🔥 Não me deixes arrefecer!',
+  'mascot.see_details':       'Ver detalhes',
+  'mascot.streak_chip':       '{days} dias',
 
   // ── Budget page ──────────────────────────────────────────────────
   'budget.title':              'Orçamento',
@@ -3009,6 +3016,13 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'voltix.mood_celebrating_1':'LEGENDARY! Top 1% of users. Extraordinary! 🏆',
   'voltix.mood_celebrating_2':'Congrats! You\'ve hit peak financial health.',
   'voltix.mood_celebrating_3':'Legendrix has never been this powerful. You inspire!',
+  // Contextual speak lines (mascotSpeak.ts) — the Tamagotchi retention hooks.
+  'mascot.speak.hatch_close': 'Only {n} points until I hatch! I can already hear the outside… 🥚',
+  'mascot.speak.hatch_far':   'Keep me warm: log transactions until the score reaches {target} so I can hatch 🥚',
+  'mascot.speak.next_evo':    '{n} score points to my next form. Help me get there?',
+  'mascot.speak.streak':      '{days} days in a row 🔥 Don\'t let me cool down!',
+  'mascot.see_details':       'See details',
+  'mascot.streak_chip':       '{days} days',
 
   // ── Budget page ──────────────────────────────────────────────────
   'budget.title':              'Budget',

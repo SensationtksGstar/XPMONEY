@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { Sparkles, MessageCircle } from 'lucide-react'
 import { useVoltix } from '@/hooks/useVoltix'
+import { useFinancialScore } from '@/hooks/useFinancialScore'
 import { MOOD_PALETTE } from './mascotMeta'
 import {
   MascotCreature,
@@ -11,39 +13,36 @@ import {
   type MascotGender,
 } from './MascotCreature'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/LocaleProvider'
+import type { TranslationKey } from '@/lib/i18n/translations'
+import { mascotLine } from '@/lib/mascotSpeak'
 import type { VoltixMood } from '@/types'
 
 /**
  * VoltixWidget — cartão do Pet no dashboard.
  *
- * Variantes (April 2026):
- *   - `hero` (default no dashboard desktop) — horizontal, mascote grande à
- *     esquerda, texto + CTA à direita. Pensado para ser o protagonista do
- *     topo do dashboard, dando destaque ao que é a parte mais diferenciadora
- *     do produto.
- *   - `compact` — vertical, tudo centrado, usado em contextos estreitos
- *     (sidebars, mobile, widgets pequenos).
+ * Julho 2026 (passo Tamagotchi): o mascote agora FALA no dashboard — balão
+ * de fala com linhas contextuais (choco do ovo, streak, humor) vindas do
+ * cérebro partilhado `mascotSpeak.ts`, e tocar no mascote muda a frase
+ * (a mesma interação que o /voltix já tinha, agora onde o utilizador vive).
+ * O cartão deixou de ser um <Link> gigante: o toque pertence ao bicho, a
+ * navegação pertence ao CTA "Ver detalhes".
  *
- * O tamanho do mascote vem do container via `w-full h-full` — o widget
- * decide. Tamanhos aproximados:
- *   hero:    mascote 208×208 (desktop) / 160×160 (mobile)
- *   compact: mascote 96×96
+ * Variantes:
+ *   - `hero` (default no dashboard desktop) — horizontal, mascote grande à
+ *     esquerda, balão + texto + CTA à direita.
+ *   - `compact` — vertical, tudo centrado, usado em contextos estreitos.
+ *
+ * O score vem de useFinancialScore() — a queryKey ['score'] já está em cache
+ * no dashboard, portanto isto não custa nenhum request extra.
  */
 
-const MOOD_LABELS: Record<VoltixMood, string> = {
-  sad:         'Triste',
-  neutral:     'Neutro',
-  happy:       'Contente',
-  excited:     'Animado',
-  celebrating: 'Lendário!',
-}
-
-const MOOD_MESSAGES: Record<VoltixMood, string> = {
-  sad:         'As finanças estão difíceis. Vamos virar isso juntos?',
-  neutral:     'Tudo estável. Regista mais movimentos para subir!',
-  happy:       'Estás no bom caminho. Continua assim! 📈',
-  excited:     'Score a subir! Quase no elite. Vai lá! 💪',
-  celebrating: 'LENDÁRIO! Top 1% dos utilizadores. Incrível! 🏆',
+const MOOD_LABEL_KEYS: Record<VoltixMood, TranslationKey> = {
+  sad:         'voltix.mood.sad',
+  neutral:     'voltix.mood.neutral',
+  happy:       'voltix.mood.happy',
+  excited:     'voltix.mood.excited',
+  celebrating: 'voltix.mood.celebrating',
 }
 
 interface Props {
@@ -54,10 +53,48 @@ interface Props {
   expanded?: boolean
 }
 
+/** Balão de fala do mascote — pop suave a cada frase nova (remount por key). */
+function SpeechBubble({
+  text, tail, className,
+}: { text: string; tail: 'left' | 'top'; className?: string }) {
+  return (
+    <div
+      className={cn(
+        'relative bg-[#151a22]/95 border border-white/10 rounded-2xl px-3.5 py-2.5',
+        'text-[13px] leading-snug text-white/85 shadow-[0_1px_2px_rgba(0,0,0,0.4)]',
+        'animate-bubble-pop',
+        className,
+      )}
+      aria-live="polite"
+    >
+      {/* Cauda — losango com as mesmas cores para fundir com a borda. */}
+      {tail === 'left' ? (
+        <span
+          aria-hidden
+          className="hidden sm:block absolute -left-[5px] top-5 w-2.5 h-2.5 rotate-45 bg-[#151a22] border-l border-b border-white/10"
+        />
+      ) : null}
+      <span
+        aria-hidden
+        className={cn(
+          'absolute -top-[5px] left-7 w-2.5 h-2.5 rotate-45 bg-[#151a22] border-l border-t border-white/10',
+          tail === 'left' && 'sm:hidden',
+        )}
+      />
+      {text}
+    </div>
+  )
+}
+
 export function VoltixWidget({ userId, variant, expanded }: Props) {
   // Fallback: se o caller ainda passa `expanded`, trata como `hero`.
   const mode = variant ?? (expanded ? 'hero' : 'compact')
   const { voltix, loading } = useVoltix(userId)
+  const { score } = useFinancialScore(userId)
+  const t = useT()
+
+  const [tapCount, setTapCount] = useState(0)
+  const [tapped, setTapped]     = useState(false)
 
   if (loading) {
     return (
@@ -88,13 +125,31 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
   const name    = getMascotEvoName(gender, evo)
   const evoDesc = getMascotEvoDescription(gender, evo)
 
+  const { line } = mascotLine({
+    mood, evo, streak,
+    score: score?.score ?? null,
+    tapCount,
+  })
+  const speech = t(line.key, line.params)
+
+  function handleTap() {
+    setTapped(true)
+    setTapCount(c => c + 1)
+    setTimeout(() => setTapped(false), 260)
+  }
+
+  function onTapKey(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleTap()
+    }
+  }
+
   // ── HERO ──────────────────────────────────────────────────────────────
   if (mode === 'hero') {
     return (
-      <Link
-        href="/voltix"
-        aria-label="Ver detalhes do teu mascote"
-        className="group block glass-card p-6 overflow-hidden relative transition-all hover:scale-[1.005]"
+      <div
+        className="glass-card p-6 overflow-hidden relative"
         style={{ borderColor: `${palette.body}40` }}
       >
         {/* Faixa de cor da mood no topo */}
@@ -104,9 +159,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
           style={{ background: `linear-gradient(90deg, transparent, ${palette.body}, transparent)` }}
         />
 
-        {/* Aura radial de fundo — reforça a presença do mascote como herói
-            da secção sem saturar. Posicionada atrás do mascote e
-            transbordando suavemente para o lado do texto. */}
+        {/* Aura radial de fundo — presença do mascote sem saturar. */}
         <div
           aria-hidden
           className="pointer-events-none absolute left-0 top-0 w-[420px] h-[420px] -translate-x-1/3 -translate-y-1/4 rounded-full blur-3xl opacity-40"
@@ -114,18 +167,39 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
         />
 
         <div className="relative flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
-          {/* Mascote — grande, respira, é o foco */}
-          <div className="flex-shrink-0 w-40 h-40 sm:w-48 sm:h-48 lg:w-52 lg:h-52">
+          {/* Mascote — grande, vivo, TOCÁVEL (muda a frase, como um Tamagotchi) */}
+          <button
+            type="button"
+            onClick={handleTap}
+            onKeyDown={onTapKey}
+            aria-label={t('voltix.tap_hint')}
+            className={cn(
+              'flex-shrink-0 w-40 h-40 sm:w-48 sm:h-48 lg:w-52 lg:h-52 cursor-pointer',
+              'transition-transform duration-200 active:scale-95 focus-visible:outline-none',
+              'focus-visible:ring-2 focus-visible:ring-white/30 rounded-full',
+              tapped && 'scale-95',
+            )}
+          >
             <MascotCreature
               gender={gender}
               evo={evo}
               mood={mood}
               className="w-full h-full"
             />
-          </div>
+          </button>
 
-          {/* Info + CTA */}
+          {/* Balão + Info + CTA */}
           <div className="flex-1 min-w-0 text-center sm:text-left">
+            <SpeechBubble
+              key={`${line.key}-${tapCount}`}
+              text={speech}
+              tail="left"
+              className="mb-3 mx-auto sm:mx-0 max-w-md"
+            />
+            <p className="flex items-center justify-center sm:justify-start gap-1 text-[11px] text-white/25 mb-3">
+              <MessageCircle className="w-3 h-3" aria-hidden /> {t('voltix.tap_hint')}
+            </p>
+
             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mb-1">
               <h2 className="text-2xl font-black text-white">{name}</h2>
               <span
@@ -141,14 +215,10 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
             </div>
 
             <p
-              className="text-sm font-semibold mb-2"
+              className="text-sm font-semibold mb-3"
               style={{ color: palette.accent }}
             >
-              {MOOD_LABELS[mood]} · {evoDesc.split('.')[0]}
-            </p>
-
-            <p className="text-sm text-white/70 leading-relaxed max-w-md mx-auto sm:mx-0 mb-3">
-              {MOOD_MESSAGES[mood]}
+              {t(MOOD_LABEL_KEYS[mood])} · {evoDesc.split('.')[0]}
             </p>
 
             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
@@ -156,13 +226,14 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
                 <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/25 px-3 py-1.5 rounded-full">
                   <span aria-hidden className="text-sm">🔥</span>
                   <span className="text-xs text-orange-400 font-semibold">
-                    {streak} dias
+                    {t('mascot.streak_chip', { days: streak })}
                   </span>
                 </div>
               )}
 
-              <span
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors group-hover:bg-white/10"
+              <Link
+                href="/voltix"
+                className="group inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors hover:bg-white/10"
                 style={{
                   color:            palette.body,
                   borderColor:     `${palette.body}40`,
@@ -170,18 +241,18 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
                 }}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Ver detalhes
+                {t('mascot.see_details')}
                 <span
                   aria-hidden
                   className="transition-transform group-hover:translate-x-0.5"
                 >
                   →
                 </span>
-              </span>
+              </Link>
             </div>
           </div>
         </div>
-      </Link>
+      </div>
     )
   }
 
@@ -197,11 +268,30 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
         style={{ background: `linear-gradient(90deg, transparent, ${palette.body}, transparent)` }}
       />
 
-      <MascotCreature
-        gender={gender}
-        evo={evo}
-        mood={mood}
-        className="w-24 h-24 mb-2"
+      <button
+        type="button"
+        onClick={handleTap}
+        onKeyDown={onTapKey}
+        aria-label={t('voltix.tap_hint')}
+        className={cn(
+          'w-24 h-24 mb-3 cursor-pointer transition-transform duration-200 active:scale-95',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-full',
+          tapped && 'scale-95',
+        )}
+      >
+        <MascotCreature
+          gender={gender}
+          evo={evo}
+          mood={mood}
+          className="w-full h-full"
+        />
+      </button>
+
+      <SpeechBubble
+        key={`${line.key}-${tapCount}`}
+        text={speech}
+        tail="top"
+        className="mb-3 max-w-[240px]"
       />
 
       <div className="flex items-center gap-2 mb-1">
@@ -218,19 +308,15 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
         </span>
       </div>
 
-      <p className="text-xs font-semibold mb-2" style={{ color: palette.accent }}>
-        {MOOD_LABELS[mood]}
-      </p>
-
-      <p className="text-xs text-white/55 leading-relaxed px-2">
-        {MOOD_MESSAGES[mood]}
+      <p className="text-xs font-semibold" style={{ color: palette.accent }}>
+        {t(MOOD_LABEL_KEYS[mood])}
       </p>
 
       {streak > 0 && (
         <div className="mt-3 flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full">
           <span aria-hidden className="text-sm">🔥</span>
           <span className="text-xs text-orange-400 font-medium">
-            {streak} dias seguidos
+            {t('mascot.streak_chip', { days: streak })}
           </span>
         </div>
       )}

@@ -19,17 +19,14 @@ import {
 } from '@/components/voltix/MascotCreature'
 import { useT } from '@/lib/i18n/LocaleProvider'
 import type { TranslationKey } from '@/lib/i18n/translations'
+import { useFinancialScore } from '@/hooks/useFinancialScore'
+import { mascotLine } from '@/lib/mascotSpeak'
 import type { VoltixMood } from '@/types'
 
-/* ── Mood config ─────────────────────────────────────────────────── */
-const MOOD_MESSAGE_KEYS: Record<VoltixMood, TranslationKey[]> = {
-  sad:         ['voltix.mood_sad_1',         'voltix.mood_sad_2',         'voltix.mood_sad_3'],
-  neutral:     ['voltix.mood_neutral_1',     'voltix.mood_neutral_2',     'voltix.mood_neutral_3'],
-  happy:       ['voltix.mood_happy_1',       'voltix.mood_happy_2',       'voltix.mood_happy_3'],
-  excited:     ['voltix.mood_excited_1',     'voltix.mood_excited_2',     'voltix.mood_excited_3'],
-  celebrating: ['voltix.mood_celebrating_1', 'voltix.mood_celebrating_2', 'voltix.mood_celebrating_3'],
-}
-
+/* ── Mood config ─────────────────────────────────────────────────────
+   As frases vêm do cérebro partilhado mascotSpeak.ts (linhas contextuais
+   de choco/streak primeiro, humor depois) — a mesma voz que o widget do
+   dashboard usa. */
 const MOOD_LABEL_KEYS: Record<VoltixMood, TranslationKey> = {
   sad: 'voltix.mood.sad',
   neutral: 'voltix.mood.neutral',
@@ -42,6 +39,7 @@ export default function VoltixPage() {
   const { user }            = useUser()
   const { voltix, loading } = useVoltix(user?.id ?? '')
   const { xp }              = useXP(user?.id ?? '')
+  const { score }           = useFinancialScore(user?.id ?? '')
   const t                   = useT()
   const [msgIdx, setMsgIdx] = useState(0)
   const [tapped, setTapped] = useState(false)
@@ -78,7 +76,11 @@ export default function VoltixPage() {
   const maxEvo  = getMascotMaxEvo(gender)
   const evoStages = Array.from({ length: maxEvo }, (_, i) => i + 1)
 
-  const msgs = MOOD_MESSAGE_KEYS[mood]
+  const { line } = mascotLine({
+    mood, evo, streak,
+    score: score?.score ?? null,
+    tapCount: msgIdx,
+  })
 
   // Creature to display (real or preview)
   const displayEvo  = preview ?? evo
@@ -86,7 +88,7 @@ export default function VoltixPage() {
 
   function handleTap() {
     setTapped(true)
-    setMsgIdx(i => (i + 1) % msgs.length)
+    setMsgIdx(i => i + 1) // mascotLine faz o módulo sobre o deck atual
     setTimeout(() => setTapped(false), 280)
   }
 
@@ -167,7 +169,7 @@ export default function VoltixPage() {
           key={msgIdx}
           className="text-sm text-white/70 leading-relaxed px-2 mb-4 relative z-10 animate-fade-in-up"
         >
-          {t(msgs[msgIdx])}
+          {t(line.key, line.params)}
         </p>
 
         <p className="text-[11px] text-white/22 flex items-center gap-1 relative z-10">
