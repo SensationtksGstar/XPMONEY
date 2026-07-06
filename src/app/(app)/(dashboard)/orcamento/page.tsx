@@ -4,10 +4,13 @@ import { useState, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import {
   PiggyBank, Settings as SettingsIcon, Check, AlertTriangle,
-  Info, Sparkles, ArrowRight, RotateCcw, Flame,
+  Info, Sparkles, ArrowRight, RotateCcw, Flame, Lock,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useBudget, useBudgetStatus } from '@/hooks/useBudget'
+import { useSpendForecast } from '@/hooks/useSpendForecast'
+import { useUserPlan } from '@/lib/contexts/UserPlanContext'
+import { approxEur, type SpendForecast } from '@/lib/spendForecast'
 import {
   BUCKET_LABELS, BUCKET_DESCRIPTIONS, BUCKET_COLORS,
   validatePercentages, type BudgetBucket, type BucketStatus,
@@ -16,7 +19,7 @@ import { formatCurrency } from '@/lib/utils'
 import { parseAmountLocale } from '@/lib/safeNumber'
 import { Spinner } from '@/components/ui/Spinner'
 import { useToast } from '@/components/ui/toaster'
-import { useT } from '@/lib/i18n/LocaleProvider'
+import { useT, useLocale } from '@/lib/i18n/LocaleProvider'
 
 // recharts é ~100 KB gz — carrega só quando o user chega à página
 // e o chart entra em vista (via dynamic).
@@ -116,6 +119,12 @@ export default function OrcamentoPage() {
 
 function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof useBudgetStatus>['data']> }) {
   const t = useT()
+  const { isPaid } = useUserPlan()
+  // Previsão premium — mesmo cache do widget do dashboard, zero rede extra.
+  const { forecast } = useSpendForecast()
+  const fBuckets = forecast && forecast.status === 'ok' && forecast.budget
+    ? forecast.budget.buckets
+    : null
   const pctTotal = status.income > 0 ? (status.totalSpent / status.income) * 100 : 0
   const overrun = status.totalRemaining < 0
   const hasAlert = status.buckets.some(b => b.severity !== 'ok')
@@ -162,8 +171,30 @@ function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof use
 
       {/* Buckets */}
       <div className="space-y-3">
-        {status.buckets.map(b => <BucketCard key={b.bucket} bucket={b} />)}
+        {status.buckets.map(b => (
+          <BucketCard
+            key={b.bucket}
+            bucket={b}
+            forecast={fBuckets?.find(fb => fb.bucket === b.bucket) ?? null}
+          />
+        ))}
       </div>
+
+      {/* Teaser Premium — uma linha calma, sem blur nem gradientes. */}
+      {!isPaid && (
+        <Link
+          href="/settings/billing?period=yearly"
+          className="flex items-center gap-2 min-h-[44px] px-4 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl group"
+        >
+          <Lock className="w-3 h-3 text-white/35 flex-none" aria-hidden />
+          <span className="text-xs text-white/45 flex-1 min-w-0 truncate">
+            {t('predict.budget_teaser')}
+          </span>
+          <span className="text-xs font-medium text-green-400/90 group-hover:text-green-300 whitespace-nowrap">
+            {t('predict.free_cta')} →
+          </span>
+        </Link>
+      )}
 
       {/* Personalizar: user pode recategorizar qualquer categoria */}
       <CategoryOverrides categories={status.allCategories ?? []} />
@@ -208,8 +239,12 @@ function SummaryStat({
   )
 }
 
-function BucketCard({ bucket }: { bucket: BucketStatus }) {
-  const t = useT()
+type BucketForecast = NonNullable<SpendForecast['budget']>['buckets'][number]
+
+function BucketCard({
+  bucket, forecast,
+}: { bucket: BucketStatus; forecast: BucketForecast | null }) {
+  const { t, locale } = useLocale()
   const colors = BUCKET_COLORS[bucket.bucket]
   const sevIcon = bucket.severity === 'over'
     ? <Flame className="w-3.5 h-3.5" />
@@ -238,6 +273,21 @@ function BucketCard({ bucket }: { bucket: BucketStatus }) {
           <p className="text-xs text-white/50 mt-0.5">
             {BUCKET_DESCRIPTIONS[bucket.bucket]}
           </p>
+          {/* Previsão fim-do-mês (Premium) — âmbar quando estoura o bucket. */}
+          {forecast && (
+            <p className={`text-[11px] mt-1 tabular-nums ${
+              forecast.severity === 'over' ? 'text-amber-300/90' : 'text-white/45'
+            }`}>
+              {forecast.severity === 'over'
+                ? t('predict.bucket_forecast_over', {
+                    amount: approxEur(forecast.forecast, locale),
+                    over:   approxEur(forecast.forecast - forecast.limit, locale),
+                  })
+                : t('predict.bucket_forecast', {
+                    amount: approxEur(forecast.forecast, locale),
+                  })}
+            </p>
+          )}
         </div>
         <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border ${sevColor}`}>
           {sevIcon}

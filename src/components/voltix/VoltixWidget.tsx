@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Sparkles, MessageCircle } from 'lucide-react'
 import { useVoltix } from '@/hooks/useVoltix'
 import { useFinancialScore } from '@/hooks/useFinancialScore'
+import { useSpendForecast } from '@/hooks/useSpendForecast'
+import { approxEur } from '@/lib/spendForecast'
 import { MOOD_PALETTE } from './mascotMeta'
 import {
   MascotCreature,
@@ -13,7 +15,7 @@ import {
   type MascotGender,
 } from './MascotCreature'
 import { cn } from '@/lib/utils'
-import { useT } from '@/lib/i18n/LocaleProvider'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 import type { TranslationKey } from '@/lib/i18n/translations'
 import { mascotLine } from '@/lib/mascotSpeak'
 import type { VoltixMood } from '@/types'
@@ -91,10 +93,30 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
   const mode = variant ?? (expanded ? 'hero' : 'compact')
   const { voltix, loading } = useVoltix(userId)
   const { score } = useFinancialScore(userId)
-  const t = useT()
+  const { forecast } = useSpendForecast()   // premium-only fetch (enabled: isPaid)
+  const { t, locale } = useLocale()
 
   const [tapCount, setTapCount] = useState(0)
   const [tapped, setTapped]     = useState(false)
+
+  // Forecast delta for the pet's voice — meaningful (≥€10) deltas only.
+  // Each line matches its OWN reference so the copy is never a lie:
+  //   over  → vs the configured BUDGET (copy says "orçamento")
+  //   under → vs the user's own BASELINE spend (copy says "costume")
+  // (Using budget income for "under" told a €1.8k-forecast user with a
+  // €1.5k habit they were "€200 below their usual" — factually wrong.)
+  const forecastDelta = useMemo(() => {
+    if (!forecast || forecast.status !== 'ok') return null
+    const F = forecast.total.forecast
+    if (forecast.budget && F - forecast.budget.monthlyIncome >= 10) {
+      return { label: approxEur(F - forecast.budget.monthlyIncome, locale), over: true }
+    }
+    const base = forecast.total.baseline
+    if (base != null && base - F >= 10) {
+      return { label: approxEur(base - F, locale), over: false }
+    }
+    return null
+  }, [forecast, locale])
 
   if (loading) {
     return (
@@ -129,6 +151,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
     mood, evo, streak,
     score: score?.score ?? null,
     tapCount,
+    forecastDelta,
   })
   const speech = t(line.key, line.params)
 

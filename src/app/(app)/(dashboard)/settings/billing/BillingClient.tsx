@@ -67,6 +67,7 @@ const PLANS: {
       'billing.premium_f1',
       'billing.premium_f2',
       'billing.premium_f3',
+      'billing.premium_f13', // Previsão de gastos — power-tools cluster
       'billing.premium_f12', // Mata-Dívidas ilimitado — placed near other power-tools
       'billing.premium_f4',
       'billing.premium_f5',

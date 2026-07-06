@@ -85,6 +85,8 @@ export function useBudget() {
     onSuccess:  () => {
       client.invalidateQueries({ queryKey: ['budget'] })
       client.invalidateQueries({ queryKey: ['budget-status'] })
+      // Bucket limits feed the premium forecast's overrun math.
+      client.invalidateQueries({ queryKey: ['forecast'] })
     },
   })
 

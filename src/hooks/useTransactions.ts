@@ -49,6 +49,8 @@ export function useTransactions(_userId?: string) {
     client.invalidateQueries({ queryKey: ['budget-status']   })
     client.invalidateQueries({ queryKey: ['budget-history']  })
     client.invalidateQueries({ queryKey: ['voltix']          })
+    client.invalidateQueries({ queryKey: ['forecast']        })
+    client.invalidateQueries({ queryKey: ['cashflow']        })
   }
 
   const mutation = useMutation({

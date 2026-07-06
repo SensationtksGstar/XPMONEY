@@ -50,8 +50,8 @@ const CashFlowChart = dynamic(
   () => import('@/components/dashboard/CashFlowChart').then(m => ({ default: m.CashFlowChart })),
   { ssr: false, loading: () => <div className="h-72 bg-white/5 rounded-2xl animate-pulse" /> },
 )
-const SpendingVelocity = dynamic(
-  () => import('@/components/dashboard/SpendingVelocity').then(m => ({ default: m.SpendingVelocity })),
+const SpendForecast = dynamic(
+  () => import('@/components/dashboard/SpendForecast').then(m => ({ default: m.SpendForecast })),
   { ssr: false, loading: () => <div className="h-36 bg-white/5 rounded-2xl animate-pulse" /> },
 )
 const NetWorthWidget = dynamic(
@@ -256,7 +256,7 @@ export default function DashboardPage() {
       {/* Ritmo de gasto — projeção predictiva do fim-de-mês vs média.
           Reutiliza o cache ['cashflow', 6] do CashFlowChart (zero rede
           extra), derivação client-side. */}
-      <SpendingVelocity />
+      <SpendForecast />
 
       {/* Maiores despesas individuais — complementa o ExpenseBreakdown
           (por categoria) expondo a compra única grande. Período-aware via

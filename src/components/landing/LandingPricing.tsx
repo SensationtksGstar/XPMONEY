@@ -36,6 +36,7 @@ const PREMIUM_FEATURE_KEYS: Array<{ key: TranslationKey; highlight?: boolean }> 
   { key: 'pricing.premium_f1' },
   { key: 'pricing.premium_f2' },
   { key: 'pricing.premium_f3' },
+  { key: 'pricing.premium_f13' },     // Previsão de gastos · power-tools cluster
   { key: 'pricing.premium_f4' },
   { key: 'pricing.premium_f5' },
   { key: 'pricing.premium_f6' },

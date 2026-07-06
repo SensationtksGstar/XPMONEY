@@ -36,19 +36,11 @@ import { createSupabaseAdmin } from '@/lib/supabase'
  * Two different transactions to the same merchant collide on the key,
  * which is exactly the cache hit we want.
  */
-export function normalizeDescription(raw: string): string {
-  return raw
-    .toUpperCase()
-    .replace(/\b\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}\b/g, ' ')      // dates
-    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, ' ')                        // ISO dates
-    .replace(/€\s?\d+[,.]\d{2}/g, ' ')                             // €12,34
-    .replace(/\b\d+[,.]\d{2}\b/g, ' ')                             // 12,34
-    .replace(/\b\d{6,}\b/g, ' ')                                   // long IDs/refs
-    .replace(/\b(REF|NR|N[ºO]|NIF|N\.?I\.?F\.?|FACT)\b\.?/g, ' ')  // boilerplate tokens
-    .replace(/[^\w\s&.\-]/g, ' ')                                  // punctuation noise
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+// Moved to src/lib/normalizeDescription.ts (shared with the client-safe
+// spendForecast lib — this module is 'server-only'). Imported for local use
+// below and re-exported for the existing server-side callers.
+import { normalizeDescription } from '@/lib/normalizeDescription'
+export { normalizeDescription }
 
 // ─── Privacy allowlist ──────────────────────────────────────────────────────
 

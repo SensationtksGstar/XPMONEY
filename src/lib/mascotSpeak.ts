@@ -31,6 +31,14 @@ export interface MascotSpeakContext {
   tapCount: number
   /** Day seed for daily variety. Defaults to day-of-year (client-side). */
   daySeed?: number
+  /**
+   * Premium spend-forecast delta (already localized/rounded by the caller,
+   * e.g. "~€45" — the brain stays pure/locale-free). `over` only ever true
+   * when the reference is the user's BUDGET (copy says "orçamento"); the
+   * pet stays quiet about being over a mere average. Free users pass null —
+   * the pet never upsells.
+   */
+  forecastDelta?: { label: string; over: boolean } | null
 }
 
 export interface MascotLine {
@@ -76,6 +84,13 @@ export function mascotDeck(ctx: MascotSpeakContext): MascotLine[] {
 
   if (ctx.streak >= 3) {
     deck.push({ key: 'mascot.speak.streak', params: { days: ctx.streak } })
+  }
+
+  if (ctx.forecastDelta) {
+    deck.push({
+      key: ctx.forecastDelta.over ? 'mascot.speak.forecast_over' : 'mascot.speak.forecast_under',
+      params: { amount: ctx.forecastDelta.label },
+    })
   }
 
   // ── Mood tail, rotated by day so the pet doesn't repeat itself ──
