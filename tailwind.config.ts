@@ -10,16 +10,57 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // XP Money Design System
+        // XP Money Design System — Apple-calm pass (July 2026)
+        // Neutral surface ladder: 90% of chrome lives on these. Elevation =
+        // next surface up + hairline border, never colored glow.
+        surface: {
+          0: '#0b0d10', // app base
+          1: '#13161b', // card
+          2: '#1b1f26', // raised / hover
+          3: '#242a33', // top layer / active fill
+        },
+        // Hairline + divider — the only default border colors.
+        hairline: 'rgba(255,255,255,0.08)',
+        divider:  'rgba(255,255,255,0.06)',
         brand: {
           50:  '#f0fdf4',
           100: '#dcfce7',
           200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e', // primary green
-          600: '#16a34a',
-          700: '#15803d',
+          300: '#82e3ab',
+          400: '#4fd48b',
+          500: '#27c26b', // primary green (calmer than the old #22c55e)
+          600: '#1ea55a',
+          700: '#19874b',
+          800: '#166534',
+          900: '#14532d',
+          950: '#052e16',
+        },
+        // Override Tailwind's default green so every existing `green-*`
+        // class shifts to the calmer accent without touching call sites.
+        green: {
+          50:  '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#82e3ab',
+          400: '#4fd48b',
+          500: '#27c26b',
+          600: '#1ea55a',
+          700: '#19874b',
+          800: '#166534',
+          900: '#14532d',
+          950: '#052e16',
+        },
+        // ONE green: emerald aliases the same ramp, so the 120+ existing
+        // `emerald-*` call sites can't introduce a second green tone.
+        emerald: {
+          50:  '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#82e3ab',
+          400: '#4fd48b',
+          500: '#27c26b',
+          600: '#1ea55a',
+          700: '#19874b',
           800: '#166534',
           900: '#14532d',
           950: '#052e16',
@@ -35,7 +76,7 @@ const config: Config = {
           critical: '#ef4444', // 0-39
           low:      '#f97316', // 40-59
           medium:   '#eab308', // 60-74
-          good:     '#22c55e', // 75-89
+          good:     '#27c26b', // 75-89
           elite:    '#8b5cf6', // 90-100
         },
         background: 'hsl(var(--background))',

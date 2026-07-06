@@ -4,25 +4,28 @@
 
 @layer base {
   :root {
-    --background:             222 47% 6%;
+    /* Apple-calm neutral surfaces (redesign July 2026). Owner-approved:
+       #0b0d10 base · #13161b card · #1b1f26 raised · #242a33 border/top.
+       Hex twins live in tailwind.config.ts as `surface.0–3`. */
+    --background:             216 19% 5.3%;
     --foreground:             210 40% 98%;
-    --card:                   222 47% 9%;
+    --card:                   217 17% 9%;
     --card-foreground:        210 40% 98%;
-    --popover:                222 47% 9%;
+    --popover:                217 17% 9%;
     --popover-foreground:     210 40% 98%;
-    --primary:                142 71% 45%;
+    --primary:                146 66% 46%;
     --primary-foreground:     144 100% 5%;
-    --secondary:              217 33% 17%;
+    --secondary:              216 17% 17%;
     --secondary-foreground:   210 40% 98%;
-    --muted:                  217 33% 17%;
-    --muted-foreground:       215 20% 55%;
-    --accent:                 217 33% 17%;
+    --muted:                  216 17% 17%;
+    --muted-foreground:       215 12% 57%;
+    --accent:                 216 17% 17%;
     --accent-foreground:      210 40% 98%;
     --destructive:            0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border:                 217 33% 17%;
-    --input:                  217 33% 17%;
-    --ring:                   142 71% 45%;
+    --border:                 216 17% 17%;
+    --input:                  216 17% 17%;
+    --ring:                   146 66% 46%;
     --radius:                 0.75rem;
   }
 }
@@ -68,9 +71,11 @@
 }
 
 @layer components {
-  /* Card glassmorphism */
+  /* Base card material — neutral surface + hairline + soft neutral shadow.
+     (Was white/5 glassmorphism; depth now comes from layered surfaces,
+     never from colored glow.) */
   .glass-card {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
+    @apply bg-surface-1/80 backdrop-blur-md border border-white/[0.08] rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.4)];
   }
 
   /* XP Bar animada */
@@ -88,11 +93,11 @@
     stroke-linecap: round;
   }
 
-  /* Gradient de fundo do dashboard */
+  /* Fundo do dashboard — quase plano; um sopro do acento no topo,
+     sem o radial roxo (data screens ficam calmos). */
   .dashboard-bg {
     background:
-      radial-gradient(ellipse at top left,    rgba(34, 197, 94, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at top left, rgba(39, 194, 107, 0.03) 0%, transparent 45%),
       hsl(var(--background));
   }
 
@@ -343,21 +348,4 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Texto gradiente XP Money */
-  .text-gradient-brand {
-    @apply bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent;
-  }
-
-  .text-gradient-xp {
-    @apply bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent;
-  }
-
-  .text-gradient-elite {
-    @apply bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent;
-  }
-
-  /* Glow effects */
-  .glow-green  { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
-  .glow-purple { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-  .glow-gold   { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
 }
