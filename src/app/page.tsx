@@ -164,7 +164,7 @@ export default async function LandingPage() {
         <div className="relative max-w-2xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
             {t('landing.cta.title_a')}{' '}
-            <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
+            <span className="text-green-400">
               {t('landing.cta.title_emph')}
             </span>
           </h2>
@@ -173,7 +173,7 @@ export default async function LandingPage() {
           </p>
           <Link
             href="/sign-up"
-            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-10 py-4 rounded-xl text-lg transition-all shadow-[0_12px_40px_-15px_rgba(34,197,94,0.6)] hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-10 py-4 rounded-xl text-lg transition-all shadow-[0_12px_32px_-12px_rgba(0,0,0,0.6)] hover:scale-[1.02]"
           >
             {t('landing.cta.button')}
             <ArrowRight className="w-5 h-5" />

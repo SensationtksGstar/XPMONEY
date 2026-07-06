@@ -61,7 +61,7 @@ const RARITY_TEXT: Record<string, string> = {
 // un-earned (locked), Premium badges keep a gold-amber tint instead of
 // going fully grey, signalling "exists, requires upgrade" not "missing
 // achievement criteria".
-const PREMIUM_EARNED_STYLE  = 'border-amber-400/60 bg-gradient-to-br from-amber-500/15 to-amber-700/5 shadow-[0_0_24px_-12px_rgba(251,191,36,0.6)]'
+const PREMIUM_EARNED_STYLE  = 'border-amber-400/60 bg-gradient-to-br from-amber-500/15 to-amber-700/5'
 const PREMIUM_LOCKED_STYLE  = 'border-amber-500/25 bg-amber-500/5'
 
 export default function BadgesPage() {

@@ -77,7 +77,6 @@ export function FinancialScoreCard({ userId }: Props) {
             strokeDashoffset={offset}
             strokeLinecap="round"
             style={{
-              filter: `drop-shadow(0 0 6px ${color}60)`,
               transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)',
             }}
           />

@@ -79,12 +79,12 @@ export async function LandingHero() {
 
           <h1 className="text-4xl sm:text-5xl lg:text-[4rem] font-bold leading-[1.02] tracking-tight mb-6">
             {t('landing.hero.title_l1_a')}{' '}
-            <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
+            <span className="text-green-400">
               {t('landing.hero.title_l1_emph')}
             </span>
             {t('landing.hero.title_l1_b')}<br />
             <span className="text-white/95">{t('landing.hero.title_l2_a')} </span>
-            <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+            <span className="text-amber-400">
               {t('landing.hero.title_l2_emph')}
             </span>
             {t('landing.hero.title_l2_b')}
@@ -106,7 +106,7 @@ export async function LandingHero() {
           <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3 mb-5">
             <Link
               href="/sign-up"
-              className="group inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-7 py-3.5 rounded-xl text-base transition-all shadow-[0_10px_36px_-8px_rgba(34,197,94,0.7)] hover:scale-[1.02] active:scale-95"
+              className="group inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-7 py-3.5 rounded-xl text-base transition-all shadow-[0_10px_28px_-8px_rgba(0,0,0,0.6)] hover:scale-[1.02] active:scale-95"
             >
               {t('landing.hero.cta_primary')}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -255,7 +255,7 @@ export async function LandingHero() {
                     <div
                       className={`relative w-full aspect-square rounded-lg flex items-center justify-center ${
                         isCurrent
-                          ? 'bg-gradient-to-b from-emerald-500/25 to-transparent border border-emerald-400/40 shadow-[0_0_20px_rgba(34,197,94,0.25)]'
+                          ? 'bg-gradient-to-b from-emerald-500/25 to-transparent border border-emerald-400/40'
                           : 'bg-white/5 border border-white/10'
                       }`}
                     >

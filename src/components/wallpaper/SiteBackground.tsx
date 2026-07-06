@@ -69,7 +69,7 @@ export function SiteBackground() {
           className="absolute inset-x-0 top-1/3 h-[55vh]"
           style={{
             background:
-              'radial-gradient(ellipse 100% 60% at 50% 50%, rgba(34,197,94,0.18) 0%, rgba(34,197,94,0.05) 35%, transparent 70%)',
+              'radial-gradient(ellipse 100% 60% at 50% 50%, rgba(39,194,107,0.12) 0%, rgba(39,194,107,0.04) 35%, transparent 70%)',
           }}
         />
         {/* Faint perspective lines — pure CSS, repeating linear gradient.
@@ -79,7 +79,7 @@ export function SiteBackground() {
           className="absolute inset-x-0 bottom-0 h-1/2 opacity-40"
           style={{
             background:
-              'repeating-linear-gradient(to bottom, transparent 0px, transparent 26px, rgba(34,197,94,0.08) 26px, rgba(34,197,94,0.08) 27px)',
+              'repeating-linear-gradient(to bottom, transparent 0px, transparent 26px, rgba(39,194,107,0.06) 26px, rgba(39,194,107,0.06) 27px)',
             maskImage:
               'linear-gradient(to top, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)',
             WebkitMaskImage:

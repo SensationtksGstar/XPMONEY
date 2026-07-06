@@ -21,21 +21,21 @@ export async function LandingOutcomes() {
       unit:  t('landing.outcomes.o1_unit'),
       label: t('landing.outcomes.o1_label'),
       desc:  t('landing.outcomes.o1_desc'),
-      color: 'from-green-400 to-emerald-300',
+      color: 'text-green-400',
     },
     {
       stat:  t('landing.outcomes.o2_stat'),
       unit:  t('landing.outcomes.o2_unit'),
       label: t('landing.outcomes.o2_label'),
       desc:  t('landing.outcomes.o2_desc'),
-      color: 'from-yellow-400 to-orange-400',
+      color: 'text-amber-400',
     },
     {
       stat:  t('landing.outcomes.o3_stat'),
       unit:  t('landing.outcomes.o3_unit'),
       label: t('landing.outcomes.o3_label'),
       desc:  t('landing.outcomes.o3_desc'),
-      color: 'from-purple-400 to-pink-400',
+      color: 'text-purple-400',
     },
   ]
 
@@ -54,7 +54,7 @@ export async function LandingOutcomes() {
             className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col"
           >
             <div className="mb-4">
-              <span className={`bg-gradient-to-r ${o.color} bg-clip-text text-transparent text-5xl font-black tabular-nums`}>
+              <span className={`${o.color} text-5xl font-bold tabular-nums`}>
                 {o.stat}
               </span>
               <span className="text-white/50 text-lg font-semibold ml-1">{o.unit}</span>

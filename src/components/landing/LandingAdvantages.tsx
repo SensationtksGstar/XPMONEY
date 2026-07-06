@@ -134,7 +134,7 @@ export async function LandingAdvantages() {
           </p>
           <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-[1.1]">
             {t('landing.adv.title_a')}{' '}
-            <span className="bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent">
+            <span className="text-green-400">
               {t('landing.adv.title_emph')}
             </span>
             {t('landing.adv.title_b')}
@@ -203,7 +203,7 @@ export async function LandingAdvantages() {
               </div>
               <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
                 {t('landing.adv.annual_title_a')}{' '}
-                <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
+                <span className="text-purple-300">
                   {t('landing.adv.annual_title_em')}
                 </span>
               </h3>

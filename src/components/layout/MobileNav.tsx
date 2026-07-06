@@ -83,8 +83,7 @@ export function MobileNav() {
                   <button
                     onClick={() => setShowForm(true)}
                     aria-label={t('nav.add_tx_aria')}
-                    className="relative -top-5 w-14 h-14 bg-green-500 active:bg-green-400 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all"
-                    style={{ boxShadow: '0 0 24px rgba(34,197,94,0.45)' }}
+                    className="relative -top-5 w-14 h-14 bg-green-500 active:bg-green-400 rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.55)] active:scale-95 transition-all"
                   >
                     <Plus className="w-6 h-6 text-black" strokeWidth={3} />
                   </button>
@@ -104,7 +103,7 @@ export function MobileNav() {
                   isActive ? 'text-green-400' : 'text-white/35',
                 )}
               >
-                <Icon className={cn('w-5 h-5', isActive && 'drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]')} />
+                <Icon className="w-5 h-5" />
                 <span className="text-[10px] font-medium truncate">{t(item.labelKey)}</span>
                 {isActive && (
                   <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full" />
@@ -121,7 +120,7 @@ export function MobileNav() {
               moreActive ? 'text-green-400' : 'text-white/35',
             )}
           >
-            <MoreHorizontal className={cn('w-5 h-5', moreActive && 'drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]')} />
+            <MoreHorizontal className="w-5 h-5" />
             <span className="text-[10px] font-medium">{t('nav.more')}</span>
             {moreActive && (
               <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full" />

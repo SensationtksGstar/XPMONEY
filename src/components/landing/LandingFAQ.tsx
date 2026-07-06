@@ -89,7 +89,7 @@ export async function LandingFAQ() {
             width={96}
             height={96}
             sizes="96px"
-            className="w-24 h-24 object-contain drop-shadow-[0_8px_24px_rgba(34,197,94,0.35)] drop-shadow-[0_0_28px_rgba(34,197,94,0.25)]"
+            className="w-24 h-24 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
           />
         </div>
         <h3 className="text-xl md:text-2xl font-bold mb-2">

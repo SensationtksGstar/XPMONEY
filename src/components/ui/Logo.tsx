@@ -33,7 +33,7 @@ export function Logo({ size = 28, showText = false, textClass, className }: Prop
         width={size}
         height={size}
         alt="XP-Money"
-        className="flex-shrink-0 drop-shadow-[0_3px_10px_rgba(16,185,129,0.35)]"
+        className="flex-shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
         style={{ width: size, height: size }}
       />
 

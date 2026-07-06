@@ -55,7 +55,7 @@ export async function LandingHowItWorks() {
             key={s.num}
             className="relative bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col hover:border-green-500/30 transition-colors"
           >
-            <div className="relative z-10 w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-black font-bold text-xl flex items-center justify-center mb-4 shadow-[0_4px_14px_rgba(34,197,94,0.4)]">
+            <div className="relative z-10 w-12 h-12 rounded-full bg-green-500 text-black font-bold text-xl flex items-center justify-center mb-4 shadow-[0_4px_12px_rgba(0,0,0,0.45)]">
               {s.num}
             </div>
             <h3 className="font-bold text-lg mb-2 text-white">{s.title}</h3>

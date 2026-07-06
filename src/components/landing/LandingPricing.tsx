@@ -68,7 +68,7 @@ export async function LandingPricing() {
         <p className="text-purple-400 font-semibold text-sm uppercase tracking-widest mb-2">{t('pricing.eyebrow')}</p>
         <h2 className="text-4xl md:text-5xl font-bold leading-[1.1]">
           {t('pricing.title_a')}{' '}
-          <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
+          <span className="text-purple-300">
             {t('pricing.title_price')}
           </span>
           {t('pricing.title_b')}

@@ -67,17 +67,8 @@ export function DragonCoinFAB() {
           // (z-50) — otherwise the closed FAB floats on top of the sheet
           // and covers the Settings icon on mobile. The chat panel when
           // OPEN still lifts above everything via z-[100] below.
-          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[45] w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform bg-[#060b14]/85 backdrop-blur-md ring-2 ring-green-400/50 hover:ring-green-300/70 shadow-[0_8px_24px_rgba(34,197,94,0.35),0_0_22px_rgba(34,197,94,0.25)]"
+          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[45] w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform bg-[#060b14]/85 backdrop-blur-md ring-1 ring-white/15 hover:ring-white/25 shadow-[0_8px_24px_rgba(0,0,0,0.55)]"
         >
-          {/* Pulse halo — anel verde pulsante por fora do botão para
-              indicar "estou vivo, clica". Fica atrás do botão via inset
-              negativo + rounded-full para um efeito de ondulação. */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -inset-1 rounded-full border-2 border-green-400/40 animate-ping"
-            style={{ animationDuration: '2.4s' }}
-          />
-
           {/* Dragon Coin portrait. O botão tem moldura circular dark com
               ring verde; o dragão (imagem 512×512 HQ trimada, sem fundo
               branco) está escalado para ~1.2× e posicionado um pouco
@@ -93,7 +84,7 @@ export function DragonCoinFAB() {
             sizes="128px"
             quality={95}
             priority={false}
-            className="relative w-full h-full object-contain scale-[1.22] group-hover:scale-[1.3] -translate-y-[2px] transition-transform duration-300 drop-shadow-[0_0_6px_rgba(34,197,94,0.5)]"
+            className="relative w-full h-full object-contain scale-[1.22] group-hover:scale-[1.3] -translate-y-[2px] transition-transform duration-300"
           />
         </button>
       )}

@@ -221,7 +221,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
         {/* Shimmer across the button */}
         <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none" />
 
-        <div className="w-11 h-11 flex-shrink-0 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-amber-400 flex items-center justify-center shadow-lg shadow-purple-500/30 relative">
+        <div className="w-11 h-11 flex-shrink-0 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-amber-400 flex items-center justify-center shadow-lg relative">
           <Sparkles className="w-5 h-5 text-white" />
           {/* Pulsing dot */}
           <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500">

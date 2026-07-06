@@ -24,7 +24,7 @@ function DragonAvatar({ size = 36 }: { size?: number }) {
         width={size}
         height={size}
         sizes={`${size}px`}
-        className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(34,197,94,0.45)]"
+        className="w-full h-full object-contain"
       />
     </div>
   )

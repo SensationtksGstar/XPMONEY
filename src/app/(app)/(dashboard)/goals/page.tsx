@@ -197,7 +197,7 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
   return (
     <div
       className={`bg-white/5 border rounded-2xl p-5 transition-all animate-fade-in-up ${
-        isComplete ? 'border-green-500/40 shadow-lg shadow-green-500/10'
+        isComplete ? 'border-green-500/40'
         : isUrgent ? 'border-orange-500/30'
         : 'border-white/10 hover:border-white/20'
       }`}

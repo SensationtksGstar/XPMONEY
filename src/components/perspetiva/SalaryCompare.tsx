@@ -244,7 +244,7 @@ function CountryRow({
 function UserRow({ monthly, maxValue }: { monthly: number; maxValue: number }) {
   const pctBar = maxValue > 0 ? Math.max(2, (monthly / maxValue) * 100) : 0
   return (
-    <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-500/15 via-orange-500/10 to-transparent border-2 border-yellow-400/50 rounded-lg px-3 py-2.5 shadow-[0_0_20px_rgba(234,179,8,0.2)]">
+    <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-500/15 via-orange-500/10 to-transparent border-2 border-yellow-400/50 rounded-lg px-3 py-2.5">
       <span className="text-xl flex-shrink-0" aria-hidden>⭐</span>
       <div className="flex-shrink-0 w-28 sm:w-32 truncate text-sm font-bold text-yellow-200">
         Tu (aqui)
