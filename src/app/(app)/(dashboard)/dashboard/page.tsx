@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import dynamic                         from 'next/dynamic'
-import { PlusCircle, Crown }           from 'lucide-react'
+import { PlusCircle, ChevronDown, BarChart3 } from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
-import { useUserPlan }                 from '@/lib/contexts/UserPlanContext'
-import { ProToolsShowcase }            from '@/components/dashboard/ProToolsShowcase'
-import { StreakBanner }                from '@/components/dashboard/StreakBanner'
+import { StreakChip }                  from '@/components/dashboard/StreakChip'
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
 import { CelebrationModal }            from '@/components/ui/CelebrationModal'
 import { formatMonth }                 from '@/lib/utils'
@@ -53,25 +51,13 @@ const SpendForecast = dynamic(
   () => import('@/components/dashboard/SpendForecast').then(m => ({ default: m.SpendForecast })),
   { ssr: false, loading: () => <div className="h-36 bg-white/5 rounded-2xl animate-pulse" /> },
 )
-const NetWorthWidget = dynamic(
-  () => import('@/components/dashboard/NetWorthWidget').then(m => ({ default: m.NetWorthWidget })),
-  { ssr: false, loading: () => null },
-)
 const RecurringExpenses = dynamic(
   () => import('@/components/dashboard/RecurringExpenses').then(m => ({ default: m.RecurringExpenses })),
-  { ssr: false, loading: () => null },
-)
-const DebtWidget = dynamic(
-  () => import('@/components/dashboard/DebtWidget').then(m => ({ default: m.DebtWidget })),
   { ssr: false, loading: () => null },
 )
 const RecentTransactions = dynamic(
   () => import('@/components/dashboard/RecentTransactions').then(m => ({ default: m.RecentTransactions })),
   { ssr: false, loading: () => <div className="h-40 bg-white/5 rounded-2xl animate-pulse" /> },
-)
-const MissionCard = dynamic(
-  () => import('@/components/missions/MissionCard').then(m => ({ default: m.MissionCard })),
-  { ssr: false, loading: () => <div className="h-24 bg-white/5 rounded-2xl animate-pulse" /> },
 )
 const AdBanner = dynamic(
   () => import('@/components/ads/AdBanner').then(m => ({ default: m.AdBanner })),
@@ -80,9 +66,11 @@ const AdBanner = dynamic(
 
 export default function DashboardPage() {
   const { user }        = useUser()
-  const { plan, isFree } = useUserPlan()
   const t = useT()
   const [showForm, setShowForm]         = useState(false)
+  // Análises colapsadas por defeito (dashboard diet): os chunks recharts
+  // dos widgets lá dentro só carregam quando o user expande.
+  const [showInsights, setShowInsights] = useState(false)
   const [celebration, setCelebration]   = useState<{
     icon: string; title: string; subtitle: string; xp?: number
   } | null>(null)
@@ -188,55 +176,26 @@ export default function DashboardPage() {
           <h1 className="text-xl font-bold text-white capitalize">{firstName} 👋</h1>
           <p className="text-white/30 text-xs mt-0.5">{formatMonth()}</p>
         </div>
-        {/* Um só add por viewport: <lg usa o FAB da MobileNav; este botão
-            existe apenas em desktop, onde a MobileNav (e o FAB) não montam. */}
-        <button
-          onClick={() => setShowForm(true)}
-          className="hidden lg:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-colors text-sm active:scale-95"
-        >
-          <PlusCircle className="w-4 h-4" />
-          {t('dashboard.add')}
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Streak como chip discreto, não banner full-width (Fase 4). */}
+          <StreakChip />
+          {/* Um só add por viewport: <lg usa o FAB da MobileNav; este botão
+              existe apenas em desktop, onde a MobileNav (e o FAB) não montam. */}
+          <button
+            onClick={() => setShowForm(true)}
+            className="hidden lg:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-colors text-sm active:scale-95"
+          >
+            <PlusCircle className="w-4 h-4" />
+            {t('dashboard.add')}
+          </button>
+        </div>
       </div>
 
-      {/* Streak */}
-      <StreakBanner />
-
-      {/* Period filter — global across MonthlySummary + ExpenseBreakdown
-          (and any future analytics widget that reads usePeriod). User
-          selection persists per-device in localStorage. */}
-      <PeriodFilter />
-
-      {/* Pro tools showcase — always visible, locked items link to billing */}
-      <ProToolsShowcase />
-
-      {/* Upgrade banner for free users */}
-      {isFree && (
-        <Link href="/settings/billing"
-          className="flex items-center gap-3 bg-gradient-to-r from-purple-500/15 to-green-500/10 border border-purple-500/25 rounded-2xl px-4 py-3 hover:border-purple-500/40 transition-colors"
-        >
-          <Crown className="w-5 h-5 text-purple-400 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white">{t('dashboard.upgrade_title')}</p>
-            <p className="text-xs text-white/50">{t('dashboard.upgrade_sub')}</p>
-          </div>
-          <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-2.5 py-1 rounded-lg flex-shrink-0">
-            {t('dashboard.upgrade_cta')}
-          </span>
-        </Link>
-      )}
-
-      {/* Hero Pet + Score/XP side-by-side + breakdown de despesas.
-          Layout (April 2026 redesign):
-          • Desktop: esquerda 2/3 (Pet hero + ExpenseBreakdown empilhados)
-            / direita 1/3 (Score + XP empilhados). Aproveita o espaço
-            vertical que antes ficava vazio debaixo do mascote quando
-            a coluna Score+XP era mais alta.
-          • Mobile: tudo empilhado: Pet, Score, XP, depois ExpenseBreakdown. */}
+      {/* O herói do glance: mascote (a alma do produto) + score + XP.
+          Desktop: Pet 2/3 | Score+XP 1/3. Mobile: empilhado. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="lg:col-span-2 flex flex-col gap-3">
           <VoltixWidget userId={user?.id ?? ''} variant="hero" />
-          <ExpenseBreakdown />
         </div>
         <div className="flex flex-col gap-3">
           <FinancialScoreCard userId={user?.id ?? ''} />
@@ -244,47 +203,14 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Resumo mensal */}
+      {/* Resumo do período — o PeriodFilter vive junto do resumo que
+          controla (alimenta também a ExpenseBreakdown na análise). */}
+      <PeriodFilter />
       <MonthlySummary userId={user?.id ?? ''} />
 
-      {/* Património — só renderiza quando o user já definiu saldos (devolve
-          null caso contrário). Partilha o cache ['accounts'] com /contas. */}
-      <NetWorthWidget />
-
-      {/* Ritmo de gasto — projeção predictiva do fim-de-mês vs média.
-          Reutiliza o cache ['cashflow', 6] do CashFlowChart (zero rede
-          extra), derivação client-side. */}
+      {/* Previsão de fim-de-mês (premium; free vê velocity + teaser calmo).
+          Auto-suficiente: useSpendForecast tem o próprio cache ['forecast']. */}
       <SpendForecast />
-
-      {/* Maiores despesas individuais — complementa o ExpenseBreakdown
-          (por categoria) expondo a compra única grande. Período-aware via
-          usePeriod; partilha o cache ['summary', qs] com os outros widgets. */}
-      <BiggestExpenses />
-
-      {/* Despesas recorrentes — custo fixo mensal estimado dos últimos 6
-          meses. Render condicional (devolve null se nada detectado). */}
-      <RecurringExpenses />
-
-      {/* Fluxo de caixa — única leitura de TENDÊNCIA temporal do dashboard
-          (receitas vs despesas nos últimos 6 meses). Janela fixa de 6 meses
-          por design, não segue o PeriodFilter. */}
-      <CashFlowChart />
-
-      {/* Widget de Kill Debt — só renderiza se o user tiver dívidas
-          (devolve null caso contrário, sem ocupar espaço). */}
-      <DebtWidget />
-
-      {/* AD */}
-      <AdBanner variant="feed" />
-
-      {/* Missões */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-white">{t('dashboard.active_missions')}</h2>
-          <Link href="/missions" className="text-xs text-green-400 hover:text-green-300">{t('dashboard.see_all')}</Link>
-        </div>
-        <MissionCard userId={user?.id ?? ''} limit={3} />
-      </div>
 
       {/* Transações recentes */}
       <div>
@@ -295,8 +221,35 @@ export default function DashboardPage() {
         <RecentTransactions userId={user?.id ?? ''} limit={5} />
       </div>
 
-      {/* AD 2 */}
-      <AdBanner variant="banner" />
+      {/* Análise detalhada — colapsada por defeito (dashboard diet, Fase 4).
+          Os 4 widgets analíticos vivem aqui; como são dynamic() e só montam
+          quando expandido, os chunks recharts saem do critical path. */}
+      <div>
+        <button
+          type="button"
+          onClick={() => setShowInsights(v => !v)}
+          aria-expanded={showInsights}
+          className="w-full flex items-center justify-between gap-3 min-h-[48px] px-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-semibold text-white/85 hover:border-white/20 active:bg-white/10 transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-white/45" />
+            {t('dashboard.insights_title')}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${showInsights ? 'rotate-180' : ''}`} />
+        </button>
+        {showInsights && (
+          <div className="space-y-4 mt-4 animate-fade-in-up">
+            <ExpenseBreakdown />
+            <CashFlowChart />
+            <BiggestExpenses />
+            <RecurringExpenses />
+          </div>
+        )}
+      </div>
+
+      {/* O ÚNICO anúncio do dashboard — no fundo, depois do conteúdo
+          (era: 2 ads + teaser pro + banner upgrade espalhados pelo feed). */}
+      <AdBanner variant="feed" />
 
       {/* Modals */}
       {showForm && <TransactionForm onClose={() => setShowForm(false)} />}
