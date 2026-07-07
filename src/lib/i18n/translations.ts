@@ -77,8 +77,12 @@ export const pt = {
   // ── Navigation (sidebar + mobile) ──────────────────────────────────
   'nav.home':              'Início',
   'nav.dashboard':         'Dashboard',
-  'nav.transactions':      'Transações',
-  'nav.transactions_short':'Contas',
+  // "Movimentos" em TODOS os breakpoints (tab mobile, sidebar, títulos).
+  // Era "Contas" no tab — colidia com /contas (Património) e o user
+  // tocava em "Contas" à espera das contas bancárias. Nunca reutilizar
+  // "Contas" para /transactions.
+  'nav.transactions':      'Movimentos',
+  'nav.transactions_short':'Movimentos',
   'nav.goals':             'Poupanças',
   'nav.academy':           'Academia',
   'nav.missions':          'Missões',
@@ -938,7 +942,7 @@ export const pt = {
 
   // ── TopBar ──────────────────────────────────────────────────────────
   'topbar.title.dashboard':    'Dashboard',
-  'topbar.title.transactions': 'Transações',
+  'topbar.title.transactions': 'Movimentos',
   'topbar.title.missions':     'Missões',
   'topbar.title.voltix':       'Voltix',
   'topbar.title.goals':        'Poupanças',
@@ -950,7 +954,7 @@ export const pt = {
   'topbar.upgrade_badge':      'Premium',
 
   // ── Transactions page ─────────────────────────────────────────────
-  'transactions.title':              'Transações',
+  'transactions.title':              'Movimentos',
   'transactions.subtitle':           'Regista e gere os teus movimentos',
   'transactions.search_open_aria':   'Pesquisar transações',
   'transactions.search_close_aria':  'Fechar pesquisa',
@@ -1787,8 +1791,8 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   // ── Navigation ─────────────────────────────────────────────────────
   'nav.home':              'Home',
   'nav.dashboard':         'Dashboard',
-  'nav.transactions':      'Transactions',
-  'nav.transactions_short':'Accounts',
+  'nav.transactions':      'Activity',
+  'nav.transactions_short':'Activity',
   'nav.goals':             'Savings',
   'nav.academy':           'Academy',
   'nav.missions':          'Missions',
@@ -2642,7 +2646,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
 
   // ── TopBar ──────────────────────────────────────────────────────────
   'topbar.title.dashboard':    'Dashboard',
-  'topbar.title.transactions': 'Transactions',
+  'topbar.title.transactions': 'Activity',
   'topbar.title.missions':     'Missions',
   'topbar.title.voltix':       'Voltix',
   'topbar.title.goals':        'Savings',
@@ -2654,7 +2658,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'topbar.upgrade_badge':      'Premium',
 
   // ── Transactions page ─────────────────────────────────────────────
-  'transactions.title':              'Transactions',
+  'transactions.title':              'Activity',
   'transactions.subtitle':           'Log and manage your activity',
   'transactions.search_open_aria':   'Search transactions',
   'transactions.search_close_aria':  'Close search',
