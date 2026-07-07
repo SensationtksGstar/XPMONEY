@@ -6,8 +6,8 @@ import { useState }    from 'react'
 import {
   LayoutDashboard, ArrowLeftRight,
   Target, BookOpen, Plus, MoreHorizontal,
-  Swords, Trophy, Zap, LineChart, TrendingUp,
-  Settings, X, PiggyBank, Wallet,
+  Crosshair, Sword, Trophy, Zap, LineChart, TrendingUp,
+  Settings, X, PiggyBank, Wallet, ChevronRight,
 } from 'lucide-react'
 import { cn }              from '@/lib/utils'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
@@ -38,17 +38,46 @@ interface MoreItem {
   badge:    TranslationKey | null
 }
 
-const MORE_ITEMS: MoreItem[] = [
-  { href: '/contas',     labelKey: 'nav.networth',    icon: Wallet,     badge: null                 },
-  { href: '/orcamento',  labelKey: 'nav.budget',      icon: PiggyBank,  badge: null                 },
-  { href: '/cursos',     labelKey: 'nav.academy',     icon: BookOpen,   badge: null                 },
-  { href: '/missions',   labelKey: 'nav.missions',    icon: Swords,     badge: null                 },
-  { href: '/dividas',    labelKey: 'nav.debt_killer', icon: Swords,     badge: 'nav.badge_premium' },
-  { href: '/voltix',     labelKey: 'nav.pet',         icon: Zap,        badge: null                 },
-  { href: '/badges',     labelKey: 'nav.badges',      icon: Trophy,     badge: null                 },
-  { href: '/perspetiva', labelKey: 'nav.perspective', icon: LineChart,  badge: 'nav.badge_premium' },
-  { href: '/simulador',  labelKey: 'nav.simulator',   icon: TrendingUp, badge: 'nav.badge_premium' },
-  { href: '/settings',   labelKey: 'nav.settings',    icon: Settings,   badge: null                 },
+interface MoreGroup {
+  titleKey: TranslationKey
+  items:    MoreItem[]
+}
+
+// Grouped by the user's mental model (Apple-Settings pattern): labelled
+// sections of tappable rows read instantly; the old flat 3×3 wall of
+// equal icons did not. Icons match the desktop Sidebar so the same
+// feature carries the same glyph on every breakpoint.
+const MORE_GROUPS: MoreGroup[] = [
+  {
+    titleKey: 'nav.group_money',
+    items: [
+      { href: '/contas',    labelKey: 'nav.networth',    icon: Wallet,    badge: null                },
+      { href: '/orcamento', labelKey: 'nav.budget',      icon: PiggyBank, badge: null                },
+      { href: '/dividas',   labelKey: 'nav.debt_killer', icon: Sword,     badge: 'nav.badge_premium' },
+    ],
+  },
+  {
+    titleKey: 'nav.group_progress',
+    items: [
+      { href: '/missions', labelKey: 'nav.missions', icon: Crosshair, badge: null },
+      { href: '/badges',   labelKey: 'nav.badges',   icon: Trophy,    badge: null },
+      { href: '/voltix',   labelKey: 'nav.pet',      icon: Zap,       badge: null },
+      { href: '/cursos',   labelKey: 'nav.academy',  icon: BookOpen,  badge: null },
+    ],
+  },
+  {
+    titleKey: 'nav.group_tools',
+    items: [
+      { href: '/perspetiva', labelKey: 'nav.perspective', icon: LineChart,  badge: 'nav.badge_premium' },
+      { href: '/simulador',  labelKey: 'nav.simulator',   icon: TrendingUp, badge: 'nav.badge_premium' },
+    ],
+  },
+  {
+    titleKey: 'nav.group_account',
+    items: [
+      { href: '/settings', labelKey: 'nav.settings', icon: Settings, badge: null },
+    ],
+  },
 ]
 
 export function MobileNav() {
@@ -58,7 +87,7 @@ export function MobileNav() {
   const [showMore, setShowMore] = useState(false)
 
   // Is the current page one of the "more" pages?
-  const moreActive = MORE_ITEMS.some(item => pathname.startsWith(item.href))
+  const moreActive = MORE_GROUPS.some(g => g.items.some(item => pathname.startsWith(item.href)))
 
   return (
     <>
@@ -156,32 +185,42 @@ export function MobileNav() {
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 px-4 pb-2">
-              {MORE_ITEMS.map(item => {
-                const Icon     = item.icon
-                const isActive = pathname.startsWith(item.href)
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setShowMore(false)}
-                    className={cn(
-                      'flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all active:scale-95',
-                      isActive
-                        ? 'bg-green-500/10 border-green-500/30 text-green-400'
-                        : 'bg-white/5 border-white/8 text-white/60',
-                    )}
-                  >
-                    <Icon className="w-6 h-6" />
-                    <span className="text-xs font-medium text-center leading-tight">{t(item.labelKey)}</span>
-                    {item.badge && (
-                      <span className="text-[11px] font-bold text-yellow-400/80 bg-yellow-400/10 px-1.5 py-0.5 rounded-full">
-                        {t(item.badge)}
-                      </span>
-                    )}
-                  </Link>
-                )
-              })}
+            {/* Grouped rows, not an icon wall. Scrolls inside itself so the
+                sheet never grows past the viewport on small phones (SE). */}
+            <div className="px-4 pb-2 space-y-4 max-h-[72vh] overflow-y-auto overscroll-contain">
+              {MORE_GROUPS.map(group => (
+                <div key={group.titleKey}>
+                  <p className="px-1 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+                    {t(group.titleKey)}
+                  </p>
+                  <div className="bg-white/5 border border-white/8 rounded-2xl overflow-hidden divide-y divide-white/5">
+                    {group.items.map(item => {
+                      const Icon     = item.icon
+                      const isActive = pathname.startsWith(item.href)
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setShowMore(false)}
+                          className={cn(
+                            'flex items-center gap-3 px-4 min-h-[48px] transition-colors active:bg-white/10',
+                            isActive ? 'text-green-400' : 'text-white/85',
+                          )}
+                        >
+                          <Icon className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-green-400' : 'text-white/45')} />
+                          <span className="flex-1 text-sm font-medium">{t(item.labelKey)}</span>
+                          {item.badge && (
+                            <span className="text-[11px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/25 px-1.5 py-0.5 rounded-full">
+                              {t(item.badge)}
+                            </span>
+                          )}
+                          <ChevronRight className="w-4 h-4 text-white/25 flex-shrink-0" />
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </>
