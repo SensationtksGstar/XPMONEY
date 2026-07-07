@@ -4,10 +4,7 @@ import { Logo }                   from '@/components/ui/Logo'
 import { LandingHero }            from '@/components/landing/LandingHero'
 import { LandingHowItWorks }      from '@/components/landing/LandingHowItWorks'
 import { LandingFeatures }        from '@/components/landing/LandingFeatures'
-import { LandingAdvantages }      from '@/components/landing/LandingAdvantages'
 import { LandingMascotShowcase }    from '@/components/landing/LandingMascotShowcase'
-import { LandingOutcomes }          from '@/components/landing/LandingOutcomes'
-import { LandingComparison }      from '@/components/landing/LandingComparison'
 import { LandingReviews }         from '@/components/landing/LandingReviews'
 import { LandingFAQ }             from '@/components/landing/LandingFAQ'
 import { LandingPricing }         from '@/components/landing/LandingPricing'
@@ -28,23 +25,27 @@ import { getServerT, getServerLocale } from '@/lib/i18n/server'
 /**
  * Landing page — the face of XP-Money.
  *
- * Page flow (ordered to walk the reader from "what is this?" → "I want it"):
+ * Page flow (ordered to walk the reader from "what is this?" → "I want it").
+ * Tightened in the Fase 5 redesign (was 13 stacked blocks): Advantages,
+ * Outcomes and Comparison were CUT — Advantages duplicated Features (its own
+ * header comment admitted it), the annual-savings banner duplicated Pricing's
+ * yearly pitch, Outcomes were fabricated-ish stats, and Comparison was a
+ * table nobody scrolled to. Don't re-add blocks without cutting others; the
+ * NFT-certificate story lives in the FAQ, yearly pricing in Pricing.
  *
  *   1. Hero              — promise + trust row + real product visual
  *   2. How it works      — de-risks the first 30 seconds
  *   3. Features          — 8 cards, real features (scan, import PDF, etc.)
  *   4. Mascot showcase   — the unique differentiator (dual 6-evo mascots)
- *   5. Outcomes          — concrete numbers (€, streak days, rating)
- *   6. Comparison        — vs Excel / generic bank apps
- *   7. Reviews           — 6 testimonials with ratings
- *   8. FAQ               — 8 real objections, answered
- *   9. Pricing           — Free / Premium with honest features
- *  10. Final CTA         — last push to /sign-up
- *  11. Footer            — product / company / legal
+ *   5. Reviews           — 6 testimonials with ratings
+ *   6. FAQ               — 8 real objections, answered (feeds FAQPage JSON-LD)
+ *   7. Pricing           — Free / Premium with honest features
+ *   8. Newsletter + Final CTA — lead capture, last push to /sign-up
+ *   9. Footer            — product / company / legal
  *
- * Sections 1-6 are server-rendered for SEO + fast first paint. Only the
- * FAQ accordion is client. Mascot assets are actual /mascot/*.webp that
- * the app uses — we're literally showing the product.
+ * Server-rendered for SEO + fast first paint; only the FAQ accordion is
+ * client. Mascot assets are actual /mascot/*.webp that the app uses —
+ * we're literally showing the product.
  */
 export default async function LandingPage() {
   const t      = await getServerT()
@@ -129,16 +130,7 @@ export default async function LandingPage() {
       {/* ── 4. MASCOT SHOWCASE ──────────────────────────────────────── */}
       <LandingMascotShowcase />
 
-      {/* ── 4.5. ADVANTAGES (NEW) ───────────────────────────────────── */}
-      <LandingAdvantages />
-
-      {/* ── 5. OUTCOMES ─────────────────────────────────────────────── */}
-      <LandingOutcomes />
-
-      {/* ── 6. COMPARISON ───────────────────────────────────────────── */}
-      <LandingComparison />
-
-      {/* ── 7. REVIEWS ──────────────────────────────────────────────── */}
+      {/* ── 5. REVIEWS ──────────────────────────────────────────────── */}
       <LandingReviews />
 
       {/* ── 8. FAQ ──────────────────────────────────────────────────── */}
