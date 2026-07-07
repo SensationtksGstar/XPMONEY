@@ -150,7 +150,7 @@ function GoalHistoryPanel({ goal }: { goal: Goal }) {
                   }
                   <div>
                     <span className="text-xs text-white/70">{dep.note || t('goals.deposit_fallback')}</span>
-                    <span className="text-[10px] text-white/30 ml-2">{fmtDate(dep.date, locale)}</span>
+                    <span className="text-[11px] text-white/30 ml-2">{fmtDate(dep.date, locale)}</span>
                   </div>
                 </div>
                 <span className={`text-xs font-bold tabular-nums ${Number(dep.amount) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -209,17 +209,17 @@ function GoalCard({ goal, onDeposit, onDelete, deletingId }: GoalCardProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-white truncate">{goal.name}</h3>
             {isComplete && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded-full">
                 <Check className="w-2.5 h-2.5" /> {t('goals.completed_chip')}
               </span>
             )}
             {isUrgent && !isComplete && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-orange-400 bg-orange-500/15 px-1.5 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-orange-400 bg-orange-500/15 px-1.5 py-0.5 rounded-full">
                 <Flame className="w-2.5 h-2.5" /> {t('goals.days_left', { days })}
               </span>
             )}
             {isOverdue && !isComplete && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-400 bg-red-500/15 px-1.5 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-red-400 bg-red-500/15 px-1.5 py-0.5 rounded-full">
                 <Clock className="w-2.5 h-2.5" /> {t('goals.deadline_expired')}
               </span>
             )}

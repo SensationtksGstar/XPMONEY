@@ -113,7 +113,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
               {/* Top ribbon */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-[#f5d97a]/15 via-[#f5d97a]/25 to-[#f5d97a]/15 border border-[#f5d97a]/30 mb-5">
                 <Shield className="w-3 h-3 text-[#f5d97a]" />
-                <span className="text-[10px] font-bold text-[#f5d97a] uppercase tracking-[0.3em]">
+                <span className="text-[11px] font-bold text-[#f5d97a] uppercase tracking-[0.3em]">
                   {t('academy.cert.eyebrow')}
                 </span>
                 <Shield className="w-3 h-3 text-[#f5d97a]" />
@@ -172,7 +172,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
                 <div className="text-center">
                   <div className="font-serif italic text-[#f5d97a] text-sm mb-1">~ XP-Money ~</div>
                   <div className="h-px bg-white/20 mb-1" />
-                  <p className="text-[9px] text-white/40 uppercase tracking-wider">{t('academy.cert.academy')}</p>
+                  <p className="text-[11px] text-white/40 uppercase tracking-wider">{t('academy.cert.academy')}</p>
                 </div>
 
                 {/* Centre — official seal */}
@@ -192,12 +192,12 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
                 <div className="text-center">
                   <div className="font-serif text-white/80 text-sm mb-1">{dateShort}</div>
                   <div className="h-px bg-white/20 mb-1" />
-                  <p className="text-[9px] text-white/40 uppercase tracking-wider">{t('academy.cert.issued')}</p>
+                  <p className="text-[11px] text-white/40 uppercase tracking-wider">{t('academy.cert.issued')}</p>
                 </div>
               </div>
 
               {/* Verification footer */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-[10px] text-white/35 font-mono">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-[11px] text-white/35 font-mono">
                 <span className="flex items-center gap-1.5">
                   <Shield className="w-3 h-3" />
                   {t('academy.cert.verify_n', { code })}
@@ -231,7 +231,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <p className="text-sm font-bold text-white">Transforma em NFT colecionável</p>
-            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Edição limitada</span>
+            <span className="text-[11px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Edição limitada</span>
           </div>
           <p className="text-xs text-white/50 leading-snug">
             Apenas 500 certificados serão mintados · Junta-te à lista de espera
@@ -239,7 +239,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
         </div>
         <div className="flex-shrink-0 text-right">
           <div className="text-sm font-bold text-amber-300">Lista →</div>
-          <div className="text-[10px] text-white/40 uppercase tracking-wider">de espera</div>
+          <div className="text-[11px] text-white/40 uppercase tracking-wider">de espera</div>
         </div>
       </button>
     </div>
@@ -600,7 +600,7 @@ export default function CourseDetailPage() {
                 >
                   {done
                     ? <Check className="w-3 h-3 text-green-400" />
-                    : <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px] text-white/50">{i + 1}</span>
+                    : <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[11px] text-white/50">{i + 1}</span>
                   }
                   <span>{l.title}</span>
                 </button>
@@ -809,7 +809,7 @@ export default function CourseDetailPage() {
                       style={{ width: `${(waitlistCount / 500) * 100}%` }}
                     />
                   </div>
-                  <p className="text-[10px] text-white/50 mt-1.5">
+                  <p className="text-[11px] text-white/50 mt-1.5">
                     Edição genesis limitada · Nunca mais será mintada
                   </p>
                 </div>
@@ -833,14 +833,14 @@ export default function CourseDetailPage() {
 
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-5 flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Early supporter</p>
+                    <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">Early supporter</p>
                     <p className="text-2xl font-bold text-white">€2,99</p>
-                    <p className="text-[10px] text-white/40">só para quem entra agora</p>
+                    <p className="text-[11px] text-white/40">só para quem entra agora</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Preço público</p>
+                    <p className="text-[11px] font-bold text-white/40 uppercase tracking-wider">Preço público</p>
                     <p className="text-lg text-white/50 line-through">€7,99</p>
-                    <p className="text-[10px] text-red-300">−63%</p>
+                    <p className="text-[11px] text-red-300">−63%</p>
                   </div>
                 </div>
 
@@ -856,7 +856,7 @@ export default function CourseDetailPage() {
                 >
                   Perder o lugar
                 </button>
-                <p className="text-[10px] text-white/30 text-center mt-3 leading-relaxed">
+                <p className="text-[11px] text-white/30 text-center mt-3 leading-relaxed">
                   Sem pagamento agora · Reserva grátis · Recebes email quando disponível
                 </p>
               </>

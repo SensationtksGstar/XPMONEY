@@ -214,7 +214,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                   <Link
                     href="/settings/billing"
                     onClick={onClose}
-                    className="text-[10px] font-bold text-black bg-purple-400 px-2.5 py-1 rounded-lg flex-shrink-0"
+                    className="text-[11px] font-bold text-black bg-purple-400 px-2.5 py-1 rounded-lg flex-shrink-0"
                   >
                     {t('txform.scan_upgrade_cta')}
                   </Link>
@@ -274,7 +274,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                           )}
                         >
                           <span className="text-2xl leading-none">{cat.icon}</span>
-                          <span className="text-[10px] font-medium text-center leading-tight truncate w-full">
+                          <span className="text-[11px] font-medium text-center leading-tight truncate w-full">
                             {cat.name}
                           </span>
                         </button>

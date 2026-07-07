@@ -181,7 +181,7 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
                 <img src={preview} alt={t('scan.img_alt')} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-2 left-0 right-0 flex justify-center">
-                  <span className="text-[10px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full">{t('scan.analyzing')}</span>
+                  <span className="text-[11px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full">{t('scan.analyzing')}</span>
                 </div>
               </div>
             )}

@@ -150,12 +150,12 @@ ALTER TABLE public.bug_reports ENABLE ROW LEVEL SECURITY;`}</pre>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                     {r.type === 'contact' && (
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-blue-300 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-blue-300 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded">
                         Contacto
                       </span>
                     )}
                     {(!r.type || r.type === 'bug') && (
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-orange-300 bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 rounded">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-orange-300 bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 rounded">
                         Bug
                       </span>
                     )}
@@ -166,7 +166,7 @@ ALTER TABLE public.bug_reports ENABLE ROW LEVEL SECURITY;`}</pre>
                     {r.email && <> · <a href={`mailto:${r.email}`} className="underline hover:text-white/60">{r.email}</a></>}
                   </p>
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${STATUS_STYLES[r.status]}`}>
+                <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${STATUS_STYLES[r.status]}`}>
                   {r.status}
                 </span>
               </header>
@@ -176,7 +176,7 @@ ALTER TABLE public.bug_reports ENABLE ROW LEVEL SECURITY;`}</pre>
               </p>
 
               <footer className="flex items-center justify-between gap-3 flex-wrap pt-3 border-t border-white/5">
-                <div className="text-[10px] text-white/40 space-y-0.5 min-w-0 flex-1">
+                <div className="text-[11px] text-white/40 space-y-0.5 min-w-0 flex-1">
                   {r.page_url && <p className="truncate"><span className="text-white/30">URL:</span> {r.page_url}</p>}
                   {r.user_agent && <p className="truncate"><span className="text-white/30">UA:</span> {r.user_agent}</p>}
                   {r.app_version && <p><span className="text-white/30">Build:</span> <code>{r.app_version}</code></p>}

@@ -143,7 +143,7 @@ export default function VoltixPage() {
 
         {/* Preview label */}
         {preview && (
-          <div className="absolute top-4 right-4 bg-white/10 text-white/60 text-[10px] font-bold px-2 py-1 rounded-full">
+          <div className="absolute top-4 right-4 bg-white/10 text-white/60 text-[11px] font-bold px-2 py-1 rounded-full">
             {t('voltix.preview_chip')}
           </div>
         )}
@@ -284,14 +284,14 @@ export default function VoltixPage() {
                     <span className="text-sm font-bold text-white">{getMascotEvoName(gender, stage)}</span>
                     {isCurrent && (
                       <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                        className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
                         style={{ backgroundColor: `${palette.body}25`, color: palette.body }}
                       >
                         {t('voltix.current')}
                       </span>
                     )}
                     {isUnlocked && !isCurrent && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/40">
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/40">
                         ✓
                       </span>
                     )}
@@ -299,14 +299,14 @@ export default function VoltixPage() {
                   <p className="text-[11px] text-white/45 leading-snug line-clamp-1">
                     {getMascotEvoDescription(gender, stage)}
                   </p>
-                  <p className="text-[10px] text-white/25 mt-1">
+                  <p className="text-[11px] text-white/25 mt-1">
                     {getMascotEvoRequirement(gender, stage)}
                   </p>
                 </div>
 
                 {/* Evo number badge */}
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                   style={{
                     backgroundColor: isUnlocked ? `${p.body}25` : 'rgba(255,255,255,0.05)',
                     color: isUnlocked ? p.body : '#475569',

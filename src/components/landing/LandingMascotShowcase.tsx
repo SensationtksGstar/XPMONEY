@@ -41,7 +41,7 @@ function EvoRow({
           <h3 className="text-2xl font-bold text-white">{name}</h3>
           <p className="text-sm text-white/55">{tagline}</p>
         </div>
-        <span className={`text-[10px] font-bold uppercase tracking-widest ${accent}`}>
+        <span className={`text-[11px] font-bold uppercase tracking-widest ${accent}`}>
           {t('landing.mascot.evo_count')}
         </span>
       </div>
@@ -60,7 +60,7 @@ function EvoRow({
                   className="w-full h-full object-contain p-1.5"
                 />
               </div>
-              <p className="text-[9px] font-semibold text-white/45 uppercase tracking-wider">
+              <p className="text-[11px] font-semibold text-white/45 uppercase tracking-wider">
                 {label}
               </p>
             </div>

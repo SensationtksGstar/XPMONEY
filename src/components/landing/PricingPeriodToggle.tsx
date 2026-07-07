@@ -77,7 +77,7 @@ export function PricingPeriodToggle({
             }`}
           >
             {yearlyLabel}
-            <span className="ml-2 inline-flex items-center gap-0.5 bg-emerald-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full tracking-wide">
+            <span className="ml-2 inline-flex items-center gap-0.5 bg-emerald-400 text-black text-[11px] font-bold px-1.5 py-0.5 rounded-full tracking-wide">
               -33%
             </span>
           </button>

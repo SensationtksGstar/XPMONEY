@@ -191,11 +191,11 @@ export function NotificationPanel() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-white/80 truncate">{label}</p>
-                      <p className="text-[10px] text-white/30">{timeAgo(item.earned_at, t('notif.now'))}</p>
+                      <p className="text-[11px] text-white/30">{timeAgo(item.earned_at, t('notif.now'))}</p>
                     </div>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                       <span className="text-xs font-bold text-yellow-400">+{item.amount}</span>
-                      <span className="text-[10px] text-yellow-400/60">XP</span>
+                      <span className="text-[11px] text-yellow-400/60">XP</span>
                     </div>
                   </div>
                 )

@@ -87,7 +87,7 @@ export async function LandingFooter() {
                       {l.soon ? (
                         <span className="text-sm text-white/30 cursor-not-allowed flex items-center gap-2">
                           {label}
-                          <span className="text-[9px] bg-white/10 px-1.5 py-0.5 rounded uppercase">{t('landing.footer.soon')}</span>
+                          <span className="text-[11px] bg-white/10 px-1.5 py-0.5 rounded uppercase">{t('landing.footer.soon')}</span>
                         </span>
                       ) : (
                         <Link

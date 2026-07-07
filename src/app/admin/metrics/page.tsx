@@ -427,24 +427,24 @@ export default async function AdminMetricsPage() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-white/40">Última hora</p>
+                  <p className="text-[11px] uppercase tracking-wider text-white/40">Última hora</p>
                   <p className="text-lg font-bold font-mono">${m.aiCalls.spendHourUsd.toFixed(4)}</p>
-                  <p className="text-[10px] text-white/40">{m.aiCalls.callsHour} calls</p>
+                  <p className="text-[11px] text-white/40">{m.aiCalls.callsHour} calls</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-white/40">Últimas 24h</p>
+                  <p className="text-[11px] uppercase tracking-wider text-white/40">Últimas 24h</p>
                   <p className={`text-lg font-bold font-mono ${tone.text}`}>${todayUsd.toFixed(4)}</p>
-                  <p className="text-[10px] text-white/40">{m.aiCalls.callsToday} calls</p>
+                  <p className="text-[11px] text-white/40">{m.aiCalls.callsToday} calls</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-white/40">Últimos 30d</p>
+                  <p className="text-[11px] uppercase tracking-wider text-white/40">Últimos 30d</p>
                   <p className="text-lg font-bold font-mono">${m.aiCalls.spendMtdUsd.toFixed(4)}</p>
-                  <p className="text-[10px] text-white/40">{m.aiCalls.total30d} calls</p>
+                  <p className="text-[11px] text-white/40">{m.aiCalls.total30d} calls</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-white/40">Projecção mês</p>
+                  <p className="text-[11px] uppercase tracking-wider text-white/40">Projecção mês</p>
                   <p className="text-lg font-bold font-mono text-white/80">${(todayUsd * 30).toFixed(2)}</p>
-                  <p className="text-[10px] text-white/40">se ritmo de hoje mantiver</p>
+                  <p className="text-[11px] text-white/40">se ritmo de hoje mantiver</p>
                 </div>
               </div>
               <p className="text-[11px] text-white/40 mt-3 leading-relaxed">
@@ -723,7 +723,7 @@ function Row(
         (accent === 'orange' ? 'text-orange-300' : 'text-white')
       }>
         {value}
-        {hint && <span className="block text-[10px] text-white/40 font-normal text-right">{hint}</span>}
+        {hint && <span className="block text-[11px] text-white/40 font-normal text-right">{hint}</span>}
       </span>
     </div>
   )

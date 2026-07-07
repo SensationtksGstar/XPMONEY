@@ -88,7 +88,7 @@ export default function OrcamentoPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <PiggyBank className="w-6 h-6 text-emerald-400" />
             {t('budget.title')}
           </h1>
@@ -233,8 +233,8 @@ function SummaryStat({
                       'text-white'
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-white/40 mb-0.5">{label}</p>
-      <p className={`text-lg font-black ${toneClass} tabular-nums`}>{value}</p>
+      <p className="text-[11px] uppercase tracking-wider text-white/40 mb-0.5">{label}</p>
+      <p className={`text-lg font-bold ${toneClass} tabular-nums`}>{value}</p>
     </div>
   )
 }
@@ -298,7 +298,7 @@ function BucketCard({
       {/* Valores + barra */}
       <div className="flex items-end justify-between mb-1.5 text-sm">
         <span className="text-white tabular-nums">
-          <strong className="font-black text-lg">{formatCurrency(bucket.spent)}</strong>
+          <strong className="font-bold text-lg">{formatCurrency(bucket.spent)}</strong>
           <span className="text-white/40"> / {formatCurrency(bucket.limit)}</span>
         </span>
         <span className="text-xs text-white/50 tabular-nums">
@@ -398,7 +398,7 @@ function BudgetSetup({
   return (
     <form onSubmit={submit} className="space-y-6 pb-20 max-w-xl">
       <div>
-        <h1 className="text-2xl font-black text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <PiggyBank className="w-6 h-6 text-emerald-400" />
           {initial ? t('budget.setup_edit') : t('budget.setup_new')}
         </h1>

@@ -332,7 +332,7 @@ export default function BillingClient({ currentPlan, premiumUntil = null, passPe
           className={cn('relative px-4 py-2 rounded-xl text-sm font-medium transition-all', cycle === 'yearly' ? 'bg-white/10 text-white' : 'text-white/40')}
         >
           {t('billing.cycle_yearly')}
-          <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full">
             -{yearlySaving}%
           </span>
         </button>

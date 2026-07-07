@@ -104,7 +104,7 @@ export function MobileNav() {
                 )}
               >
                 <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-medium truncate">{t(item.labelKey)}</span>
+                <span className="text-[11px] font-medium truncate">{t(item.labelKey)}</span>
                 {isActive && (
                   <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full" />
                 )}
@@ -121,7 +121,7 @@ export function MobileNav() {
             )}
           >
             <MoreHorizontal className="w-5 h-5" />
-            <span className="text-[10px] font-medium">{t('nav.more')}</span>
+            <span className="text-[11px] font-medium">{t('nav.more')}</span>
             {moreActive && (
               <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full" />
             )}
@@ -175,7 +175,7 @@ export function MobileNav() {
                     <Icon className="w-6 h-6" />
                     <span className="text-xs font-medium text-center leading-tight">{t(item.labelKey)}</span>
                     {item.badge && (
-                      <span className="text-[9px] font-bold text-yellow-400/80 bg-yellow-400/10 px-1.5 py-0.5 rounded-full">
+                      <span className="text-[11px] font-bold text-yellow-400/80 bg-yellow-400/10 px-1.5 py-0.5 rounded-full">
                         {t(item.badge)}
                       </span>
                     )}

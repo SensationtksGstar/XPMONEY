@@ -183,7 +183,7 @@ export function ContactForm() {
           placeholder="Escreve o teu pedido com o máximo de detalhe possível."
           className="w-full bg-white/5 border border-white/10 focus:border-green-400/50 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors resize-none"
         />
-        <p className="text-[10px] text-white/30 mt-1 text-right">{message.length}/4000</p>
+        <p className="text-[11px] text-white/30 mt-1 text-right">{message.length}/4000</p>
       </div>
 
       {/* Cloudflare Turnstile — renders nothing if site key isn't set. */}

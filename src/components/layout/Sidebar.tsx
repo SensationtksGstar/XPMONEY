@@ -69,7 +69,7 @@ export function Sidebar() {
               <Icon className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1">{t(item.labelKey)}</span>
               {item.pro && (
-                <span className="text-[9px] font-bold bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full">PRO</span>
+                <span className="text-[11px] font-bold bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full">PRO</span>
               )}
             </Link>
           )

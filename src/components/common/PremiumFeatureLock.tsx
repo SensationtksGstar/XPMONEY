@@ -98,7 +98,7 @@ export function PremiumFeatureLock({
           </div>
 
           {/* Premium badge */}
-          <div className="inline-flex items-center gap-1.5 bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold px-2.5 py-1 rounded-full mb-3">
+          <div className="inline-flex items-center gap-1.5 bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[11px] font-bold px-2.5 py-1 rounded-full mb-3">
             <Lock className="w-2.5 h-2.5" />
             PREMIUM
           </div>

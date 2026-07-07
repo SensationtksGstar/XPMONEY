@@ -107,7 +107,7 @@ export default function TransactionsPage() {
           >
             <Sparkles className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-blue-300" />
             <span className="hidden sm:inline">{t('transactions.import_cta')}</span>
-            <span className="hidden sm:inline-block text-[10px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">{t('transactions.import_ai_tag')}</span>
+            <span className="hidden sm:inline-block text-[11px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">{t('transactions.import_ai_tag')}</span>
           </button>
           <button
             onClick={() => setShowForm(true)}
@@ -139,7 +139,7 @@ export default function TransactionsPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-white font-bold text-sm">{t('transactions.hint_title')}</p>
-                <span className="text-[10px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">{t('transactions.hint_plus_tag')}</span>
+                <span className="text-[11px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">{t('transactions.hint_plus_tag')}</span>
               </div>
               <p className="text-white/60 text-xs mt-1 leading-relaxed">
                 {t('transactions.hint_body')}

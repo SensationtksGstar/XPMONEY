@@ -200,9 +200,9 @@ export function SalaryCompare({ initialMonthlyEUR }: Props) {
 function StatBox({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="bg-black/30 border border-white/5 rounded-lg p-3 text-center">
-      <p className="text-[10px] uppercase tracking-wider text-white/40 mb-0.5">{label}</p>
-      <p className="text-lg font-black text-white">{value}</p>
-      <p className="text-[10px] text-white/50">{sub}</p>
+      <p className="text-[11px] uppercase tracking-wider text-white/40 mb-0.5">{label}</p>
+      <p className="text-lg font-bold text-white">{value}</p>
+      <p className="text-[11px] text-white/50">{sub}</p>
     </div>
   )
 }
@@ -230,7 +230,7 @@ function CountryRow({
           {formatCurrency(value)}
         </p>
         {hasInput && (
-          <p className={`text-[10px] font-bold tabular-nums ${
+          <p className={`text-[11px] font-bold tabular-nums ${
             deltaPositive ? 'text-emerald-400' : 'text-rose-400'
           }`}>
             {deltaPositive ? '+' : ''}{delta.toFixed(0)}%
@@ -259,7 +259,7 @@ function UserRow({ monthly, maxValue }: { monthly: number; maxValue: number }) {
         <p className="text-sm font-bold text-yellow-200 tabular-nums">
           {formatCurrency(monthly)}
         </p>
-        <p className="text-[10px] text-yellow-300/70 flex items-center gap-0.5 justify-end">
+        <p className="text-[11px] text-yellow-300/70 flex items-center gap-0.5 justify-end">
           <ArrowRight className="w-2.5 h-2.5" />
           posição
         </p>

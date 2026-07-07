@@ -102,7 +102,7 @@ export default function MissionsPage() {
                         )}
                         <h3 className="text-sm font-semibold text-white truncate">{locTitle}</h3>
                         {canComplete && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full flex-shrink-0 animate-pulse">
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full flex-shrink-0 animate-pulse">
                             {t('missions.ready')}
                           </span>
                         )}

@@ -70,7 +70,7 @@ export function AdBanner({ variant = 'feed', className = '' }: Props) {
           </div>
           <Link
             href="/settings/billing"
-            className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold text-black bg-green-400 px-2.5 py-1.5 rounded-lg hover:bg-green-300 transition-colors"
+            className="flex-shrink-0 flex items-center gap-1 text-[11px] font-bold text-black bg-green-400 px-2.5 py-1.5 rounded-lg hover:bg-green-300 transition-colors"
           >
             <Crown className="w-3 h-3" />
             Upgrade
@@ -83,7 +83,7 @@ export function AdBanner({ variant = 'feed', className = '' }: Props) {
   // Real AdSense unit
   return (
     <div className={`relative ${className}`}>
-      <div className="text-[10px] text-white/20 text-right mb-1 uppercase tracking-wider">
+      <div className="text-[11px] text-white/20 text-right mb-1 uppercase tracking-wider">
         Publicidade ·{' '}
         <Link href="/settings/billing" className="hover:text-white/40 transition-colors">
           Remover com Premium

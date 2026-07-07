@@ -104,7 +104,7 @@ export function CashFlowChart() {
         </div>
         {/* Net agregado do período — verde se poupou, rosa se queimou */}
         <div className="text-right">
-          <p className="text-[10px] text-white/40 uppercase tracking-wide">{t('cashflow.net_label')}</p>
+          <p className="text-[11px] text-white/40 uppercase tracking-wide">{t('cashflow.net_label')}</p>
           <p className={`text-base font-bold tabular-nums ${netPositive ? 'text-emerald-300' : 'text-rose-300'}`}>
             {netPositive ? '+' : ''}{formatCurrency(totals.net, 'EUR', locale)}
           </p>

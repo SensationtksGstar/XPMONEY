@@ -169,7 +169,7 @@ export function ExpenseBreakdown() {
               <p className="text-sm font-bold text-white tabular-nums">
                 {formatCurrency(cat.total, 'EUR', locale)}
               </p>
-              <p className="text-[10px] text-white/40 tabular-nums">
+              <p className="text-[11px] text-white/40 tabular-nums">
                 {cat.pct.toFixed(0)}%
               </p>
             </div>

@@ -58,7 +58,7 @@ export default function ContactoPage() {
 
         <ContactForm />
 
-        <p className="text-[10px] text-white/30 text-center mt-6 leading-relaxed">
+        <p className="text-[11px] text-white/30 text-center mt-6 leading-relaxed">
           Os teus dados (email + mensagem) são usados exclusivamente para te responder.
           Consulta a{' '}
           <Link href="/privacidade" className="underline hover:text-white/50">

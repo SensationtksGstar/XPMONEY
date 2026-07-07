@@ -134,7 +134,7 @@ export async function LandingFeatures() {
             </div>
             <h3 className="font-bold text-white mb-1.5 text-[15px]">{f.title}</h3>
             <p className="text-sm text-white/55 leading-relaxed mb-4">{f.desc}</p>
-            <p className="text-[10px] text-white/35 border-t border-white/5 pt-3 font-medium uppercase tracking-wider">
+            <p className="text-[11px] text-white/35 border-t border-white/5 pt-3 font-medium uppercase tracking-wider">
               {f.proof}
             </p>
           </article>

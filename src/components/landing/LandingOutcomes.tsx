@@ -65,7 +65,7 @@ export async function LandingOutcomes() {
         ))}
       </div>
 
-      <p className="text-[10px] text-white/35 text-center mt-6 italic">
+      <p className="text-[11px] text-white/35 text-center mt-6 italic">
         {t('landing.outcomes.footnote')}
       </p>
     </section>

@@ -111,12 +111,12 @@ export default async function BlogIndexPage() {
                   <div className="flex items-center gap-3 text-[11px] text-white/40">
                     <span>{t('blog.reading_time', { min: post.readingTime })}</span>
                     {post.servedLocale !== locale && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-semibold">
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-semibold">
                         {t('blog.fallback_locale')}
                       </span>
                     )}
                     {post.draft && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 text-[10px] font-bold">
+                      <span className="px-1.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 text-[11px] font-bold">
                         DRAFT
                       </span>
                     )}

@@ -143,13 +143,13 @@ export default function BadgesPage() {
                         {badge.name}
                       </p>
                       {isEarned && (
-                        <span className={cn('text-[10px] font-medium', RARITY_TEXT[badge.rarity])}>
+                        <span className={cn('text-[11px] font-medium', RARITY_TEXT[badge.rarity])}>
                           {t(RARITY_LABEL_KEY[badge.rarity])}
                         </span>
                       )}
                     </div>
                     {isEarned && (
-                      <span className="text-[10px] text-yellow-400 font-bold">+{badge.xp_reward} XP</span>
+                      <span className="text-[11px] text-yellow-400 font-bold">+{badge.xp_reward} XP</span>
                     )}
                   </div>
                 )
@@ -214,22 +214,22 @@ export default function BadgesPage() {
                           Free user not earned: "Apenas Premium" lock chip.
                           Premium user not earned: rarity label (criteria-locked, not plan-locked). */}
                       {isEarned ? (
-                        <span className={cn('text-[10px] font-medium', RARITY_TEXT[badge.rarity])}>
+                        <span className={cn('text-[11px] font-medium', RARITY_TEXT[badge.rarity])}>
                           {t(RARITY_LABEL_KEY[badge.rarity])}
                         </span>
                       ) : !isPaid ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300/90">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300/90">
                           <Lock className="w-2.5 h-2.5" />
                           {t('badges.premium_locked')}
                         </span>
                       ) : (
-                        <span className={cn('text-[10px] font-medium', RARITY_TEXT[badge.rarity])}>
+                        <span className={cn('text-[11px] font-medium', RARITY_TEXT[badge.rarity])}>
                           {t(RARITY_LABEL_KEY[badge.rarity])}
                         </span>
                       )}
                     </div>
                     {isEarned && (
-                      <span className="text-[10px] text-amber-300 font-bold">+{badge.xp_reward} XP</span>
+                      <span className="text-[11px] text-amber-300 font-bold">+{badge.xp_reward} XP</span>
                     )}
                   </div>
                 )

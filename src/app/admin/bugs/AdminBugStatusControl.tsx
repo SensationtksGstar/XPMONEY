@@ -53,7 +53,7 @@ export function AdminBugStatusControl({ id, current }: Props) {
 
   return (
     <div className="flex items-center gap-2">
-      {err && <span className="text-[10px] text-red-300">{err}</span>}
+      {err && <span className="text-[11px] text-red-300">{err}</span>}
       <select
         value={status}
         onChange={onChange}

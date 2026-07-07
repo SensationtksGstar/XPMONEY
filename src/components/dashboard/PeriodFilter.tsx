@@ -137,7 +137,7 @@ export function PeriodFilter() {
             className="overflow-hidden"
           >
             <div className="mt-3 flex flex-wrap items-end gap-2 pt-3 border-t border-white/8">
-              <label className="flex flex-col gap-1 text-[10px] uppercase tracking-wider text-white/40">
+              <label className="flex flex-col gap-1 text-[11px] uppercase tracking-wider text-white/40">
                 {t('period.from')}
                 <input
                   type="date"
@@ -146,7 +146,7 @@ export function PeriodFilter() {
                   className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-sm text-white outline-none focus:border-emerald-400/50"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-[10px] uppercase tracking-wider text-white/40">
+              <label className="flex flex-col gap-1 text-[11px] uppercase tracking-wider text-white/40">
                 {t('period.to')}
                 <input
                   type="date"

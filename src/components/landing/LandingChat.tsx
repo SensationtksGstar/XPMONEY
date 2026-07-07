@@ -239,7 +239,7 @@ export function LandingChat({ onClose }: ChatProps = {}) {
         </button>
       </form>
 
-      <p className="px-4 py-2 text-[10px] text-white/30 text-center border-t border-white/5">
+      <p className="px-4 py-2 text-[11px] text-white/30 text-center border-t border-white/5">
         {t('chat.footer_pre')}{' '}
         <Link href="/contacto" className="underline hover:text-white/60">{t('chat.footer_link')}</Link>.
       </p>

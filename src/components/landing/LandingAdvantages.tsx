@@ -179,7 +179,7 @@ export async function LandingAdvantages() {
                     <Icon className={`w-5 h-5 ${accent.icon}`} />
                   </div>
                   {card.tag && (
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${accent.tag}`}>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${accent.tag}`}>
                       {card.tag === 'PREMIUM' ? t('landing.adv.tag_premium') : t('landing.adv.tag_free')}
                     </span>
                   )}
@@ -197,7 +197,7 @@ export async function LandingAdvantages() {
           <div className="absolute -top-10 -right-10 w-60 h-60 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
           <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
             <div>
-              <div className="inline-flex items-center gap-1.5 bg-purple-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full mb-3">
+              <div className="inline-flex items-center gap-1.5 bg-purple-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full mb-3">
                 <Sparkles className="w-3 h-3" />
                 {t('landing.adv.annual_chip')}
               </div>

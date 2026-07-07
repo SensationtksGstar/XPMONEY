@@ -120,7 +120,7 @@ export default function DividasPage() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Sword className="w-6 h-6 text-red-400" />
             {t('debt.title')}
           </h1>
@@ -174,16 +174,16 @@ export default function DividasPage() {
           {/* Totais */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.total_current')}</p>
-              <p className="text-xl font-black text-red-300">{formatCurrency(totalBalance, 'EUR', locale)}</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.total_current')}</p>
+              <p className="text-xl font-bold text-red-300">{formatCurrency(totalBalance, 'EUR', locale)}</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.total_paid')}</p>
-              <p className="text-xl font-black text-green-300">{formatCurrency(paidOff, 'EUR', locale)}</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.total_paid')}</p>
+              <p className="text-xl font-bold text-green-300">{formatCurrency(paidOff, 'EUR', locale)}</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.progress')}</p>
-              <p className="text-xl font-black text-white">{pctPaid}%</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.progress')}</p>
+              <p className="text-xl font-bold text-white">{pctPaid}%</p>
             </div>
           </div>
 
@@ -396,7 +396,7 @@ function Planeador({
             <span aria-hidden className="text-lg">🏔️</span>
             <span className="font-bold text-white text-sm">Avalanche</span>
             {compare.better === 'avalanche' && (
-              <span className="text-[9px] font-bold bg-yellow-400/25 text-yellow-200 px-1.5 py-0.5 rounded-full uppercase">
+              <span className="text-[11px] font-bold bg-yellow-400/25 text-yellow-200 px-1.5 py-0.5 rounded-full uppercase">
                 {t('dividas.saves', { n: compare.savings.toFixed(0) })}
               </span>
             )}
@@ -418,7 +418,7 @@ function Planeador({
             <span aria-hidden className="text-lg">❄️</span>
             <span className="font-bold text-white text-sm">{t('dividas.snowball')}</span>
             {compare.better === 'snowball' && (
-              <span className="text-[9px] font-bold bg-blue-400/25 text-blue-200 px-1.5 py-0.5 rounded-full uppercase">
+              <span className="text-[11px] font-bold bg-blue-400/25 text-blue-200 px-1.5 py-0.5 rounded-full uppercase">
                 {t('dividas.saves', { n: compare.savings.toFixed(0) })}
               </span>
             )}
@@ -464,7 +464,7 @@ function Planeador({
           <ol className="mt-2 space-y-0.5 text-[11px] text-white/70">
             {queue.map((d, i) => (
               <li key={d.id} className="flex items-center gap-1.5 truncate">
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 text-[9px] font-bold text-white/70 flex-shrink-0">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 text-[11px] font-bold text-white/70 flex-shrink-0">
                   {i + 1}
                 </span>
                 <span aria-hidden className="text-sm flex-shrink-0">{resolveCategory(d.category).icon}</span>
@@ -516,14 +516,14 @@ function Planeador({
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.free_in')}</p>
-              <p className="text-xl font-black text-white">
+              <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.free_in')}</p>
+              <p className="text-xl font-bold text-white">
                 {formatMonths(plan.monthsToFree, locale)}
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.total_interest')}</p>
-              <p className="text-xl font-black text-orange-300">
+              <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1">{t('dividas.total_interest')}</p>
+              <p className="text-xl font-bold text-orange-300">
                 {formatCurrency(plan.totalInterest, 'EUR', locale)}
               </p>
             </div>
@@ -625,7 +625,7 @@ function Planeador({
                 )
               })}
             </div>
-            <p className="text-[10px] text-white/35 mt-2 leading-relaxed">
+            <p className="text-[11px] text-white/35 mt-2 leading-relaxed">
               {t('dividas.what_if_hint')}
             </p>
           </div>
@@ -655,7 +655,7 @@ function DebtRow({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-white truncate">{debt.name}</h3>
             {debt.interest_rate > 0 && (
-              <span className="text-[10px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/30 px-1.5 py-0.5 rounded-full">
+              <span className="text-[11px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/30 px-1.5 py-0.5 rounded-full">
                 {t('dividas.apr', { rate: debt.interest_rate.toFixed(2) })}
               </span>
             )}
@@ -676,7 +676,7 @@ function DebtRow({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
 
       <div className="flex items-end justify-between mb-1.5">
         <span className="text-xs text-white/50">{t('dividas.current_balance')}</span>
-        <span className="text-lg font-black text-white">
+        <span className="text-lg font-bold text-white">
           {formatCurrency(current, 'EUR', locale)}
           <span className="text-xs text-white/40 font-normal"> / {formatCurrency(initial, 'EUR', locale)}</span>
         </span>
@@ -687,7 +687,7 @@ function DebtRow({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="flex items-center justify-between mt-1.5 text-[10px] text-white/40">
+      <div className="flex items-center justify-between mt-1.5 text-[11px] text-white/40">
         <span>{t('dividas.pct_paid', { pct })}</span>
         <span className="flex items-center gap-1 text-red-300 font-semibold">
           <TrendingDown className="w-3 h-3" />
@@ -811,7 +811,7 @@ function DebtForm({
                   }`}
                 >
                   <span className="block text-xl mb-0.5" aria-hidden>{c.icon}</span>
-                  <span className="block text-[9px] text-white/70 leading-tight">{catLabel(c.id, c.label, t)}</span>
+                  <span className="block text-[11px] text-white/70 leading-tight">{catLabel(c.id, c.label, t)}</span>
                 </button>
               ))}
             </div>

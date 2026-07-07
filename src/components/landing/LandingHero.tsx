@@ -95,7 +95,7 @@ export async function LandingHero() {
             {t('landing.hero.sub_b')}{' '}
             <span className="relative inline-block">
               <strong className="text-white">{t('landing.hero.sub_cert')}</strong>
-              <span className="absolute -top-2 -right-10 text-[10px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-1.5 py-0.5 rounded-full rotate-3">
+              <span className="absolute -top-2 -right-10 text-[11px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-1.5 py-0.5 rounded-full rotate-3">
                 {t('landing.hero.sub_new')}
               </span>
             </span>{' '}
@@ -188,22 +188,22 @@ export async function LandingHero() {
               {/* Top stats row */}
               <div className="grid grid-cols-3 gap-2 mb-5">
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-white/40">{t('landing.hero.card_score')}</p>
+                  <p className="text-[11px] uppercase tracking-wider text-white/40">{t('landing.hero.card_score')}</p>
                   <p className="text-xl font-bold text-yellow-300 mt-0.5">74<span className="text-xs text-white/40">/100</span></p>
                 </div>
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-white/40">{t('landing.hero.card_level')}</p>
+                  <p className="text-[11px] uppercase tracking-wider text-white/40">{t('landing.hero.card_level')}</p>
                   <p className="text-xl font-bold text-green-400 mt-0.5">7</p>
                 </div>
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-white/40">{t('landing.hero.card_streak')}</p>
+                  <p className="text-[11px] uppercase tracking-wider text-white/40">{t('landing.hero.card_streak')}</p>
                   <p className="text-xl font-bold text-orange-400 mt-0.5">{t('landing.hero.card_streak_val')}</p>
                 </div>
               </div>
 
               {/* Mascot dialogue */}
               <div className="relative bg-gradient-to-b from-emerald-500/10 to-transparent rounded-2xl p-4 mb-4 border border-emerald-500/15">
-                <p className="text-[10px] uppercase tracking-wider text-green-300 font-bold mb-1">{t('landing.hero.card_says')}</p>
+                <p className="text-[11px] uppercase tracking-wider text-green-300 font-bold mb-1">{t('landing.hero.card_says')}</p>
                 <p className="text-[13px] text-white/90 leading-snug">
                   {t('landing.hero.card_dialogue')}
                 </p>
@@ -211,7 +211,7 @@ export async function LandingHero() {
 
               {/* XP bar */}
               <div className="mb-3">
-                <div className="flex items-center justify-between text-[10px] text-white/50 mb-1.5">
+                <div className="flex items-center justify-between text-[11px] text-white/50 mb-1.5">
                   <span>{t('landing.hero.card_xp_label')}</span>
                   <span>{t('landing.hero.card_xp_val')}</span>
                 </div>
@@ -229,7 +229,7 @@ export async function LandingHero() {
                       <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
                         <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.pct}%` }} />
                       </div>
-                      <span className="w-8 text-right text-[10px] font-bold text-white/60">{m.pct}%</span>
+                      <span className="w-8 text-right text-[11px] font-bold text-white/60">{m.pct}%</span>
                     </div>
                   </div>
                 ))}
@@ -244,7 +244,7 @@ export async function LandingHero() {
 
           {/* Evolution rail */}
           <div className="relative z-10 w-full max-w-md mt-5 px-2">
-            <p className="text-center text-[10px] uppercase tracking-[0.22em] text-white/40 mb-2">
+            <p className="text-center text-[11px] uppercase tracking-[0.22em] text-white/40 mb-2">
               {t('landing.hero.evo_rail_label')}
             </p>
             <div className="flex items-end justify-between gap-2">
@@ -272,7 +272,7 @@ export async function LandingHero() {
                         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#060b14]" />
                       )}
                     </div>
-                    <span className={`text-[9px] font-bold ${
+                    <span className={`text-[11px] font-bold ${
                       isCurrent ? 'text-emerald-300' : 'text-white/35'
                     }`}>
                       {n}

@@ -30,7 +30,7 @@ export function PDFReportCard() {
         <FileText className="w-4 h-4 text-purple-300" />
         Relatório financeiro em PDF
         {!unlocked && (
-          <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 inline-flex items-center gap-1">
+          <span className="ml-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 inline-flex items-center gap-1">
             <Lock className="w-2.5 h-2.5" />
             PREMIUM
           </span>
@@ -62,7 +62,7 @@ export function PDFReportCard() {
         </a>
       )}
 
-      <p className="text-[10px] text-white/30 mt-3 leading-snug">
+      <p className="text-[11px] text-white/30 mt-3 leading-snug">
         O relatório abre numa nova aba e usa a função nativa do browser para guardar PDF —
         funciona offline e não exige instalar nada.
       </p>

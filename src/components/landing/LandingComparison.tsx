@@ -88,7 +88,7 @@ export async function LandingComparison() {
           </table>
         </div>
 
-        <div className="flex items-center justify-center gap-5 text-[10px] text-white/40 py-3 border-t border-white/5 flex-wrap">
+        <div className="flex items-center justify-center gap-5 text-[11px] text-white/40 py-3 border-t border-white/5 flex-wrap">
           <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-green-400" /> {t('landing.cmp.legend_yes')}</span>
           <span className="flex items-center gap-1.5"><Minus className="w-3 h-3 text-yellow-400/70" /> {t('landing.cmp.legend_part')}</span>
           <span className="flex items-center gap-1.5"><X className="w-3 h-3 text-white/25" /> {t('landing.cmp.legend_no')}</span>

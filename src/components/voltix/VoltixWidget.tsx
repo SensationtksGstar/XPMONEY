@@ -224,9 +224,9 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
             </p>
 
             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mb-1">
-              <h2 className="text-2xl font-black text-white">{name}</h2>
+              <h2 className="text-2xl font-bold text-white">{name}</h2>
               <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider"
+                className="text-[11px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider"
                 style={{
                   color:           palette.body,
                   borderColor:    `${palette.body}55`,
@@ -320,7 +320,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
       <div className="flex items-center gap-2 mb-1">
         <span className="text-base font-bold text-white">{name}</span>
         <span
-          className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+          className="text-[11px] font-bold px-2 py-0.5 rounded-full border"
           style={{
             color:           palette.body,
             borderColor:    `${palette.body}40`,

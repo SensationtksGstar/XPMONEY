@@ -112,7 +112,7 @@ export default function CursosPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <h3 className="font-bold text-white/60 text-base leading-tight">{course.title}</h3>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${LEVEL_COLOR[course.level]}`}>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${LEVEL_COLOR[course.level]}`}>
                           {LEVEL_LABEL_KEY[course.level] ? t(LEVEL_LABEL_KEY[course.level]) : course.level}
                         </span>
                       </div>
@@ -154,11 +154,11 @@ export default function CursosPage() {
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h3 className="font-bold text-white text-base leading-tight">{course.title}</h3>
                           {isCompleted && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded-full">
+                            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded-full">
                               <Check className="w-2.5 h-2.5" /> {t('academy.completed')}
                             </span>
                           )}
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${LEVEL_COLOR[course.level]}`}>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${LEVEL_COLOR[course.level]}`}>
                             {LEVEL_LABEL_KEY[course.level] ? t(LEVEL_LABEL_KEY[course.level]) : course.level}
                           </span>
                         </div>

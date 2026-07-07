@@ -151,9 +151,9 @@ export default function DebtDetailPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-2xl" aria-hidden>{cat.icon}</span>
-            <h1 className="text-xl font-black text-white truncate">{debt.name}</h1>
+            <h1 className="text-xl font-bold text-white truncate">{debt.name}</h1>
             {isKilled && (
-              <span className="text-[10px] font-bold bg-green-500/20 text-green-300 border border-green-500/40 px-2 py-0.5 rounded-full uppercase">
+              <span className="text-[11px] font-bold bg-green-500/20 text-green-300 border border-green-500/40 px-2 py-0.5 rounded-full uppercase">
                 {t('dividas.killed_badge')}
               </span>
             )}
@@ -169,15 +169,15 @@ export default function DebtDetailPage() {
           : 'bg-gradient-to-br from-red-500/10 via-orange-500/5 to-transparent border-red-500/25'
       }`}>
         <div className="flex items-baseline gap-2 mb-3">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">{t('dividas.current_balance')}</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-white/40">{t('dividas.current_balance')}</p>
           {debt.interest_rate > 0 && (
-            <span className="ml-auto text-[10px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full">
+            <span className="ml-auto text-[11px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full">
               {t('dividas.apr', { rate: debt.interest_rate.toFixed(2) })}
             </span>
           )}
         </div>
         <div className="flex items-end gap-2 mb-4">
-          <p className={`text-4xl sm:text-5xl font-black ${isKilled ? 'text-green-300' : 'text-white'}`}>
+          <p className={`text-4xl sm:text-5xl font-bold ${isKilled ? 'text-green-300' : 'text-white'}`}>
             {formatCurrency(current, 'EUR', locale)}
           </p>
           <p className="text-sm text-white/40 mb-2">
@@ -204,12 +204,12 @@ export default function DebtDetailPage() {
       {!isKilled && (
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-            <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1 flex items-center gap-1">
+            <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1 flex items-center gap-1">
               <Clock className="w-3 h-3" /> {t('dividas.min_only_label')}
             </p>
             {projMinOnly ? (
               <>
-                <p className="text-lg font-black text-white">{formatMonths(projMinOnly.months, locale)}</p>
+                <p className="text-lg font-bold text-white">{formatMonths(projMinOnly.months, locale)}</p>
                 <p className="text-[11px] text-orange-300 mt-0.5">
                   {t('dividas.plus_interest', { amount: formatCurrency(projMinOnly.totalInterest, 'EUR', locale) })}
                 </p>
@@ -222,12 +222,12 @@ export default function DebtDetailPage() {
             )}
           </div>
           <div className="bg-gradient-to-br from-green-500/10 to-transparent border border-green-500/25 rounded-2xl p-4">
-            <p className="text-[10px] uppercase tracking-wider text-green-300 mb-1 flex items-center gap-1">
+            <p className="text-[11px] uppercase tracking-wider text-green-300 mb-1 flex items-center gap-1">
               <Zap className="w-3 h-3" /> {t('dividas.with_100')}
             </p>
             {projWith100 ? (
               <>
-                <p className="text-lg font-black text-white">{formatMonths(projWith100.months, locale)}</p>
+                <p className="text-lg font-bold text-white">{formatMonths(projWith100.months, locale)}</p>
                 <p className="text-[11px] text-green-300 mt-0.5">
                   {t('dividas.plus_interest', { amount: formatCurrency(projWith100.totalInterest, 'EUR', locale) })}
                 </p>
@@ -341,7 +341,7 @@ export default function DebtDetailPage() {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-[11px] text-yellow-300 font-bold">+{a.xp_earned} XP</p>
-                  <p className="text-[10px] text-white/40">
+                  <p className="text-[11px] text-white/40">
                     {new Date(a.created_at).toLocaleDateString(locale === 'en' ? 'en-US' : 'pt-PT')}
                   </p>
                 </div>
@@ -395,7 +395,7 @@ function KillCelebration({
           <X className="w-4 h-4" />
         </button>
         <div className="text-6xl mb-3">🎯</div>
-        <h2 id="kill-title" className="text-2xl font-black text-white mb-2">
+        <h2 id="kill-title" className="text-2xl font-bold text-white mb-2">
           {t('dividas.kill_title')}
         </h2>
         <p className="text-white/70 mb-4 break-words">
@@ -403,7 +403,7 @@ function KillCelebration({
         </p>
         <div className="inline-flex items-center gap-2 bg-yellow-500/15 border border-yellow-500/40 rounded-2xl px-5 py-2.5">
           <Zap className="w-5 h-5 text-yellow-400" />
-          <span className="text-yellow-300 font-black text-lg">+{xp} XP</span>
+          <span className="text-yellow-300 font-bold text-lg">+{xp} XP</span>
         </div>
         <p className="text-[11px] text-white/40 mt-4">
           {t('dividas.kill_footer')}

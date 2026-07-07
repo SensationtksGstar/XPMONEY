@@ -411,7 +411,7 @@ export function StatementImporter({ onClose }: Props) {
 
             <div>
               {/* Premium chip — sets expectation before the body. */}
-              <div className="inline-flex items-center gap-1.5 bg-yellow-400/15 border border-yellow-400/30 text-yellow-300 text-[10px] font-bold px-2.5 py-1 rounded-full mb-2">
+              <div className="inline-flex items-center gap-1.5 bg-yellow-400/15 border border-yellow-400/30 text-yellow-300 text-[11px] font-bold px-2.5 py-1 rounded-full mb-2">
                 <Crown className="w-2.5 h-2.5" /> PREMIUM
               </div>
               <p className="text-white font-bold text-lg">{t('import.premium_title')}</p>
@@ -460,7 +460,7 @@ export function StatementImporter({ onClose }: Props) {
               </Link>
             </div>
 
-            <p className="text-white/30 text-[10px] pt-1">{t('import.current_plan')} <span className="uppercase">{plan}</span></p>
+            <p className="text-white/30 text-[11px] pt-1">{t('import.current_plan')} <span className="uppercase">{plan}</span></p>
           </div>
         </div>
       </div>
@@ -802,7 +802,7 @@ export function StatementImporter({ onClose }: Props) {
                 <summary className="cursor-pointer px-3 py-2 text-[11px] text-white/50 hover:text-white transition-colors select-none">
                   {t(errorAttempts.length === 1 ? 'import.tech_one' : 'import.tech_other', { n: errorAttempts.length })}
                 </summary>
-                <div className="border-t border-white/5 px-3 py-2 space-y-1.5 font-mono text-[10px] text-white/60 break-all">
+                <div className="border-t border-white/5 px-3 py-2 space-y-1.5 font-mono text-[11px] text-white/60 break-all">
                   {errorAttempts.map((a, i) => (
                     <div key={i} className="leading-relaxed">• {a}</div>
                   ))}

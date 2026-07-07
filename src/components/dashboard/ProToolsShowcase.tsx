@@ -95,13 +95,13 @@ export function ProToolsShowcase() {
                 <div className={`text-xs font-bold ${locked ? 'text-white/60' : 'text-white'}`}>
                   {t(tool.labelKey)}
                 </div>
-                <div className="text-[10px] text-white/40 leading-tight mt-0.5 line-clamp-2 hidden sm:block">
+                <div className="text-[11px] text-white/40 leading-tight mt-0.5 line-clamp-2 hidden sm:block">
                   {t(tool.descKey)}
                 </div>
               </div>
 
               {locked && (
-                <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 bg-purple-500/25 text-purple-200 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-purple-500/30">
+                <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 bg-purple-500/25 text-purple-200 text-[11px] font-bold px-1.5 py-0.5 rounded-full border border-purple-500/30">
                   <Lock className="w-2 h-2" />
                   PREMIUM
                 </span>

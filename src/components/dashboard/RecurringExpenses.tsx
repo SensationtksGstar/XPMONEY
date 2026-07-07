@@ -48,7 +48,7 @@ export function RecurringExpenses() {
           <p className="text-[11px] text-white/45 mt-0.5">{t('recurring.subtitle')}</p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-white/40 uppercase tracking-wide">{t('recurring.estimate_label')}</p>
+          <p className="text-[11px] text-white/40 uppercase tracking-wide">{t('recurring.estimate_label')}</p>
           <p className="text-base font-bold text-amber-300 tabular-nums">
             {formatCurrency(data.totalMonthly, 'EUR', locale)}{t('budget.income_unit')}
           </p>
@@ -74,7 +74,7 @@ export function RecurringExpenses() {
         ))}
       </div>
 
-      <p className="text-[10px] text-white/30 mt-3">{t('recurring.note')}</p>
+      <p className="text-[11px] text-white/30 mt-3">{t('recurring.note')}</p>
 
       <Link
         href="/transactions"

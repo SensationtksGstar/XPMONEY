@@ -180,8 +180,8 @@ export default function PerspectivaClient({ monthlyIncome, salaryMonths, salaryT
                 )}
               >
                 <span className="text-2xl">{c.emoji}</span>
-                <span className="text-[10px] font-medium leading-tight">{c.name.split(' ')[0]}</span>
-                <span className="text-[9px] text-white/40">{c.flag}</span>
+                <span className="text-[11px] font-medium leading-tight">{c.name.split(' ')[0]}</span>
+                <span className="text-[11px] text-white/40">{c.flag}</span>
               </button>
             ))}
           </div>

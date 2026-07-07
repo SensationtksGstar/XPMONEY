@@ -108,7 +108,7 @@ export async function LandingPricing() {
               ))}
             </ul>
 
-            <p className="text-[10px] text-white/35 mb-3 italic">
+            <p className="text-[11px] text-white/35 mb-3 italic">
               {t('pricing.free_ads')}
             </p>
 
@@ -122,7 +122,7 @@ export async function LandingPricing() {
 
           {/* ── PREMIUM ──────────────────────────────────────────────── */}
           <div className="relative rounded-2xl p-6 flex flex-col border-2 border-purple-500/50 bg-gradient-to-b from-purple-500/10 to-transparent shadow-[0_12px_40px_-15px_rgba(168,85,247,0.5)]">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
               {t('pricing.premium_badge')}
             </span>
@@ -151,7 +151,7 @@ export async function LandingPricing() {
 
             {/* "POUPA 33%" chip — only when yearly is active. The empty
                 spacer keeps the layout height stable across both periods. */}
-            <div className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2 py-0.5 self-start mb-5 group-data-[period=monthly]/p:invisible">
+            <div className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2 py-0.5 self-start mb-5 group-data-[period=monthly]/p:invisible">
               <Sparkles className="w-2.5 h-2.5" />
               {t('pricing.premium_savings_chip')}
             </div>
@@ -187,7 +187,7 @@ export async function LandingPricing() {
               {t('pricing.premium_cta_m')}
             </Link>
 
-            <p className="text-center text-[10px] text-white/40 mt-3">
+            <p className="text-center text-[11px] text-white/40 mt-3">
               {t('pricing.premium_footer')}
             </p>
           </div>

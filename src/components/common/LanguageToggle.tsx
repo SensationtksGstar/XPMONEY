@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
  * dark; the inactive side is muted.
  *
  * April 2026 — mobile fix: the previous compact mode used `px-2 py-1
- * text-[10px]` which made each button ~28×40 px. CLAUDE.md A11y floor
+ * text-[11px]` which made each button ~28×40 px. CLAUDE.md A11y floor
  * mandates 44×44 touch targets; below that, fat-finger taps either fell
  * between the two buttons (gap-0.5) or hit the already-active one (a
  * no-op via `!active && setLocale(l)`), making it feel as if "the button
@@ -36,7 +36,7 @@ export function LanguageToggle({ size = 'compact', className = '' }: Props) {
   const { locale, setLocale } = useLocale()
 
   // Padding tuned so each button hits ≥44 px on the long axis even in
-  // compact mode (the prev `text-[10px]/py-1` came out to ~28 px). The
+  // compact mode (the prev `text-[11px]/py-1` came out to ~28 px). The
   // visual `text-xs` keeps the nav slim; `min-h-[40px]` + the wrapper's
   // `p-0.5` push the effective tap zone to ~44 px.
   const pad =

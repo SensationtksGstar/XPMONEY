@@ -58,7 +58,7 @@ export default function ContasPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Wallet className="w-6 h-6 text-emerald-400" />
             {t('networth.title')}
           </h1>
@@ -89,8 +89,8 @@ export default function ContasPage() {
               ? 'bg-gradient-to-br from-emerald-500/12 via-green-500/5 to-transparent border-emerald-500/25'
               : 'bg-gradient-to-br from-rose-500/12 via-orange-500/5 to-transparent border-rose-500/25'
           }`}>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">{t('networth.net_label')}</p>
-            <p className={`text-4xl sm:text-5xl font-black mt-1 tabular-nums ${netPositive ? 'text-emerald-300' : 'text-rose-300'}`}>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-white/40">{t('networth.net_label')}</p>
+            <p className={`text-4xl sm:text-5xl font-bold mt-1 tabular-nums ${netPositive ? 'text-emerald-300' : 'text-rose-300'}`}>
               {formatCurrency(nw.net, 'EUR', locale)}
             </p>
             <div className="flex items-center gap-5 mt-4 text-xs">
@@ -318,7 +318,7 @@ function AddAccountModal({
                 }`}
               >
                 <span className="block text-xl mb-0.5" aria-hidden>{ACCOUNT_TYPE_META[ty].icon}</span>
-                <span className="block text-[9px] text-white/70 leading-tight">{t(ACCOUNT_TYPE_META[ty].labelKey)}</span>
+                <span className="block text-[11px] text-white/70 leading-tight">{t(ACCOUNT_TYPE_META[ty].labelKey)}</span>
               </button>
             ))}
           </div>

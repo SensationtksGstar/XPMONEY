@@ -139,7 +139,7 @@ function CategoryRow({
               onClick={() => onChange(b)}
               aria-label={`Mover ${category.name} para ${BUCKET_LABELS[b]}`}
               aria-pressed={active}
-              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-lg border transition-all min-h-[32px] ${
+              className={`text-[11px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-lg border transition-all min-h-[32px] ${
                 active
                   ? `${colors.border} ${colors.bg} ${colors.text}`
                   : 'border-white/10 bg-white/3 text-white/50 hover:text-white'

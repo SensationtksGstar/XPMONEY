@@ -101,7 +101,7 @@ export function DebtWidget() {
         <div className="flex items-center gap-2">
           <Sword className="w-4 h-4 text-red-400" />
           <h3 className="font-semibold text-white text-sm">{t('debt.title')}</h3>
-          <span className="text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded-full uppercase">
+          <span className="text-[11px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded-full uppercase">
             Pro
           </span>
         </div>
@@ -114,7 +114,7 @@ export function DebtWidget() {
       {/* Totais */}
       <div className="flex items-end justify-between mb-2">
         <div>
-          <p className="text-2xl font-black text-white tabular-nums">
+          <p className="text-2xl font-bold text-white tabular-nums">
             {formatCurrency(currentTotal, 'EUR', locale)}
           </p>
           <p className="text-[11px] text-white/50">
@@ -125,7 +125,7 @@ export function DebtWidget() {
           <p className="text-sm font-bold text-emerald-300 tabular-nums">
             {formatCurrency(paidOff, 'EUR', locale)}
           </p>
-          <p className="text-[10px] text-white/45">{t('debt.paid_off')}</p>
+          <p className="text-[11px] text-white/45">{t('debt.paid_off')}</p>
         </div>
       </div>
 
@@ -144,7 +144,7 @@ export function DebtWidget() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-xs font-semibold text-white truncate">{next.name}</p>
-              <span className="text-[9px] font-bold bg-red-500/15 text-red-300 border border-red-500/30 px-1 py-px rounded-full whitespace-nowrap">
+              <span className="text-[11px] font-bold bg-red-500/15 text-red-300 border border-red-500/30 px-1 py-px rounded-full whitespace-nowrap">
                 {t('debt.next')}
               </span>
             </div>

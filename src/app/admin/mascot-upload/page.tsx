@@ -98,13 +98,13 @@ function Tile({
         <p className="text-xs text-white/40">EVO {evo}</p>
         <p className="text-sm font-bold text-white">{label}</p>
         {state.sizeKb != null && (
-          <p className="text-[10px] text-white/40 mt-0.5">{state.sizeKb} KB WebP</p>
+          <p className="text-[11px] text-white/40 mt-0.5">{state.sizeKb} KB WebP</p>
         )}
         {state.warning && (
-          <p className="text-[10px] text-yellow-400 mt-1 leading-tight">{state.warning}</p>
+          <p className="text-[11px] text-yellow-400 mt-1 leading-tight">{state.warning}</p>
         )}
         {state.errorMsg && (
-          <p className="text-[10px] text-red-400 mt-1 leading-tight">{state.errorMsg}</p>
+          <p className="text-[11px] text-red-400 mt-1 leading-tight">{state.errorMsg}</p>
         )}
       </div>
 

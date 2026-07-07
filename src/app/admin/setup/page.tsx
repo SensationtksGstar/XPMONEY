@@ -405,7 +405,7 @@ function StatusChip({ status }: { status: Status }) {
   }
   const m = map[status]
   return (
-    <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${m.cls}`}>
+    <span className={`inline-block text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${m.cls}`}>
       {m.label}
     </span>
   )

@@ -50,7 +50,7 @@ export function NetWorthWidget() {
         </span>
       </div>
 
-      <p className={`text-2xl font-black tabular-nums ${netPositive ? 'text-emerald-300' : 'text-rose-300'}`}>
+      <p className={`text-2xl font-bold tabular-nums ${netPositive ? 'text-emerald-300' : 'text-rose-300'}`}>
         {formatCurrency(nw.net, 'EUR', locale)}
       </p>
 

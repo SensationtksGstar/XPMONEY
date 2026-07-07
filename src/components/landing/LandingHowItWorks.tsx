@@ -60,7 +60,7 @@ export async function LandingHowItWorks() {
             </div>
             <h3 className="font-bold text-lg mb-2 text-white">{s.title}</h3>
             <p className="text-sm text-white/60 leading-relaxed mb-4 flex-1">{s.desc}</p>
-            <span className="inline-block text-[10px] font-semibold text-green-300 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full self-start">
+            <span className="inline-block text-[11px] font-semibold text-green-300 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full self-start">
               {s.pill}
             </span>
           </article>

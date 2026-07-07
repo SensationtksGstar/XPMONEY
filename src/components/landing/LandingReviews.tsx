@@ -124,7 +124,7 @@ export async function LandingReviews() {
                   <p className="text-[11px] text-white/40 truncate">{t(r.handleKey)}</p>
                 </div>
                 {r.badgeKey && (
-                  <span className="text-[10px] font-bold text-green-300 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full flex-shrink-0">
+                  <span className="text-[11px] font-bold text-green-300 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full flex-shrink-0">
                     {t(r.badgeKey)}
                   </span>
                 )}

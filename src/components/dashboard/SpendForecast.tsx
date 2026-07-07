@@ -119,7 +119,7 @@ function VelocityBody({ withTeaser }: { withTeaser: boolean }) {
 
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div className="min-w-0">
-          <p className="text-[10px] text-white/40 uppercase tracking-wide">{t('velocity.projection')}</p>
+          <p className="text-[11px] text-white/40 uppercase tracking-wide">{t('velocity.projection')}</p>
           <p className="text-2xl font-bold text-white tabular-nums">
             {formatCurrency(v.projected, 'EUR', locale)}
           </p>
@@ -229,7 +229,7 @@ function ForecastBody({ f }: { f: ForecastData }) {
       </div>
 
       {/* ② O número */}
-      <p className="text-[10px] uppercase tracking-wide text-white/40">{t('predict.month_end')}</p>
+      <p className="text-[11px] uppercase tracking-wide text-white/40">{t('predict.month_end')}</p>
       <p className="text-[28px] leading-tight font-semibold text-white tabular-nums">
         {approxEur(F, locale)}
       </p>
@@ -265,7 +265,7 @@ function ForecastBody({ f }: { f: ForecastData }) {
       {/* ⑤ Top categorias (escondido em confiança baixa) */}
       {!lowConf && topCats.length > 0 && (
         <div className="mt-4">
-          <p className="text-[10px] uppercase tracking-wide text-white/40 mb-2">
+          <p className="text-[11px] uppercase tracking-wide text-white/40 mb-2">
             {t('predict.categories_title')}
           </p>
           <div className="space-y-2.5">

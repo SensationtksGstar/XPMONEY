@@ -142,7 +142,7 @@ export function BugReportCard() {
               className="w-full bg-white/5 border border-white/10 focus:border-orange-400/50 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors resize-none"
               required
             />
-            <p className="text-[10px] text-white/30 mt-1 text-right">
+            <p className="text-[11px] text-white/30 mt-1 text-right">
               {description.length}/4000
             </p>
           </div>
@@ -171,7 +171,7 @@ export function BugReportCard() {
             )}
           </button>
 
-          <p className="text-[10px] text-white/30 leading-snug">
+          <p className="text-[11px] text-white/30 leading-snug">
             {t('bug.privacy')}
           </p>
         </form>

@@ -34,7 +34,7 @@ function DeltaBadge({ pct, kind }: { pct: number; kind: 'income' | 'expense' | '
     : 'text-rose-300   bg-rose-500/12   border-rose-500/25'
   const label = `${up ? '+' : ''}${pct.toFixed(0)}%`
   return (
-    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${colour}`}>
+    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[11px] font-bold ${colour}`}>
       <Icon className="w-3 h-3" />
       {label}
     </span>

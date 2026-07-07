@@ -251,7 +251,7 @@ export function PWAInstallPrompt() {
             {t('pwa.install.now')}
           </button>
         </div>
-        <p className="text-[10px] text-white/30 mt-3 text-center">
+        <p className="text-[11px] text-white/30 mt-3 text-center">
           {locale === 'en'
             ? 'Free · Works offline · Same data as the web app'
             : 'Grátis · Funciona offline · Mesmos dados da web'}
