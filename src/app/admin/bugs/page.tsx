@@ -81,7 +81,7 @@ export default async function AdminBugsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0f1e] text-white p-6">
+    <main className="min-h-screen bg-surface-0 text-white p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="flex items-center justify-between">
           <div>

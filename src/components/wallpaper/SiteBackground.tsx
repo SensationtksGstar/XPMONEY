@@ -63,7 +63,7 @@ export function SiteBackground() {
         className="fixed inset-0 z-0 pointer-events-none"
       >
         {/* Base deep navy fill (matches body bg) */}
-        <div className="absolute inset-0 bg-[#060b14]" />
+        <div className="absolute inset-0 bg-surface-0" />
         {/* Top horizon glow — emerald hint, fakes the grid vanishing point */}
         <div
           className="absolute inset-x-0 top-1/3 h-[55vh]"
@@ -87,7 +87,7 @@ export function SiteBackground() {
           }}
         />
         {/* Same dim veil as desktop so on-top copy contrast matches */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#060b14]/30 to-[#060b14]/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-surface-0/30 to-surface-0/60" />
       </div>
     )
   }
@@ -104,7 +104,7 @@ export function SiteBackground() {
         className="absolute inset-0 w-full h-full"
         ariaLabel=""
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#060b14]/30 to-[#060b14]/60" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-surface-0/30 to-surface-0/60" />
     </div>
   )
 }

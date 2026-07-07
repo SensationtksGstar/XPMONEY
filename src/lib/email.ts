@@ -230,16 +230,16 @@ export async function sendNewsletterConfirmation(opts: NewsletterUserEmail): Pro
     ? `<h2 style="margin:0 0 12px;font-size:20px;color:#0d1424;">One last step 👋</h2>
        <p>Thanks for subscribing to the XP-Money newsletter. Click the button below to confirm your email and we'll start sending you our short, jargon-free pieces on personal finance in Portugal.</p>
        <div style="margin:24px 0;text-align:center;">
-         <a href="${opts.actionUrl}" style="display:inline-block;padding:12px 28px;background:#22c55e;color:#000;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;">Confirm my email</a>
+         <a href="${opts.actionUrl}" style="display:inline-block;padding:12px 28px;background:#27c26b;color:#000;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;">Confirm my email</a>
        </div>
-       <p style="font-size:13px;color:#71717a;">If the button doesn't work, paste this URL in your browser:<br><a href="${opts.actionUrl}" style="color:#16a34a;word-break:break-all;">${opts.actionUrl}</a></p>
+       <p style="font-size:13px;color:#71717a;">If the button doesn't work, paste this URL in your browser:<br><a href="${opts.actionUrl}" style="color:#1ea55a;word-break:break-all;">${opts.actionUrl}</a></p>
        <p style="font-size:13px;color:#71717a;margin-top:18px;">This link expires in 7 days. If you didn't request this, you can ignore the email — we won't send anything else.</p>`
     : `<h2 style="margin:0 0 12px;font-size:20px;color:#0d1424;">Falta só um clique 👋</h2>
        <p>Obrigado por te inscreveres na newsletter do XP-Money. Carrega no botão abaixo para confirmares o teu email e começamos a enviar-te os nossos artigos curtos e sem jargão sobre finanças pessoais em Portugal.</p>
        <div style="margin:24px 0;text-align:center;">
-         <a href="${opts.actionUrl}" style="display:inline-block;padding:12px 28px;background:#22c55e;color:#000;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;">Confirmar o meu email</a>
+         <a href="${opts.actionUrl}" style="display:inline-block;padding:12px 28px;background:#27c26b;color:#000;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;">Confirmar o meu email</a>
        </div>
-       <p style="font-size:13px;color:#71717a;">Se o botão não funcionar, copia este URL para o browser:<br><a href="${opts.actionUrl}" style="color:#16a34a;word-break:break-all;">${opts.actionUrl}</a></p>
+       <p style="font-size:13px;color:#71717a;">Se o botão não funcionar, copia este URL para o browser:<br><a href="${opts.actionUrl}" style="color:#1ea55a;word-break:break-all;">${opts.actionUrl}</a></p>
        <p style="font-size:13px;color:#71717a;margin-top:18px;">Este link expira em 7 dias. Se não foste tu a pedir isto, podes ignorar — não enviamos mais nada.</p>`
 
   try {
@@ -282,14 +282,14 @@ export async function sendNewsletterWelcome(opts: NewsletterUserEmail & { unsubs
        <p>Thanks for confirming. You'll get short pieces (~2 minutes to read) on personal finance in Portugal — IRS deductions, budgeting, statement parsing, debt payoff. No clickbait, no recycled LinkedIn posts.</p>
        <p><strong>Frequency:</strong> 1-2 per month. We'd rather skip a month than send filler.</p>
        <div style="margin:24px 0;text-align:center;">
-         <a href="${opts.actionUrl}" style="display:inline-block;padding:12px 28px;background:#22c55e;color:#000;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;">Try XP-Money free</a>
+         <a href="${opts.actionUrl}" style="display:inline-block;padding:12px 28px;background:#27c26b;color:#000;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;">Try XP-Money free</a>
        </div>
        <p style="font-size:13px;color:#71717a;">While you wait for the first issue, take 5 minutes to set up your account — the app does the heavy lifting (receipts, statements, score) so the newsletter complements it instead of repeating it.</p>`
     : `<h2 style="margin:0 0 12px;font-size:20px;color:#0d1424;">Estás dentro.</h2>
        <p>Obrigado por confirmares. Vais receber peças curtas (~2 minutos de leitura) sobre finanças pessoais em Portugal — deduções de IRS, orçamento, leitura de extratos, abate de dívidas. Sem clickbait nem reciclagem de posts do LinkedIn.</p>
        <p><strong>Frequência:</strong> 1-2 por mês. Preferimos saltar um mês a mandar enchimento.</p>
        <div style="margin:24px 0;text-align:center;">
-         <a href="${opts.actionUrl}" style="display:inline-block;padding:12px 28px;background:#22c55e;color:#000;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;">Experimentar o XP-Money grátis</a>
+         <a href="${opts.actionUrl}" style="display:inline-block;padding:12px 28px;background:#27c26b;color:#000;font-weight:700;text-decoration:none;border-radius:10px;font-size:15px;">Experimentar o XP-Money grátis</a>
        </div>
        <p style="font-size:13px;color:#71717a;">Enquanto a primeira edição não chega, leva 5 minutos para configurar a tua conta — a app faz o trabalho pesado (recibos, extratos, score) e a newsletter complementa em vez de repetir.</p>`
 

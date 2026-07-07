@@ -61,7 +61,7 @@ export function AdminBugStatusControl({ id, current }: Props) {
         className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white outline-none hover:bg-white/10 disabled:opacity-60"
       >
         {STATUSES.map(s => (
-          <option key={s} value={s} className="bg-[#0a0f1e]">{s}</option>
+          <option key={s} value={s} className="bg-surface-0">{s}</option>
         ))}
       </select>
     </div>

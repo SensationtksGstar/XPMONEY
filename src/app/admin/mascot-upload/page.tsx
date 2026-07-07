@@ -221,7 +221,7 @@ export default function MascotUploadPage() {
   const allPenny  = pennySlots.every(n => slots[key('penny', n)]?.status === 'success')
 
   return (
-    <main className="min-h-screen bg-[#060b14] text-white px-6 py-10">
+    <main className="min-h-screen bg-surface-0 text-white px-6 py-10">
       <div className="max-w-5xl mx-auto space-y-10">
 
         {/* Header */}

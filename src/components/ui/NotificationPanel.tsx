@@ -143,7 +143,7 @@ export function NotificationPanel() {
             role="dialog"
             aria-modal="false"
             aria-label={t('notif.title')}
-            className="absolute right-0 top-12 z-50 w-72 max-w-[calc(100vw-1rem)] bg-[#0f1829] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up"
+            className="absolute right-0 top-12 z-50 w-72 max-w-[calc(100vw-1rem)] bg-surface-2 border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
               <span className="text-sm font-bold text-white">{t('notif.title')}</span>

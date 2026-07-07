@@ -15,7 +15,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
   return (
     <main className="min-h-screen text-white">
       {/* Slim nav — no CTA, user is here to read */}
-      <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#060b14]/85 backdrop-blur-md">
+      <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-surface-0/85 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2">
           <Logo size={28} />
           <span className="font-bold text-white tracking-tight">XP-Money</span>

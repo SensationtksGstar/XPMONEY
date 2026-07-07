@@ -33,7 +33,7 @@ async function fetchCashFlow(months: number): Promise<CashFlowResponse | null> {
 }
 
 const COLORS = {
-  income:  '#10b981',  // emerald-500
+  income:  '#27c26b',  // emerald-500
   expense: '#f43f5e',  // rose-500
 }
 
@@ -142,7 +142,7 @@ export function CashFlowChart() {
             <Tooltip
               cursor={{ fill: 'rgba(255,255,255,0.04)' }}
               contentStyle={{
-                background:   '#0a0f1e',
+                background:   '#13161b',
                 border:       '1px solid rgba(255,255,255,0.15)',
                 borderRadius: 12,
                 fontSize:     12,

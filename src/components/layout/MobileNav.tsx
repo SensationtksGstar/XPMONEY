@@ -63,7 +63,7 @@ export function MobileNav() {
   return (
     <>
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0a0f1e]/95 backdrop-blur-xl border-t border-white/5"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-0/95 backdrop-blur-xl border-t border-white/5"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/*
@@ -142,7 +142,7 @@ export function MobileNav() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="mobile-more-title"
-            className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0d1221] border-t border-white/10 rounded-t-2xl animate-slide-up"
+            className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-1 border-t border-white/10 rounded-t-2xl animate-slide-up"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
           >
             <div className="flex items-center justify-between px-5 pt-4 pb-3">

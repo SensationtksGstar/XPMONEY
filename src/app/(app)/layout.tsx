@@ -34,8 +34,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       localization={locale === 'en' ? enUS : ptPT}
       appearance={{
         variables: {
-          colorPrimary:    '#22c55e',
-          colorBackground: '#0a0f1e',
+          colorPrimary:    '#27c26b',
+          colorBackground: '#13161b',
           colorText:       '#f8fafc',
           borderRadius:    '0.75rem',
         },

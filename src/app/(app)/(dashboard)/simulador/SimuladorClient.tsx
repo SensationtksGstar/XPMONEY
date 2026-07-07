@@ -22,9 +22,9 @@ const STRATEGIES: {
   rate: number; color: string; bg: string; emoji: string
 }[] = [
   { id: 'savings',    nameKey: 'simulator.strategy.savings_name',    descKey: 'simulator.strategy.savings_desc',    rate: 3,  color: '#60a5fa', bg: 'border-blue-500/30  bg-blue-500/5',  emoji: '🏦' },
-  { id: 'bonds',      nameKey: 'simulator.strategy.bonds_name',      descKey: 'simulator.strategy.bonds_desc',      rate: 5,  color: '#34d399', bg: 'border-emerald-500/30 bg-emerald-500/5', emoji: '📋' },
+  { id: 'bonds',      nameKey: 'simulator.strategy.bonds_name',      descKey: 'simulator.strategy.bonds_desc',      rate: 5,  color: '#4fd48b', bg: 'border-emerald-500/30 bg-emerald-500/5', emoji: '📋' },
   { id: 'mixed',      nameKey: 'simulator.strategy.mixed_name',      descKey: 'simulator.strategy.mixed_desc',      rate: 7,  color: '#a78bfa', bg: 'border-purple-500/30 bg-purple-500/5', emoji: '⚖️' },
-  { id: 'sp500',      nameKey: 'simulator.strategy.sp500_name',      descKey: 'simulator.strategy.sp500_desc',      rate: 10, color: '#22c55e', bg: 'border-green-500/40 bg-green-500/8', emoji: '📈' },
+  { id: 'sp500',      nameKey: 'simulator.strategy.sp500_name',      descKey: 'simulator.strategy.sp500_desc',      rate: 10, color: '#27c26b', bg: 'border-green-500/40 bg-green-500/8', emoji: '📈' },
   { id: 'aggressive', nameKey: 'simulator.strategy.aggressive_name', descKey: 'simulator.strategy.aggressive_desc', rate: 15, color: '#f59e0b', bg: 'border-yellow-500/30 bg-yellow-500/5', emoji: '🚀' },
 ]
 

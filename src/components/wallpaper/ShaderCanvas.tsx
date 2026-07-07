@@ -30,7 +30,7 @@ void main() {
 }
 `
 
-const FALLBACK_BG = 'linear-gradient(135deg, #0a1628 0%, #060b14 100%)'
+const FALLBACK_BG = 'linear-gradient(135deg, #13161b 0%, #0b0d10 100%)'
 
 interface Props {
   /** GLSL ES 3.00 fragment shader source. Must output `fragColor`. */

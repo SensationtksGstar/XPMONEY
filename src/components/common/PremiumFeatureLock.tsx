@@ -86,12 +86,12 @@ export function PremiumFeatureLock({
       {/* Darkening + vignette so the lock card reads on top */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-b from-[#060b14]/60 via-[#060b14]/75 to-[#060b14]/95"
+        className="absolute inset-0 bg-gradient-to-b from-surface-0/60 via-surface-0/75 to-surface-0/95"
       />
 
       {/* ── Lock card ───────────────────────────────────────────── */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-4 py-12 text-center">
-        <div className="w-full max-w-md bg-[#0d1221]/95 backdrop-blur-xl border border-purple-500/25 rounded-2xl p-7 shadow-2xl">
+        <div className="w-full max-w-md bg-surface-1/95 backdrop-blur-xl border border-purple-500/25 rounded-2xl p-7 shadow-2xl">
           {/* Icon pill */}
           <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center mb-5">
             <Icon className="w-6 h-6 text-purple-300" />

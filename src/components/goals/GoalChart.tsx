@@ -20,26 +20,26 @@ export default function GoalChart({ data, gradId }: Props) {
         <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor="#22c55e" stopOpacity={0.35} />
-              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+              <stop offset="5%"  stopColor="#27c26b" stopOpacity={0.35} />
+              <stop offset="95%" stopColor="#27c26b" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#ffffff50' }} tickLine={false} axisLine={false} />
           <YAxis hide />
           <Tooltip
-            contentStyle={{ background: '#111827', border: '1px solid #ffffff15', borderRadius: 8, fontSize: 12 }}
+            contentStyle={{ background: '#13161b', border: '1px solid #ffffff15', borderRadius: 8, fontSize: 12 }}
             labelStyle={{ color: '#ffffff80' }}
-            itemStyle={{ color: '#22c55e' }}
+            itemStyle={{ color: '#27c26b' }}
             formatter={(v: number) => [formatCurrency(v), 'Poupado']}
           />
           <Area
             type="monotone"
             dataKey="value"
-            stroke="#22c55e"
+            stroke="#27c26b"
             strokeWidth={2}
             fill={`url(#${gradId})`}
             dot={false}
-            activeDot={{ r: 4, fill: '#22c55e' }}
+            activeDot={{ r: 4, fill: '#27c26b' }}
           />
         </AreaChart>
       </ResponsiveContainer>

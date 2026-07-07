@@ -49,12 +49,12 @@ export async function LandingHero() {
           className="absolute inset-0 bg-center bg-cover opacity-[0.28]"
           style={{ backgroundImage: 'url(/herobot.webp)' }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#060b14] via-[#060b14]/60 to-[#060b14]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-surface-0 via-surface-0/60 to-surface-0" />
         <div
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(ellipse at center, transparent 40%, #060b14 85%)',
+              'radial-gradient(ellipse at center, transparent 40%, #0b0d10 85%)',
           }}
         />
         <div className="absolute top-40 right-[18%] w-[380px] h-[380px] bg-yellow-500/10 rounded-full blur-3xl" />
@@ -269,7 +269,7 @@ export async function LandingHero() {
                         }`}
                       />
                       {isCurrent && (
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#060b14]" />
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-surface-0" />
                       )}
                     </div>
                     <span className={`text-[11px] font-bold ${

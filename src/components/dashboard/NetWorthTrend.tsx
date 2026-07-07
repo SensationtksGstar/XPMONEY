@@ -73,8 +73,8 @@ export function NetWorthTrend() {
           <AreaChart data={points} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
             <defs>
               <linearGradient id="nwGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor="#10b981" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                <stop offset="0%"   stopColor="#27c26b" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="#27c26b" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis
@@ -94,7 +94,7 @@ export function NetWorthTrend() {
             <Tooltip
               cursor={{ stroke: 'rgba(255,255,255,0.15)' }}
               contentStyle={{
-                background:   '#0a0f1e',
+                background:   '#13161b',
                 border:       '1px solid rgba(255,255,255,0.15)',
                 borderRadius: 12,
                 fontSize:     12,
@@ -107,7 +107,7 @@ export function NetWorthTrend() {
             <Area
               type="monotone"
               dataKey="net"
-              stroke="#10b981"
+              stroke="#27c26b"
               strokeWidth={2}
               fill="url(#nwGradient)"
             />

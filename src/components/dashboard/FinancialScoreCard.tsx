@@ -10,7 +10,7 @@ const SCORE_COLORS: Record<string, string> = {
   critical: '#ef4444',
   low:      '#f97316',
   medium:   '#eab308',
-  good:     '#22c55e',
+  good:     '#27c26b',
   elite:    '#8b5cf6',
 }
 

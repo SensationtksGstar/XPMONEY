@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
       </table>
       <pre style="margin:0;padding:12px;background:#f4f4f5;border-radius:8px;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">${escapeHtml(parsed.data.message)}</pre>
       <p style="margin:18px 0 0;font-size:12px;color:#71717a;">
-        Responde a este email para falar diretamente com a pessoa, ou abre <a href="https://xp-money.com/admin/bugs" style="color:#16a34a;">/admin/bugs</a> para gerir o estado.
+        Responde a este email para falar diretamente com a pessoa, ou abre <a href="https://xp-money.com/admin/bugs" style="color:#1ea55a;">/admin/bugs</a> para gerir o estado.
       </p>
     `,
   }).catch(err => console.warn('[contact-message] notify failed (non-fatal):', err)))

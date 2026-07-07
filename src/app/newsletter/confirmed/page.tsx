@@ -49,7 +49,7 @@ export default async function NewsletterConfirmedPage({ searchParams }: PageProp
 
   return (
     <main className="min-h-screen text-white">
-      <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#060b14]/85 backdrop-blur-md">
+      <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-surface-0/85 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2">
           <Logo size={28} />
           <span className="font-bold text-white tracking-tight">XP-Money</span>

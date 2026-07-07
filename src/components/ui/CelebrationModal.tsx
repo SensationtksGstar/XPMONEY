@@ -96,7 +96,7 @@ export function CelebrationModal({
           aria-describedby="celebration-subtitle"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
-          className="pointer-events-auto relative w-full max-w-sm bg-[#0f1829] border border-white/15 rounded-3xl p-8 text-center overflow-hidden animate-fade-in-up"
+          className="pointer-events-auto relative w-full max-w-sm bg-surface-2 border border-white/15 rounded-3xl p-8 text-center overflow-hidden animate-fade-in-up"
         >
           {/* Confetti */}
           <div className="absolute inset-x-0 top-0 h-40 overflow-hidden pointer-events-none" aria-hidden="true">

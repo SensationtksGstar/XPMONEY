@@ -34,7 +34,7 @@ async function fetchHistory(): Promise<BudgetHistoryResponse | null> {
 const COLORS = {
   needs:   '#3b82f6',  // blue-500
   wants:   '#f59e0b',  // amber-500
-  savings: '#10b981',  // emerald-500
+  savings: '#27c26b',  // emerald-500
 }
 
 export function BudgetHistory() {
@@ -151,7 +151,7 @@ export function BudgetHistory() {
             <Tooltip
               cursor={{ fill: 'rgba(255,255,255,0.04)' }}
               contentStyle={{
-                background:   '#0a0f1e',
+                background:   '#13161b',
                 border:       '1px solid rgba(255,255,255,0.15)',
                 borderRadius: 12,
                 fontSize:     12,

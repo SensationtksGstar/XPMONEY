@@ -7,19 +7,19 @@ import { getServerT }    from '@/lib/i18n/server'
 const clerkAppearance = {
   baseTheme: dark,
   variables: {
-    colorBackground:      '#0d1424',
-    colorInputBackground: '#111827',
+    colorBackground:      '#13161b',
+    colorInputBackground: '#13161b',
     colorText:            '#f1f5f9',
     colorTextSecondary:   '#94a3b8',
     colorInputText:       '#f1f5f9',
-    colorPrimary:         '#22c55e',
+    colorPrimary:         '#27c26b',
     colorDanger:          '#f87171',
     borderRadius:         '0.75rem',
     fontFamily:           'inherit',
   },
   elements: {
     /* outer card */
-    card:                   'bg-[#0d1424] border border-white/10 shadow-2xl shadow-black/60 rounded-2xl',
+    card:                   'bg-[#13161b] border border-white/10 shadow-2xl shadow-black/60 rounded-2xl',
     /* header */
     headerTitle:            'text-white font-bold',
     headerSubtitle:         'text-white/50',
@@ -34,7 +34,7 @@ const clerkAppearance = {
     /* form fields */
     formFieldLabel:         'text-white/70 text-sm font-medium',
     formFieldInput:
-      'bg-[#111827] border border-white/15 text-white placeholder-white/30 rounded-xl focus:border-green-500/60 focus:ring-1 focus:ring-green-500/40',
+      'bg-surface-1 border border-white/15 text-white placeholder-white/30 rounded-xl focus:border-green-500/60 focus:ring-1 focus:ring-green-500/40',
     formFieldInputShowPasswordButton: 'text-white/40 hover:text-white',
     /* primary button */
     formButtonPrimary:
@@ -46,7 +46,7 @@ const clerkAppearance = {
     identityPreviewEditButton: 'text-green-400 hover:text-green-300',
     /* OTP / code input */
     otpCodeFieldInput:
-      'bg-[#111827] border border-white/20 text-white rounded-xl text-center',
+      'bg-surface-1 border border-white/20 text-white rounded-xl text-center',
     /* alerts */
     alertText:              'text-white/80',
     formFieldErrorText:     'text-red-400 text-xs',

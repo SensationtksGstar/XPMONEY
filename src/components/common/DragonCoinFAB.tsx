@@ -67,7 +67,7 @@ export function DragonCoinFAB() {
           // (z-50) — otherwise the closed FAB floats on top of the sheet
           // and covers the Settings icon on mobile. The chat panel when
           // OPEN still lifts above everything via z-[100] below.
-          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[45] w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform bg-[#060b14]/85 backdrop-blur-md ring-1 ring-white/15 hover:ring-white/25 shadow-[0_8px_24px_rgba(0,0,0,0.55)]"
+          className="group fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[45] w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform bg-surface-0/85 backdrop-blur-md ring-1 ring-white/15 hover:ring-white/25 shadow-[0_8px_24px_rgba(0,0,0,0.55)]"
         >
           {/* Dragon Coin portrait. O botão tem moldura circular dark com
               ring verde; o dragão (imagem 512×512 HQ trimada, sem fundo

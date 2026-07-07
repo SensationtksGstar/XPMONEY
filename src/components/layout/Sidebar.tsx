@@ -97,7 +97,7 @@ export function Sidebar() {
           appearance={{
             elements: {
               userButtonPopoverCard:
-                'bg-[#111827] border border-white/10 shadow-2xl shadow-black/60 rounded-2xl !text-white',
+                'bg-surface-1 border border-white/10 shadow-2xl shadow-black/60 rounded-2xl !text-white',
               userButtonPopoverActionButton:
                 'hover:bg-white/10 rounded-xl text-white',
               userButtonPopoverActionButtonText: 'text-white/90 font-medium',

@@ -301,7 +301,7 @@ export default async function AdminSetupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0f1e] text-white p-6">
+    <main className="min-h-screen bg-surface-0 text-white p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <header className="flex items-start justify-between gap-4 flex-wrap">
           <div>

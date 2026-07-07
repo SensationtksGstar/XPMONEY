@@ -119,7 +119,7 @@ export function NewsletterSignup({ source = 'landing', variant = 'default', clas
           onChange={e => setEmail(e.target.value)}
           placeholder={t('newsletter.email_placeholder')}
           disabled={status === 'loading'}
-          className="flex-1 min-h-[44px] px-4 py-2.5 rounded-xl bg-[#0a0f1e] border border-white/15 text-white placeholder-white/30 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 outline-none disabled:opacity-50 text-sm"
+          className="flex-1 min-h-[44px] px-4 py-2.5 rounded-xl bg-surface-0 border border-white/15 text-white placeholder-white/30 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 outline-none disabled:opacity-50 text-sm"
         />
 
         {/* Honeypot — same name attackers expect, hidden from real users

@@ -35,7 +35,7 @@ export function TopBar() {
 
   return (
     <header
-      className="lg:hidden sticky top-0 z-30 border-b border-white/5 bg-[#060b14]/90 backdrop-blur-md"
+      className="lg:hidden sticky top-0 z-30 border-b border-white/5 bg-surface-0/90 backdrop-blur-md"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex items-center justify-between px-4 py-3">
@@ -77,7 +77,7 @@ export function TopBar() {
               elements: {
                 /* popup card */
                 userButtonPopoverCard:
-                  'bg-[#111827] border border-white/10 shadow-2xl shadow-black/60 rounded-2xl !text-white',
+                  'bg-surface-1 border border-white/10 shadow-2xl shadow-black/60 rounded-2xl !text-white',
                 /* header inside popup */
                 userButtonPopoverActionButton:
                   'hover:bg-white/10 rounded-xl text-white',

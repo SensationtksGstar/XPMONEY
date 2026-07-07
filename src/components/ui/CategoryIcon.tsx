@@ -102,7 +102,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 /* ── Color palette per type ──────────────────────────────────────────── */
 const TYPE_DEFAULTS = {
-  income:   { color: '#22c55e', icon: ArrowDownLeft },
+  income:   { color: '#27c26b', icon: ArrowDownLeft },
   expense:  { color: '#94a3b8', icon: Package },
   transfer: { color: '#60a5fa', icon: ArrowLeftRight },
 }
@@ -128,7 +128,7 @@ export function CategoryIcon({
   const color  = categoryColor ?? TYPE_DEFAULTS[type].color
 
   // For income: always use green, override category color
-  const finalColor = type === 'income' ? '#22c55e' : type === 'transfer' ? '#60a5fa' : color
+  const finalColor = type === 'income' ? '#27c26b' : type === 'transfer' ? '#60a5fa' : color
 
   // Background: colour at 14% opacity; border: colour at 22% opacity
   const bg     = `${finalColor}24`

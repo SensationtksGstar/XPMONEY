@@ -105,7 +105,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor:   '#060b14',
+  themeColor:   '#0b0d10',
   width:        'device-width',
   initialScale: 1,
   // NOTE: we intentionally do NOT set maximumScale/userScalable. Locking zoom
