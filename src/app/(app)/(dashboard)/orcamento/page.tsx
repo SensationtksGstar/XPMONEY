@@ -132,7 +132,7 @@ function BudgetDashboard({ status }: { status: NonNullable<ReturnType<typeof use
   return (
     <>
       {/* Resumo */}
-      <div className="bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-transparent border border-emerald-500/20 rounded-2xl p-5">
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           <SummaryStat label={t('budget.stat_income')} value={formatCurrency(status.income)} tone="neutral" />
           <SummaryStat label={t('budget.stat_spent')}  value={formatCurrency(status.totalSpent)} tone="warn" />

@@ -53,7 +53,7 @@ export async function LandingHowItWorks() {
         {STEPS.map((s) => (
           <article
             key={s.num}
-            className="relative bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col hover:border-green-500/30 transition-colors"
+            className="relative bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col hover:border-white/20 transition-colors"
           >
             <div className="relative z-10 w-12 h-12 rounded-full bg-green-500 text-black font-bold text-xl flex items-center justify-center mb-4 shadow-[0_4px_12px_rgba(0,0,0,0.45)]">
               {s.num}

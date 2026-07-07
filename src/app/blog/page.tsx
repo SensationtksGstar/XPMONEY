@@ -90,7 +90,7 @@ export default async function BlogIndexPage() {
               <li key={post.slug}>
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="block group bg-white/5 border border-white/10 hover:border-emerald-500/40 rounded-2xl p-5 transition-colors"
+                  className="block group bg-white/5 border border-white/10 hover:border-white/20 rounded-2xl p-5 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
                     <h2 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors leading-snug flex-1 min-w-0">

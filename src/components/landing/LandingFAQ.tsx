@@ -63,7 +63,7 @@ export async function LandingFAQ() {
           <details
             key={i}
             open={i === 0}
-            className="group bg-white/5 border border-white/10 hover:border-white/20 open:border-green-500/30 rounded-xl transition-colors"
+            className="group bg-white/5 border border-white/10 hover:border-white/20 open:border-white/25 rounded-xl transition-colors"
           >
             <summary className="cursor-pointer list-none flex items-center justify-between gap-4 px-5 py-4 min-h-[56px] [&::-webkit-details-marker]:hidden">
               <span className="font-semibold text-white text-[15px]">{t(f.qKey)}</span>

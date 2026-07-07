@@ -103,7 +103,7 @@ export function MascotPicker({ initialGender, currentEvo = 1 }: MascotPickerProp
           className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all touch-target no-tap-highlight ${
             gender === 'voltix'
               ? 'border-green-500 bg-green-500/10'
-              : 'border-white/10 bg-white/5 hover:border-green-500/40'
+              : 'border-white/10 bg-white/5 hover:border-white/20'
           } disabled:opacity-60 disabled:cursor-wait`}
         >
           <div className="w-24 h-24 flex items-center justify-center">

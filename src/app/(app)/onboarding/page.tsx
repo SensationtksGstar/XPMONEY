@@ -161,7 +161,7 @@ export default function OnboardingPage() {
                   className={`group flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
                     mascot === 'voltix'
                       ? 'border-green-500 bg-green-500/10'
-                      : 'border-white/10 bg-white/5 hover:border-green-500/40 hover:bg-green-500/5'
+                      : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8'
                   }`}
                 >
                   <div className="w-28 h-28 flex items-center justify-center">

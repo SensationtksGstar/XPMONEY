@@ -99,7 +99,7 @@ export async function LandingReviews() {
           return (
             <article
               key={name + i}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-3 hover:border-green-500/30 transition-colors"
+              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-3 hover:border-white/20 transition-colors"
             >
               {/* Stars */}
               <div className="flex items-center gap-0.5" aria-label={t('landing.reviews.stars_aria', { rating: r.rating })}>
