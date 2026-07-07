@@ -121,8 +121,8 @@ export async function LandingPricing() {
           </div>
 
           {/* ── PREMIUM ──────────────────────────────────────────────── */}
-          <div className="relative rounded-2xl p-6 flex flex-col border-2 border-purple-500/50 bg-gradient-to-b from-purple-500/10 to-transparent shadow-[0_12px_40px_-15px_rgba(168,85,247,0.5)]">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
+          <div className="relative rounded-2xl p-6 flex flex-col border-2 border-purple-500/50 bg-gradient-to-b from-purple-500/10 to-transparent shadow-[0_12px_32px_-12px_rgba(0,0,0,0.6)]">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
               {t('pricing.premium_badge')}
             </span>
@@ -176,13 +176,13 @@ export async function LandingPricing() {
                 period-aware href + label as JS state. */}
             <Link
               href="/sign-up?plan=premium&period=yearly"
-              className="block text-center font-bold py-3 rounded-xl text-sm transition-all bg-gradient-to-r from-purple-500 to-purple-400 hover:from-purple-400 hover:to-purple-300 text-white min-h-[48px] flex items-center justify-center shadow-[0_8px_30px_-8px_rgba(168,85,247,0.6)] group-data-[period=monthly]/p:hidden"
+              className="block text-center font-bold py-3 rounded-xl text-sm transition-all bg-purple-500 hover:bg-purple-400 text-white min-h-[48px] flex items-center justify-center shadow-[0_8px_24px_-8px_rgba(0,0,0,0.6)] group-data-[period=monthly]/p:hidden"
             >
               {t('pricing.premium_cta_y')}
             </Link>
             <Link
               href="/sign-up?plan=premium&period=monthly"
-              className="block text-center font-bold py-3 rounded-xl text-sm transition-all bg-gradient-to-r from-purple-500 to-purple-400 hover:from-purple-400 hover:to-purple-300 text-white min-h-[48px] flex items-center justify-center shadow-[0_8px_30px_-8px_rgba(168,85,247,0.6)] group-data-[period=yearly]/p:hidden"
+              className="block text-center font-bold py-3 rounded-xl text-sm transition-all bg-purple-500 hover:bg-purple-400 text-white min-h-[48px] flex items-center justify-center shadow-[0_8px_24px_-8px_rgba(0,0,0,0.6)] group-data-[period=yearly]/p:hidden"
             >
               {t('pricing.premium_cta_m')}
             </Link>

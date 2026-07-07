@@ -93,7 +93,7 @@ export function PremiumFeatureLock({
       <div className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-4 py-12 text-center">
         <div className="w-full max-w-md bg-surface-1/95 backdrop-blur-xl border border-purple-500/25 rounded-2xl p-7 shadow-2xl">
           {/* Icon pill */}
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center mb-5">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center mb-5">
             <Icon className="w-6 h-6 text-purple-300" />
           </div>
 

@@ -72,7 +72,7 @@ export function PricingPeriodToggle({
             onClick={() => setPeriod('yearly')}
             className={`relative min-h-[40px] px-5 py-2 rounded-full text-sm font-semibold transition-all touch-manipulation ${
               period === 'yearly'
-                ? 'bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow-[0_6px_20px_-6px_rgba(168,85,247,0.6)]'
+                ? 'bg-purple-500 text-white shadow-[0_4px_12px_rgba(0,0,0,0.45)]'
                 : 'text-white/65 hover:text-white'
             }`}
           >

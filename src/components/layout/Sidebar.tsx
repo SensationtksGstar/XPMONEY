@@ -80,7 +80,7 @@ export function Sidebar() {
       <div className="px-3 py-3">
         <Link
           href="/settings/billing"
-          className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all"
+          className="flex items-center gap-3 px-3 py-3 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all"
         >
           <Crown className="w-4 h-4 text-purple-400" />
           <div>

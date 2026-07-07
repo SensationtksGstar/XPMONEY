@@ -365,7 +365,7 @@ export function StatementImporter({ onClose }: Props) {
       qc.invalidateQueries({ queryKey: ['budget-status']   })  // /orcamento dashboard
       qc.invalidateQueries({ queryKey: ['budget-history']  })  // chart 6 meses
       qc.invalidateQueries({ queryKey: ['voltix']          })  // Pet hero (mood pode mudar)
-      qc.invalidateQueries({ queryKey: ['debts']           })  // DebtWidget
+      qc.invalidateQueries({ queryKey: ['debts']           })  // /dividas
 
       setDoneMsg(msg)
       setStep('done')
