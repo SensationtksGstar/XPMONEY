@@ -5,7 +5,6 @@ import dynamic                         from 'next/dynamic'
 import { PlusCircle, Crown }           from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
 import { useUserPlan }                 from '@/lib/contexts/UserPlanContext'
-import { QuickActions }                from '@/components/dashboard/QuickActions'
 import { ProToolsShowcase }            from '@/components/dashboard/ProToolsShowcase'
 import { StreakBanner }                from '@/components/dashboard/StreakBanner'
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
@@ -189,9 +188,11 @@ export default function DashboardPage() {
           <h1 className="text-xl font-bold text-white capitalize">{firstName} 👋</h1>
           <p className="text-white/30 text-xs mt-0.5">{formatMonth()}</p>
         </div>
+        {/* Um só add por viewport: <lg usa o FAB da MobileNav; este botão
+            existe apenas em desktop, onde a MobileNav (e o FAB) não montam. */}
         <button
           onClick={() => setShowForm(true)}
-          className="hidden sm:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-colors text-sm active:scale-95"
+          className="hidden lg:flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold px-4 py-2.5 rounded-xl transition-colors text-sm active:scale-95"
         >
           <PlusCircle className="w-4 h-4" />
           {t('dashboard.add')}
@@ -205,9 +206,6 @@ export default function DashboardPage() {
           (and any future analytics widget that reads usePeriod). User
           selection persists per-device in localStorage. */}
       <PeriodFilter />
-
-      {/* Quick actions */}
-      <QuickActions />
 
       {/* Pro tools showcase — always visible, locked items link to billing */}
       <ProToolsShowcase />

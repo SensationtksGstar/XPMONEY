@@ -2,11 +2,9 @@
 
 import { usePathname }       from 'next/navigation'
 import { UserButton }        from '@clerk/nextjs'
-import { Crown }             from 'lucide-react'
 import Link                  from 'next/link'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { Logo }              from '@/components/ui/Logo'
-import { LanguageToggle }    from '@/components/common/LanguageToggle'
 import { useT }              from '@/lib/i18n/LocaleProvider'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
@@ -50,23 +48,11 @@ export function TopBar() {
           <h1 className="font-bold text-white text-lg">{title}</h1>
         )}
 
-        {/* Ações direita */}
+        {/* Ações direita — chrome mínimo: sino + avatar. O idioma vive no
+            LanguageSwitcher em /settings (padrão Apple: idioma é definição,
+            não chrome); o upsell vive nos momentos contextuais (banner do
+            dashboard para free, paywalls, billing), não como badge fixo. */}
         <div className="flex items-center gap-2">
-          {/* Language toggle — compact PT/EN switch. Lives here on mobile
-              (TopBar only shows on lg:hidden) so users can flip without
-              digging into settings. Desktop users flip via the Sidebar or
-              settings card. */}
-          <LanguageToggle />
-
-          {/* Badge upgrade */}
-          <Link
-            href="/settings/billing"
-            className="hidden xs:flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-green-500/20 transition-colors"
-          >
-            <Crown className="w-3 h-3" />
-            {t('topbar.upgrade_badge')}
-          </Link>
-
           {/* Notificações — funcional */}
           <NotificationPanel />
 
