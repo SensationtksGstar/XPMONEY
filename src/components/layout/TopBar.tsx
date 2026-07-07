@@ -19,6 +19,11 @@ const PAGE_TITLE_KEYS: Record<string, TranslationKey> = {
   '/perspetiva':   'topbar.title.perspective',
   '/simulador':    'topbar.title.simulator',
   '/cursos':       'topbar.title.academy',
+  // Reutilizam as chaves de nav — o título do ecrã DEVE dizer o mesmo que
+  // o item de menu que lá levou (antes caíam no fallback "XP-Money").
+  '/contas':       'nav.networth',
+  '/orcamento':    'nav.budget',
+  '/dividas':      'nav.debt_killer',
 }
 
 export function TopBar() {
