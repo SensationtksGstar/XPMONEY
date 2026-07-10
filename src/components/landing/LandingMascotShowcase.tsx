@@ -16,6 +16,11 @@ import type { TranslationKey } from '@/lib/i18n/translations'
  */
 
 const EVOS = [1, 2, 3, 4, 5, 6]
+// Stagger the idle float so the 12 sprites don't bob in lockstep — the
+// phase offset is what makes the row read "alive" instead of "animated".
+const EVO_FLOAT_DELAY: Record<number, string> = {
+  1: '', 2: 'delay-300', 3: 'delay-600', 4: 'delay-900', 5: 'delay-1200', 6: 'delay-1500',
+}
 const EVO_LABEL_KEYS: Record<number, TranslationKey> = {
   1: 'landing.mascot.evo_1',
   2: 'landing.mascot.evo_2',
@@ -57,7 +62,7 @@ function EvoRow({
                   alt={t('landing.mascot.evo_alt', { name, evo, label })}
                   width={96}
                   height={96}
-                  className="w-full h-full object-contain p-1.5"
+                  className={`w-full h-full object-contain p-1.5 animate-mascot-float-sm ${EVO_FLOAT_DELAY[evo]}`}
                 />
               </div>
               <p className="text-[11px] font-semibold text-white/45 uppercase tracking-wider">

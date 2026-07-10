@@ -89,7 +89,7 @@ export async function LandingFAQ() {
             width={96}
             height={96}
             sizes="96px"
-            className="w-24 h-24 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
+            className="w-24 h-24 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.45)] animate-mascot-float-sm"
           />
         </div>
         <h3 className="text-xl md:text-2xl font-bold mb-2">

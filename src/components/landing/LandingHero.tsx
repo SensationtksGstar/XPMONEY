@@ -178,7 +178,7 @@ export async function LandingHero() {
               width={420}
               height={420}
               priority
-              className="w-[240px] sm:w-[300px] md:w-[360px] h-auto"
+              className="w-[240px] sm:w-[300px] md:w-[360px] h-auto animate-mascot-float"
             />
           </div>
 

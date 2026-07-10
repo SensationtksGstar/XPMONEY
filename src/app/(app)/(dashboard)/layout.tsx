@@ -70,8 +70,11 @@ export default async function DashboardLayout({
               to the side padding centers correctly on every device
               orientation. The calc keeps the existing px-4/md:px-6 as a
               floor so non-notched devices look the same as before. */}
+          {/* pb-40 mobile: 160px limpa a MobileNav (~73px) E o DragonCoinFAB
+              que flutua acima dela (bottom-24 + 64px = topo a 160px) — com
+              pb-24 o FAB tapava o valor € da última transação visível. */}
           <main
-            className="flex-1 py-6 pb-24 lg:pb-6 max-w-7xl mx-auto w-full min-w-0 overflow-x-hidden"
+            className="flex-1 py-6 pb-40 lg:pb-6 max-w-7xl mx-auto w-full min-w-0 overflow-x-hidden"
             style={{
               paddingLeft:  'max(env(safe-area-inset-left), 1rem)',
               paddingRight: 'max(env(safe-area-inset-right), 1rem)',
