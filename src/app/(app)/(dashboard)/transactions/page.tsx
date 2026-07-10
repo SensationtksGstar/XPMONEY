@@ -174,26 +174,27 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* Filtros rápidos — flex-wrap: em ecrãs estreitos o select de
-          categorias NÃO cabe ao lado das 3 pills e sobrepunha a "Receitas";
-          com wrap desce para a sua própria linha. */}
+      {/* Filtros rápidos — as pills são filhos DIRETOS da fila com wrap.
+          A versão anterior tinha as pills num contentor flex-1 min-w-0 com
+          overflow-x — como esse contentor encolhe infinitamente, o wrap
+          nunca disparava e o select cortava/sobrepunha a pill "Receitas"
+          em ecrãs estreitos. As 3 pills cabem em ~250px (qualquer telefone
+          ≥320px); o select quebra sozinho para a linha seguinte. */}
       <div className="flex items-center gap-2 gap-y-2.5 mb-5 flex-wrap">
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide flex-1 min-w-0">
-          {FILTERS.map(f => (
-            <button
-              key={f.value}
-              onClick={() => setTypeFilter(f.value)}
-              className={cn(
-                'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border',
-                typeFilter === f.value
-                  ? 'bg-green-500/15 border-green-500/40 text-green-400'
-                  : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        {FILTERS.map(f => (
+          <button
+            key={f.value}
+            onClick={() => setTypeFilter(f.value)}
+            className={cn(
+              'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border',
+              typeFilter === f.value
+                ? 'bg-green-500/15 border-green-500/40 text-green-400'
+                : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
 
         {/* Category filter — only when the user actually has categorised tx */}
         {categoryOptions.length > 0 && (
@@ -202,7 +203,7 @@ export default function TransactionsPage() {
             onChange={e => setCategoryFilter(e.target.value)}
             aria-label={t('transactions.filter.category_aria')}
             className={cn(
-              'flex-shrink-0 max-w-[42vw] sm:max-w-[200px] px-3 py-2 rounded-full text-sm font-medium border appearance-none outline-none cursor-pointer transition-all',
+              'flex-shrink-0 max-w-full sm:max-w-[200px] px-3 py-2 rounded-full text-sm font-medium border appearance-none outline-none cursor-pointer transition-all',
               categoryFilter !== 'all'
                 ? 'bg-green-500/15 border-green-500/40 text-green-400'
                 : 'bg-white/5 border-white/10 text-white/60 hover:text-white',
