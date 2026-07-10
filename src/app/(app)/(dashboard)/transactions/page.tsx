@@ -173,8 +173,10 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* Filtros rápidos */}
-      <div className="flex items-center gap-2 mb-5">
+      {/* Filtros rápidos — flex-wrap: em ecrãs estreitos o select de
+          categorias NÃO cabe ao lado das 3 pills e sobrepunha a "Receitas";
+          com wrap desce para a sua própria linha. */}
+      <div className="flex items-center gap-2 gap-y-2.5 mb-5 flex-wrap">
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide flex-1 min-w-0">
           {FILTERS.map(f => (
             <button

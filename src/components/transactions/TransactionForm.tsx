@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useId } from 'react'
-import { X, Zap, ChevronDown, ScanLine, Crown, Lock } from 'lucide-react'
+import { useState, useEffect, useId, useMemo } from 'react'
+import { X, Zap, ChevronDown, ScanLine, Crown, Lock, Plus } from 'lucide-react'
+import { useQueryClient }     from '@tanstack/react-query'
 import { useTransactions }    from '@/hooks/useTransactions'
 import { useAccounts }        from '@/hooks/useAccounts'
 import { useCategories }      from '@/hooks/useCategories'
@@ -42,24 +43,51 @@ function parseAmountLocale(raw: string): number {
   return Number(normalised)
 }
 
+/** ISO date (YYYY-MM-DD) for today / N days ago — same UTC convention the
+ *  form always used for its default date. */
+function isoDaysAgo(days = 0): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().split('T')[0]
+}
+
+// Quick-pick palette for the inline category creator. Colors are persisted
+// per-category DATA (not chrome), so a free range is fine — the green entry
+// is the system accent so a "money"-ish category can match the brand.
+const NEWCAT_EMOJIS = ['🛒', '🍽️', '☕', '🐾', '🎮', '💼', '🎓', '💊', '🚌', '🎁', '🏋️', '✈️']
+const NEWCAT_COLORS = ['#f97316', '#eab308', '#27c26b', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#94a3b8']
+
 export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
-  const { createTransaction }              = useTransactions()
+  const { transactions, createTransaction } = useTransactions()
   const { defaultAccount }                 = useAccounts()
   const { byType }                         = useCategories()
   const { isFree }                         = useUserPlan()
+  const queryClient                        = useQueryClient()
   const titleId                            = useId()
   const t                                  = useT()
 
   const [type,              setType]             = useState<TransactionType>(initialType)
   const [amount,            setAmount]           = useState('')
+  const [amountFocus,       setAmountFocus]      = useState(false)
   const [selectedCategory,  setSelectedCategory] = useState<Category | null>(null)
   const [description,       setDescription]      = useState('')
-  const [date,              setDate]             = useState(new Date().toISOString().split('T')[0])
+  const [date,              setDate]             = useState(isoDaysAgo(0))
+  const [showDatePicker,    setShowDatePicker]   = useState(false)
   const [loading,           setLoading]          = useState(false)
+  const [formError,         setFormError]        = useState<string | null>(null)
   const [xpGained,          setXpGained]         = useState<number | null>(null)
   const [step,              setStep]             = useState<1 | 2>(1)
   const [showScanner,       setShowScanner]      = useState(false)
   const [showUpgradeTip,    setShowUpgradeTip]   = useState(false)
+
+  // Inline category creator ("pouco personalizável" fix — July 2026)
+  const [showNewCat,  setShowNewCat]  = useState(false)
+  const [newCatName,  setNewCatName]  = useState('')
+  const [newCatIcon,  setNewCatIcon]  = useState(NEWCAT_EMOJIS[0])
+  const [newCatColor, setNewCatColor] = useState(NEWCAT_COLORS[4])
+  const [newCatBusy,  setNewCatBusy]  = useState(false)
+  const [newCatError, setNewCatError] = useState<string | null>(null)
+
+  const todayISO     = isoDaysAgo(0)
+  const yesterdayISO = isoDaysAgo(1)
 
   // Close on Escape
   useEffect(() => {
@@ -68,16 +96,67 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
-  const categories = byType(type)
+  // Personal ordering: the user's most-used categories come first (counted
+  // from the shared ['transactions'] cache — zero extra network). Sort is
+  // stable, so unused categories keep the API order (defaults, A-Z).
+  const usageByName = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const tx of transactions) {
+      const name = tx.category?.name
+      if (name) m.set(name, (m.get(name) ?? 0) + 1)
+    }
+    return m
+  }, [transactions])
+
+  const categories = useMemo(
+    () => [...byType(type)].sort(
+      (a, b) => (usageByName.get(b.name) ?? 0) - (usageByName.get(a.name) ?? 0)
+    ),
+    // byType is recreated per render but derives only from the query cache;
+    // type + usage + the underlying list length cover real invalidations.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [type, usageByName, byType(type).length]
+  )
 
   function handleCategorySelect(cat: Category) {
     setSelectedCategory(cat)
+    setFormError(null)
     if (window.innerWidth < 640) setStep(2)
   }
 
-  function handleTypeChange(t: TransactionType) {
-    setType(t)
+  function handleTypeChange(next: TransactionType) {
+    setType(next)
     setSelectedCategory(null)
+    setShowNewCat(false)
+  }
+
+  // ── Inline category creation ─────────────────────────────────────────────
+  async function handleCreateCategory() {
+    const name = newCatName.trim()
+    if (!name) { setNewCatError(t('txform.newcat_name_ph')); return }
+    setNewCatBusy(true)
+    setNewCatError(null)
+    try {
+      const res  = await fetch('/api/categories', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name, icon: newCatIcon, color: newCatColor, transaction_type: type }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok) {
+        setNewCatError(json?.error ?? t('txform.newcat_err'))
+        return
+      }
+      await queryClient.invalidateQueries({ queryKey: ['categories'] })
+      setShowNewCat(false)
+      setNewCatName('')
+      if (json?.data) handleCategorySelect(json.data as Category)
+    } catch (err) {
+      console.warn('[txform] create category failed:', err)
+      setNewCatError(t('txform.newcat_err'))
+    } finally {
+      setNewCatBusy(false)
+    }
   }
 
   // ── Apply AI receipt scan result ─────────────────────────────────────────
@@ -85,7 +164,10 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
     setShowScanner(false)
 
     if (data.amount !== null)  setAmount(String(data.amount))
-    if (data.date)             setDate(data.date)
+    if (data.date) {
+      setDate(data.date)
+      if (data.date !== todayISO && data.date !== yesterdayISO) setShowDatePicker(true)
+    }
     if (data.description)      setDescription(data.description)
     else if (data.merchant)    setDescription(data.merchant)
 
@@ -108,9 +190,19 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!amount || !selectedCategory) return
+    // Inline validation — never a disabled dead-end button (repo rule:
+    // a disabled tap on mobile gives zero feedback and reads as "broken").
+    if (!selectedCategory) {
+      setFormError(t('txform.err_category'))
+      if (window.innerWidth < 640) setStep(1)
+      return
+    }
     const parsedAmount = parseAmountLocale(amount)
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return
+    if (!amount || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setFormError(t('txform.err_amount'))
+      return
+    }
+    setFormError(null)
     setLoading(true)
     try {
       await createTransaction({
@@ -131,6 +223,8 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
     }
   }
 
+  const isExpense = type === 'expense'
+
   return (
     <>
       <div
@@ -143,8 +237,8 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                    flex items-end sm:items-start sm:justify-center sm:py-8 sm:px-4"
       >
         <div
-          className="w-full sm:max-w-md bg-[#0f1623] border border-white/10 overflow-hidden
-                     rounded-t-3xl sm:rounded-2xl animate-slide-up
+          className="w-full sm:max-w-md bg-surface-1 border border-white/10 overflow-hidden
+                     rounded-t-3xl sm:rounded-2xl animate-slide-up shadow-[0_-8px_40px_rgba(0,0,0,0.5)] sm:shadow-2xl
                      flex flex-col max-h-[92dvh] sm:max-h-none sm:my-auto"
           onClick={e => e.stopPropagation()}
         >
@@ -159,7 +253,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
               {step === 2 && !showScanner && (
                 <button
                   onClick={() => setStep(1)}
-                  className="sm:hidden text-white/40 hover:text-white transition-colors"
+                  className="sm:hidden w-8 h-8 -ml-1 flex items-center justify-center rounded-full text-white/40 hover:text-white active:bg-white/10 transition-colors"
                 >
                   <ChevronDown className="w-5 h-5 rotate-90" />
                 </button>
@@ -167,7 +261,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
               {showScanner && (
                 <button
                   onClick={() => setShowScanner(false)}
-                  className="text-white/40 hover:text-white transition-colors"
+                  className="w-8 h-8 -ml-1 flex items-center justify-center rounded-full text-white/40 hover:text-white active:bg-white/10 transition-colors"
                 >
                   <ChevronDown className="w-5 h-5 rotate-90" />
                 </button>
@@ -181,7 +275,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
               {!showScanner && (
                 <button
                   onClick={() => {
-                    if (isFree) { setShowUpgradeTip(t => !t); return }
+                    if (isFree) { setShowUpgradeTip(v => !v); return }
                     setShowScanner(true)
                   }}
                   title={t('txform.scan_title')}
@@ -197,30 +291,30 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                   {isFree && <Crown className="w-3 h-3" />}
                 </button>
               )}
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors p-1">
+              <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full text-white/40 hover:text-white active:bg-white/10 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
           {/* Upgrade tip for free users */}
-            {showUpgradeTip && (
-              <div className="overflow-hidden border-b border-white/5 animate-fade-in">
-                <div className="px-5 py-3 bg-purple-500/10 flex items-center gap-3">
-                  <Crown className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                  <p className="text-xs text-white/70 flex-1">
-                    {t('txform.scan_upgrade_msg')} <strong className="text-purple-300">{t('txform.scan_upgrade_plan')}</strong>
-                  </p>
-                  <Link
-                    href="/settings/billing"
-                    onClick={onClose}
-                    className="text-[11px] font-bold text-black bg-purple-400 px-2.5 py-1 rounded-lg flex-shrink-0"
-                  >
-                    {t('txform.scan_upgrade_cta')}
-                  </Link>
-                </div>
+          {showUpgradeTip && (
+            <div className="overflow-hidden border-b border-white/5 animate-fade-in">
+              <div className="px-5 py-3 bg-purple-500/10 flex items-center gap-3">
+                <Crown className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                <p className="text-xs text-white/70 flex-1">
+                  {t('txform.scan_upgrade_msg')} <strong className="text-purple-300">{t('txform.scan_upgrade_plan')}</strong>
+                </p>
+                <Link
+                  href="/settings/billing"
+                  onClick={onClose}
+                  className="text-[11px] font-bold text-black bg-purple-400 px-2.5 py-1 rounded-lg flex-shrink-0"
+                >
+                  {t('txform.scan_upgrade_cta')}
+                </Link>
               </div>
-            )}
+            </div>
+          )}
 
           <div className="flex-1 min-h-0 overflow-y-auto">
 
@@ -239,19 +333,22 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
 
                   {/* STEP 1: Type + Category */}
                   <div className={cn(step === 2 && 'hidden sm:block')}>
-                    <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-2xl mb-4">
+                    {/* Segmented type control — semantic tints (red = out,
+                        green = in), neutral resting track. */}
+                    <div className="grid grid-cols-2 gap-1 p-1 bg-surface-2/70 border border-white/[0.06] rounded-2xl mb-5">
                       {(['expense', 'income'] as TransactionType[]).map(opt => (
                         <button
                           key={opt}
                           type="button"
                           onClick={() => handleTypeChange(opt)}
+                          aria-pressed={type === opt}
                           className={cn(
-                            'py-3 rounded-xl text-sm font-bold transition-all active:scale-95',
+                            'min-h-[44px] rounded-xl text-sm font-bold transition-all active:scale-[0.98]',
                             type === opt
                               ? opt === 'expense'
-                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                : 'bg-green-500/20 text-green-400 border border-green-500/30'
-                              : 'text-white/50',
+                                ? 'bg-red-500/15 text-red-300 border border-red-500/30 shadow-[0_1px_2px_rgba(0,0,0,0.4)]'
+                                : 'bg-green-500/15 text-green-300 border border-green-500/30 shadow-[0_1px_2px_rgba(0,0,0,0.4)]'
+                              : 'text-white/45 border border-transparent hover:text-white/70',
                           )}
                         >
                           {opt === 'expense' ? t('txform.type_expense') : t('txform.type_income')}
@@ -259,33 +356,134 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       ))}
                     </div>
 
-                    <p className="text-xs text-white/40 mb-3 font-medium uppercase tracking-wider">{t('txform.category_label')}</p>
+                    <p className="text-[11px] text-white/40 mb-3 font-semibold uppercase tracking-wider">{t('txform.category_label')}</p>
+
+                    {/* Category tiles — each carries its OWN persisted colour
+                        (data-colour, not chrome), most-used first. */}
                     <div className="grid grid-cols-4 gap-2">
-                      {categories.map(cat => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => handleCategorySelect(cat)}
-                          className={cn(
-                            'flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-all active:scale-95',
-                            selectedCategory?.id === cat.id
-                              ? 'border-green-500/60 bg-green-500/15 text-white'
-                              : 'border-white/8 bg-white/4 text-white/60 hover:border-white/20 hover:text-white',
-                          )}
-                        >
-                          <span className="text-2xl leading-none">{cat.icon}</span>
-                          <span className="text-[11px] font-medium text-center leading-tight truncate w-full">
-                            {cat.name}
-                          </span>
-                        </button>
-                      ))}
+                      {categories.map(cat => {
+                        const selected = selectedCategory?.id === cat.id
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => handleCategorySelect(cat)}
+                            aria-pressed={selected}
+                            className={cn(
+                              'flex flex-col items-center gap-1.5 p-2.5 pt-3 rounded-2xl border transition-all active:scale-95 min-h-[76px]',
+                              selected
+                                ? 'border-green-500/70 bg-green-500/15 text-white'
+                                : 'text-white/70 hover:text-white hover:border-white/25',
+                            )}
+                            style={selected ? undefined : {
+                              backgroundColor: `${cat.color}14`,
+                              borderColor:     `${cat.color}30`,
+                            }}
+                          >
+                            <span className="text-2xl leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.35)]">{cat.icon}</span>
+                            <span className="text-[11px] font-medium text-center leading-tight truncate w-full">
+                              {cat.name}
+                            </span>
+                          </button>
+                        )
+                      })}
+
+                      {/* + Nova categoria — a personalização a um toque */}
+                      <button
+                        type="button"
+                        onClick={() => { setShowNewCat(v => !v); setNewCatError(null) }}
+                        aria-expanded={showNewCat}
+                        className={cn(
+                          'flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-2xl border border-dashed transition-all active:scale-95 min-h-[76px]',
+                          showNewCat
+                            ? 'border-green-500/60 bg-green-500/10 text-green-300'
+                            : 'border-white/20 bg-white/[0.03] text-white/45 hover:text-white/80 hover:border-white/35',
+                        )}
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span className="text-[11px] font-medium">{t('txform.newcat_tile')}</span>
+                      </button>
                     </div>
 
-                    {selectedCategory && (
+                    {/* Inline category creator */}
+                    {showNewCat && (
+                      <div className="mt-3 bg-surface-2/60 border border-white/10 rounded-2xl p-4 space-y-3 animate-fade-in">
+                        <p className="text-xs font-semibold text-white/70">{t('txform.newcat_title')}</p>
+                        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 focus-within:border-green-500/50 transition-colors">
+                          <span className="text-xl leading-none" aria-hidden>{newCatIcon}</span>
+                          <input
+                            type="text"
+                            maxLength={40}
+                            value={newCatName}
+                            onChange={e => setNewCatName(e.target.value)}
+                            placeholder={t('txform.newcat_name_ph')}
+                            className="flex-1 min-w-0 bg-transparent text-white text-sm placeholder-white/25 outline-none"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {NEWCAT_EMOJIS.map(em => (
+                            <button
+                              key={em}
+                              type="button"
+                              onClick={() => setNewCatIcon(em)}
+                              aria-label={t('txform.newcat_icon_aria', { icon: em })}
+                              className={cn(
+                                'w-9 h-9 flex items-center justify-center rounded-lg text-lg transition-all active:scale-90',
+                                newCatIcon === em ? 'bg-white/15 ring-1 ring-green-400/60' : 'bg-white/[0.04] hover:bg-white/10',
+                              )}
+                            >
+                              {em}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {NEWCAT_COLORS.map(cl => (
+                            <button
+                              key={cl}
+                              type="button"
+                              onClick={() => setNewCatColor(cl)}
+                              aria-label={t('txform.newcat_color_aria', { color: cl })}
+                              className={cn(
+                                'w-7 h-7 rounded-full transition-all active:scale-90',
+                                newCatColor === cl ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-surface-2' : 'opacity-80 hover:opacity-100',
+                              )}
+                              style={{ backgroundColor: cl }}
+                            />
+                          ))}
+                        </div>
+                        {newCatError && (
+                          <p className="text-xs text-red-400">{newCatError}</p>
+                        )}
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowNewCat(false)}
+                            className="flex-1 min-h-[44px] bg-white/5 border border-white/10 text-white/70 hover:text-white text-sm font-semibold rounded-xl transition-colors"
+                          >
+                            {t('txform.newcat_cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCreateCategory}
+                            disabled={newCatBusy}
+                            className="flex-1 min-h-[44px] bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black text-sm font-bold rounded-xl transition-all active:scale-[0.98]"
+                          >
+                            {newCatBusy ? '…' : t('txform.newcat_create')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {formError && step === 1 && (
+                      <p className="mt-3 text-xs text-red-400 text-center" role="alert">{formError}</p>
+                    )}
+
+                    {selectedCategory && !showNewCat && (
                       <button
                         type="button"
                         onClick={() => setStep(2)}
-                        className="sm:hidden w-full mt-4 bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-2xl transition-all active:scale-95"
+                        className="sm:hidden w-full mt-4 min-h-[52px] bg-green-500 hover:bg-green-400 text-black font-bold rounded-2xl transition-all active:scale-[0.98]"
                       >
                         {t('txform.continue')}
                       </button>
@@ -299,22 +497,40 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       <button
                         type="button"
                         onClick={() => setStep(1)}
-                        className="sm:hidden w-full flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 mb-4 text-left"
+                        className="sm:hidden w-full flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 mb-5 text-left active:bg-white/10 transition-colors"
                       >
-                        <span className="text-2xl">{selectedCategory.icon}</span>
-                        <div className="flex-1">
-                          <p className="text-xs text-white/40">{t('txform.category_label')}</p>
-                          <p className="text-sm font-semibold text-white">{selectedCategory.name}</p>
+                        <span
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                          style={{ backgroundColor: `${selectedCategory.color}1f` }}
+                          aria-hidden
+                        >
+                          {selectedCategory.icon}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] text-white/40">{t('txform.category_label')}</p>
+                          <p className="text-sm font-semibold text-white truncate">{selectedCategory.name}</p>
                         </div>
-                        <ChevronDown className="w-4 h-4 text-white/30 -rotate-90" />
+                        <ChevronDown className="w-4 h-4 text-white/30 -rotate-90 flex-shrink-0" />
                       </button>
                     )}
 
-                    {/* Amount */}
-                    <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus-within:border-green-500/50 transition-colors mb-4">
-                      <p className="text-xs text-white/40 mb-2">{t('txform.amount_label')}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white/40 font-bold text-2xl">€</span>
+                    {/* Amount — o herói do formulário. Sem caixa: número
+                        gigante centrado, sinal semântico, hairline por baixo
+                        que acende a verde com o foco. */}
+                    <div className="text-center mb-6 pt-1">
+                      <p className="text-[11px] uppercase tracking-wider text-white/35 mb-3">{t('txform.amount_label')}</p>
+                      <div
+                        className={cn(
+                          'inline-flex items-baseline justify-center gap-1.5 border-b-2 pb-1.5 px-3 transition-colors max-w-full',
+                          amountFocus ? 'border-green-500/60' : 'border-white/10',
+                        )}
+                      >
+                        <span
+                          className={cn('text-2xl font-semibold select-none', isExpense ? 'text-red-400/80' : 'text-green-400/90')}
+                          aria-hidden
+                        >
+                          {isExpense ? '−' : '+'}
+                        </span>
                         <input
                           // type="text" + inputMode="decimal" so browsers show a
                           // numeric keyboard AND accept both "," and "." — native
@@ -325,34 +541,79 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                           placeholder={t('txform.amount_placeholder')}
                           value={amount}
                           onChange={e => setAmount(e.target.value.replace(/[^\d.,]/g, ''))}
+                          onFocus={() => setAmountFocus(true)}
+                          onBlur={() => setAmountFocus(false)}
                           aria-label={t('txform.amount_aria')}
-                          className="flex-1 bg-transparent text-white text-4xl font-bold placeholder-white/15 outline-none"
-                          required
+                          style={{ width: `${Math.min(9, Math.max(4, amount.length + 1))}ch` }}
+                          className="bg-transparent text-white text-5xl font-bold tabular-nums text-center placeholder-white/15 outline-none"
                           autoFocus={step === 2}
                         />
+                        <span className="text-2xl font-semibold text-white/40 select-none" aria-hidden>€</span>
                       </div>
                     </div>
 
+                    {/* Date — chips rápidos; o picker nativo só aparece
+                        quando é preciso outra data. */}
+                    <div className="mb-4">
+                      <p className="text-[11px] text-white/40 mb-2 font-semibold uppercase tracking-wider">{t('txform.date_label')}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {([
+                          { iso: todayISO,     label: t('txform.date_today') },
+                          { iso: yesterdayISO, label: t('txform.date_yesterday') },
+                        ] as const).map(opt => {
+                          const active = !showDatePicker && date === opt.iso
+                          return (
+                            <button
+                              key={opt.iso}
+                              type="button"
+                              onClick={() => { setDate(opt.iso); setShowDatePicker(false) }}
+                              aria-pressed={active}
+                              className={cn(
+                                'min-h-[40px] px-4 rounded-full text-sm font-medium border transition-all active:scale-95',
+                                active
+                                  ? 'bg-green-500/15 border-green-500/40 text-green-300'
+                                  : 'bg-white/5 border-white/10 text-white/60 hover:text-white',
+                              )}
+                            >
+                              {opt.label}
+                            </button>
+                          )
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setShowDatePicker(v => !v)}
+                          aria-pressed={showDatePicker}
+                          className={cn(
+                            'min-h-[40px] px-4 rounded-full text-sm font-medium border transition-all active:scale-95',
+                            showDatePicker
+                              ? 'bg-green-500/15 border-green-500/40 text-green-300'
+                              : 'bg-white/5 border-white/10 text-white/60 hover:text-white',
+                          )}
+                        >
+                          {t('txform.date_other')}
+                        </button>
+                      </div>
+                      {showDatePicker && (
+                        <input
+                          type="date"
+                          value={date}
+                          onChange={e => setDate(e.target.value)}
+                          className="mt-2 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-green-500/50 transition-colors animate-fade-in"
+                        />
+                      )}
+                    </div>
+
                     {/* Description */}
-                    <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 focus-within:border-white/20 transition-colors mb-4">
-                      <p className="text-xs text-white/40 mb-1">{t('txform.description_label')} <span className="text-white/20">{t('txform.description_optional')}</span></p>
+                    <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-white/25 transition-colors mb-4">
+                      <p className="text-[11px] text-white/40 mb-1 font-semibold uppercase tracking-wider">
+                        {t('txform.description_label')} <span className="normal-case font-normal text-white/25">{t('txform.description_optional')}</span>
+                      </p>
                       <input
                         type="text"
                         placeholder={t('txform.description_placeholder')}
                         value={description}
                         onChange={e => setDescription(e.target.value)}
                         className="w-full bg-transparent text-white placeholder-white/25 outline-none text-sm py-1"
-                      />
-                    </div>
-
-                    {/* Date */}
-                    <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 focus-within:border-white/20 transition-colors mb-4">
-                      <p className="text-xs text-white/40 mb-1">{t('txform.date_label')}</p>
-                      <input
-                        type="date"
-                        value={date}
-                        onChange={e => setDate(e.target.value)}
-                        className="w-full bg-transparent text-white outline-none text-sm py-1"
                       />
                     </div>
 
@@ -364,6 +625,10 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       </div>
                     )}
 
+                    {formError && step === 2 && (
+                      <p className="mb-3 text-xs text-red-400 text-center" role="alert">{formError}</p>
+                    )}
+
                     {!defaultAccount && (
                       <p className="text-xs text-yellow-400/80 text-center mb-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
                         {t('txform.no_account')}
@@ -372,8 +637,8 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
 
                     <button
                       type="submit"
-                      disabled={loading || !amount || !selectedCategory || !defaultAccount}
-                      className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold py-4 rounded-2xl transition-all text-base active:scale-95"
+                      disabled={loading || !defaultAccount}
+                      className="w-full min-h-[52px] bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold rounded-2xl transition-all text-base active:scale-[0.98]"
                     >
                       {loading ? t('txform.saving') : t('txform.save')}
                     </button>
