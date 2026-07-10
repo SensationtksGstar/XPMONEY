@@ -60,6 +60,7 @@ export default function TransactionsPage() {
   }
 
   return (
+    <>
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -220,9 +221,15 @@ export default function TransactionsPage() {
 
       {/* Lista */}
       <TransactionList search={search} typeFilter={typeFilter} categoryFilter={categoryFilter} />
-
-      {showForm     && <TransactionForm    onClose={() => setShowForm(false)} />}
-      {showImporter && <StatementImporter onClose={() => setShowImporter(false)} />}
     </div>
+
+    {/* Modais FORA do wrapper animate-fade-in-up: a animação (fill both)
+        retém um transform no wrapper, e um transform num ancestral torna-se
+        o containing block de position:fixed — o overlay dos modais ancorava
+        ao wrapper de ~4500px em vez do viewport e o sheet abria fora do
+        ecrã no desktop. */}
+    {showForm     && <TransactionForm    onClose={() => setShowForm(false)} />}
+    {showImporter && <StatementImporter onClose={() => setShowImporter(false)} />}
+    </>
   )
 }
