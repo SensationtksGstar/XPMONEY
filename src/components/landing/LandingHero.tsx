@@ -260,7 +260,7 @@ export async function LandingHero() {
                       }`}
                     >
                       <Image
-                        src={`/mascot/voltix/${n}.webp`}
+                        src={`/mascot/voltix/${n}.webp?v=8`}
                         alt={t('landing.hero.evo_alt', { n })}
                         width={80}
                         height={80}
