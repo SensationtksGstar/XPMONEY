@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
+import { XP_REWARDS }                from '@/types'
 import webpush                       from 'web-push'
 
 // =============================================================================
@@ -52,17 +53,17 @@ const REGISTER_PT: NotificationMessage[] = [
   { title: '📊 Sem registos = sem Score',           body: 'A tua saúde financeira começa com hoje. Regista as operações.' },
   { title: '💳 Usaste o cartão hoje?',              body: 'Cada movimento conta. Abre a app e anota os de hoje.' },
   { title: '🎯 Hábito > Motivação',                 body: 'Disciplina é apenas mostrar-se todos os dias. Está na hora do registo.' },
-  { title: '🧠 A tua memória não é melhor que um app', body: 'Regista agora enquanto a informação está fresca.' },
+  { title: '🧠 Confia na app, não na memória',      body: 'Regista agora enquanto a informação está fresca.' },
   { title: '📱 Dois toques, zero esforço',          body: 'Abre a XP-Money, regista o que gastaste, fecha. Feito.' },
-  { title: '🔥 Mantém o teu streak',                body: 'Pelo menos uma transação hoje para não partir a sequência.' },
+  { title: '🔥 Mantém o teu streak',                body: 'Abrir a app e fazer o check-in é o que mantém a sequência viva. Aproveita e regista o dia.' },
   { title: '⚡ Voltix à tua espera',                 body: 'O teu copiloto precisa de dados para te ajudar. Regista os de hoje.' },
   { title: '📉 Onde foi o dinheiro?',               body: 'Sem registos hoje, essa pergunta não terá resposta amanhã.' },
   { title: '🧾 Adicionar despesas rápido',          body: '"+" no dashboard → valor + categoria → guardar. 15 segundos.' },
-  { title: '🎮 +5 XP por cada registo',             body: 'Um gesto minúsculo, XP acumulado a sério. Vamos.' },
+  { title: `🎮 +${XP_REWARDS.TRANSACTION_REGISTERED} XP por cada registo`, body: 'Um gesto minúsculo, XP acumulado a sério. Vamos.' },
   { title: '⏱️ A regra dos 30 segundos',            body: 'Se leva menos de 30 s, faz agora. Regista a transação.' },
   { title: '🗓️ Check-in diário',                    body: 'Abre a app, confirma os gastos do dia, fecha. É só isso.' },
   { title: '💡 Não confies na memória',             body: 'Em 3 dias vais esquecer-te do café de hoje. Anota já.' },
-  { title: '🚨 Alerta do Voltix',                   body: 'O teu dia ainda não foi registado. 2 minutos resolvem.' },
+  { title: '⚡ O Voltix dá-te um toque',             body: 'O teu dia ainda não foi registado. 2 minutos resolvem.' },
 ]
 
 const REGISTER_EN: NotificationMessage[] = [
@@ -75,17 +76,17 @@ const REGISTER_EN: NotificationMessage[] = [
   { title: '📊 No logs = no score',           body: 'Your financial health starts with today. Log the moves.' },
   { title: '💳 Used the card today?',         body: 'Every swipe matters. Open the app and note them.' },
   { title: '🎯 Habits > motivation',          body: 'Discipline is just showing up. Time to log.' },
-  { title: '🧠 Your memory is worse than an app', body: 'Log it while the detail is fresh.' },
+  { title: '🧠 Trust the app, not your memory', body: 'Log it while the detail is fresh.' },
   { title: '📱 Two taps, zero effort',        body: 'Open XP-Money, log what you spent, close. Done.' },
-  { title: '🔥 Keep the streak',              body: 'At least one transaction today to keep the chain alive.' },
+  { title: '🔥 Keep the streak',              body: 'Opening the app and checking in is what keeps the chain alive. Log the day while you are at it.' },
   { title: '⚡ Voltix is waiting',             body: 'Your copilot needs data to help. Log today.' },
   { title: '📉 Where did the money go?',      body: 'No logs today, no answer tomorrow.' },
   { title: '🧾 Add spending fast',            body: '"+" on the dashboard → amount + category → save. 15 s.' },
-  { title: '🎮 +5 XP per log',                body: 'Tiny gesture, real XP. Go.' },
+  { title: `🎮 +${XP_REWARDS.TRANSACTION_REGISTERED} XP per log`, body: 'Tiny gesture, real XP. Go.' },
   { title: '⏱️ The 30-second rule',           body: 'If it takes under 30 s, do it now. Log the transaction.' },
   { title: '🗓️ Daily check-in',               body: 'Open the app, confirm the day’s spend, close. That’s it.' },
   { title: '💡 Don’t trust memory',           body: 'In 3 days you’ll forget today’s coffee. Note it now.' },
-  { title: '🚨 Voltix alert',                 body: 'Today isn’t logged yet. 2 minutes fixes it.' },
+  { title: '⚡ A nudge from Voltix',           body: 'Today isn’t logged yet. 2 minutes fixes it.' },
 ]
 
 const MOTIVATION_PT: NotificationMessage[] = [
@@ -172,21 +173,51 @@ function pickMessage(
 
 // ── Per-subscriber classification ────────────────────────────────────────────
 //
-// Looks up whether the subscriber logged at least one transaction in the
-// previous 24 h. If not → "register" bank. If yes → "motivation" bank.
-// Single query per subscriber with `head: true` so payload is tiny.
+// Três classes, por prioridade:
+//   1. streak_risk — streak ≥ 3 dias E ainda sem check-in hoje (UTC). O alvo
+//      nº 1 de retenção (loss aversion): a mensagem leva o número REAL e o
+//      deep link /dashboard é literalmente o botão de salvar o streak — o
+//      dashboard dispara o POST /api/daily-checkin ao montar.
+//   2. register — sem transações nas últimas 24 h.
+//   3. motivation — todos os restantes.
+type SubscriberClass = { kind: 'streak_risk' | 'register' | 'motivation'; streak: number }
+
 async function classify(
   db:      ReturnType<typeof createSupabaseAdmin>,
   userId:  string | null,
-): Promise<'register' | 'motivation'> {
-  if (!userId) return 'motivation'  // landing-only subscribers
+): Promise<SubscriberClass> {
+  if (!userId) return { kind: 'motivation', streak: 0 }  // landing-only subscribers
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const { count } = await db
-    .from('transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .gte('created_at', cutoff)
-  return (count ?? 0) === 0 ? 'register' : 'motivation'
+  const [txRes, voltixRes] = await Promise.all([
+    db.from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', cutoff),
+    db.from('voltix_states')
+      .select('streak_days, last_interaction')
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ])
+
+  const streak = voltixRes.data?.streak_days ?? 0
+  const last   = voltixRes.data?.last_interaction ? new Date(voltixRes.data.last_interaction) : null
+  const now    = new Date()
+  // Mesmo boundary do daily-checkin: dia UTC (lambda corre em UTC).
+  const checkedInToday = !!last &&
+    last.getUTCFullYear() === now.getUTCFullYear() &&
+    last.getUTCMonth()    === now.getUTCMonth() &&
+    last.getUTCDate()     === now.getUTCDate()
+
+  if (streak >= 3 && !checkedInToday) return { kind: 'streak_risk', streak }
+  return { kind: (txRes.count ?? 0) === 0 ? 'register' : 'motivation', streak }
+}
+
+/** Mensagem de streak em risco — dinâmica (o número real É a mensagem),
+ *  sem banco rotativo. */
+function streakRiskMessage(streak: number, locale: Locale): NotificationMessage {
+  return locale === 'en'
+    ? { title: `🔥 Your ${streak}-day streak dies at midnight`, body: 'Open the app for 10 seconds and it survives. That’s all it takes.' }
+    : { title: `🔥 O teu streak de ${streak} dias apaga-se à meia-noite`, body: 'Abre a app 10 segundos e ele sobrevive. É só isso.' }
 }
 
 function initVapid() {
@@ -233,7 +264,13 @@ function authorised(req: NextRequest): boolean {
 }
 
 // ── Broadcast ────────────────────────────────────────────────────────────────
-async function sendDailyBroadcast() {
+// mode 'daily'         → broadcast das 18:00 UTC (todas as classes).
+// mode 'streak-rescue' → cron das 21:30 UTC: SÓ envia a quem está em
+//   streak_risk (last call, 2h30 antes do boundary de meia-noite UTC) —
+//   quem já fez check-in ou não tem streak não recebe nada, zero spam extra.
+//   A tag 'xpmoney-daily' + renotify do SW substitui a push das 18:00 em vez
+//   de empilhar.
+async function sendDailyBroadcast(mode: 'daily' | 'streak-rescue' = 'daily') {
   initVapid()
 
   const db = createSupabaseAdmin()
@@ -264,15 +301,19 @@ async function sendDailyBroadcast() {
   const results = await Promise.allSettled(
     subs.map(async sub => {
       const locale: Locale = sub.locale === 'en' ? 'en' : 'pt'
-      const kind   = await classify(db, sub.user_id)
-      const msg    = pickMessage(kind, locale)
+      const cls    = await classify(db, sub.user_id)
+      // Resgate de streak: só os em risco recebem; o resto é saltado.
+      if (mode === 'streak-rescue' && cls.kind !== 'streak_risk') return 'skipped' as const
+      const msg = cls.kind === 'streak_risk'
+        ? streakRiskMessage(cls.streak, locale)
+        : pickMessage(cls.kind, locale)
+      // Sem icon/badge no payload — os defaults corretos vivem no sw.js
+      // (o antigo '/icon' já foi intercetado pelo middleware do Clerk).
       return webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify({
           title: msg.title,
           body:  msg.body,
-          icon:  '/icon',
-          badge: '/icon',
           url:   '/dashboard',
         }),
         { TTL: 86400 },
@@ -280,8 +321,9 @@ async function sendDailyBroadcast() {
     })
   )
 
-  const sent   = results.filter(r => r.status === 'fulfilled').length
-  const failed = results.filter(r => r.status === 'rejected').length
+  const skipped = results.filter(r => r.status === 'fulfilled' && r.value === 'skipped').length
+  const sent    = results.filter(r => r.status === 'fulfilled' && r.value !== 'skipped').length
+  const failed  = results.filter(r => r.status === 'rejected').length
 
   // Clean up expired/invalid subscriptions (410 Gone / 404 Not Found).
   const expiredEndpoints = subs
@@ -297,7 +339,11 @@ async function sendDailyBroadcast() {
     await db.from('push_subscriptions').delete().in('endpoint', expiredEndpoints)
   }
 
-  return { sent, failed, total: subs.length }
+  return { sent, failed, skipped, total: subs.length }
+}
+
+function modeFrom(req: NextRequest): 'daily' | 'streak-rescue' {
+  return req.nextUrl.searchParams.get('mode') === 'streak-rescue' ? 'streak-rescue' : 'daily'
 }
 
 // POST — manual trigger (admin or cron via secret header)
@@ -305,7 +351,7 @@ export async function POST(req: NextRequest) {
   if (!authorised(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  const result = await sendDailyBroadcast()
+  const result = await sendDailyBroadcast(modeFrom(req))
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
@@ -317,7 +363,7 @@ export async function GET(req: NextRequest) {
   if (!authorised(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  const result = await sendDailyBroadcast()
+  const result = await sendDailyBroadcast(modeFrom(req))
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }

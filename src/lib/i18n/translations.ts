@@ -1025,6 +1025,12 @@ export const pt = {
   'txform.close':               'Fechar',
   'txform.err_save':            'Não foi possível guardar. Verifica a ligação e tenta de novo.',
 
+  // ── Push opt-in (settings) ──────────────────────────────────────
+  'push.active':   'Notificações ativas',
+  'push.blocked':  'Notificações bloqueadas — ativa nas definições do browser',
+  'push.enable':   'Ativar notificações diárias',
+  'push.enabling': 'A ativar…',
+
   // ── TransactionList ─────────────────────────────────────────────
   'txlist.count_one':            '{count} transação',
   'txlist.count_many':           '{count} transações',
@@ -2752,6 +2758,12 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'txform.add_another':         'Add another',
   'txform.close':               'Close',
   'txform.err_save':            'Could not save. Check your connection and try again.',
+
+  // ── Push opt-in (settings) ──────────────────────────────────────
+  'push.active':   'Notifications on',
+  'push.blocked':  'Notifications blocked — enable them in your browser settings',
+  'push.enable':   'Enable daily notifications',
+  'push.enabling': 'Enabling…',
 
   // ── TransactionList ─────────────────────────────────────────────
   'txlist.count_one':            '{count} transaction',

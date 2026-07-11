@@ -13,6 +13,10 @@
     {
       "path": "/api/notifications/send",
       "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/notifications/send?mode=streak-rescue",
+      "schedule": "30 21 * * *"
     }
   ]
 }

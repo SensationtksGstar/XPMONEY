@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Bell, BellOff, BellRing } from 'lucide-react'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - base64String.length % 4) % 4)
@@ -15,6 +16,7 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
 type PermState = 'default' | 'granted' | 'denied' | 'unsupported' | 'loading'
 
 export function PushOptIn() {
+  const t = useT()
   const [state, setState]       = useState<PermState>('loading')
   const [working, setWorking]   = useState(false)
 
@@ -89,7 +91,7 @@ export function PushOptIn() {
         className="flex items-center gap-2 px-4 py-2.5 bg-green-500/15 border border-green-500/30 text-green-400 rounded-xl text-sm font-medium hover:bg-green-500/25 transition-all disabled:opacity-50"
       >
         <BellRing className="w-4 h-4" />
-        Notificações ativas
+        {t('push.active')}
       </button>
     )
   }
@@ -98,7 +100,7 @@ export function PushOptIn() {
     return (
       <div className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-white/30 rounded-xl text-sm">
         <BellOff className="w-4 h-4" />
-        Notificações bloqueadas — ativa nas definições do browser
+        {t('push.blocked')}
       </div>
     )
   }
@@ -110,7 +112,7 @@ export function PushOptIn() {
       className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-white/25 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
     >
       <Bell className="w-4 h-4" />
-      {working ? 'A ativar...' : 'Ativar notificações diárias'}
+      {working ? t('push.enabling') : t('push.enable')}
     </button>
   )
 }
