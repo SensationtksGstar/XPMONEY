@@ -888,7 +888,7 @@ export const pt = {
   'landing.faq.q1':         'Vocês conseguem ver as minhas transações?',
   'landing.faq.a1':         'Tecnicamente sim — estão na nossa base de dados para fazermos o score funcionar. Mas: (1) nunca as lemos manualmente, (2) nunca são partilhadas com terceiros, (3) qualquer acesso admin fica em log, (4) podes apagar tudo num clique em Definições e a eliminação é definitiva em 30 dias. Se isto te desconforta, o plano Grátis permite usar a app só com categorias agregadas.',
   'landing.faq.q2':         'O que acontece se eu cancelar a subscrição Premium?',
-  'landing.faq.a2':         'A conta continua a funcionar até ao fim do período pago. Depois, as features Premium desaparecem (missões ilimitadas, scan recibos, import PDF, simulador, relatório PDF) mas os teus dados — transações, objetivos, XP, mascote, certificados — ficam intactos. Podes voltar a subscrever a qualquer momento e recuperas tudo.',
+  'landing.faq.a2':         'A conta continua a funcionar até ao fim do período pago. Depois, as features Premium desaparecem (missões ilimitadas, scan recibos, import PDF, simulador, relatório PDF) mas os teus dados — transações, objetivos, XP, mascote — ficam intactos. Podes voltar a subscrever a qualquer momento e recuperas tudo.',
   'landing.faq.q3':         'Se abrir a app daqui a 6 meses, o meu mascote morreu?',
   'landing.faq.a3':         'Não morre. O Voltix / Penny guarda a evolução mais alta que atingiste — nunca desce de nível por inatividade. O que acontece é que entra em "modo triste" até retomares (transações + check-in diário). Mal voltes a usar regularmente, ele recupera em 3-5 dias.',
   'landing.faq.q4':         'Como é que vocês competem com uma app do banco (Revolut, BPI)?',
@@ -898,7 +898,7 @@ export const pt = {
   'landing.faq.q6':         'Quão bom é o scan de recibos? Vai ler um talão amarrotado?',
   'landing.faq.a6':         'Em testes internos lemos ~92% dos talões portugueses à primeira (Continente, Pingo Doce, Lidl, restaurantes com impressora térmica). Talões muito amarrotados, ilegíveis, ou em cursivo dão erros — nesse caso a app deixa-te corrigir manualmente antes de gravar. Imagens não são guardadas depois do processamento.',
   'landing.faq.q7':         'Posso exportar os meus dados se decidir sair?',
-  'landing.faq.a7':         'Sim — é um direito RGPD e cumprimos. Em Definições → Privacidade tens um botão de export que te dá um ZIP com: (1) todas as transações em CSV, (2) objetivos e depósitos em JSON, (3) certificados dos cursos em PDF, (4) histórico de XP. Não há "lock-in" no teu próprio dinheiro.',
+  'landing.faq.a7':         'Sim — é um direito RGPD e cumprimos. Em Definições → Privacidade tens um botão de export que te dá um ficheiro com todos os teus dados: transações, objetivos e depósitos, histórico de XP, contas e orçamentos. Não há "lock-in" no teu próprio dinheiro.',
   'landing.faq.q8':         'Posso usar só a parte gamificada e ignorar o financeiro?',
   'landing.faq.a8':         'Podes, mas não é a ideia. O XP vem de ações financeiras reais (registar transações, atingir objetivos, completar missões). Sem transações, o mascote fica no nível 1 e o score em 0. Se só queres um Tamagotchi digital, há melhores apps para isso — a XP-Money faz sentido quando usas o lado financeiro a sério.',
   'landing.faq.dc_title':   'Fala com o Dragon Coin',
@@ -1623,6 +1623,12 @@ export const pt = {
   'academy.cert.academy':        'Academia',
   'academy.cert.official':       'OFFICIAL',
   'academy.cert.issued':         'Data emissão',
+  // Teaser da visão cripto/marca — copy FINAL aprovada pelo painel
+  // marca+compliance+web3 (julho 2026). Regras: sem datas, sem preços, sem
+  // supply, sem linguagem de investimento, "colecionáveis digitais" em vez
+  // de NFT. Não editar sem repassar pelo crivo de compliance.
+  'academy.cert.teaser_title':   'Isto é só o começo',
+  'academy.cert.teaser_body':    'O teu certificado tem um código único — a primeira peça do universo XP-Money. Estamos a preparar a nossa entrada no mundo cripto: colecionáveis digitais, jogos e muito mais, com um roadmap ainda em estruturação — sem datas inventadas, sem promessas de valorização. O que conquistas hoje conta para o que aí vem. Por agora nada está à venda nem é um investimento; quando houver novidades concretas, quem já cá está sabe primeiro.',
   'academy.cert.verify_n':       'Nº {code}',
   'academy.cert.user_fallback':  'Utilizador',
 
@@ -2622,7 +2628,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'landing.faq.q1':         'Can you see my transactions?',
   'landing.faq.a1':         'Technically yes — they live in our database so the score can work. But: (1) we never read them manually, (2) they are never shared with third parties, (3) any admin access is logged, (4) you can delete everything in one click in Settings and the deletion is permanent after 30 days. If that still bothers you, the Free plan lets you use the app with aggregated categories only.',
   'landing.faq.q2':         'What happens if I cancel the Premium subscription?',
-  'landing.faq.a2':         'The account keeps working until the end of the paid period. After that, Premium features disappear (unlimited missions, receipt scan, PDF import, simulator, PDF report) but your data — transactions, goals, XP, mascot, certificates — stays intact. You can resubscribe any time and recover everything.',
+  'landing.faq.a2':         'The account keeps working until the end of the paid period. After that, Premium features disappear (unlimited missions, receipt scan, PDF import, simulator, PDF report) but your data — transactions, goals, XP, mascot — stays intact. You can resubscribe any time and recover everything.',
   'landing.faq.q3':         'If I open the app 6 months later, did my mascot die?',
   'landing.faq.a3':         'It doesn\'t die. Voltix / Penny keeps the highest evolution you reached — never drops a level from inactivity. What does happen is it enters "sad mode" until you come back (transactions + daily check-in). As soon as you use it regularly again, it recovers in 3–5 days.',
   'landing.faq.q4':         'How do you compete with a bank app (Revolut, BPI)?',
@@ -2632,7 +2638,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'landing.faq.q6':         'How good is the receipt scan? Will it read a crumpled slip?',
   'landing.faq.a6':         'In internal tests we read ~92% of Portuguese receipts on the first try (Continente, Pingo Doce, Lidl, restaurants with thermal printers). Very crumpled, illegible or cursive slips produce errors — in that case the app lets you correct it manually before saving. Images are not kept after processing.',
   'landing.faq.q7':         'Can I export my data if I decide to leave?',
-  'landing.faq.a7':         'Yes — it\'s a GDPR right and we honour it. In Settings → Privacy there\'s an export button that gives you a ZIP with: (1) every transaction as CSV, (2) goals and deposits as JSON, (3) course certificates as PDF, (4) XP history. No "lock-in" on your own money.',
+  'landing.faq.a7':         'Yes — it\'s a GDPR right and we honour it. In Settings → Privacy there\'s an export button that gives you a file with all your data: transactions, goals and deposits, XP history, accounts and budgets. No "lock-in" on your own money.',
   'landing.faq.q8':         'Can I use just the gamified side and ignore the finance part?',
   'landing.faq.a8':         'You can, but it\'s not the idea. XP comes from real financial actions (logging transactions, hitting goals, completing missions). Without transactions the mascot stays at level 1 and the score at 0. If you only want a digital Tamagotchi, there are better apps for that — XP-Money makes sense when you use the finance side seriously.',
   'landing.faq.dc_title':   'Talk to Dragon Coin',
@@ -3350,6 +3356,8 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'academy.cert.academy':        'Academy',
   'academy.cert.official':       'OFFICIAL',
   'academy.cert.issued':         'Issue date',
+  'academy.cert.teaser_title':   'This is just the beginning',
+  'academy.cert.teaser_body':    'Your certificate carries a unique code — the first piece of the XP-Money universe. We\'re preparing our move into the crypto world: digital collectibles, games and more, with a roadmap still taking shape — no made-up dates, no promises of value. What you earn today counts towards what comes next. For now nothing is for sale and none of this is an investment; when there\'s concrete news, those already here hear about it first.',
   'academy.cert.verify_n':       'No. {code}',
   'academy.cert.user_fallback':  'User',
 

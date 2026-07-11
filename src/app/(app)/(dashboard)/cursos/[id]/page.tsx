@@ -59,11 +59,10 @@ function CornerFlourish({ className = '' }: { className?: string }) {
 }
 
 // ── Certificate component ────────────────────────────────────────────────────
-function Certificate({ course, userName, issuedAt, onMintClick }: {
-  course:       Course
-  userName:     string
-  issuedAt:     string
-  onMintClick?: () => void
+function Certificate({ course, userName, issuedAt }: {
+  course:   Course
+  userName: string
+  issuedAt: string
 }) {
   const { t, locale } = useLocale()
   const intl = locale === 'en' ? 'en-US' : 'pt-PT'
@@ -182,7 +181,7 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
                       <div className="absolute inset-1 rounded-full border border-[#f5d97a]/40" />
                       <div className="relative flex flex-col items-center justify-center">
                         <Award className="w-5 h-5 text-[#f5d97a]" />
-                        <span className="text-[7px] font-bold text-[#f5d97a] tracking-wider mt-0.5">{t('academy.cert.official')}</span>
+                        <span aria-hidden className="text-[7px] font-bold text-[#f5d97a] tracking-wider mt-0.5">{t('academy.cert.official')}</span>
                       </div>
                     </div>
                   </div>
@@ -196,14 +195,14 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
                 </div>
               </div>
 
-              {/* Verification footer */}
+              {/* Verification footer — sem URL de verificação: a rota /verify
+                  ainda não existe (e o domínio antigo estava errado); repor
+                  apenas quando os certificados forem persistidos no servidor. */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-[11px] text-white/35 font-mono">
                 <span className="flex items-center gap-1.5">
                   <Shield className="w-3 h-3" />
                   {t('academy.cert.verify_n', { code })}
                 </span>
-                <span className="hidden sm:inline text-white/20">·</span>
-                <span>xpmoney.app/verify</span>
                 <span className="hidden sm:inline text-white/20">·</span>
                 <span>{dateLong}</span>
               </div>
@@ -213,35 +212,22 @@ function Certificate({ course, userName, issuedAt, onMintClick }: {
         </div>
       </div>
 
-      {/* ── NFT upgrade CTA — waitlist / FOMO revenue-validation ── */}
-      <button
-        onClick={onMintClick}
-        className="group w-full flex items-center gap-3 text-left bg-gradient-to-r from-purple-500/10 via-fuchsia-500/10 to-amber-500/10 border border-purple-500/25 hover:border-purple-400/50 rounded-2xl p-4 transition-all active:scale-[0.99] relative overflow-hidden"
-      >
-        {/* Shimmer across the button */}
-        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none" />
-
-        <div className="w-11 h-11 flex-shrink-0 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-amber-400 flex items-center justify-center shadow-lg relative">
-          <Sparkles className="w-5 h-5 text-white" />
-          {/* Pulsing dot */}
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500">
-            <span className="absolute inset-0 rounded-full bg-red-500 animate-ping" />
-          </span>
+      {/* ── Visão do universo XP-Money — teaser aprovado pelo painel
+          marca+compliance+web3 (julho 2026). Substituiu o CTA/modal de
+          waitlist NFT com escassez fabricada (contador sintético, "500
+          unidades", preços) — práticas da lista negra do DL 57/2008 e
+          pré-marketing MiCA. Regras do copy: sem datas, sem preços, sem
+          supply, sem linguagem de investimento; "colecionáveis digitais"
+          em vez de NFT; pertença por informação ("sabe primeiro"), nunca
+          por alocação. Não reintroduzir os claims antigos sem produto
+          real + análise legal. */}
+      <div className="bg-surface-1 border border-white/10 rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-[#f5d97a]" />
+          <p className="text-sm font-bold text-white">{t('academy.cert.teaser_title')}</p>
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <p className="text-sm font-bold text-white">Transforma em NFT colecionável</p>
-            <span className="text-[11px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Edição limitada</span>
-          </div>
-          <p className="text-xs text-white/50 leading-snug">
-            Apenas 500 certificados serão mintados · Junta-te à lista de espera
-          </p>
-        </div>
-        <div className="flex-shrink-0 text-right">
-          <div className="text-sm font-bold text-amber-300">Lista →</div>
-          <div className="text-[11px] text-white/40 uppercase tracking-wider">de espera</div>
-        </div>
-      </button>
+        <p className="text-xs text-white/55 leading-relaxed">{t('academy.cert.teaser_body')}</p>
+      </div>
     </div>
   )
 }
@@ -409,17 +395,11 @@ export default function CourseDetailPage() {
   const [activeLesson, setActiveLesson] = useState(0)
   const [progress,     setProgress]     = useState<CourseProgress>({ completedLessons: [], quizScore: null, completedAt: null, certificateAt: null })
   const [view,         setView]         = useState<'lessons' | 'quiz' | 'certificate'>('lessons')
-  const [showMint,     setShowMint]     = useState(false)
-  const [mintJoined,   setMintJoined]   = useState(false)
-
-  // Waitlist counter — grows deterministically over time so the number feels alive.
-  // Base 127 + ~1 person per day since 2026-01-01. Capped near the scarcity limit.
-  const waitlistCount = (() => {
-    const launch = new Date('2026-01-01').getTime()
-    const daysSince = Math.floor((Date.now() - launch) / (1000 * 60 * 60 * 24))
-    return Math.min(487, 127 + Math.max(0, daysSince))
-  })()
-  const waitlistSpot = waitlistCount + 1
+  // Hooks TODOS antes dos early-returns (!course / isLocked) — estavam
+  // depois deles e uma navegação soft entre um curso free e um premium
+  // mudava o nº de hooks entre renders → crash "Rendered fewer hooks".
+  const [quizXpGained, setQuizXpGained] = useState<number | null>(null)
+  const qc = useQueryClient()
 
   const loadProgress = useCallback(() => {
     if (user?.id && course) {
@@ -483,9 +463,6 @@ export default function CourseDetailPage() {
     if (activeLesson < course!.lessons.length - 1) setActiveLesson(i => i + 1)
   }
 
-  const [quizXpGained, setQuizXpGained] = useState<number | null>(null)
-  const qc = useQueryClient()
-
   function handleQuizComplete(score: number) {
     loadProgress()
     setTimeout(() => setView('certificate'), 1500)
@@ -497,7 +474,13 @@ export default function CourseDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ quizScore: score }),
       })
-        .then(r => r.ok ? r.json() : null)
+        .then(r => {
+          if (!r.ok) {
+            console.warn('[course] complete XP award failed:', r.status)
+            return null
+          }
+          return r.json()
+        })
         .then(res => {
           if (res && !res.already_awarded && res.xp_gained > 0) {
             setQuizXpGained(res.xp_gained)
@@ -614,7 +597,7 @@ export default function CourseDetailPage() {
               <div className="text-3xl mb-2">{lesson.emoji}</div>
               <h2 className="text-lg font-bold text-white">{lesson.title}</h2>
               <div className="flex items-center gap-1.5 text-white/70 text-xs mt-1">
-                <Clock className="w-3 h-3" /> {lesson.duration} min
+                <Clock className="w-3 h-3" /> {t('academy.duration', { min: lesson.duration })}
                 {isLessonDone && <span className="ml-2 flex items-center gap-0.5 text-white"><Check className="w-3 h-3" /> {t('academy.detail.lesson_done')}</span>}
               </div>
             </div>
@@ -623,7 +606,10 @@ export default function CourseDetailPage() {
               <div className="prose prose-sm text-white/75 leading-relaxed space-y-3 break-words">
                 {lesson.content.split('\n\n').map((para, i) => {
                   const rendered = para.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
-                  if (para.includes('|') && para.includes('---')) return null
+                  // O branch de tabela tem de vir ANTES do guard de separador:
+                  // todas as tabelas do catálogo trazem a linha |---| dentro do
+                  // mesmo parágrafo, e o guard antigo anulava o parágrafo inteiro
+                  // — as 4 tabelas dos cursos nunca renderizavam.
                   if (para.startsWith('| ')) {
                     const rows = para.split('\n').filter(r => r.trim() && !r.includes('---'))
                     return (
@@ -647,6 +633,8 @@ export default function CourseDetailPage() {
                       </div>
                     )
                   }
+                  // Separador markdown solto (|---|…) sem tabela — não renderizar.
+                  if (/^\|[\s|:-]+\|?$/.test(para.trim())) return null
                   return (
                     <p key={i} className="text-white/70 text-sm leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: rendered }}
@@ -726,7 +714,6 @@ export default function CourseDetailPage() {
               course={course}
               userName={userName}
               issuedAt={progress.certificateAt!}
-              onMintClick={() => setShowMint(true)}
             />
           ) : (
             <div className="text-center py-12 space-y-4">
@@ -745,123 +732,6 @@ export default function CourseDetailPage() {
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* ── NFT mint waitlist modal ── */}
-      {showMint && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="mint-title"
-          onClick={() => setShowMint(false)}
-        >
-          <div
-            className="w-full max-w-md bg-gradient-to-br from-[#120a1f] via-[#0d1020] to-[#1a0820] border border-purple-500/30 rounded-3xl p-6 animate-fade-in-up shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            {mintJoined ? (
-              <div className="text-center space-y-3 py-4">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-green-500 to-emerald-400 flex items-center justify-center">
-                  <Check className="w-8 h-8 text-black" />
-                </div>
-                <h3 className="text-xl font-bold text-white">Lugar #{waitlistSpot} garantido!</h3>
-                <p className="text-white/60 text-sm leading-relaxed">
-                  Estás na posição <strong className="text-amber-300">#{waitlistSpot}</strong> da lista.
-                  Assim que o mint estiver disponível, recebes email com link exclusivo para converter{' '}
-                  <strong className="text-white">{course.certificate.title}</strong> em NFT ao preço early supporter (€2,99 em vez de €7,99).
-                </p>
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200/90 leading-relaxed">
-                  <strong>Dica:</strong> Quem está no top 100 da lista tem prioridade no mint e recebe um badge exclusivo "Founding Collector" no perfil.
-                </div>
-                <button
-                  onClick={() => { setShowMint(false); setMintJoined(false) }}
-                  className="mt-2 px-6 py-2.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-sm transition-all"
-                >
-                  Fechar
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-amber-400 flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 id="mint-title" className="text-lg font-bold text-white">NFT Colecionável</h3>
-                    <p className="text-xs text-white/50">Lista de espera · Primeira edição</p>
-                  </div>
-                </div>
-
-                {/* Scarcity bar */}
-                <div className="bg-gradient-to-r from-amber-500/15 to-red-500/10 border border-amber-500/30 rounded-xl p-3 mb-4">
-                  <div className="flex items-center justify-between mb-1.5 text-xs">
-                    <span className="font-bold text-amber-300 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                      {waitlistCount} pessoas na lista
-                    </span>
-                    <span className="text-white/50">{500 - waitlistCount} de 500 lugares</span>
-                  </div>
-                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full transition-all"
-                      style={{ width: `${(waitlistCount / 500) * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-[11px] text-white/50 mt-1.5">
-                    Edição genesis limitada · Nunca mais será mintada
-                  </p>
-                </div>
-
-                <div className="space-y-2 mb-5">
-                  {[
-                    { icon: '🔐', title: 'Prova de conhecimento verificável', desc: 'Registo público e imutável na blockchain Polygon — para sempre.' },
-                    { icon: '💎', title: 'Só 500 unidades · Nunca mais', desc: 'Após esgotar, este NFT nunca voltará a ser emitido.' },
-                    { icon: '🌍', title: 'Partilha Web3', desc: 'Mostra no OpenSea, perfil Discord, LinkedIn ou CV.' },
-                    { icon: '🏆', title: 'Badge Founding Collector', desc: 'Top 100 recebe badge exclusivo no perfil XP-Money.' },
-                  ].map(f => (
-                    <div key={f.title} className="flex items-start gap-3 text-sm">
-                      <span className="text-lg flex-shrink-0">{f.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-white leading-snug">{f.title}</p>
-                        <p className="text-xs text-white/50 leading-snug">{f.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">Early supporter</p>
-                    <p className="text-2xl font-bold text-white">€2,99</p>
-                    <p className="text-[11px] text-white/40">só para quem entra agora</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] font-bold text-white/40 uppercase tracking-wider">Preço público</p>
-                    <p className="text-lg text-white/50 line-through">€7,99</p>
-                    <p className="text-[11px] text-red-300">−63%</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setMintJoined(true)}
-                  className="w-full py-3 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-amber-400 hover:opacity-90 text-white font-bold rounded-xl text-sm transition-all active:scale-95 mb-2"
-                >
-                  Garantir o meu lugar #{waitlistCount + 1} →
-                </button>
-                <button
-                  onClick={() => setShowMint(false)}
-                  className="w-full py-2 text-white/40 hover:text-white/70 text-xs transition-colors"
-                >
-                  Perder o lugar
-                </button>
-                <p className="text-[11px] text-white/30 text-center mt-3 leading-relaxed">
-                  Sem pagamento agora · Reserva grátis · Recebes email quando disponível
-                </p>
-              </>
-            )}
-          </div>
         </div>
       )}
 
