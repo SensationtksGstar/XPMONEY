@@ -1019,6 +1019,11 @@ export const pt = {
   'txform.newcat_err':          'Não foi possível criar a categoria.',
   'txform.newcat_icon_aria':    'Escolher ícone {icon}',
   'txform.newcat_color_aria':   'Escolher cor {color}',
+  'txform.suggestions_label':   'Frequentes',
+  'txform.suggestion_aria':     'Repetir: {desc}',
+  'txform.add_another':         'Adicionar outra',
+  'txform.close':               'Fechar',
+  'txform.err_save':            'Não foi possível guardar. Verifica a ligação e tenta de novo.',
 
   // ── TransactionList ─────────────────────────────────────────────
   'txlist.count_one':            '{count} transação',
@@ -2742,6 +2747,11 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'txform.newcat_err':          'Could not create the category.',
   'txform.newcat_icon_aria':    'Pick icon {icon}',
   'txform.newcat_color_aria':   'Pick colour {color}',
+  'txform.suggestions_label':   'Frequent',
+  'txform.suggestion_aria':     'Repeat: {desc}',
+  'txform.add_another':         'Add another',
+  'txform.close':               'Close',
+  'txform.err_save':            'Could not save. Check your connection and try again.',
 
   // ── TransactionList ─────────────────────────────────────────────
   'txlist.count_one':            '{count} transaction',

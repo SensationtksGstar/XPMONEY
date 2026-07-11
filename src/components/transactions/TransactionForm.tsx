@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useId, useMemo } from 'react'
+import { useState, useEffect, useId, useMemo, useRef } from 'react'
 import { X, Zap, ChevronDown, ScanLine, Crown, Lock, Plus } from 'lucide-react'
 import { useQueryClient }     from '@tanstack/react-query'
 import { useTransactions }    from '@/hooks/useTransactions'
@@ -9,7 +9,9 @@ import { useCategories }      from '@/hooks/useCategories'
 import { useUserPlan }        from '@/lib/contexts/UserPlanContext'
 import { track }              from '@/lib/posthog'
 import { cn }                 from '@/lib/utils'
+import { toNumber }           from '@/lib/safeNumber'
 import { ReceiptScanner }     from './ReceiptScanner'
+import { XP_REWARDS }         from '@/types'
 import type { Category, TransactionType } from '@/types'
 import type { ReceiptScanResult }         from '@/app/api/scan-receipt/route'
 import Link                   from 'next/link'
@@ -55,6 +57,29 @@ function isoDaysAgo(days = 0): string {
 const NEWCAT_EMOJIS = ['🛒', '🍽️', '☕', '🐾', '🎮', '💼', '🎓', '💊', '🚌', '🎁', '🏋️', '✈️']
 const NEWCAT_COLORS = ['#f97316', '#eab308', '#27c26b', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#94a3b8']
 
+/** Haptic tick nos momentos de decisão (Android Chrome; iOS ignora em
+ *  silêncio). O padrão dos neo-bancos: feedback físico em seleção/sucesso. */
+function buzz(ms: number) {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try { navigator.vibrate(ms) } catch { /* unsupported — ignore */ }
+  }
+}
+
+/** Grupo "repetir com um toque" derivado do histórico do próprio user. */
+interface RepeatSuggestion {
+  key:         string
+  description: string
+  category:    Category
+  amount:      number
+  count:       number
+  lastDate:    string
+}
+
+/** Valor numérico → string de input em convenção PT (vírgula decimal). */
+function amountToInput(n: number): string {
+  return n > 0 ? String(n).replace('.', ',') : ''
+}
+
 export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
   const { transactions, createTransaction } = useTransactions()
   const { defaultAccount }                 = useAccounts()
@@ -69,6 +94,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
   const [amountFocus,       setAmountFocus]      = useState(false)
   const [selectedCategory,  setSelectedCategory] = useState<Category | null>(null)
   const [description,       setDescription]      = useState('')
+  const [descFocus,         setDescFocus]        = useState(false)
   const [date,              setDate]             = useState(isoDaysAgo(0))
   const [showDatePicker,    setShowDatePicker]   = useState(false)
   const [loading,           setLoading]          = useState(false)
@@ -77,6 +103,19 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
   const [step,              setStep]             = useState<1 | 2>(1)
   const [showScanner,       setShowScanner]      = useState(false)
   const [showUpgradeTip,    setShowUpgradeTip]   = useState(false)
+
+  const amountRef  = useRef<HTMLInputElement>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Foco real ao ENTRAR no passo 2 (mobile) — o antigo autoFocus={step===2}
+  // avaliava no mount (step=1, elemento sempre montado) e nunca focava, por
+  // isso o teclado do OS não abria sozinho. Efeito dispara na transição.
+  useEffect(() => {
+    if (step === 2) amountRef.current?.focus()
+  }, [step])
+
+  // O timer de auto-fecho do sucesso não pode sobreviver ao unmount.
+  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current) }, [])
 
   // Inline category creator ("pouco personalizável" fix — July 2026)
   const [showNewCat,  setShowNewCat]  = useState(false)
@@ -118,9 +157,66 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
     [type, usageByName, byType(type).length]
   )
 
+  // "Repetir com um toque" (padrão Monzo/Revolut): agrupa o histórico por
+  // descrição+categoria, ordena por frequência e recência, top 4 do tipo
+  // ativo. O cache vem ordenado por data desc, por isso o primeiro grupo
+  // visto guarda o valor/casing mais RECENTES dessa despesa recorrente.
+  const suggestions = useMemo<RepeatSuggestion[]>(() => {
+    const groups = new Map<string, RepeatSuggestion>()
+    for (const tx of transactions.slice(0, 400)) {
+      if (tx.type !== type || !tx.category) continue
+      const desc = (tx.description ?? '').trim()
+      if (!desc) continue
+      const key = `${desc.toLowerCase()}|${tx.category.id}`
+      const existing = groups.get(key)
+      if (existing) existing.count++
+      else groups.set(key, {
+        key,
+        description: desc,
+        category:    tx.category,
+        amount:      toNumber(tx.amount, 0),
+        count:       1,
+        lastDate:    tx.date,
+      })
+    }
+    return [...groups.values()]
+      .sort((a, b) => b.count - a.count || (a.lastDate < b.lastDate ? 1 : -1))
+      .slice(0, 4)
+  }, [transactions, type])
+
+  // Autocomplete de descrição (padrão YNAB): históricos distintos que
+  // contêm o que está escrito, excluindo o match exato. Máx. 4.
+  const descSuggestions = useMemo<string[]>(() => {
+    const q = description.trim().toLowerCase()
+    if (q.length < 2) return []
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const tx of transactions) {
+      const d = (tx.description ?? '').trim()
+      if (!d) continue
+      const dl = d.toLowerCase()
+      if (dl === q || !dl.includes(q) || seen.has(dl)) continue
+      seen.add(dl)
+      out.push(d)
+      if (out.length >= 4) break
+    }
+    return out
+  }, [description, transactions])
+
   function handleCategorySelect(cat: Category) {
     setSelectedCategory(cat)
     setFormError(null)
+    buzz(12)
+    if (window.innerWidth < 640) setStep(2)
+  }
+
+  /** Chip "frequente": pré-preenche TUDO e salta para o valor. */
+  function applySuggestion(s: RepeatSuggestion) {
+    setSelectedCategory(s.category)
+    setDescription(s.description)
+    setAmount(amountToInput(s.amount))
+    setFormError(null)
+    buzz(12)
     if (window.innerWidth < 640) setStep(2)
   }
 
@@ -190,6 +286,8 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // Enter durante o painel de sucesso re-submeteria a mesma transação.
+    if (xpGained !== null || loading) return
     // Inline validation — never a disabled dead-end button (repo rule:
     // a disabled tap on mobile gives zero feedback and reads as "broken").
     if (!selectedCategory) {
@@ -214,13 +312,29 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
         account_id:  defaultAccount?.id ?? '',
       })
       track.transaction_created(type, selectedCategory.name, parsedAmount)
-      setXpGained(10)
-      setTimeout(onClose, 1000)
+      // O valor REAL do servidor (XP_REWARDS.TRANSACTION_REGISTERED) — o
+      // banner mostrava 10 hardcoded enquanto o backend dava 15.
+      setXpGained(XP_REWARDS.TRANSACTION_REGISTERED)
+      buzz(20)
+      // Auto-fecho com margem para o user optar por "Adicionar outra".
+      closeTimer.current = setTimeout(onClose, 2400)
     } catch (err) {
-      console.error(err)
+      console.warn('[txform] save failed:', err)
+      setFormError(t('txform.err_save'))
     } finally {
       setLoading(false)
     }
+  }
+
+  /** Sessão de registo em lote (padrão YNAB): mantém tipo/categoria/data,
+   *  limpa valor+descrição e volta a focar o valor. */
+  function handleAddAnother() {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setXpGained(null)
+    setAmount('')
+    setDescription('')
+    setFormError(null)
+    amountRef.current?.focus()
   }
 
   const isExpense = type === 'expense'
@@ -356,6 +470,37 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       ))}
                     </div>
 
+                    {/* Frequentes — repetir uma despesa habitual com UM toque. Deriva do
+                        histórico do próprio user; some quando não há histórico. */}
+                    {suggestions.length > 0 && !showNewCat && (
+                      <div className="mb-5">
+                        <p className="text-[11px] text-white/40 mb-2 font-semibold uppercase tracking-wider">{t('txform.suggestions_label')}</p>
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5">
+                          {suggestions.map(s => (
+                            <button
+                              key={s.key}
+                              type="button"
+                              onClick={() => applySuggestion(s)}
+                              aria-label={t('txform.suggestion_aria', { desc: s.description })}
+                              className="flex items-center gap-2 flex-shrink-0 min-h-[44px] pl-1.5 pr-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-white/25 active:scale-95 transition-all"
+                            >
+                              <span
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0"
+                                style={{ backgroundColor: `${s.category.color}1f` }}
+                                aria-hidden
+                              >
+                                {s.category.icon}
+                              </span>
+                              <span className="text-sm text-white/85 font-medium max-w-[110px] truncate">{s.description}</span>
+                              {s.amount > 0 && (
+                                <span className="text-xs text-white/45 tabular-nums flex-shrink-0">{amountToInput(s.amount)} €</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <p className="text-[11px] text-white/40 mb-3 font-semibold uppercase tracking-wider">{t('txform.category_label')}</p>
 
                     {/* Category tiles — each carries its OWN persisted colour
@@ -421,7 +566,10 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                             autoFocus
                           />
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
+                        {/* Botões de 44px (piso A11y) com o visual mais
+                            pequeno lá dentro — a área de toque cresce, o
+                            desenho mantém-se compacto. */}
+                        <div className="flex flex-wrap gap-1">
                           {NEWCAT_EMOJIS.map(em => (
                             <button
                               key={em}
@@ -429,7 +577,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                               onClick={() => setNewCatIcon(em)}
                               aria-label={t('txform.newcat_icon_aria', { icon: em })}
                               className={cn(
-                                'w-9 h-9 flex items-center justify-center rounded-lg text-lg transition-all active:scale-90',
+                                'w-11 h-11 flex items-center justify-center rounded-lg text-lg transition-all active:scale-90',
                                 newCatIcon === em ? 'bg-white/15 ring-1 ring-green-400/60' : 'bg-white/[0.04] hover:bg-white/10',
                               )}
                             >
@@ -437,19 +585,24 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                             </button>
                           ))}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1">
                           {NEWCAT_COLORS.map(cl => (
                             <button
                               key={cl}
                               type="button"
                               onClick={() => setNewCatColor(cl)}
                               aria-label={t('txform.newcat_color_aria', { color: cl })}
-                              className={cn(
-                                'w-7 h-7 rounded-full transition-all active:scale-90',
-                                newCatColor === cl ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-surface-2' : 'opacity-80 hover:opacity-100',
-                              )}
-                              style={{ backgroundColor: cl }}
-                            />
+                              className="w-11 h-11 flex items-center justify-center rounded-lg transition-all active:scale-90"
+                            >
+                              <span
+                                className={cn(
+                                  'w-7 h-7 rounded-full',
+                                  newCatColor === cl ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-surface-2' : 'opacity-80',
+                                )}
+                                style={{ backgroundColor: cl }}
+                                aria-hidden
+                              />
+                            </button>
                           ))}
                         </div>
                         {newCatError && (
@@ -535,6 +688,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                           // type="text" + inputMode="decimal" so browsers show a
                           // numeric keyboard AND accept both "," and "." — native
                           // type="number" rejects commas in pt-PT locale.
+                          ref={amountRef}
                           type="text"
                           inputMode="decimal"
                           pattern="[0-9.,]*"
@@ -546,7 +700,6 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                           aria-label={t('txform.amount_aria')}
                           style={{ width: `${Math.min(9, Math.max(4, amount.length + 1))}ch` }}
                           className="bg-transparent text-white text-5xl font-bold tabular-nums text-center placeholder-white/15 outline-none"
-                          autoFocus={step === 2}
                         />
                         <span className="text-2xl font-semibold text-white/40 select-none" aria-hidden>€</span>
                       </div>
@@ -603,27 +756,40 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       )}
                     </div>
 
-                    {/* Description */}
-                    <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-white/25 transition-colors mb-4">
-                      <p className="text-[11px] text-white/40 mb-1 font-semibold uppercase tracking-wider">
-                        {t('txform.description_label')} <span className="normal-case font-normal text-white/25">{t('txform.description_optional')}</span>
-                      </p>
-                      <input
-                        type="text"
-                        placeholder={t('txform.description_placeholder')}
-                        value={description}
-                        onChange={e => setDescription(e.target.value)}
-                        className="w-full bg-transparent text-white placeholder-white/25 outline-none text-sm py-1"
-                      />
-                    </div>
-
-                    {/* XP feedback */}
-                    {xpGained && (
-                      <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl py-3 mb-4 animate-fade-in-up">
-                        <Zap className="w-4 h-4 text-yellow-400" />
-                        <span className="text-yellow-400 font-bold">{t('txform.xp_gained', { xp: xpGained })}</span>
+                    {/* Description — com autocomplete do histórico (padrão
+                        YNAB): escrever "caf" sugere "Café" etc. mousedown
+                        antes do blur para o clique ganhar ao fecho. */}
+                    <div className="relative mb-4">
+                      <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-white/25 transition-colors">
+                        <p className="text-[11px] text-white/40 mb-1 font-semibold uppercase tracking-wider">
+                          {t('txform.description_label')} <span className="normal-case font-normal text-white/25">{t('txform.description_optional')}</span>
+                        </p>
+                        <input
+                          type="text"
+                          placeholder={t('txform.description_placeholder')}
+                          value={description}
+                          onChange={e => setDescription(e.target.value)}
+                          onFocus={() => setDescFocus(true)}
+                          onBlur={() => setDescFocus(false)}
+                          autoComplete="off"
+                          className="w-full bg-transparent text-white placeholder-white/25 outline-none text-sm py-1"
+                        />
                       </div>
-                    )}
+                      {descFocus && descSuggestions.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 z-10 bg-surface-2 border border-white/10 rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.5)] animate-fade-in">
+                          {descSuggestions.map(d => (
+                            <button
+                              key={d}
+                              type="button"
+                              onMouseDown={e => { e.preventDefault(); setDescription(d) }}
+                              className="w-full text-left px-4 min-h-[44px] text-sm text-white/80 hover:bg-white/5 active:bg-white/10 transition-colors"
+                            >
+                              {d}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     {formError && step === 2 && (
                       <p className="mb-3 text-xs text-red-400 text-center" role="alert">{formError}</p>
@@ -635,13 +801,41 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                       </p>
                     )}
 
-                    <button
-                      type="submit"
-                      disabled={loading || !defaultAccount}
-                      className="w-full min-h-[52px] bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold rounded-2xl transition-all text-base active:scale-[0.98]"
-                    >
-                      {loading ? t('txform.saving') : t('txform.save')}
-                    </button>
+                    {/* Sucesso: XP real + escolha explícita — fecha sozinho
+                        em 2,4s, ou "Adicionar outra" mantém a sessão de
+                        registo (tipo/categoria/data ficam, valor limpa). */}
+                    {xpGained ? (
+                      <div className="space-y-3 animate-fade-in-up">
+                        <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl py-3" role="status">
+                          <Zap className="w-4 h-4 text-yellow-400" />
+                          <span className="text-yellow-400 font-bold">{t('txform.xp_gained', { xp: xpGained })}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 min-h-[48px] bg-white/5 border border-white/10 text-white/70 hover:text-white text-sm font-semibold rounded-2xl transition-colors"
+                          >
+                            {t('txform.close')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleAddAnother}
+                            className="flex-1 min-h-[48px] bg-green-500 hover:bg-green-400 text-black text-sm font-bold rounded-2xl transition-all active:scale-[0.98]"
+                          >
+                            {t('txform.add_another')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={loading || !defaultAccount}
+                        className="w-full min-h-[52px] bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold rounded-2xl transition-all text-base active:scale-[0.98]"
+                      >
+                        {loading ? t('txform.saving') : t('txform.save')}
+                      </button>
+                    )}
                   </div>
 
                 </div>
