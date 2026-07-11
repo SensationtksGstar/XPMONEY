@@ -69,7 +69,7 @@ export async function GET() {
   const [
     accounts, transactions, financialScores, xpProgress, xpHistory,
     missions, userBadges, voltixStates, goals, goalDeposits,
-    subscriptions, budgets, bugReports, netWorthSnapshots,
+    subscriptions, budgets, bugReports, netWorthSnapshots, certificates,
   ] = await Promise.all([
     pull('accounts'),
     pull('transactions'),
@@ -85,6 +85,7 @@ export async function GET() {
     pull('budgets'),
     pull('bug_reports'),
     pull('net_worth_snapshots'),
+    pull('certificates'),
   ])
 
   // Categories — only the ones the user created themselves (not system seeds)
@@ -120,6 +121,7 @@ export async function GET() {
     budgets,
     bug_reports: bugReports,
     net_worth_snapshots: netWorthSnapshots,
+    certificates,
   }
 
   const filename = `xpmoney-export-${new Date().toISOString().split('T')[0]}.json`

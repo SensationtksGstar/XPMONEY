@@ -29,6 +29,12 @@ const isPublicRoute = createRouteMatcher([
   '/api/contact-message',
   '/api/newsletter/(.*)',
   '/newsletter/(.*)',
+  // BLOG — descoberto em julho 2026 a devolver 307→/sign-in em produção:
+  // nunca esteve nesta lista, por isso TODA a estratégia SEO (7 artigos)
+  // estava invisível para o público e para o Googlebot. Nunca remover.
+  '/blog(.*)',
+  // Verificação pública de certificados da Academia.
+  '/verify(.*)',
   '/sw.js',
   '/manifest.json',
   '/icons/(.*)',

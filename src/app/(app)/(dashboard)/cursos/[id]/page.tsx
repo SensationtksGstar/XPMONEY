@@ -59,14 +59,17 @@ function CornerFlourish({ className = '' }: { className?: string }) {
 }
 
 // ── Certificate component ────────────────────────────────────────────────────
-function Certificate({ course, userName, issuedAt }: {
-  course:   Course
-  userName: string
-  issuedAt: string
+function Certificate({ course, userName, issuedAt, serverCode }: {
+  course:      Course
+  userName:    string
+  issuedAt:    string
+  /** Código persistido no servidor (verificável em /verify) — null antes
+   *  da migração certificates_2026_07.sql ou em certificados legacy. */
+  serverCode?: string | null
 }) {
   const { t, locale } = useLocale()
   const intl = locale === 'en' ? 'en-US' : 'pt-PT'
-  const code = certCode(course.id, userName, issuedAt)
+  const code = serverCode ?? certCode(course.id, userName, issuedAt)
   const dateLong = new Date(issuedAt).toLocaleDateString(intl, { day: '2-digit', month: 'long', year: 'numeric' })
   const dateShort = new Date(issuedAt).toLocaleDateString(intl)
 
@@ -195,14 +198,20 @@ function Certificate({ course, userName, issuedAt }: {
                 </div>
               </div>
 
-              {/* Verification footer — sem URL de verificação: a rota /verify
-                  ainda não existe (e o domínio antigo estava errado); repor
-                  apenas quando os certificados forem persistidos no servidor. */}
+              {/* Verification footer — o URL público só aparece com código
+                  PERSISTIDO (verificável de facto em xp-money.com/verify);
+                  certificados legacy/pré-migração mostram só o código. */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-[11px] text-white/35 font-mono">
                 <span className="flex items-center gap-1.5">
                   <Shield className="w-3 h-3" />
                   {t('academy.cert.verify_n', { code })}
                 </span>
+                {serverCode && (
+                  <>
+                    <span className="hidden sm:inline text-white/20">·</span>
+                    <span>xp-money.com/verify</span>
+                  </>
+                )}
                 <span className="hidden sm:inline text-white/20">·</span>
                 <span>{dateLong}</span>
               </div>
@@ -400,6 +409,23 @@ export default function CourseDetailPage() {
   // mudava o nº de hooks entre renders → crash "Rendered fewer hooks".
   const [quizXpGained, setQuizXpGained] = useState<number | null>(null)
   const qc = useQueryClient()
+
+  // Código do certificado persistido no servidor (verificável). null =
+  // pré-migração/legacy → o Certificate usa o código derivado sem URL.
+  const [serverCert, setServerCert] = useState<{ code: string } | null>(null)
+  const hasCert  = !!progress.certificateAt
+  const courseId = course?.id
+  useEffect(() => {
+    if (!hasCert || !courseId) return
+    const controller = new AbortController()
+    fetch(`/api/certificates/${courseId}`, { signal: controller.signal })
+      .then(r => (r.ok ? r.json() : null))
+      .then(json => { if (json?.data?.code) setServerCert(json.data) })
+      .catch(err => {
+        if (err?.name !== 'AbortError') console.warn('[cert] fetch failed:', err)
+      })
+    return () => controller.abort()
+  }, [hasCert, courseId])
 
   const loadProgress = useCallback(() => {
     if (user?.id && course) {
@@ -714,6 +740,7 @@ export default function CourseDetailPage() {
               course={course}
               userName={userName}
               issuedAt={progress.certificateAt!}
+              serverCode={serverCert?.code ?? null}
             />
           ) : (
             <div className="text-center py-12 space-y-4">

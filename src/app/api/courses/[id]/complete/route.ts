@@ -1,5 +1,6 @@
 import { auth }                 from '@clerk/nextjs/server'
 import { NextResponse, NextRequest } from 'next/server'
+import { randomBytes }            from 'node:crypto'
 import { createSupabaseAdmin }    from '@/lib/supabase'
 import { resolveUser }            from '@/lib/resolveUser'
 import { awardXP }                from '@/lib/awardXP'
@@ -7,6 +8,60 @@ import { checkAllBadges }         from '@/lib/checkAllBadges'
 import { COURSES }                from '@/lib/courses'
 import { fetchPlanRow }           from '@/lib/plan'
 import { z }                      from 'zod'
+
+/**
+ * Garante o certificado persistido (tabela `certificates`, migração
+ * certificates_2026_07.sql). Idempotente: se já existe, devolve o code
+ * ORIGINAL (o código é permanente — nunca re-gerado). Fallback runtime:
+ * tabela ausente (42P01) → devolve null e a UI mantém o código derivado
+ * legacy sem URL de verificação.
+ */
+async function ensureCertificate(
+  db:         ReturnType<typeof createSupabaseAdmin>,
+  internalId: string,
+  courseId:   string,
+): Promise<{ code: string; issued_at: string } | null> {
+  try {
+    const { data: existing, error: readErr } = await db
+      .from('certificates')
+      .select('code, issued_at')
+      .eq('user_id', internalId)
+      .eq('course_id', courseId)
+      .maybeSingle()
+    if (readErr) {
+      console.warn('[courses/complete] certificates read failed (pré-migração?):', readErr.message)
+      return null
+    }
+    if (existing) return existing
+
+    // Nome para o /verify mostrar (primeiro nome + inicial — privacidade).
+    const { data: userRow } = await db
+      .from('users').select('name').eq('id', internalId).maybeSingle()
+
+    const code = `XPM-${randomBytes(5).toString('hex').toUpperCase()}`
+    const { data: inserted, error: insErr } = await db
+      .from('certificates')
+      .insert({ user_id: internalId, course_id: courseId, code, user_name: userRow?.name ?? null })
+      .select('code, issued_at')
+      .single()
+    if (insErr) {
+      // Corrida (unique user_id+course_id) → re-lê o vencedor.
+      const { data: raced } = await db
+        .from('certificates')
+        .select('code, issued_at')
+        .eq('user_id', internalId)
+        .eq('course_id', courseId)
+        .maybeSingle()
+      if (raced) return raced
+      console.warn('[courses/complete] certificate insert failed:', insErr.message)
+      return null
+    }
+    return inserted
+  } catch (err) {
+    console.warn('[courses/complete] ensureCertificate failed:', err)
+    return null
+  }
+}
 
 /**
  * Course completion XP award — called once a user passes the 100 %-quiz.
@@ -98,9 +153,13 @@ export async function POST(
     .maybeSingle()
 
   if (existing) {
+    // XP já pago — mas garante o certificado na mesma (users que concluíram
+    // antes da migração da tabela ganham o code real na primeira re-visita).
+    const certificate = await ensureCertificate(db, internalId, courseId)
     return NextResponse.json({
       already_awarded: true,
       xp_gained:       0,
+      certificate,
       error:           null,
     })
   }
@@ -118,11 +177,14 @@ export async function POST(
     console.warn('[courses/complete] badge check failed (non-fatal):', err)
   }
 
+  const certificate = await ensureCertificate(db, internalId, courseId)
+
   return NextResponse.json({
     already_awarded: false,
     xp_gained:       result?.xp_gained ?? 0,
     leveled_up:      result?.leveled_up ?? false,
     badges:          newBadges,
+    certificate,
     error:           null,
   })
 }
