@@ -100,6 +100,7 @@ export async function DELETE(req: NextRequest) {
     db.from('user_badges').delete().eq('user_id', internalId),    // start fresh, no carry-over achievements
     db.from('budgets').delete().eq('user_id', internalId),        // 50/30/20 config + overrides clear
     db.from('net_worth_snapshots').delete().eq('user_id', internalId), // net-worth trend history (accounts kept, history wiped)
+    db.from('certificates').delete().eq('user_id', internalId),    // certificados da Academia — conquista pós-onboarding, wipe total
   ])
 
   // Goals last — FKs from goal_deposits must be cleared first. A plain delete

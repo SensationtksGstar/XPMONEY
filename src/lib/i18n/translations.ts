@@ -186,6 +186,7 @@ export const pt = {
   'streak.msg_14':            'Duas semanas imparáveis!',
   'streak.msg_30':            '30 dias! Lenda absoluta. 👑',
   'streak.chip_aria':         'Sequência de {n} dias',
+  'streak.chip_freeze_aria':  'Proteções de streak: {n}',
   'recent.empty':             'Sem transações ainda.',
   'recent.empty_cta':         'Adicionar primeira transação',
   'recent.fallback_name':     'Transação',
@@ -242,6 +243,15 @@ export const pt = {
   'level.name_8':             'Analista de Riqueza',
   'level.name_9':             'Estrategista de Riqueza',
   'level.name_10':            'Mestre das Finanças',
+  'level.name_11':            'Guardião do Património',
+  'level.name_12':            'Arquiteto de Poupança',
+  'level.name_13':            'Domador de Dívidas',
+  'level.name_14':            'Veterano dos Mercados',
+  'level.name_15':            'Comandante Financeiro',
+  'level.name_16':            'Sábio dos Juros',
+  'level.name_17':            'Alquimista de Capital',
+  'level.name_18':            'Titã da Riqueza',
+  'level.name_19':            'Ascendente',
   'level.name_20':            'Lenda XP-Money',
 
   // ── Mata-Dívidas (/dividas) ────────────────────────────────────────
@@ -945,6 +955,26 @@ export const pt = {
   'dashboard.streak_30_sub':         'Lenda absoluta. O Voltix nunca esteve tão poderoso.',
   'dashboard.badge_unlocked':        'Badge desbloqueado!',
   'dashboard.greeting_default':      'explorador',
+  'dashboard.streak_60_title':       '60 dias de sequência!',
+  'dashboard.streak_60_sub':         'Dois meses imparáveis. Isto já não é hábito — é identidade.',
+  'dashboard.streak_100_title':      '100 DIAS!',
+  'dashboard.streak_100_sub':        'Um em cada mil chega aqui. Lenda absoluta.',
+  'dashboard.freeze_used_title':     'Streak salvo pelo freeze!',
+  'dashboard.freeze_used_sub':       'Falhaste um dia, mas a proteção ❄️ segurou a tua sequência de {n} dias. Ganhas outra ao próximo marco de 7.',
+  // ── PushNudgeCard (opt-in contextual) ──────────────────────────────
+  'pushcard.title':                  'Protege o teu streak de {n} dias',
+  'pushcard.body':                   'Um lembrete por dia à hora certa — e um aviso quando a sequência estiver em risco. Sem spam.',
+  'pushcard.dismiss_aria':           'Dispensar',
+  // ── /verify — verificação pública de certificados ──────────────────
+  'verify.valid_title':              'Certificado válido',
+  'verify.valid_sub':                'Emitido pela Academia XP-Money.',
+  'verify.field_course':             'Curso',
+  'verify.field_holder':             'Titular',
+  'verify.field_date':               'Data de emissão',
+  'verify.field_code':               'Código',
+  'verify.invalid_title':            'Código não encontrado',
+  'verify.invalid_sub':              'Confirma o código exatamente como aparece no certificado.',
+  'verify.back_home':                'Ir para xp-money.com',
 
   // ── TopBar ──────────────────────────────────────────────────────────
   'topbar.title.dashboard':    'Dashboard',
@@ -1024,6 +1054,7 @@ export const pt = {
   'txform.add_another':         'Adicionar outra',
   'txform.close':               'Fechar',
   'txform.err_save':            'Não foi possível guardar. Verifica a ligação e tenta de novo.',
+  'txform.xp_crit':             'CRÍTICO! +{xp} XP',
 
   // ── Push opt-in (settings) ──────────────────────────────────────
   'push.active':   'Notificações ativas',
@@ -1932,6 +1963,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'streak.msg_14':            'Two unstoppable weeks!',
   'streak.msg_30':            '30 days! Absolute legend. 👑',
   'streak.chip_aria':         '{n}-day streak',
+  'streak.chip_freeze_aria':  'Streak freezes: {n}',
   'recent.empty':             'No transactions yet.',
   'recent.empty_cta':         'Add your first transaction',
   'recent.fallback_name':     'Transaction',
@@ -1988,6 +2020,15 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'level.name_8':             'Wealth Analyst',
   'level.name_9':             'Wealth Strategist',
   'level.name_10':            'Finance Master',
+  'level.name_11':            'Wealth Guardian',
+  'level.name_12':            'Savings Architect',
+  'level.name_13':            'Debt Tamer',
+  'level.name_14':            'Market Veteran',
+  'level.name_15':            'Financial Commander',
+  'level.name_16':            'Sage of Interest',
+  'level.name_17':            'Capital Alchemist',
+  'level.name_18':            'Wealth Titan',
+  'level.name_19':            'Ascendant',
   'level.name_20':            'XP-Money Legend',
 
   // ── Mata-Dívidas (/dividas) ────────────────────────────────────────
@@ -2685,6 +2726,26 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'dashboard.streak_30_sub':         'Absolute legend. Voltix has never been this powerful.',
   'dashboard.badge_unlocked':        'Badge unlocked!',
   'dashboard.greeting_default':      'explorer',
+  'dashboard.streak_60_title':       '60-day streak!',
+  'dashboard.streak_60_sub':         'Two unstoppable months. This isn\'t a habit anymore — it\'s identity.',
+  'dashboard.streak_100_title':      '100 DAYS!',
+  'dashboard.streak_100_sub':        'One in a thousand gets here. Absolute legend.',
+  'dashboard.freeze_used_title':     'Streak saved by a freeze!',
+  'dashboard.freeze_used_sub':       'You missed a day, but the ❄️ shield held your {n}-day streak. Earn another at the next 7-day milestone.',
+  // ── PushNudgeCard (contextual opt-in) ──────────────────────────────
+  'pushcard.title':                  'Protect your {n}-day streak',
+  'pushcard.body':                   'One reminder a day at the right time — and a heads-up when your streak is at risk. No spam.',
+  'pushcard.dismiss_aria':           'Dismiss',
+  // ── /verify — public certificate verification ──────────────────────
+  'verify.valid_title':              'Valid certificate',
+  'verify.valid_sub':                'Issued by the XP-Money Academy.',
+  'verify.field_course':             'Course',
+  'verify.field_holder':             'Holder',
+  'verify.field_date':               'Issue date',
+  'verify.field_code':               'Code',
+  'verify.invalid_title':            'Code not found',
+  'verify.invalid_sub':              'Check the code exactly as it appears on the certificate.',
+  'verify.back_home':                'Go to xp-money.com',
 
   // ── TopBar ──────────────────────────────────────────────────────────
   'topbar.title.dashboard':    'Dashboard',
@@ -2764,6 +2825,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'txform.add_another':         'Add another',
   'txform.close':               'Close',
   'txform.err_save':            'Could not save. Check your connection and try again.',
+  'txform.xp_crit':             'CRITICAL! +{xp} XP',
 
   // ── Push opt-in (settings) ──────────────────────────────────────
   'push.active':   'Notifications on',

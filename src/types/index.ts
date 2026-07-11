@@ -155,6 +155,8 @@ export const XP_REWARDS = {
   DAILY_LOGIN:             25,   // was 20 — same daily floor, cleaner round
   STREAK_7_DAYS:          300,   // unchanged — milestone reward
   STREAK_30_DAYS:        1000,   // unchanged — milestone reward
+  STREAK_60_DAYS:        1500,   // julho 2026 — o streak não pode "acabar" ao dia 30
+  STREAK_100_DAYS:       3000,   // marco aspiracional de longo prazo
   MISSION_COMPLETED:      150,   // base, varia por missão
   SCORE_IMPROVED:         100,
   GOAL_CREATED:           100,   // was 75 — first-step reward reads as "official"
@@ -182,6 +184,18 @@ export const LEVELS: Level[] = [
   { number: 8,  name: 'Analista de Riqueza',     xp_required: 8000,   icon: '🔍' },
   { number: 9,  name: 'Estrategista de Riqueza', xp_required: 11500,  icon: '🏆' },
   { number: 10, name: 'Mestre das Finanças',     xp_required: 16000,  icon: '👑' },
+  // Níveis 11-19 (julho 2026) — o salto direto 10→20 deixava a barra de XP
+  // congelada a 100% durante ~4 anos de uso normal (~55 XP/dia). A curva
+  // agora sobe em degraus crescentes (+5k…+12k) com taper no topo.
+  { number: 11, name: 'Guardião do Património',  xp_required: 21000,  icon: '🛡️' },
+  { number: 12, name: 'Arquiteto de Poupança',   xp_required: 27000,  icon: '🏗️' },
+  { number: 13, name: 'Domador de Dívidas',      xp_required: 34000,  icon: '⚔️' },
+  { number: 14, name: 'Veterano dos Mercados',   xp_required: 42000,  icon: '🧭' },
+  { number: 15, name: 'Comandante Financeiro',   xp_required: 51000,  icon: '🎖️' },
+  { number: 16, name: 'Sábio dos Juros',         xp_required: 61000,  icon: '🦉' },
+  { number: 17, name: 'Alquimista de Capital',   xp_required: 72000,  icon: '⚗️' },
+  { number: 18, name: 'Titã da Riqueza',         xp_required: 84000,  icon: '🏛️' },
+  { number: 19, name: 'Ascendente',              xp_required: 92000,  icon: '🌅' },
   { number: 20, name: 'Lenda XP-Money',          xp_required: 100000, icon: '🌟' },
 ]
 

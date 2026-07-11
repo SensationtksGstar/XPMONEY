@@ -20,6 +20,13 @@ function isYesterday(candidate: Date, today: Date): boolean {
   return isSameDay(candidate, yesterday)
 }
 
+/** Exatamente anteontem — a janela do streak freeze (1 dia falhado, nem mais). */
+function isTwoDaysAgo(candidate: Date, today: Date): boolean {
+  const twoAgo = new Date(today)
+  twoAgo.setDate(today.getDate() - 2)
+  return isSameDay(candidate, twoAgo)
+}
+
 /**
  * Daily check-in — awards `daily_login` XP at most once per calendar day.
  *
@@ -65,7 +72,7 @@ export async function POST() {
   // so if a row exists, we already paid out today and must not pay again.
   // Both probes are needed on both branches and are independent — parallel
   // (this endpoint fires on every app open, so the round-trip matters).
-  const [{ data: alreadyAwarded }, { data: voltix }] = await Promise.all([
+  const [{ data: alreadyAwarded }, voltixRes] = await Promise.all([
     db
       .from('xp_history')
       .select('id')
@@ -74,13 +81,35 @@ export async function POST() {
       .gte('earned_at', todayStartISO)
       .limit(1)
       .maybeSingle(),
-    // Current voltix state (may be null for brand-new users)
+    // Current voltix state (may be null for brand-new users). Pede também
+    // as colunas do streak freeze — com fallback abaixo enquanto a
+    // migração streak_freeze_2026_07.sql não correr (regra DDL-less).
     db
       .from('voltix_states')
-      .select('streak_days, last_interaction')
+      .select('streak_days, last_interaction, streak_freezes, longest_streak')
       .eq('user_id', internalId)
       .maybeSingle(),
   ])
+
+  type VoltixRow = {
+    streak_days:      number | null
+    last_interaction: string | null
+    streak_freezes?:  number | null
+    longest_streak?:  number | null
+  }
+  let voltix: VoltixRow | null = voltixRes.data as VoltixRow | null
+  let freezeColumnsExist = !voltixRes.error
+  if (voltixRes.error) {
+    // 42703 (coluna inexistente) — re-query sem as colunas novas; o freeze
+    // fica desativado até a migração correr, tudo o resto igual ao antigo.
+    const fb = await db
+      .from('voltix_states')
+      .select('streak_days, last_interaction')
+      .eq('user_id', internalId)
+      .maybeSingle()
+    voltix = fb.data as VoltixRow | null
+    freezeColumnsExist = false
+  }
 
   if (alreadyAwarded) {
     return NextResponse.json({
@@ -89,27 +118,60 @@ export async function POST() {
     })
   }
 
-  // ── 2. Compute new streak ──────────────────────────────────────────────
-  let newStreak = 1
+  // ── 2. Compute new streak (com STREAK FREEZE, julho 2026) ─────────────
+  // Falhar EXATAMENTE 1 dia com streak ≥ 3 e um freeze disponível consome
+  // o freeze e o streak continua como se o dia falhado tivesse vindo — a
+  // mecânica de loss-aversion à Duolingo. Gaps maiores resetam como sempre.
+  let newStreak   = 1
+  let freezeUsed  = false
+  const freezesAvailable = freezeColumnsExist
+    ? (typeof voltix?.streak_freezes === 'number' ? voltix.streak_freezes : 1)
+    : null
   if (voltix?.last_interaction) {
     const lastDate = new Date(voltix.last_interaction)
-    if (isSameDay(lastDate, today))       newStreak = voltix.streak_days ?? 1
+    if (isSameDay(lastDate, today))        newStreak = voltix.streak_days ?? 1
     else if (isYesterday(lastDate, today)) newStreak = (voltix.streak_days ?? 0) + 1
+    else if (
+      isTwoDaysAgo(lastDate, today) &&
+      (voltix.streak_days ?? 0) >= 3 &&
+      freezesAvailable !== null && freezesAvailable > 0
+    ) {
+      newStreak  = (voltix.streak_days ?? 0) + 1
+      freezeUsed = true
+    }
+  }
+
+  // Ganhar freezes: a cada marco de 7 dias (7, 14, 21…) ganha +1, cap 2 —
+  // proteção que se conquista, não se acumula infinitamente.
+  let newFreezes   = freezesAvailable
+  let freezeEarned = false
+  if (newFreezes !== null) {
+    if (freezeUsed) newFreezes = Math.max(0, newFreezes - 1)
+    const grew = newStreak > (voltix?.streak_days ?? 0)
+    if (grew && newStreak % 7 === 0 && newFreezes < 2) {
+      newFreezes  += 1
+      freezeEarned = true
+    }
   }
 
   // ── 3. Persist state via UPSERT so a missing row is created, not ignored.
   // We key on user_id (unique per row). If the user already had a row, all
   // listed columns are overwritten. If not, a fresh row is inserted.
+  const upsertRow: Record<string, unknown> = {
+    user_id:          internalId,
+    streak_days:      newStreak,
+    last_interaction: today.toISOString(),
+    // Don't clobber an existing mood/evolution_level — only set defaults
+    // when the row is brand-new. Supabase upsert overwrites every listed
+    // column, so we intentionally omit those. Row insertion uses column
+    // defaults (mood='neutral', evolution_level=1) from the schema.
+  }
+  if (newFreezes !== null) {
+    upsertRow.streak_freezes = newFreezes
+    upsertRow.longest_streak = Math.max(voltix?.longest_streak ?? 0, newStreak)
+  }
   const { error: voltixErr } = await db.from('voltix_states').upsert(
-    {
-      user_id:          internalId,
-      streak_days:      newStreak,
-      last_interaction: today.toISOString(),
-      // Don't clobber an existing mood/evolution_level — only set defaults
-      // when the row is brand-new. Supabase upsert overwrites every listed
-      // column, so we intentionally omit those. Row insertion uses column
-      // defaults (mood='neutral', evolution_level=1) from the schema.
-    },
+    upsertRow,
     { onConflict: 'user_id' },
   )
   if (voltixErr) {
@@ -126,8 +188,10 @@ export async function POST() {
   const baseXP = XP_REWARDS.DAILY_LOGIN
   let bonusXP  = 0
   let bonusReason: string | null = null
-  if (newStreak === 30)     { bonusXP = XP_REWARDS.STREAK_30_DAYS; bonusReason = 'streak_30_days' }
-  else if (newStreak === 7) { bonusXP = XP_REWARDS.STREAK_7_DAYS;  bonusReason = 'streak_7_days'  }
+  if (newStreak === 100)     { bonusXP = XP_REWARDS.STREAK_100_DAYS; bonusReason = 'streak_100_days' }
+  else if (newStreak === 60) { bonusXP = XP_REWARDS.STREAK_60_DAYS;  bonusReason = 'streak_60_days'  }
+  else if (newStreak === 30) { bonusXP = XP_REWARDS.STREAK_30_DAYS;  bonusReason = 'streak_30_days'  }
+  else if (newStreak === 7)  { bonusXP = XP_REWARDS.STREAK_7_DAYS;   bonusReason = 'streak_7_days'   }
 
   const baseRes = await awardXP(db, internalId, baseXP, 'daily_login')
   if (baseRes) xpEarned += baseRes.xp_gained
@@ -173,5 +237,9 @@ export async function POST() {
     streak:          newStreak,
     xp_earned:       xpEarned,
     badges_awarded:  badgesAwarded,
+    // Streak freeze (null enquanto a migração não corre)
+    freeze_used:     freezeUsed,
+    freeze_earned:   freezeEarned,
+    freezes_left:    newFreezes,
   })
 }

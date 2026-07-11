@@ -8,15 +8,21 @@ async function fetchTransactions(): Promise<Transaction[]> {
   return data ?? []
 }
 
-async function postTransaction(input: TransactionCreateInput): Promise<Transaction> {
+/** Info de XP devolvida pelo servidor no create — inclui o "crítico"
+ *  (recompensa variável, decidida server-side). */
+export interface TransactionXPInfo { amount: number; critical: boolean }
+
+async function postTransaction(
+  input: TransactionCreateInput,
+): Promise<{ data: Transaction; xp: TransactionXPInfo | null }> {
   const res = await fetch('/api/transactions', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(input),
   })
   if (!res.ok) throw new Error('Erro ao criar transação')
-  const { data } = await res.json()
-  return data
+  const json = await res.json()
+  return { data: json.data, xp: json.xp ?? null }
 }
 
 async function deleteTransactionById(id: string): Promise<void> {

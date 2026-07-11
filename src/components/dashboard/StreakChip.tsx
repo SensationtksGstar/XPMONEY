@@ -25,6 +25,13 @@ export function StreakChip() {
   if (streak < 1) return null
 
   const isLegend = streak >= 30
+  // Coluna pós-migração streak_freeze_2026_07.sql — o /api/voltix faz
+  // select('*'), por isso o campo aparece sozinho quando existir.
+  const freezes = (voltix as { streak_freezes?: number | null }).streak_freezes ?? 0
+
+  const label =
+    t('streak.chip_aria', { n: streak }) +
+    (freezes > 0 ? ` · ${t('streak.chip_freeze_aria', { n: freezes })}` : '')
 
   return (
     <span
@@ -33,11 +40,16 @@ export function StreakChip() {
           ? 'text-purple-300 bg-purple-500/10 border-purple-500/25'
           : 'text-orange-400 bg-orange-500/10 border-orange-500/20'
       }`}
-      aria-label={t('streak.chip_aria', { n: streak })}
-      title={t('streak.chip_aria', { n: streak })}
+      aria-label={label}
+      title={label}
     >
       <Flame className="w-3 h-3" aria-hidden />
       {streak}
+      {freezes > 0 && (
+        <span className="text-sky-300/90 font-semibold" aria-hidden>
+          ❄{freezes > 1 ? freezes : ''}
+        </span>
+      )}
     </span>
   )
 }

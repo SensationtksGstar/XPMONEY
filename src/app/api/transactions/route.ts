@@ -126,8 +126,17 @@ export async function POST(req: NextRequest) {
   // lands (useTransactions.ts), so deferring these (e.g. via after()) would
   // make that refetch read stale values — the score wouldn't move after
   // logging a transaction. Total latency = slowest branch (recalculateScore).
-  await Promise.allSettled([
-    awardXP(db, internalId, XP_REWARDS.TRANSACTION_REGISTERED, 'transaction_registered'),
+  // Recompensa VARIÁVEL (julho 2026): 15 XP base com ~10% de hipótese de
+  // "crítico" 3-5×, decidido no SERVIDOR (nunca no cliente — seria farmável).
+  // Era a peça do modelo Hooked em falta: recompensa fixa habitua em dias;
+  // a antecipação do talvez é o que faz voltar. Mesmo reason no ledger —
+  // o amount na xp_history já conta a história.
+  const isCrit   = Math.random() < 0.10
+  const critMult = isCrit ? 3 + Math.floor(Math.random() * 3) : 1 // 3, 4 ou 5
+  const xpAmount = XP_REWARDS.TRANSACTION_REGISTERED * critMult
+
+  const [xpRes] = await Promise.allSettled([
+    awardXP(db, internalId, xpAmount, 'transaction_registered'),
     awardBadge(db, internalId, 'first_transaction'),
     recalculateScore(db, internalId),
     // Bump the "log N transactions" mission. Other mission types depend on
@@ -136,5 +145,10 @@ export async function POST(req: NextRequest) {
     updateMissionProgress(db, internalId, { type: 'register_transactions' }),
   ])
 
-  return NextResponse.json({ data, error: null }, { status: 201 })
+  const xpInfo =
+    xpRes.status === 'fulfilled' && xpRes.value
+      ? { amount: xpAmount, critical: isCrit }
+      : null
+
+  return NextResponse.json({ data, xp: xpInfo, error: null }, { status: 201 })
 }

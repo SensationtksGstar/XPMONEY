@@ -100,6 +100,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
   const [loading,           setLoading]          = useState(false)
   const [formError,         setFormError]        = useState<string | null>(null)
   const [xpGained,          setXpGained]         = useState<number | null>(null)
+  const [xpCrit,            setXpCrit]           = useState(false)
   const [step,              setStep]             = useState<1 | 2>(1)
   const [showScanner,       setShowScanner]      = useState(false)
   const [showUpgradeTip,    setShowUpgradeTip]   = useState(false)
@@ -303,7 +304,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
     setFormError(null)
     setLoading(true)
     try {
-      await createTransaction({
+      const res = await createTransaction({
         amount:      parsedAmount,
         type,
         category_id: selectedCategory.id,
@@ -312,12 +313,15 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
         account_id:  defaultAccount?.id ?? '',
       })
       track.transaction_created(type, selectedCategory.name, parsedAmount)
-      // O valor REAL do servidor (XP_REWARDS.TRANSACTION_REGISTERED) — o
-      // banner mostrava 10 hardcoded enquanto o backend dava 15.
-      setXpGained(XP_REWARDS.TRANSACTION_REGISTERED)
-      buzz(20)
-      // Auto-fecho com margem para o user optar por "Adicionar outra".
-      closeTimer.current = setTimeout(onClose, 2400)
+      // XP real do servidor — pode vir "crítico" (recompensa variável 3-5×,
+      // ~10%, decidida server-side). Fallback à constante se o award falhou.
+      const crit = res.xp?.critical ?? false
+      setXpGained(res.xp?.amount ?? XP_REWARDS.TRANSACTION_REGISTERED)
+      setXpCrit(crit)
+      buzz(crit ? 60 : 20)
+      // Auto-fecho com margem para o user optar por "Adicionar outra"
+      // (mais tempo no crítico — o momento merece ser visto).
+      closeTimer.current = setTimeout(onClose, crit ? 3600 : 2400)
     } catch (err) {
       console.warn('[txform] save failed:', err)
       setFormError(t('txform.err_save'))
@@ -331,6 +335,7 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
   function handleAddAnother() {
     if (closeTimer.current) clearTimeout(closeTimer.current)
     setXpGained(null)
+    setXpCrit(false)
     setAmount('')
     setDescription('')
     setFormError(null)
@@ -806,9 +811,19 @@ export function TransactionForm({ onClose, initialType = 'expense' }: Props) {
                         registo (tipo/categoria/data ficam, valor limpa). */}
                     {xpGained ? (
                       <div className="space-y-3 animate-fade-in-up">
-                        <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl py-3" role="status">
-                          <Zap className="w-4 h-4 text-yellow-400" />
-                          <span className="text-yellow-400 font-bold">{t('txform.xp_gained', { xp: xpGained })}</span>
+                        <div
+                          className={cn(
+                            'flex items-center justify-center gap-2 rounded-2xl py-3',
+                            xpCrit
+                              ? 'bg-yellow-500/20 border-2 border-yellow-400/60'
+                              : 'bg-yellow-500/10 border border-yellow-500/20',
+                          )}
+                          role="status"
+                        >
+                          <Zap className={cn('w-4 h-4 text-yellow-400', xpCrit && 'animate-xp-burst')} />
+                          <span className={cn('text-yellow-400 font-bold', xpCrit && 'text-lg')}>
+                            {xpCrit ? t('txform.xp_crit', { xp: xpGained }) : t('txform.xp_gained', { xp: xpGained })}
+                          </span>
                         </div>
                         <div className="flex gap-2">
                           <button
