@@ -1,10 +1,8 @@
 import { auth }              from '@clerk/nextjs/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse }        from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
-import { awardXP }                   from '@/lib/awardXP'
 import { calculateXPProgress }       from '@/lib/gamification'
-import { z }                         from 'zod'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
 import { DEMO_XP }                   from '@/lib/demo/mockData'
 
@@ -31,47 +29,11 @@ export async function GET() {
   return NextResponse.json({ data: { ...data, ...progress }, error: null })
 }
 
-const AddXPSchema = z.object({
-  amount: z.number().int().positive().max(100_000),
-  reason: z.string().min(1).max(64),
-})
-
-export async function POST(req: NextRequest) {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  let body: unknown
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
-  }
-
-  const parsed = AddXPSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
-  }
-
-  const internalId = await resolveUser(userId)
-  if (!internalId) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-
-  const db = createSupabaseAdmin()
-
-  // Delegate to the canonical awardXP helper — single source of truth for
-  // xp_progress updates + xp_history insert + level-up detection.
-  const result = await awardXP(db, internalId, parsed.data.amount, parsed.data.reason)
-
-  if (!result) {
-    return NextResponse.json({ error: 'User xp_progress row not found.' }, { status: 404 })
-  }
-
-  // calculateXPProgress already returns xp_total + level, so we spread it
-  // directly — no need to restate fields that would get overwritten.
-  const progress = calculateXPProgress(result.xp_total)
-
-  return NextResponse.json({
-    data:     progress,
-    level_up: result.leveled_up,
-    error:    null,
-  })
-}
+// SEM POST. O endpoint aceitava {amount, reason} arbitrários de QUALQUER
+// utilizador autenticado (até 100.000 XP por chamada, sem rate-limit) e
+// nenhum componente do cliente o usava — superfície de exploit pura, morta
+// na auditoria de julho 2026. Todos os awards legítimos acontecem
+// server-side nos call sites (transactions, goals, daily-checkin, courses,
+// missions) via awardXP(). Se um fluxo futuro precisar de dar XP a partir
+// do cliente, reintroduzir com whitelist de reasons e valores fixos no
+// servidor — nunca com amount vindo do body.
