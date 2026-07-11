@@ -5,6 +5,7 @@ import dynamic                         from 'next/dynamic'
 import { PlusCircle, ChevronDown, BarChart3 } from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
 import { StreakChip }                  from '@/components/dashboard/StreakChip'
+import { PushNudgeCard }               from '@/components/dashboard/PushNudgeCard'
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
 import { CelebrationModal }            from '@/components/ui/CelebrationModal'
 import { formatMonth }                 from '@/lib/utils'
@@ -147,6 +148,23 @@ export default function DashboardPage() {
           setCelebration({ icon: '🔥', title: t('dashboard.streak_7_title'), subtitle: t('dashboard.streak_7_sub'), xp: res.xp_earned })
         } else if (streak === 30) {
           setCelebration({ icon: '👑', title: t('dashboard.streak_30_title'), subtitle: t('dashboard.streak_30_sub'), xp: res.xp_earned })
+        } else if (streak === 60) {
+          setCelebration({ icon: '💎', title: t('dashboard.streak_60_title'), subtitle: t('dashboard.streak_60_sub'), xp: res.xp_earned })
+        } else if (streak === 100) {
+          setCelebration({ icon: '🌟', title: t('dashboard.streak_100_title'), subtitle: t('dashboard.streak_100_sub'), xp: res.xp_earned })
+        }
+
+        // Streak salvo por um freeze — momento raro que merece ser visto
+        // (é assim que o user aprende que a proteção existe). Ligeiro
+        // atraso para não colidir com uma celebração de marco.
+        if (res.freeze_used) {
+          setTimeout(() => {
+            setCelebration({
+              icon:     '❄️',
+              title:    t('dashboard.freeze_used_title'),
+              subtitle: t('dashboard.freeze_used_sub', { n: streak }),
+            })
+          }, 600)
         }
 
         res.badges_awarded?.forEach((b: { name: string; icon: string }) => {
@@ -202,6 +220,11 @@ export default function DashboardPage() {
           <XPProgressBar     userId={user?.id ?? ''} />
         </div>
       </div>
+
+      {/* Opt-in de push contextual — prompt transitório (não é secção do
+          feed): só aparece com streak ≥ 2, permissão nunca pedida e sem
+          dispensa nos últimos 14 dias. */}
+      <PushNudgeCard />
 
       {/* Resumo do período — o PeriodFilter vive junto do resumo que
           controla (alimenta também a ExpenseBreakdown na análise). */}

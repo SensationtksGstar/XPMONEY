@@ -130,8 +130,12 @@ The app is **flow-based** (tracks transactions, computes score from flow); `acco
 Celebration modals: streak 7, streak 30, level-up, badge unlock.
 
 **XP rewards** (`src/types/index.ts → XP_REWARDS`):
-- TRANSACTION_REGISTERED: 15 · DAILY_LOGIN: 25 · GOAL_CREATED: 100
-- STREAK_7_DAYS: 300 · STREAK_30_DAYS: 1000 · GOAL_REACHED: 1000
+- TRANSACTION_REGISTERED: 15 — com **recompensa variável (julho 2026)**: ~10% de "crítico" 3-5× decidido SERVER-side em `/api/transactions` POST (nunca no cliente); a resposta traz `xp: {amount, critical}` e o TransactionForm celebra. DELETE de transação **reverte 15 XP** (clamp a 0) — o farm criar/apagar morreu.
+- DAILY_LOGIN: 25 · GOAL_CREATED: 100 · STREAK_7_DAYS: 300 · STREAK_30_DAYS: 1000 · **STREAK_60_DAYS: 1500 · STREAK_100_DAYS: 3000** · GOAL_REACHED: 1000
+- **LEVELS 11-19 existem** (21k→92k XP; o deserto 10→20 que congelava a barra ~4 anos foi preenchido). Nomes i18n em `level.name_*`.
+- **Streak freeze (julho 2026)**: falhar EXATAMENTE 1 dia com streak ≥3 e freeze disponível → streak continua; ganha-se +1 a cada marco de 7 (cap 2); recorde em `longest_streak`. Mecânica no daily-checkin com fallback 42703 pré-migração. `POST /api/xp` foi REMOVIDO (era um exploit: qualquer user autenticado dava-se 100k XP) — XP é 100% server-side via awardXP; nunca reintroduzir com amount vindo do body.
+- **Missões renovam** (julho 2026): GET /api/missions expira vencidas e re-semeia lote de 3 (validade 7 dias) quando não há ativas, rodando pelos 7 templates via contagem histórica — nunca voltar ao seed único do onboarding.
+- **Certificados persistidos**: `/api/courses/[id]/complete` garante row em `certificates` (idempotente, code permanente); GET `/api/certificates/[courseId]`; verificação pública `/verify/[code]` (rota pública no middleware). Incluídos no reset (wipe) e no export RGPD.
 
 ## Mascot system
 
@@ -360,6 +364,8 @@ TODOs that require the user to act on a third-party dashboard — code is alread
   - `database/bug_reports.sql` (bug-report + contact submission table)
   - `database/newsletter_2026_04.sql` (newsletter subscribers — `/api/newsletter/*` returns friendly 503 without it)
 - **`database/net_worth_snapshots_2026_05.sql`** — OPTIONAL. `/contas` (Património) works fully without it; only the net-worth *trend chart* needs it. Writer + reader degrade silently when the table is absent.
+- **`database/streak_freeze_2026_07.sql`** — RECOMENDADA. Colunas `streak_freezes`/`longest_streak` em voltix_states. Sem ela o streak freeze (proteção à Duolingo, ganha-se a cada marco de 7 dias, cap 2) fica desativado com fallback silencioso no daily-checkin.
+- **`database/certificates_2026_07.sql`** — RECOMENDADA. Tabela `certificates` (código servidor `XPM-…`, único e permanente) + verificação pública em `/verify/[code]`. Sem ela o certificado mantém o código derivado legacy sem URL de verificação. É o pré-requisito da visão cripto (ancoragem on-chain futura).
 - **Stripe Customer Portal**: enable at https://dashboard.stripe.com/settings/billing/portal so the "Gerir subscrição" button works.
 - **Stripe payment methods**: enable Multibanco + MBWay at https://dashboard.stripe.com/settings/payment_methods so PT customers see the right options at checkout.
 
@@ -393,3 +399,4 @@ TODOs that require the user to act on a third-party dashboard — code is alread
 - PDF report mobile overflow on summary cards (iOS Safari uses screen viewport for print). Fixed via `@media print` overrides.
 - LanguageToggle was 28 px tall in compact mode → mobile taps missed. Now `min-h-[40px]`.
 - Favicon was being intercepted by Clerk middleware (`/icon` not extension-matched). Fixed in `src/middleware.ts` matcher.
+- **`/blog` NUNCA esteve na lista pública do middleware** — todo o blog (7 artigos, a estratégia SEO inteira) devolvia 307→/sign-in em produção, invisível para users e Googlebot (descoberto julho 2026 ao adicionar /verify). `'/blog(.*)'` está agora em isPublicRoute — nunca remover; ao criar rotas públicas novas, TESTAR com curl sem sessão.
