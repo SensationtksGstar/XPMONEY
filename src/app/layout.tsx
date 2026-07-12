@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter }         from 'next/font/google'
-import Script            from 'next/script'
 import './globals.css'
 import { PostHogProvider } from '@/components/providers/PostHogProvider'
 import { QueryProvider }   from '@/components/providers/QueryProvider'
@@ -100,6 +99,9 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     verification: Object.keys(verification).length > 0 ? verification : undefined,
+    // Validação alternativa do AdSense (redundância do <script> no head):
+    // emite <meta name="google-adsense-account" content="ca-pub-…">.
+    other: ADSENSE_CLIENT ? { 'google-adsense-account': ADSENSE_CLIENT } : undefined,
     category: 'finance',
   }
 }
@@ -150,16 +152,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           )}
           <link rel="dns-prefetch" href="https://eu.i.posthog.com" />
           <link rel="dns-prefetch" href="https://js.stripe.com" />
-        </head>
-        <body className="font-sans antialiased">
+
+          {/* AdSense — <script> NATIVO, não next/script: o crawler de
+              validação do Google procura a tag literal
+              <script async src="…adsbygoogle.js?client=…"> no HTML servido.
+              O next/script (afterInteractive) só emitia um
+              <link rel="preload"> no SSR e injetava o script via JS — a
+              validação AdSense falhava SEMPRE (julho 2026). React 19 faz
+              hoist+dedupe de <script async> nativos e emite a tag real. */}
           {ADSENSE_CLIENT && (
-            <Script
+            <script
               async
               src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
               crossOrigin="anonymous"
-              strategy="afterInteractive"
             />
           )}
+        </head>
+        <body className="font-sans antialiased">
           <PostHogProvider>
             <QueryProvider>
               <LocaleProvider>
