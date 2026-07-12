@@ -11,7 +11,17 @@
  *   6.0-9.0  Celebrate — reveal + confetti + "+XP" — 3s to savour the new pet
  *
  * All layers are orchestrated with framer-motion `animate` + timed
- * `transitions`. No audio files — uses `playEvolutionSfx()` (Web Audio synth).
+ * `transitions`.
+ *
+ * Áudio (julho 2026): toca o tema oficial `/sfx/evolution-v1.mp3` (8.80s,
+ * fornecido pelo dono — casa com os 9000ms da timeline; termina ~200ms
+ * antes do fade final). Se o ficheiro falhar (404/decode), cai para o
+ * antigo `playEvolutionSfx()` (Web Audio synth) — nunca um momento mudo
+ * por causa de um asset. O som PÁRA no skip/close (um mp3 de 9s a
+ * continuar depois de "Saltar" seria pior que não tocar). Autoplay
+ * bloqueado pelo browser → silêncio gracioso (mesma limitação do synth).
+ * Cache-bust por rename (padrão do projeto): evolution-v2.mp3 se o som
+ * for substituído.
  *
  * Accessibility:
  *   - `role="alertdialog"` + focus trap on skip button
@@ -136,6 +146,7 @@ export function MascotEvolutionCinematic({
   const [showConfetti, setShowConfetti] = useState(false)
   const skipRef = useRef<HTMLButtonElement>(null)
   const fired = useRef(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const fromName = EVO_DISPLAY_NAMES[gender][fromEvo]
   const toName   = EVO_DISPLAY_NAMES[gender][toEvo]
@@ -148,26 +159,62 @@ export function MascotEvolutionCinematic({
   // Confetti pieces lazy-built once per open
   const confetti = useMemo(() => makeConfetti(36), [])
 
+  // Pára o tema imediatamente — chamado no fecho/skip/unmount. Um mp3 de
+  // 9s a continuar depois de "Saltar" seria pior do que não tocar nada.
+  function stopAudio() {
+    const a = audioRef.current
+    if (!a) return
+    audioRef.current = null
+    try { a.pause() } catch { /* já parado */ }
+  }
+
+  // onClose vive num ref para a timeline NÃO depender da identidade do
+  // callback: o Watcher passa um arrow inline e re-renderiza DURANTE a
+  // evolução (React Query invalida ['voltix'] nesse preciso momento) —
+  // com onClose nas deps, cada re-render reiniciava os timers do zero e,
+  // com o áudio novo, cortava o tema a meio.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
+
   // Orchestrate timeline. When reduced motion is set, collapse to intro→celebrate.
   useEffect(() => {
     if (!open) {
       setStage('intro')
       setShowConfetti(false)
       fired.current = false
+      stopAudio()
       return
     }
 
-    // Fire SFX once per opening (requires user gesture — the click that set open=true)
+    // Toca o tema oficial uma vez por abertura (autoplay depende do gesto
+    // que originou a evolução; bloqueio → silêncio gracioso, como o synth).
     if (!fired.current) {
       fired.current = true
-      void playEvolutionSfx()
+      try {
+        const audio = new Audio('/sfx/evolution-v1.mp3')
+        audioRef.current = audio
+        // Asset em falta/corrompido → fallback para o synth antigo, mas só
+        // se este cinematic ainda estiver aberto (audioRef ainda é o nosso).
+        audio.onerror = () => {
+          if (audioRef.current === audio) {
+            console.warn('[evo-cinematic] evolution-v1.mp3 failed — falling back to synth')
+            void playEvolutionSfx()
+          }
+        }
+        void audio.play().catch(err => {
+          console.warn('[evo-cinematic] audio play blocked:', err)
+        })
+      } catch (err) {
+        console.warn('[evo-cinematic] audio init failed — falling back to synth:', err)
+        void playEvolutionSfx()
+      }
     }
 
     if (reduced) {
       setStage('celebrate')
       setShowConfetti(true)
-      const end = setTimeout(onClose, SKIP_FADE_MS + 3500)
-      return () => clearTimeout(end)
+      const end = setTimeout(() => onCloseRef.current(), SKIP_FADE_MS + 3500)
+      return () => { clearTimeout(end); stopAudio() }
     }
 
     const t1 = setTimeout(() => setStage('bleach'),  STAGE_TIMES.bleach)
@@ -177,12 +224,15 @@ export function MascotEvolutionCinematic({
       setStage('celebrate')
       setShowConfetti(true)
     }, STAGE_TIMES.celebrate)
-    const t5 = setTimeout(onClose, TOTAL_DURATION_MS)
+    const t5 = setTimeout(() => onCloseRef.current(), TOTAL_DURATION_MS)
 
     return () => {
       clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5)
+      stopAudio()
     }
-  }, [open, onClose, reduced])
+    // onClose deliberadamente fora das deps (vive em onCloseRef, ver acima).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, reduced])
 
   // Focus skip button on open for keyboard users
   useEffect(() => {

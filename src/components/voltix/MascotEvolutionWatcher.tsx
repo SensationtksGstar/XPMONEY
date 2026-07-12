@@ -22,7 +22,7 @@
  * touching localStorage or the server.
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import { useVoltix } from '@/hooks/useVoltix'
@@ -107,12 +107,17 @@ export function MascotEvolutionWatcher() {
     }
   }, [voltix])
 
+  // Identidade estável: este componente re-renderiza a meio do cinematic
+  // (useVoltix refetch pós-evolução) e um onClose inline novo em cada
+  // render obrigava o cinematic a re-orquestrar a timeline.
+  const handleClose = useCallback(() => setCinematic(null), [])
+
   if (!cinematic) return null
 
   return (
     <MascotEvolutionCinematic
       open
-      onClose={() => setCinematic(null)}
+      onClose={handleClose}
       gender={cinematic.gender}
       fromEvo={cinematic.fromEvo}
       toEvo={cinematic.toEvo}
