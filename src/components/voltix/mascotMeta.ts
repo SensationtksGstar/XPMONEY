@@ -11,8 +11,29 @@
  */
 
 import type { VoltixMood } from '@/types'
+import { EVO_SCORE_THRESHOLDS } from '@/lib/mascotEvolution'
 
 type Mood = VoltixMood
+
+/**
+ * Requisitos DERIVADOS do single source of truth (EVO_SCORE_THRESHOLDS) —
+ * julho 2026. Os maps antigos tinham "Score ≥ 35/55/72/85/95" HARDCODED
+ * (valores de fevereiro) e nunca acompanharam os tunes de abril e maio:
+ * a Linha de Evolução em /voltix mentia ao user sobre o que era preciso.
+ * Derivar em vez de copiar = impossível dessincronizar outra vez.
+ * (mascotEvolution.ts só tem constantes/funções puras — não re-ancora
+ * nenhum módulo pesado neste ficheiro-leve.)
+ */
+function evoReqLabels(): Record<number, string> {
+  return {
+    1: 'Estado inicial',
+    2: `Score ≥ ${EVO_SCORE_THRESHOLDS[2]}`,
+    3: `Score ≥ ${EVO_SCORE_THRESHOLDS[3]}`,
+    4: `Score ≥ ${EVO_SCORE_THRESHOLDS[4]}`,
+    5: `Score ≥ ${EVO_SCORE_THRESHOLDS[5]}`,
+    6: `Score ≥ ${EVO_SCORE_THRESHOLDS[6]}`,
+  }
+}
 
 export interface MascotPaletteC { body: string; shade: string; light: string; accent: string }
 
@@ -56,14 +77,7 @@ export const EVO_DESCRIPTIONS: Record<number, string> = {
   6: 'Lenda cósmica. Seis asas de galáxia e coroa imperial.',
 }
 
-export const EVO_REQUIREMENTS: Record<number, string> = {
-  1: 'Estado inicial',
-  2: 'Score ≥ 35',
-  3: 'Score ≥ 55',
-  4: 'Score ≥ 72',
-  5: 'Score ≥ 85',
-  6: 'Score ≥ 95',
-}
+export const EVO_REQUIREMENTS: Record<number, string> = evoReqLabels()
 
 /** Palette per-mood — only accents change; body fur stays cream */
 export interface PennyPalette {
@@ -114,11 +128,4 @@ export const PENNY_EVO_DESCRIPTIONS: Record<number, string> = {
   6: 'Forma seráfica cósmica. Aura divina e asas de luz estelar.',
 }
 
-export const PENNY_EVO_REQUIREMENTS: Record<number, string> = {
-  1: 'Estado inicial',
-  2: 'Score ≥ 35',
-  3: 'Score ≥ 55',
-  4: 'Score ≥ 72',
-  5: 'Score ≥ 85',
-  6: 'Score ≥ 95',
-}
+export const PENNY_EVO_REQUIREMENTS: Record<number, string> = evoReqLabels()
