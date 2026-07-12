@@ -87,6 +87,14 @@ export const config = {
     // `sw.js` + `manifest.json` are static files in public/ that the browser
     // re-fetches on its own cadence — they're already in isPublicRoute, but
     // excluding them here skips the Clerk middleware invocation entirely.
-    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|sitemap.xml|robots.txt|sw.js|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    //
+    // `txt|mp3|...` (julho 2026): /ads.txt chegou a produção a devolver a
+    // página de sign-in porque .txt não estava na lista de extensões — o
+    // Google teria reprovado a verificação AdSense com isso. Mesma classe
+    // de bug do favicon//blog/sitemap: TODO o ficheiro estático novo em
+    // public/ com extensão fora desta regex é intercetado pelo Clerk para
+    // visitantes anónimos. Áudio/vídeo/fonts entram já também — o
+    // /sfx/evolution-v1.mp3 só servia porque quem o pede está autenticado.
+    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|sitemap.xml|robots.txt|sw.js|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|mp3|mp4|webm|wav|woff|woff2|ttf|otf)$).*)',
   ],
 }
