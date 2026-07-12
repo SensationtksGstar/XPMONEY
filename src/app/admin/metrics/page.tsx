@@ -94,6 +94,15 @@ interface MetricsBundle {
     seededLast7: number
   }
   stripe:     { events30d: number; cancellations30d: number; checkouts30d: number }
+  // "Quem são os users" — agregados de users.onboarding_profile (jsonb,
+  // migração database/onboarding_profile_2026_07.sql). Chave '(sem resposta)'
+  // agrega os skips — "não quis responder" também é dado.
+  profile: {
+    answered:   number
+    motivation: Record<string, number>
+    lifeStage:  Record<string, number>
+    discovery:  Record<string, number>
+  }
   warnings:   string[]
 }
 
@@ -119,6 +128,12 @@ async function loadMetrics(): Promise<MetricsBundle> {
   }
   const merchantCache = { entries: 0, trusted: 0, seededLast7: 0 }
   const stripe     = { events30d: 0, cancellations30d: 0, checkouts30d: 0 }
+  const profile    = {
+    answered:   0,
+    motivation: {} as Record<string, number>,
+    lifeStage:  {} as Record<string, number>,
+    discovery:  {} as Record<string, number>,
+  }
 
   // Users — totals + plan split + signup velocity. The `users` table is
   // load-bearing; if this fails, the whole page is meaningless, so let it
@@ -302,7 +317,36 @@ async function loadMetrics(): Promise<MetricsBundle> {
     warnings.push(`merchant_categories: ${err instanceof Error ? err.message : 'indisponível'}`)
   }
 
-  return { totals, growth, engagement, ai, aiCalls, merchantCache, stripe, warnings }
+  // Perfil de onboarding — a coluna onboarding_profile pode não existir
+  // (migração opcional); o PostgREST devolve o erro no envelope, não lança,
+  // por isso verifica-se `error` explicitamente além do try/catch.
+  try {
+    const { data: rows, error } = await db
+      .from('users')
+      .select('onboarding_profile')
+      .not('onboarding_profile', 'is', null)
+      .limit(10_000)
+    if (error) {
+      warnings.push(`onboarding_profile: ${error.message}`)
+    } else {
+      const bump = (rec: Record<string, number>, key: unknown) => {
+        const k = typeof key === 'string' && key ? key : '(sem resposta)'
+        rec[k] = (rec[k] ?? 0) + 1
+      }
+      for (const r of (rows ?? []) as Array<{ onboarding_profile: Record<string, unknown> | null }>) {
+        const p = r.onboarding_profile
+        if (!p) continue
+        profile.answered++
+        bump(profile.motivation, p.motivation)
+        bump(profile.lifeStage,  p.life_stage)
+        bump(profile.discovery,  p.discovery_source)
+      }
+    }
+  } catch (err) {
+    warnings.push(`onboarding_profile: ${err instanceof Error ? err.message : 'indisponível'}`)
+  }
+
+  return { totals, growth, engagement, ai, aiCalls, merchantCache, stripe, profile, warnings }
 }
 
 // ── Page ────────────────────────────────────────────────────────────────────
@@ -554,6 +598,30 @@ export default async function AdminMetricsPage() {
           </div>
         </section>
 
+        {/* ── Quem são os users (perfil do onboarding) ── */}
+        <section className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="font-semibold mb-3 text-white/90">🧭 Quem são os users (onboarding)</h2>
+          {m.profile.answered === 0 ? (
+            <p className="text-xs text-white/50 leading-relaxed">
+              Sem respostas ainda. Requer a migração <code>database/onboarding_profile_2026_07.sql</code> (Supabase
+              SQL Editor) — a partir daí cada onboarding novo grava motivação, fase de vida e canal de
+              descoberta nesta secção. Users antigos ficam de fora (as respostas deles vivem só no Clerk
+              publicMetadata).
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-white/50 mb-4">
+                {fmtNum(m.profile.answered)} perfis respondidos (onboardings desde a migração).
+              </p>
+              <div className="grid sm:grid-cols-3 gap-x-8 gap-y-5">
+                <Dist title="O que os trouxe"   data={m.profile.motivation} labels={MOTIVATION_LABELS} total={m.profile.answered} />
+                <Dist title="Fase de vida"      data={m.profile.lifeStage}  labels={STAGE_LABELS}      total={m.profile.answered} />
+                <Dist title="Como nos acharam"  data={m.profile.discovery}  labels={SOURCE_LABELS}     total={m.profile.answered} />
+              </div>
+            </>
+          )}
+        </section>
+
         {/* ── Receita & Margem ── */}
         <section className="bg-white/5 border border-white/10 rounded-xl p-5">
           <h2 className="font-semibold mb-3 text-white/90">
@@ -682,6 +750,63 @@ export default async function AdminMetricsPage() {
         </section>
       </div>
     </main>
+  )
+}
+
+// ── Onboarding-profile label maps (ids → PT legível) ───────────────────────
+const MOTIVATION_LABELS: Record<string, string> = {
+  debts:     'Livrar-se de dívidas',
+  save_goal: 'Poupar para algo',
+  track:     'Perceber os gastos',
+  invest:    'Começar a investir',
+  curious:   'Só a explorar',
+}
+const STAGE_LABELS: Record<string, string> = {
+  student:     'Estudante',
+  first_job:   'Primeiro emprego',
+  independent: 'Por conta própria',
+  family:      'Com família/filhos',
+  pre_retire:  'Pré-reforma',
+}
+const SOURCE_LABELS: Record<string, string> = {
+  social: 'Redes sociais',
+  search: 'Pesquisa Google',
+  friend: 'Amigo/família',
+  blog:   'Artigo/blog',
+  other:  'Outro',
+}
+
+/** Distribuição simples label → contagem + barra proporcional. */
+function Dist({
+  title, data, labels, total,
+}: { title: string; data: Record<string, number>; labels: Record<string, string>; total: number }) {
+  const entries = Object.entries(data).sort((a, b) => b[1] - a[1])
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wider text-white/40 mb-2">{title}</p>
+      {entries.length === 0 ? (
+        <p className="text-xs text-white/30">—</p>
+      ) : (
+        <div className="space-y-1.5">
+          {entries.map(([id, count]) => {
+            const share = total > 0 ? count / total : 0
+            return (
+              <div key={id}>
+                <div className="flex justify-between items-baseline gap-2 text-sm">
+                  <span className="text-white/70 truncate">{labels[id] ?? id}</span>
+                  <span className="font-semibold tabular-nums shrink-0">
+                    {count} <span className="text-white/40 font-normal text-xs">({Math.round(share * 100)}%)</span>
+                  </span>
+                </div>
+                <div className="h-1 bg-white/5 rounded-full mt-0.5 overflow-hidden">
+                  <div className="h-full bg-green-500/70 rounded-full" style={{ width: `${Math.max(2, share * 100)}%` }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
