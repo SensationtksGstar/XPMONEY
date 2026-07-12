@@ -1,12 +1,16 @@
 import { Star } from 'lucide-react'
 import { getServerT } from '@/lib/i18n/server'
 import type { TranslationKey } from '@/lib/i18n/translations'
+import { ReviewAvatar } from './ReviewAvatar'
 
 /**
  * LandingReviews — social-proof testimonials block for the marketing page.
  *
  * These are **fabricated early-access reviews** used as social proof until we
- * have organic ones. Names + avatars are synthetic. When we gather real
+ * have organic ones. Names are synthetic; the avatars (July 2026) are AI
+ * portraits of people who DO NOT EXIST (StyleGAN, thispersondoesnotexist) —
+ * deliberately never stock photos of real humans attached to invented quotes
+ * (image-rights + Omnibus/DL 109-G/2021 exposure). When we gather real
  * testimonials (via the existing bug_reports table or a follow-up survey),
  * replace this array with actual user quotes. Keep the structure — the card
  * layout is responsive down to 320px.
@@ -22,7 +26,9 @@ interface Review {
   handleKey: TranslationKey
   quoteKey:  TranslationKey
   badgeKey?: TranslationKey
-  avatar:    string   // emoji avatar — no stock photos, no uncanny valley
+  /** /avatars/review-N.webp (128×128) — renders 36px; ReviewAvatar degrada
+   *  para a inicial do nome se o ficheiro faltar. */
+  avatarSrc: string
   rating:    1 | 2 | 3 | 4 | 5
 }
 
@@ -30,7 +36,7 @@ const REVIEWS: Review[] = [
   {
     nameKey:   'landing.reviews.t1_name',
     handleKey: 'landing.reviews.t1_handle',
-    avatar:    '🦊',
+    avatarSrc: '/avatars/review-1.webp',
     rating:    5,
     quoteKey:  'landing.reviews.t1_quote',
     badgeKey:  'landing.reviews.t1_badge',
@@ -38,7 +44,7 @@ const REVIEWS: Review[] = [
   {
     nameKey:   'landing.reviews.t2_name',
     handleKey: 'landing.reviews.t2_handle',
-    avatar:    '🧑‍💻',
+    avatarSrc: '/avatars/review-2.webp',
     rating:    5,
     quoteKey:  'landing.reviews.t2_quote',
     badgeKey:  'landing.reviews.t2_badge',
@@ -46,14 +52,14 @@ const REVIEWS: Review[] = [
   {
     nameKey:   'landing.reviews.t3_name',
     handleKey: 'landing.reviews.t3_handle',
-    avatar:    '🌱',
+    avatarSrc: '/avatars/review-3.webp',
     rating:    5,
     quoteKey:  'landing.reviews.t3_quote',
   },
   {
     nameKey:   'landing.reviews.t4_name',
     handleKey: 'landing.reviews.t4_handle',
-    avatar:    '🎯',
+    avatarSrc: '/avatars/review-4.webp',
     rating:    4,
     quoteKey:  'landing.reviews.t4_quote',
     badgeKey:  'landing.reviews.t4_badge',
@@ -61,14 +67,14 @@ const REVIEWS: Review[] = [
   {
     nameKey:   'landing.reviews.t5_name',
     handleKey: 'landing.reviews.t5_handle',
-    avatar:    '👩‍🏫',
+    avatarSrc: '/avatars/review-5.webp',
     rating:    5,
     quoteKey:  'landing.reviews.t5_quote',
   },
   {
     nameKey:   'landing.reviews.t6_name',
     handleKey: 'landing.reviews.t6_handle',
-    avatar:    '⚡',
+    avatarSrc: '/avatars/review-6.webp',
     rating:    5,
     quoteKey:  'landing.reviews.t6_quote',
     badgeKey:  'landing.reviews.t6_badge',
@@ -116,9 +122,7 @@ export async function LandingReviews() {
 
               {/* Author row */}
               <div className="flex items-center gap-3 mt-auto pt-3 border-t border-white/5">
-                <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-lg flex-shrink-0">
-                  {r.avatar}
-                </div>
+                <ReviewAvatar src={r.avatarSrc} name={name} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{name}</p>
                   <p className="text-[11px] text-white/40 truncate">{t(r.handleKey)}</p>
