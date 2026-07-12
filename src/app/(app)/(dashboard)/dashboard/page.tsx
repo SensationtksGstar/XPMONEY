@@ -30,7 +30,9 @@ const XPProgressBar = dynamic(
 )
 const VoltixWidget = dynamic(
   () => import('@/components/voltix/VoltixWidget').then(m => ({ default: m.VoltixWidget })),
-  { ssr: false, loading: () => <div className="h-36 bg-white/5 rounded-2xl animate-pulse" /> },
+  // h-full: o placeholder acompanha a altura da coluna Score+XP no grid herói
+  // (h-36 fixo reproduzia o "buraco" durante o carregamento do chunk).
+  { ssr: false, loading: () => <div className="h-full min-h-[220px] bg-white/5 rounded-2xl animate-pulse" /> },
 )
 const MonthlySummary = dynamic(
   () => import('@/components/dashboard/MonthlySummary').then(m => ({ default: m.MonthlySummary })),
@@ -212,7 +214,9 @@ export default function DashboardPage() {
       {/* O herói do glance: mascote (a alma do produto) + score + XP.
           Desktop: Pet 2/3 | Score+XP 1/3. Mobile: empilhado. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 flex flex-col gap-3">
+        {/* Wrapper simples (sem flex morto): a célula grid estica por defeito
+            e o h-full do VoltixWidget hero resolve direto contra ela. */}
+        <div className="lg:col-span-2">
           <VoltixWidget userId={user?.id ?? ''} variant="hero" />
         </div>
         <div className="flex flex-col gap-3">

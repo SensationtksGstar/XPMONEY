@@ -123,7 +123,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
       <div className={cn(
         'glass-card animate-pulse',
         mode === 'hero'
-          ? 'p-6 flex flex-col sm:flex-row items-center gap-6 min-h-[220px]'
+          ? 'p-6 flex flex-col sm:flex-row items-center gap-6 min-h-[220px] h-full'
           : 'p-5 flex flex-col items-center gap-4',
       )}>
         <div className={cn(
@@ -170,9 +170,12 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
 
   // ── HERO ──────────────────────────────────────────────────────────────
   if (mode === 'hero') {
+    // h-full + inner my-auto: no dashboard o grid herói estica este card
+    // à altura da coluna Score+XP — sem isto ficava um buraco de ~290px
+    // debaixo do mascote em desktop (bug reportado julho 2026).
     return (
       <div
-        className="glass-card p-6 overflow-hidden relative"
+        className="glass-card p-6 overflow-hidden relative h-full flex"
         style={{ borderColor: `${palette.body}40` }}
       >
         {/* Faixa de cor da mood no topo */}
@@ -189,7 +192,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
           style={{ backgroundColor: palette.body }}
         />
 
-        <div className="relative flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
+        <div className="relative flex flex-col sm:flex-row items-center gap-5 sm:gap-6 w-full my-auto">
           {/* Mascote — grande, vivo, TOCÁVEL (muda a frase, como um Tamagotchi) */}
           <button
             type="button"
@@ -197,7 +200,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
             onKeyDown={onTapKey}
             aria-label={t('voltix.tap_hint')}
             className={cn(
-              'flex-shrink-0 w-40 h-40 sm:w-48 sm:h-48 lg:w-52 lg:h-52 cursor-pointer',
+              'flex-shrink-0 w-40 h-40 sm:w-48 sm:h-48 lg:w-60 lg:h-60 cursor-pointer',
               'transition-transform duration-200 active:scale-95 focus-visible:outline-none',
               'focus-visible:ring-2 focus-visible:ring-white/30 rounded-full',
               tapped && 'scale-95',
