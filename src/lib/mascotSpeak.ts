@@ -77,7 +77,14 @@ export function mascotDeck(ctx: MascotSpeakContext): MascotLine[] {
             : { key: 'mascot.speak.hatch_far',   params: { target: prog.needed } },
         )
       } else {
-        deck.push({ key: 'mascot.speak.next_evo', params: { n: prog.remaining } })
+        // remaining 0 = score já desbloqueou mas o pacing da evolução
+        // (1 forma/dia + dias de uso mínimos) ainda não deixou subir —
+        // prometer "faltam 0 pontos" seria mentira; antecipação é melhor.
+        deck.push(
+          prog.remaining <= 0
+            ? { key: 'mascot.speak.evo_ready' }
+            : { key: 'mascot.speak.next_evo', params: { n: prog.remaining } },
+        )
       }
     }
   }

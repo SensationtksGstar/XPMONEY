@@ -3,7 +3,11 @@ import { calculateFinancialScore } from '@/lib/gamification'
 import { toNumber } from '@/lib/safeNumber'
 import { awardXP } from '@/lib/awardXP'
 import { updateMissionProgress } from '@/lib/updateMissionProgress'
-import { evoFromScore, evoBonusBetween, type EvoStage } from '@/lib/mascotEvolution'
+import {
+  evoFromScore, evoBonusBetween,
+  EVO_MIN_ACTIVE_DAYS, EVO_COOLDOWN_MS,
+  type EvoStage,
+} from '@/lib/mascotEvolution'
 import type { FinancialScore } from '@/types'
 
 /**
@@ -147,10 +151,43 @@ export async function recalculateScore(
 }
 
 /**
- * Compare the new score against stored `voltix_states.evolution_level`. If
- * the score unlocks a higher stage, bump the stored stage and award the
- * cumulative XP bonus for each stage gained. Idempotent: called on every
- * score recalculation, but only writes when there's an actual jump up.
+ * Dias DISTINTOS (lifetime) com transações — a evidência de uso real que
+ * pauta a evolução. Só é consultado quando uma evolução está iminente,
+ * portanto fica fora do hot path do recálculo (que corre em cada registo).
+ * limit 2000 ordenado por data desc: cobre folgadamente os 60 dias exigidos
+ * pela forma máxima sem nunca tocar no cap silencioso do PostgREST.
+ */
+async function lifetimeActiveDays(db: SupabaseClient, userId: string): Promise<number> {
+  const { data, error } = await db
+    .from('transactions')
+    .select('date')
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+    .limit(2000)
+  if (error) {
+    console.warn('[maybeEvolveMascot] active-days probe failed:', error.message)
+    return 0
+  }
+  return new Set((data ?? []).map(r => (r as { date: string }).date)).size
+}
+
+/**
+ * Compare the new score against stored `voltix_states.evolution_level` and
+ * evolve when justified. Idempotent: called on every score recalculation.
+ *
+ * Pacing (julho 2026 — o dono reportou uma conta de teste a saltar do ovo
+ * para a 3ª forma com UM registo; uma receita única satura poupança+controlo
+ * = ~51 pts ≥ threshold 38):
+ *   1. UM nível por evento — nunca saltar formas (cada evolução é um momento
+ *      com direito a cinematic; o alvo é min(desbloqueado, atual+1)).
+ *   2. Cooldown de 20 h entre evoluções, lido do xp_history (reason
+ *      `mascot_evolved_to_%` — sem DDL novo). O hatch 1→2 é isento: a
+ *      primeira dopamina deve aterrar no próprio dia 1.
+ *   3. Evidência mínima de uso (EVO_MIN_ACTIVE_DAYS): dias distintos com
+ *      registos lifetime — score alto sem histórico não faz o bicho crescer.
+ * O score continua a ser condição necessária e o requisito exibido na UI;
+ * quando já chega mas o ritmo trava, o mascotSpeak diz "sinto a próxima
+ * forma a chegar" em vez de prometer pontos.
  */
 async function maybeEvolveMascot(
   db: SupabaseClient,
@@ -166,9 +203,34 @@ async function maybeEvolveMascot(
   if (!vx) return
 
   const currentEvo = Math.max(1, Math.min(6, vx.evolution_level ?? 1)) as EvoStage
-  const targetEvo  = evoFromScore(score)
+  const unlocked   = evoFromScore(score)
 
-  if (targetEvo <= currentEvo) return
+  if (unlocked <= currentEvo) return
+
+  // 1. Um nível por vez — o bónus abaixo passa a ser sempre o de UM passo.
+  const targetEvo = Math.min(unlocked, currentEvo + 1) as EvoStage
+
+  // 2. Cooldown entre evoluções (hatch isento — não há evolução anterior
+  //    que justifique travar o primeiro momento).
+  if (currentEvo > 1) {
+    const { data: lastEvo } = await db
+      .from('xp_history')
+      .select('created_at')
+      .eq('user_id', userId)
+      .like('reason', 'mascot_evolved_to_%')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (lastEvo?.created_at &&
+        Date.now() - new Date(lastEvo.created_at).getTime() < EVO_COOLDOWN_MS) {
+      return
+    }
+  }
+
+  // 3. Evidência de uso real para a forma alvo (targetEvo ≥ 2 aqui — é
+  //    currentEvo+1 com currentEvo ≥ 1; o cast só encolhe o tipo).
+  const minDays = EVO_MIN_ACTIVE_DAYS[targetEvo as Exclude<EvoStage, 1>]
+  if (minDays > 0 && (await lifetimeActiveDays(db, userId)) < minDays) return
 
   // Bump evolution_level in voltix_states
   const { error: updateErr } = await db
@@ -184,7 +246,7 @@ async function maybeEvolveMascot(
     return
   }
 
-  // Award cumulative XP bonus (multiple stages gained = all bonuses sum)
+  // XP bonus do passo dado (com o pacing de +1, é sempre um único estágio)
   const bonus = evoBonusBetween(currentEvo, targetEvo)
   if (bonus > 0) {
     await awardXP(db, userId, bonus, `mascot_evolved_to_${targetEvo}`)

@@ -39,6 +39,31 @@ export const EVO_SCORE_THRESHOLDS: Record<Exclude<EvoStage, 1>, number> = {
   6: 95,   // unchanged — top tier, last 15 pts are objectively hardest
 }
 
+/**
+ * Evidência mínima de uso por forma (julho 2026) — dias DISTINTOS com
+ * transações registadas, contados lifetime, não só no mês corrente.
+ *
+ * Porquê: o score satura depressa com pouquíssimos dados — UMA receita
+ * numa conta nova dá poupança 100% + controlo perfeito = ~51 pts, o que
+ * saltava o ovo direto para a 3ª forma no primeiro registo (bug reportado
+ * pelo dono com uma conta de teste). Score é condição NECESSÁRIA mas o
+ * crescimento do bicho exige cuidado continuado — é um Tamagotchi, não um
+ * multibanco. O hatch (evo 2) fica deliberadamente sem gate de dias: o
+ * "wow" do primeiro dia é a alavanca de retenção nº 1.
+ */
+export const EVO_MIN_ACTIVE_DAYS: Record<Exclude<EvoStage, 1>, number> = {
+  2: 0,    // hatch no dia 1 — intocado
+  3: 5,    // forma adulta chega com ~1 semana de uso real
+  4: 14,
+  5: 30,
+  6: 60,
+}
+
+/** Intervalo mínimo entre duas evoluções (o hatch 1→2 é isento).
+ *  20 h e não 24 h: evita o drift diário (quem evolui às 21h de hoje pode
+ *  evoluir às 18h de amanhã) mantendo a regra "1 forma por dia". */
+export const EVO_COOLDOWN_MS = 20 * 60 * 60 * 1000
+
 /** One-shot XP bonus granted the first time the user reaches each stage.
  *
  * Curve doubles every two stages so the climb feels increasingly worth
