@@ -4,6 +4,7 @@ import { createSupabaseAdmin }         from '@/lib/supabase'
 import { resolveUser }                 from '@/lib/resolveUser'
 import { toNumber }                    from '@/lib/safeNumber'
 import { isDemoMode, demoResponse }    from '@/lib/demo/demoGuard'
+import { fetchAll }                    from '@/lib/fetchAll'
 
 /**
  * GET /api/recurring — detects likely RECURRING expenses (rent, subscriptions,
@@ -75,22 +76,41 @@ export async function GET() {
   const now   = new Date()
   const start = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split('T')[0]
 
-  const db = createSupabaseAdmin()
-  const { data, error } = await db
-    .from('transactions')
-    .select('amount, date, description, original_description, category:category_id(name, icon)')
-    .eq('user_id', internalId)
-    .eq('type', 'expense')
-    .gte('date', start)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
   type RawRow = {
     amount: unknown
     date: string
     description: string | null
-    original_description: string | null
     category: { name: string | null; icon: string | null } | Array<{ name: string | null; icon: string | null }> | null
+  }
+
+  // NOTE: `transactions.original_description` is NOT a real column (no
+  // migration creates it; the import flow only uses it as a merchant-cache
+  // key) — selecting it made PostgREST answer 42703 and this route 500 for
+  // everyone. Group on the user-facing `description` instead.
+  // Paginated + stable order: 6 months of imported statements can pass the
+  // silent 1000-row PostgREST cap, which (unordered) dropped arbitrary rows.
+  const db = createSupabaseAdmin()
+  let data: RawRow[]
+  try {
+    const res = await fetchAll<RawRow>(async (from, to) => {
+      const { data: page, error } = await db
+        .from('transactions')
+        .select('amount, date, description, category:category_id(name, icon)')
+        .eq('user_id', internalId)
+        .eq('type', 'expense')
+        .gte('date', start)
+        .order('date', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to)
+      return { data: page as unknown as RawRow[] | null, error }
+    }, { max: 10_000 })
+    data = res.rows
+    // Newest-first order → a cut drops the OLDEST months of the window, which
+    // can push a merchant under the ≥3-distinct-months bar. Leave a trace.
+    if (res.truncated) console.warn('[recurring] truncated at', res.rows.length, 'rows — oldest months of the 6-month window dropped')
+  } catch (err) {
+    console.warn('[recurring] read failed:', err)
+    return NextResponse.json({ error: 'Failed to load recurring expenses' }, { status: 500 })
   }
 
   interface Group {
@@ -103,9 +123,8 @@ export async function GET() {
   }
   const groups = new Map<string, Group>()
 
-  for (const r of (data ?? []) as unknown as RawRow[]) {
-    // Prefer the bank's raw token (stable) over the user-facing description.
-    const source = (r.original_description || r.description || '').trim()
+  for (const r of data) {
+    const source = (r.description || '').trim()
     const key = merchantKey(source)
     if (key.length < 3) continue   // too generic to be a reliable merchant
 
