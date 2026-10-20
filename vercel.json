@@ -7,6 +7,9 @@
     },
     "src/app/api/notifications/send/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/cron/vigia/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [
@@ -17,6 +20,10 @@
     {
       "path": "/api/notifications/send?mode=streak-rescue",
       "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/cron/vigia",
+      "schedule": "0 7 * * *"
     }
   ]
 }
