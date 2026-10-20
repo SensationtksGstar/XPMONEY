@@ -20,11 +20,20 @@ import type { FinancialScore } from '@/types'
  *
  * @param db     - A Supabase admin client (server-side only)
  * @param userId - The internal (Supabase) user id, NOT the Clerk user id
+ * @param opts.readyMissionIds - OUT array. Missions that this recalc pushed
+ *   to their target (improve_score / categorize_all / reach_savings_goal) are
+ *   appended here. recalculateScore NEVER pays mission XP itself: several
+ *   callers run it inside a Promise.allSettled next to another awardXP, and
+ *   two concurrent awardXP on xp_progress lose an update. The caller pays via
+ *   completeReadyMissions() AFTER its batch. Callers that don't pass the array
+ *   leave the missions "ready" (active, current=target) — they get paid by the
+ *   next tick, the /missions claim button or the GET /api/missions expiry pass.
  * @returns      The newly persisted FinancialScore row, or null on failure
  */
 export async function recalculateScore(
   db: SupabaseClient,
   userId: string,
+  opts?: { readyMissionIds?: string[] },
 ): Promise<FinancialScore | null> {
   const now   = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -137,15 +146,20 @@ export async function recalculateScore(
   const scoreDelta = prev ? Math.max(0, result.score - toNumber(prev.score, 0)) : 0
   const uncategorized = txs.filter(t => !t.category_id).length
   const savingsRate = income > 0 ? Math.max(0, (savings / income) * 100) : 0
-  await Promise.allSettled([
+  const missionTicks = await Promise.allSettled([
     // Only tick `improve_score` when the score actually went UP vs the previous
     // snapshot — otherwise a user could idle their way to completion.
     scoreDelta > 0
       ? updateMissionProgress(db, userId, { type: 'improve_score', score: scoreDelta })
-      : Promise.resolve(),
+      : Promise.resolve([] as string[]),
     updateMissionProgress(db, userId, { type: 'categorize_all', uncategorized }),
     updateMissionProgress(db, userId, { type: 'reach_savings_goal', savingsRate }),
   ])
+  if (opts?.readyMissionIds) {
+    for (const r of missionTicks) {
+      if (r.status === 'fulfilled') opts.readyMissionIds.push(...r.value)
+    }
+  }
 
   return newScore as FinancialScore
 }

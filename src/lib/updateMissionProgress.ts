@@ -1,17 +1,22 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { toNumber } from '@/lib/safeNumber'
+import { completeMission } from '@/lib/missions/complete'
 
 /**
  * Mission progress updater.
  *
  * Missions live in the `missions` table with a numeric `current_value` and a
- * `target_value`. They were previously never incremented — users saw 0 % forever
- * and the feature looked broken. This helper advances the `current_value` of any
- * active mission whose `type` matches `triggerType`, and auto-completes it when
- * the target is reached. XP for completion is NOT awarded here — the existing
- * `/api/missions/[id]/complete` route handles that claim flow, so the user still
- * gets the satisfying "claim" interaction. This helper's job is only to keep the
- * progress bar honest.
+ * `target_value`. This helper advances the `current_value` of any active
+ * mission whose `type` matches `triggerType`.
+ *
+ * When the target is reached the mission STAYS 'active' with
+ * `current_value = target` (clamped so the bar shows 100 % cleanly) and its id
+ * is returned in `readyIds`. It does NOT flip to 'completed' here any more —
+ * that was the October-2026 bug: the auto-complete set status='completed',
+ * the /complete endpoint then refused it ('Already completed') and the XP was
+ * never paid. The CALLER now pays via `completeReadyMissions()` (→
+ * `completeMission`, idempotent claim + awardXP), AFTER its own parallel
+ * batch, so two awardXP never race on the same xp_progress row.
  *
  * Mission `type` catalog (from `MISSION_TEMPLATES` in `src/lib/gamification.ts`):
  *   - `register_transactions`  — increment by 1 per transaction
@@ -36,8 +41,8 @@ export async function updateMissionProgress(
   db:      SupabaseClient,
   userId:  string,
   trigger: MissionTrigger,
-): Promise<void> {
-  if (!userId) return
+): Promise<string[]> {
+  if (!userId) return []
   try {
     const { data: missions, error } = await db
       .from('missions')
@@ -48,18 +53,21 @@ export async function updateMissionProgress(
 
     if (error) {
       console.warn('[missions] fetch failed:', error.message)
-      return
+      return []
     }
-    if (!missions || missions.length === 0) return
-
-    const now = new Date().toISOString()
+    if (!missions || missions.length === 0) return []
 
     // Run all updates in parallel. Several active missions can share a `type`
     // (e.g. two `keep_daily_streak` missions with targets 7 and 30).
-    await Promise.allSettled(
-      missions.map(async (m) => {
+    const results = await Promise.allSettled(
+      missions.map(async (m): Promise<string | null> => {
         const current = toNumber(m.current_value, 0)
         const target  = toNumber(m.target_value,  1)
+
+        // Already at target (ready, awaiting payout — e.g. a previous payout
+        // attempt failed): no write, but hand it back so the caller retries
+        // the idempotent payout.
+        if (current >= target) return m.id as string
 
         let next = current
         switch (trigger.type) {
@@ -81,30 +89,68 @@ export async function updateMissionProgress(
         }
 
         // No change — skip the write entirely
-        if (next === current) return
+        if (next === current) return null
 
         const completed = next >= target
-        const patch: Record<string, unknown> = { current_value: next }
-        if (completed) {
-          // Mark the mission ready-to-claim. The dedicated complete endpoint
-          // awards XP when the user clicks through — we don't pay out here to
-          // preserve the "tap to collect" satisfaction loop.
-          patch.status       = 'completed'
-          patch.completed_at = now
-          patch.current_value = target // clamp so the bar shows 100 % cleanly
-        }
+        // Clamp so the bar shows 100 % cleanly and a ready mission stops
+        // growing. Status stays 'active' — payment is the caller's job.
+        const patch = { current_value: completed ? target : next }
 
         const { error: updateErr } = await db
           .from('missions')
           .update(patch)
           .eq('id', m.id)
+          .eq('user_id', userId)
+          .eq('status', 'active')
 
         if (updateErr) {
           console.warn(`[missions] update failed for ${m.type}/${m.id}:`, updateErr.message)
+          return null
         }
+        return completed ? (m.id as string) : null
       }),
     )
+
+    const readyIds: string[] = []
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value) readyIds.push(r.value)
+      else if (r.status === 'rejected') console.warn('[missions] progress tick rejected:', r.reason)
+    }
+    return readyIds
   } catch (err) {
     console.warn('[missions] updateMissionProgress error:', err)
+    return []
   }
+}
+
+export interface PaidMission {
+  id:           string
+  type:         string
+  target_value: number
+  xp:           number
+}
+
+/**
+ * Pays every ready mission in SERIES (for…of + await) — awardXP is a
+ * read-modify-write on xp_progress, so running payouts in parallel would let
+ * one overwrite the other. Returns only the missions actually paid in this
+ * call (so the client can celebrate them).
+ */
+export async function completeReadyMissions(
+  db:     SupabaseClient,
+  userId: string,
+  ids:    string[],
+): Promise<PaidMission[]> {
+  const paid: PaidMission[] = []
+  for (const id of Array.from(new Set(ids))) {
+    try {
+      const r = await completeMission(db, userId, id)
+      if (r.status === 'paid' && r.mission) {
+        paid.push({ id: r.mission.id, type: r.mission.type, target_value: r.mission.target_value, xp: r.xp })
+      }
+    } catch (err) {
+      console.warn(`[missions] payout failed for ${id}:`, err)
+    }
+  }
+  return paid
 }

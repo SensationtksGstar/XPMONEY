@@ -29,15 +29,24 @@ export default function MissionsPage() {
   async function handleComplete(missionId: string, xpReward: number, title: string) {
     setCompleting(missionId)
     try {
-      const res = await fetch(`/api/missions/${missionId}/complete`, { method: 'POST' })
-      if (!res.ok) throw new Error()
+      const res  = await fetch(`/api/missions/${missionId}/complete`, { method: 'POST' })
+      const body = await res.json().catch((parseErr: unknown) => {
+        console.warn('[missions] complete response parse failed:', parseErr)
+        return null
+      }) as { xp?: number; already?: boolean; code?: string } | null
+      // Always resync — even on 409/already the server state moved on
+      // (e.g. the transaction POST already paid the mission).
       client.invalidateQueries({ queryKey: ['missions'] })
       client.invalidateQueries({ queryKey: ['xp'] })
+      if (!res.ok) throw new Error(body?.code ?? `HTTP ${res.status}`)
+      // Already paid elsewhere (auto-payout) — the list refetch shows it under
+      // "Concluídas" with "+X XP recebidos"; no second celebration.
+      if (body?.already) return
       // Show celebration instead of plain toast
       setCelebration({
         title:    t('missions.completed_toast_title', { title }),
         subtitle: t('missions.completed_toast_sub'),
-        xp:       xpReward,
+        xp:       typeof body?.xp === 'number' && body.xp > 0 ? body.xp : xpReward,
       })
     } catch (err) {
       // Silent errors are banned (project rule): the user tapped "complete"
@@ -180,9 +189,11 @@ export default function MissionsPage() {
               >
                 <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
                 <span className="text-sm text-white/60 flex-1">{missionTitle(mission, t)}</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <Zap className="w-3 h-3 text-yellow-400/60" />
-                  <span className="text-xs text-yellow-400/60 font-bold">+{mission.xp_reward}</span>
+                  <span className="text-xs text-yellow-400/60 font-bold">
+                    {t('missions.xp_received', { xp: mission.xp_reward })}
+                  </span>
                 </div>
               </div>
             ))}

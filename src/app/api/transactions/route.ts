@@ -7,7 +7,7 @@ import { awardXP }                   from '@/lib/awardXP'
 import { parseBoundedInt }           from '@/lib/safeNumber'
 import { z }                         from 'zod'
 import { recalculateScore }          from '@/lib/recalculateScore'
-import { updateMissionProgress }     from '@/lib/updateMissionProgress'
+import { updateMissionProgress, completeReadyMissions } from '@/lib/updateMissionProgress'
 import { isDemoMode, demoResponse }  from '@/lib/demo/demoGuard'
 import { DEMO_TRANSACTIONS }         from '@/lib/demo/mockData'
 import { XP_REWARDS }                from '@/types'
@@ -135,20 +135,40 @@ export async function POST(req: NextRequest) {
   const critMult = isCrit ? 3 + Math.floor(Math.random() * 3) : 1 // 3, 4 ou 5
   const xpAmount = XP_REWARDS.TRANSACTION_REGISTERED * critMult
 
-  const [xpRes] = await Promise.allSettled([
+  // Missões que este pedido levou ao alvo: as do register_transactions e as
+  // que o recalculateScore empurrou (improve_score/categorize_all/
+  // reach_savings_goal — recolhidas pelo out-array, nunca pagas lá dentro).
+  const readyFromScore: string[] = []
+  const [xpRes, , , missionRes] = await Promise.allSettled([
     awardXP(db, internalId, xpAmount, 'transaction_registered'),
     awardBadge(db, internalId, 'first_transaction'),
-    recalculateScore(db, internalId),
+    recalculateScore(db, internalId, { readyMissionIds: readyFromScore }),
     // Bump the "log N transactions" mission. Other mission types depend on
     // daily-checkin (streaks) and score recalc (score delta) so they tick
     // from their own call sites.
     updateMissionProgress(db, internalId, { type: 'register_transactions' }),
   ])
 
+  // Pagamento do XP das missões prontas — DEPOIS do batch acima e em série,
+  // para nunca haver dois awardXP concorrentes no xp_progress (RMW). Fica
+  // awaited (não after()): o cliente invalida ['xp']/['missions'] assim que
+  // o 201 chega e tem de ver o XP já pago.
+  const readyIds = [
+    ...(missionRes.status === 'fulfilled' ? missionRes.value : []),
+    ...readyFromScore,
+  ]
+  const missionsCompleted = readyIds.length > 0
+    ? (await completeReadyMissions(db, internalId, readyIds))
+        .map(m => ({ type: m.type, target_value: m.target_value, xp: m.xp }))
+    : []
+
   const xpInfo =
     xpRes.status === 'fulfilled' && xpRes.value
       ? { amount: xpAmount, critical: isCrit }
       : null
 
-  return NextResponse.json({ data, xp: xpInfo, error: null }, { status: 201 })
+  return NextResponse.json(
+    { data, xp: xpInfo, missions_completed: missionsCompleted, error: null },
+    { status: 201 },
+  )
 }

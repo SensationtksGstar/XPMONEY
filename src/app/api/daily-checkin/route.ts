@@ -4,7 +4,7 @@ import { createSupabaseAdmin } from '@/lib/supabase'
 import { resolveUser }         from '@/lib/resolveUser'
 import { awardBadge }          from '@/lib/awardBadge'
 import { awardXP }             from '@/lib/awardXP'
-import { updateMissionProgress } from '@/lib/updateMissionProgress'
+import { updateMissionProgress, completeReadyMissions } from '@/lib/updateMissionProgress'
 import { XP_REWARDS }          from '@/types'
 import { isDemoMode }          from '@/lib/demo/demoGuard'
 
@@ -206,12 +206,22 @@ export async function POST() {
   // after() instead of bare fire-and-forget: on Vercel the lambda can be
   // frozen as soon as the response is sent, silently dropping a floating
   // promise — after() keeps the instance alive until the work finishes.
+  // Missões que chegam ao alvo são pagas aqui mesmo, em série e depois dos
+  // awardXP do check-in acima. A serialização é só DENTRO deste pedido:
+  // como corre em after() (após a resposta sair), pode sobrepor-se a um
+  // pedido seguinte do cliente que também chame awardXP (POST
+  // /api/transactions, GET /api/missions) — awardXP é read-modify-write no
+  // xp_progress e um incremento pode perder-se. Só um RPC atómico de
+  // incremento fecha isto de vez (perf-api-7).
   after(async () => {
     try {
-      await updateMissionProgress(db, internalId, {
+      const readyIds = await updateMissionProgress(db, internalId, {
         type:   'keep_daily_streak',
         streak: newStreak,
       })
+      if (readyIds.length > 0) {
+        await completeReadyMissions(db, internalId, readyIds)
+      }
     } catch (err) {
       console.warn('[daily-checkin] mission tick failed:', err)
     }
