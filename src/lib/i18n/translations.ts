@@ -477,6 +477,7 @@ export const pt = {
   'chat.human_short':         'Humano',
   'chat.close':               'Fechar conversa',
   'chat.err_unavailable':     'Agente indisponível. Tenta novamente.',
+  'landingchat.busy':         'O chat está muito ocupado hoje. Tenta amanhã ou escreve-nos em /contacto.',
   'chat.err_offline':         'Sem ligação. Verifica a internet.',
   'chat.input_ph':            'Pergunta o que quiseres…',
   'chat.send_aria':           'Enviar mensagem',
@@ -976,6 +977,13 @@ export const pt = {
   'verify.invalid_sub':              'Confirma o código exatamente como aparece no certificado.',
   'verify.back_home':                'Ir para xp-money.com',
 
+  // ── 404 global (src/app/not-found.tsx) ─────────────────────────────
+  'notfound.title':                  'Página não encontrada',
+  'notfound.body':                   'Esta página não existe ou mudou de sítio.',
+  'notfound.home':                   'Voltar ao início',
+  'notfound.blog':                   'Ler o blog',
+  'notfound.dashboard':              'Voltar ao dashboard',
+
   // ── TopBar ──────────────────────────────────────────────────────────
   'topbar.title.dashboard':    'Dashboard',
   'topbar.title.transactions': 'Movimentos',
@@ -1278,6 +1286,7 @@ export const pt = {
   'missions.empty_desc':        'Novas missões serão geradas em breve.',
   'missions.empty_back':        'Voltar ao início',
   'missions.done_section':      'Concluídas ({count}) 🏆',
+  'missions.xp_received':       '+{xp} XP recebidos',
   'missions.upsell_desc_a':     'Missões premium com recompensas maiores.',
   'missions.upsell_desc_b':     'Disponíveis com o plano Premium.',
   'missions.upsell_cta':        'Ver planos',
@@ -2283,6 +2292,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'chat.human_short':         'Human',
   'chat.close':               'Close chat',
   'chat.err_unavailable':     'Agent unavailable. Try again.',
+  'landingchat.busy':         'The chat is very busy today. Try tomorrow or write to us at /contacto.',
   'chat.err_offline':         'No connection. Check your internet.',
   'chat.input_ph':            'Ask whatever you like…',
   'chat.send_aria':           'Send message',
@@ -2776,6 +2786,13 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'verify.invalid_sub':              'Check the code exactly as it appears on the certificate.',
   'verify.back_home':                'Go to xp-money.com',
 
+  // ── 404 global (src/app/not-found.tsx) ─────────────────────────────
+  'notfound.title':                  'Page not found',
+  'notfound.body':                   "This page doesn't exist or has moved.",
+  'notfound.home':                   'Back to home',
+  'notfound.blog':                   'Read the blog',
+  'notfound.dashboard':              'Back to dashboard',
+
   // ── TopBar ──────────────────────────────────────────────────────────
   'topbar.title.dashboard':    'Dashboard',
   'topbar.title.transactions': 'Activity',
@@ -3078,6 +3095,7 @@ export const en: Partial<Record<keyof typeof pt, string>> = {
   'missions.empty_desc':        'New missions will be generated soon.',
   'missions.empty_back':        'Back to home',
   'missions.done_section':      'Completed ({count}) 🏆',
+  'missions.xp_received':       '+{xp} XP earned',
   'missions.upsell_desc_a':     'Premium missions with bigger rewards.',
   'missions.upsell_desc_b':     'Available on the Premium plan.',
   'missions.upsell_cta':        'See plans',

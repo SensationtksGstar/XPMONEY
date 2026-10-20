@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server'
 import { isDemoMode } from '@/lib/demo/demoGuard'
 
 // ---- DEMO MODE — bypasses all auth ----
@@ -8,13 +8,50 @@ import { isDemoMode } from '@/lib/demo/demoGuard'
 // NEXT_PUBLIC_ prefix). See src/lib/demo/demoGuard.ts for rationale.
 const DEMO_MODE = isDemoMode()
 
-// Rotas públicas (não requerem autenticação)
+// ---- PÁGINAS DA APP (as únicas páginas que passam pelo Clerk) ----
+// Tudo o que NÃO está aqui e não começa por /api passa ao lado do Clerk
+// (marketing, blog, legais, /verify, /contacto, /newsletter/*, /ferramentas,
+// /.well-known/*, e URLs inexistentes → o Next devolve o 404 real).
+//
+// ⚠️ Uma rota PRIVADA nova (página em src/app/(app)/, src/app/admin/ ou
+// src/app/reports/) TEM de entrar nesta lista. As páginas de (dashboard)
+// têm defesa em profundidade (auth() + redirect no (dashboard)/layout.tsx),
+// mas /onboarding e /admin/mascot-upload dependem SÓ do middleware.
+// O guard `node scripts/check-guards.mjs` falha se faltar algum prefixo
+// (lê este array por regex — mantém-no como literal de strings).
+const isAppPage = createRouteMatcher([
+  '/dashboard(.*)',
+  '/transactions(.*)',
+  '/goals(.*)',
+  '/missions(.*)',
+  '/contas(.*)',
+  '/orcamento(.*)',
+  '/dividas(.*)',
+  '/perspetiva(.*)',
+  '/simulador(.*)',
+  '/cursos(.*)',
+  '/badges(.*)',
+  '/voltix(.*)',
+  '/settings(.*)',
+  '/onboarding(.*)',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/admin(.*)',
+  '/reports(.*)',
+])
+
+// Rotas que, DENTRO do clerk(), não exigem sessão. Na prática só cá chegam
+// /api/* e as páginas do isAppPage, por isso o que conta aqui são as APIs
+// públicas e o sign-in/sign-up. As entradas de páginas de marketing ficam
+// como segunda camada (se um prefixo do isAppPage alguma vez as apanhar,
+// pelo menos não exigem login).
 // NOTE: admin routes (setup-db, set-plan) are NOT public — they require a
 // signed-in Clerk session AND refuse to run in production. They were public
 // before, which combined with a hard-coded shared secret was a plan-escalation
 // hole.
-// notifications/send is also NOT public — it accepts Vercel Cron Bearer via
-// the `authorization` header, which Clerk middleware does not block.
+// notifications/send + cron/* fazem a sua PRÓPRIA autenticação (Bearer
+// CRON_SECRET via header `authorization`, comparação timing-safe) — por isso
+// passam o middleware sem sessão Clerk.
 const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
@@ -25,6 +62,7 @@ const isPublicRoute = createRouteMatcher([
   '/contacto',
   '/api/webhooks/(.*)',
   '/api/notifications/send',
+  '/api/cron/(.*)',
   '/api/landing-chat',
   '/api/contact-message',
   '/api/newsletter/(.*)',
@@ -48,23 +86,61 @@ function demoMiddleware(request: NextRequest) {
   return NextResponse.next()
 }
 
-export default DEMO_MODE
-  ? (request: NextRequest) => demoMiddleware(request)
-  : clerkMiddleware(async (auth, request) => {
-      // Public routes skip session resolution entirely — auth() does real
-      // work (cookie parse + JWT verify), so check the cheap matcher first.
-      if (isPublicRoute(request)) return NextResponse.next()
+// O clerkMiddleware faz authenticateRequest (parse de cookies, verificação
+// do JWT e, numa instância dev ou com sessão expirada, o HANDSHAKE 307 para
+// *.clerk.accounts.dev) ANTES de chamar este callback. Um
+// `if (isPublicRoute) return next()` aqui dentro NÃO evita esse trabalho —
+// em out. 2026 descobriu-se que o Googlebot, o crawler do AdSense e os
+// bots de pré-visualização social recebiam 307 de handshake em /, /blog e
+// /.well-known/*, apesar de estarem no isPublicRoute. É por isso que as
+// páginas de marketing passam ao lado do Clerk por completo (ver
+// `middleware` abaixo): nunca voltar a pôr páginas públicas atrás do clerk().
+const clerk = clerkMiddleware(async (auth, request) => {
+  if (isPublicRoute(request)) return NextResponse.next()
 
-      const { userId } = await auth()
+  const { userId } = await auth()
 
-      if (!userId) {
-        const signInUrl = new URL('/sign-in', request.url)
-        signInUrl.searchParams.set('redirect_url', request.url)
-        return NextResponse.redirect(signInUrl)
-      }
+  if (!userId) {
+    const signInUrl = new URL('/sign-in', request.url)
+    signInUrl.searchParams.set('redirect_url', request.url)
+    return NextResponse.redirect(signInUrl)
+  }
 
-      return NextResponse.next()
-    })
+  return NextResponse.next()
+})
+
+/**
+ * Decide se o pedido tem de passar pelo Clerk.
+ *  - /api/*        → SEMPRE (deny-by-default: uma rota de API nova esquecida
+ *                    no isPublicRoute falha fechada, nunca aberta).
+ *  - isAppPage     → sim (páginas autenticadas + sign-in/sign-up).
+ *  - tudo o resto  → não: o Next serve a página pública ou o 404 real.
+ * O path é normalizado como o Clerk faz (decodeURI + colapsar `//`) para que
+ * `/%61pi/…` ou `//dashboard` não fujam ao matcher; encoding malformado
+ * falha FECHADO (vai para o Clerk).
+ */
+function needsClerk(req: NextRequest): boolean {
+  let path: string
+  try {
+    path = decodeURI(req.nextUrl.pathname).replace(/\/\/+/g, '/').toLowerCase()
+  } catch (err) {
+    console.warn('[middleware] malformed path, routing through Clerk:', err)
+    return true
+  }
+  if (path.startsWith('/api')) return true
+  try {
+    return isAppPage(req)
+  } catch (err) {
+    console.warn('[middleware] isAppPage failed, routing through Clerk:', err)
+    return true
+  }
+}
+
+export default function middleware(req: NextRequest, ev: NextFetchEvent) {
+  if (DEMO_MODE) return demoMiddleware(req)
+  if (!needsClerk(req)) return NextResponse.next()
+  return clerk(req, ev)
+}
 
 export const config = {
   matcher: [
@@ -95,6 +171,8 @@ export const config = {
     // public/ com extensão fora desta regex é intercetado pelo Clerk para
     // visitantes anónimos. Áudio/vídeo/fonts entram já também — o
     // /sfx/evolution-v1.mp3 só servia porque quem o pede está autenticado.
+    // (Desde out. 2026 o `middleware` acima já deixa passar tudo o que não é
+    // /api nem página da app; esta exclusão poupa a invocação de todo.)
     '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|sitemap.xml|robots.txt|sw.js|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|mp3|mp4|webm|wav|woff|woff2|ttf|otf)$).*)',
   ],
 }
