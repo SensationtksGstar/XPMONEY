@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI }        from '@google/generative-ai'
 import { z }                         from 'zod'
-import { getServerLocale }           from '@/lib/i18n/server'
-import { guardRequest }              from '@/lib/rateLimit'
+import { getServerLocale, getServerT } from '@/lib/i18n/server'
+import { guardRequest, guardGlobal } from '@/lib/rateLimit'
 
 /**
  * POST /api/landing-chat
@@ -207,6 +207,21 @@ export async function POST(req: NextRequest) {
           : 'A última mensagem tem de ser do utilizador.',
       },
       { status: 400 },
+    )
+  }
+
+  // Global daily ceiling on AI spend: the per-caller limits above key on
+  // IP+UA, and swapping the UA alone opens a new bucket — without this there
+  // is no upper bound on what the public chat can cost in a day. Checked
+  // AFTER key/payload validation on purpose: only requests that will really
+  // cost a Gemini call consume the shared budget, so malformed payloads (or a
+  // buggy client) can't exhaust it for everyone.
+  const g = await guardGlobal('landing-chat', 3000, 86_400_000)
+  if (!g.allowed) {
+    const t = await getServerT()
+    return NextResponse.json(
+      { error: t('landingchat.busy'), code: 'chat_busy' },
+      { status: 503 },
     )
   }
 

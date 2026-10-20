@@ -212,3 +212,30 @@ export async function guardUser(
   }
   return null
 }
+
+/**
+ * Global (all-callers) cost ceiling for a scope — e.g. a hard daily cap on
+ * how many AI calls the PUBLIC landing chat can make in total.
+ *
+ * Why: `guardRequest` keys on IP+UA, and changing the UA alone opens a fresh
+ * bucket, so per-caller limits put NO upper bound on provider spend. This
+ * guard uses one shared identifier (`g:<scope>`) on the same backend
+ * (Upstash when configured — truly global; in-memory fallback → per
+ * instance, still a ceiling per lambda).
+ *
+ * Fails OPEN on a backend error (logged): a Redis hiccup must not take the
+ * feature down; the per-caller limits still apply.
+ */
+export async function guardGlobal(
+  scope:    string,
+  limit:    number,
+  windowMs: number,
+): Promise<{ allowed: boolean }> {
+  try {
+    const rl = await hit(`global-${scope}`, `g:${scope}`, { limit, windowMs })
+    return { allowed: rl.allowed }
+  } catch (err) {
+    console.warn('[rateLimit] guardGlobal failed (allowing):', scope, err)
+    return { allowed: true }
+  }
+}
