@@ -30,13 +30,17 @@ export async function GET() {
   const voltix = voltixRes.data
   if (!voltix) return NextResponse.json({ data: null, error: null })
 
-  // Sync mood with score if needed
+  // Sync mood with score if needed. NÃO escreve last_interaction: é o
+  // relógio do streak e só o daily-checkin o pode mexer — um GET num dia
+  // novo, antes do check-in, fazia o check-in ver "mesmo dia" e o streak
+  // não subia.
   if (scoreRes.data) {
     const mood = getVoltixMoodFromScore(scoreRes.data.score)
     if (mood !== voltix.mood) {
-      await db.from('voltix_states')
-        .update({ mood, last_interaction: new Date().toISOString() })
+      const { error: moodErr } = await db.from('voltix_states')
+        .update({ mood })
         .eq('user_id', internalId)
+      if (moodErr) console.warn('[voltix] mood sync failed:', moodErr.message)
       voltix.mood = mood
     }
   }

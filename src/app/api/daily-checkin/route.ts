@@ -129,7 +129,11 @@ export async function POST() {
     : null
   if (voltix?.last_interaction) {
     const lastDate = new Date(voltix.last_interaction)
-    if (isSameDay(lastDate, today))        newStreak = voltix.streak_days ?? 1
+    // Mesmo dia SEM daily_login ainda pago (o guard acima já devolveu se
+    // houvesse): é o 1.º check-in de sempre — o onboarding (e o reset)
+    // gravam last_interaction=now com streak 0. Antes ficava 0 (`0 ?? 1`
+    // = 0) → sem chama no dia 1 e todos os marcos 24 h atrasados.
+    if (isSameDay(lastDate, today))        newStreak = Math.max(1, voltix.streak_days ?? 0)
     else if (isYesterday(lastDate, today)) newStreak = (voltix.streak_days ?? 0) + 1
     else if (
       isTwoDaysAgo(lastDate, today) &&
