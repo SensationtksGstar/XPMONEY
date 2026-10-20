@@ -3,6 +3,7 @@ import { calculateFinancialScore } from '@/lib/gamification'
 import { toNumber } from '@/lib/safeNumber'
 import { awardXP } from '@/lib/awardXP'
 import { updateMissionProgress } from '@/lib/updateMissionProgress'
+import { activeDaysSince } from '@/lib/activeDays'
 import {
   evoFromScore, evoBonusBetween,
   EVO_MIN_ACTIVE_DAYS, EVO_COOLDOWN_MS,
@@ -165,27 +166,6 @@ export async function recalculateScore(
 }
 
 /**
- * Dias DISTINTOS (lifetime) com transações — a evidência de uso real que
- * pauta a evolução. Só é consultado quando uma evolução está iminente,
- * portanto fica fora do hot path do recálculo (que corre em cada registo).
- * limit 2000 ordenado por data desc: cobre folgadamente os 60 dias exigidos
- * pela forma máxima sem nunca tocar no cap silencioso do PostgREST.
- */
-async function lifetimeActiveDays(db: SupabaseClient, userId: string): Promise<number> {
-  const { data, error } = await db
-    .from('transactions')
-    .select('date')
-    .eq('user_id', userId)
-    .order('date', { ascending: false })
-    .limit(2000)
-  if (error) {
-    console.warn('[maybeEvolveMascot] active-days probe failed:', error.message)
-    return 0
-  }
-  return new Set((data ?? []).map(r => (r as { date: string }).date)).size
-}
-
-/**
  * Compare the new score against stored `voltix_states.evolution_level` and
  * evolve when justified. Idempotent: called on every score recalculation.
  *
@@ -197,8 +177,11 @@ async function lifetimeActiveDays(db: SupabaseClient, userId: string): Promise<n
  *   2. Cooldown de 20 h entre evoluções, lido do xp_history (reason
  *      `mascot_evolved_to_%` — sem DDL novo). O hatch 1→2 é isento: a
  *      primeira dopamina deve aterrar no próprio dia 1.
- *   3. Evidência mínima de uso (EVO_MIN_ACTIVE_DAYS): dias distintos com
- *      registos lifetime — score alto sem histórico não faz o bicho crescer.
+ *   3. Evidência mínima de uso (EVO_MIN_ACTIVE_DAYS): dias distintos REAIS
+ *      de atividade, lidos do ledger xp_history (daily_login +
+ *      transaction_registered, dia em Europe/Lisbon) via activeDaysSince().
+ *      NUNCA transactions.date — essa data vem do extrato/cliente e um
+ *      import de 3 meses saltava o requisito num só dia (outubro 2026).
  * O score continua a ser condição necessária e o requisito exibido na UI;
  * quando já chega mas o ritmo trava, o mascotSpeak diz "sinto a próxima
  * forma a chegar" em vez de prometer pontos.
@@ -226,33 +209,43 @@ async function maybeEvolveMascot(
 
   // 2. Cooldown entre evoluções (hatch isento — não há evolução anterior
   //    que justifique travar o primeiro momento).
+  //    A coluna do xp_history é `earned_at` (schema.sql) — até outubro 2026
+  //    isto lia `created_at`, o PostgREST devolvia 42703, o erro era
+  //    descartado e o cooldown NUNCA atuava. Erro agora = fail closed.
   if (currentEvo > 1) {
-    const { data: lastEvo } = await db
+    const { data: lastEvo, error: lastEvoErr } = await db
       .from('xp_history')
-      .select('created_at')
+      .select('earned_at')
       .eq('user_id', userId)
       .like('reason', 'mascot_evolved_to_%')
-      .order('created_at', { ascending: false })
+      .order('earned_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-    if (lastEvo?.created_at &&
-        Date.now() - new Date(lastEvo.created_at).getTime() < EVO_COOLDOWN_MS) {
+    if (lastEvoErr) {
+      console.warn('[maybeEvolveMascot] cooldown probe failed:', lastEvoErr.message)
+      return
+    }
+    if (lastEvo?.earned_at &&
+        Date.now() - new Date(lastEvo.earned_at).getTime() < EVO_COOLDOWN_MS) {
       return
     }
   }
 
   // 3. Evidência de uso real para a forma alvo (targetEvo ≥ 2 aqui — é
   //    currentEvo+1 com currentEvo ≥ 1; o cast só encolhe o tipo).
+  //    O hatch 1→2 continua isento: EVO_MIN_ACTIVE_DAYS[2] = 0 (e o
+  //    cooldown acima só corre com currentEvo > 1).
   const minDays = EVO_MIN_ACTIVE_DAYS[targetEvo as Exclude<EvoStage, 1>]
-  if (minDays > 0 && (await lifetimeActiveDays(db, userId)) < minDays) return
+  if (minDays > 0 &&
+      (await activeDaysSince(db, userId, { stopAt: minDays })) < minDays) return
 
-  // Bump evolution_level in voltix_states
+  // Bump evolution_level in voltix_states. NÃO escreve last_interaction:
+  // esse campo é o relógio do streak e só o daily-checkin o pode mexer
+  // (uma evolução num dia novo antes do check-in fazia-o cair no ramo
+  // "mesmo dia" e o streak não subia).
   const { error: updateErr } = await db
     .from('voltix_states')
-    .update({
-      evolution_level:  targetEvo,
-      last_interaction: new Date().toISOString(),
-    })
+    .update({ evolution_level: targetEvo })
     .eq('user_id', userId)
 
   if (updateErr) {
