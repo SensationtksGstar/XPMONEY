@@ -1,5 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag }             from 'next/cache'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { MISSION_TEMPLATES }         from '@/lib/gamification'
 import { getServerLocale }           from '@/lib/i18n/server'
@@ -281,6 +282,10 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.warn('[onboarding] clerk metadata update failed:', err)
   }
+
+  // A resolveUser() call made before the row existed may have raced the
+  // insert — drop any cached entry so every route sees the new user now.
+  revalidateTag(`user-id-${userId}`)
 
   return NextResponse.json({ success: true, error: null })
 }

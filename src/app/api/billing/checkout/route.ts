@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
     const session = cycle === 'pass'
       ? await createPassCheckoutSession({
           userId,
+          internalUserId: dbUser.id,
           email,
           priceId,
           successUrl: `${appUrl}/settings/billing?pass=pending`,
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
         })
       : await createCheckoutSession({
           userId,
+          internalUserId: dbUser.id,
           email,
           priceId,
           successUrl: `${appUrl}/dashboard?upgraded=true`,

@@ -45,12 +45,16 @@ export function getPlanFromPriceId(priceId: string): Plan {
 // Criar checkout session para upgrade
 export async function createCheckoutSession({
   userId,
+  internalUserId,
   email,
   priceId,
   successUrl,
   cancelUrl,
 }: {
+  /** Clerk user id (kept for backwards-compat with the webhook). */
   userId: string
+  /** Internal Supabase users.id — survives a Clerk instance migration. */
+  internalUserId: string
   email: string
   priceId: string
   successUrl: string
@@ -65,9 +69,9 @@ export async function createCheckoutSession({
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: successUrl,
     cancel_url: cancelUrl,
-    metadata: { userId },
+    metadata: { userId, internalUserId },
     subscription_data: {
-      metadata: { userId },
+      metadata: { userId, internalUserId },
     },
     allow_promotion_codes: true,
   })
@@ -80,12 +84,16 @@ export async function createCheckoutSession({
 // é confirmado (Multibanco confirma de forma assíncrona, 24-72h).
 export async function createPassCheckoutSession({
   userId,
+  internalUserId,
   email,
   priceId,
   successUrl,
   cancelUrl,
 }: {
+  /** Clerk user id (kept for backwards-compat with the webhook). */
   userId: string
+  /** Internal Supabase users.id — survives a Clerk instance migration. */
+  internalUserId: string
   email: string
   priceId: string
   successUrl: string
@@ -104,8 +112,8 @@ export async function createPassCheckoutSession({
       ['card', 'multibanco', 'mb_way'] as unknown as Stripe.Checkout.SessionCreateParams.PaymentMethodType[],
     success_url: successUrl,
     cancel_url:  cancelUrl,
-    metadata: { userId, kind: 'premium_pass' },
-    payment_intent_data: { metadata: { userId, kind: 'premium_pass' } },
+    metadata: { userId, internalUserId, kind: 'premium_pass' },
+    payment_intent_data: { metadata: { userId, internalUserId, kind: 'premium_pass' } },
     allow_promotion_codes: true,
   })
 }
