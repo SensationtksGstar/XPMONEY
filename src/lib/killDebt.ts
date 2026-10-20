@@ -117,6 +117,14 @@ export function orderByStrategy(
  * todas e canalizando o "extra" mensal para a primeira dívida na
  * ordem da estratégia. Quando uma morre, o seu mínimo + extra passa
  * para a próxima ("snowball effect" clássico).
+ *
+ * Orçamento mensal FIXO = soma dos mínimos iniciais + extra. Cada mês esse
+ * orçamento inteiro é gasto: primeiro os mínimos das activas, depois o resto
+ * (extra + mínimos libertados pelas dívidas já mortas) em cascata pela ordem
+ * da estratégia. Bug corrigido (out. 2026): antes, o mínimo de uma dívida
+ * morta só rolava no mês em que morria e depois desaparecia — A €500/20%/
+ * mín €50 + B €5.000/10%/mín €100 dava 65 meses/€1.519,63 em vez dos
+ * correctos 45 meses/€1.126,94. Verificado em scripts/check-killdebt.mjs.
  */
 export function simulatePlan(
   debts:    Debt[],
@@ -128,11 +136,19 @@ export function simulatePlan(
   timeline:      Array<{ month: number; remaining: number }>
   infinite:      boolean
 } {
+  // Coerção defensiva: colunas numeric do Supabase podem chegar como string
+  // ("500.00") — com `+=` isso concatenaria em vez de somar. Local (sem
+  // import de '@/lib/safeNumber') para o ficheiro correr em node puro no
+  // scripts/check-killdebt.mjs.
+  const num = (v: unknown): number => {
+    const n = typeof v === 'number' ? v : Number(v)
+    return Number.isFinite(n) ? n : 0
+  }
   const queue = orderByStrategy(debts, strategy).map(d => ({
     id:      d.id,
-    balance: d.current_amount,
-    rate:    (d.interest_rate / 100) / 12,
-    min:     d.min_payment,
+    balance: Math.max(0, num(d.current_amount)),
+    rate:    (num(d.interest_rate) / 100) / 12,
+    min:     Math.max(0, num(d.min_payment)),
   }))
   if (queue.length === 0) {
     return { monthsToFree: 0, totalInterest: 0, timeline: [], infinite: false }
@@ -143,6 +159,16 @@ export function simulatePlan(
   const MAX_MONTHS = 600
   const timeline: Array<{ month: number; remaining: number }> = []
 
+  // Orçamento mensal fixo: tudo o que o user já paga hoje (mínimos) + extra.
+  // Mantém-se constante até ao fim — é isso que faz os mínimos libertados
+  // rolarem para a dívida seguinte.
+  const budget = queue.reduce((s, d) => s + d.min, 0) + Math.max(0, num(monthlyExtra))
+
+  // Saldo residual abaixo de meio cêntimo = paga (evita meses-fantasma por
+  // arredondamento de vírgula flutuante).
+  const EPS = 0.005
+  const settle = (d: { balance: number }) => { if (d.balance < EPS) d.balance = 0 }
+
   while (queue.some(d => d.balance > 0) && months < MAX_MONTHS) {
     // 1. Aplicar juro mensal a todas as dívidas activas
     for (const d of queue) {
@@ -152,23 +178,24 @@ export function simulatePlan(
       d.balance += monthlyInterest
     }
 
-    // 2. Pagar o mínimo em todas + extra no topo (primeira activa na queue)
-    let availableExtra = monthlyExtra
-    // Primeiro, pagar min em todas
+    // 2a. Pagar o mínimo de cada dívida activa, dentro do orçamento
+    let avail = budget
     for (const d of queue) {
       if (d.balance <= 0) continue
-      const pay = Math.min(d.min, d.balance)
+      const pay = Math.min(d.min, d.balance, avail)
       d.balance -= pay
-      // Se a prestação mínima > saldo, o resto passa para extra (cascade)
-      availableExtra += (d.min - pay)
+      avail -= pay
+      settle(d)
     }
-    // Canalizar extra para a primeira dívida activa
+    // 2b. O que sobra (extra + mínimos libertados + mínimos > saldo) vai em
+    //     cascata para as dívidas activas pela ordem da estratégia.
     for (const d of queue) {
-      if (availableExtra <= 0) break
+      if (avail <= EPS) break
       if (d.balance <= 0) continue
-      const pay = Math.min(availableExtra, d.balance)
+      const pay = Math.min(avail, d.balance)
       d.balance -= pay
-      availableExtra -= pay
+      avail -= pay
+      settle(d)
     }
 
     months += 1
