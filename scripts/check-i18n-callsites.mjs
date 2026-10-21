@@ -12,8 +12,10 @@ for (let i = 0; i < enStart; i++) {
 }
 
 // 2. Gather all .tsx/.ts files under src.
-const files = execSync('git ls-files "src/**/*.ts" "src/**/*.tsx"', { encoding: 'utf8' })
-  .split('\n').filter(Boolean)
+// --cached + --others: inclui ficheiros novos ainda nao adicionados; existsSync ignora
+// ficheiros apagados na working tree mas ainda listados no indice.
+const files = execSync('git ls-files --cached --others --exclude-standard "src/**/*.ts" "src/**/*.tsx"', { encoding: 'utf8' })
+  .split('\n').filter(f => f && fs.existsSync(f))
 
 // 3. For each t('key', { ... }) call (single object, no nested braces), compare
 //    the passed param names against the key's placeholders.
