@@ -35,6 +35,13 @@ export async function generateMetadata(): Promise<Metadata> {
       description: t('blog.meta_description'),
       url:         'https://xp-money.com/blog',
       locale:      locale === 'en' ? 'en_US' : 'pt_PT',
+      images:      [{ url: '/opengraph-image.png', width: 1200, height: 630 }],
+    },
+    twitter: {
+      card:        'summary_large_image',
+      title:       t('blog.meta_title'),
+      description: t('blog.meta_description'),
+      images:      ['/opengraph-image.png'],
     },
     robots: { index: true, follow: true },
   }

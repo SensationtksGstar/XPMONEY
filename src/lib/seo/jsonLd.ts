@@ -33,6 +33,7 @@ export function organization() {
     '@context': 'https://schema.org',
     '@type':    'Organization',
     name:       BRAND,
+    alternateName: ['XP Money', 'XPMoney'],
     url:        SITE_URL,
     logo:       `${SITE_URL}/app-icon.webp`,
     // Empty until we have real social profiles — schema.org accepts
@@ -134,7 +135,7 @@ export function premiumProduct(locale: Locale = 'pt') {
         price:         '4.99',
         priceCurrency: 'EUR',
         availability:  'https://schema.org/InStock',
-        url:           `${SITE_URL}/settings/billing`,
+        url:           `${SITE_URL}/#precos`,
       },
       {
         '@type':       'Offer',
@@ -142,7 +143,7 @@ export function premiumProduct(locale: Locale = 'pt') {
         price:         '39.99',
         priceCurrency: 'EUR',
         availability:  'https://schema.org/InStock',
-        url:           `${SITE_URL}/settings/billing`,
+        url:           `${SITE_URL}/#precos`,
       },
     ],
   }
@@ -199,7 +200,7 @@ export function article(input: {
     },
     image:  input.image
       ? (input.image.startsWith('http') ? input.image : `${SITE_URL}${input.image}`)
-      : `${SITE_URL}/opengraph-image`,
+      : `${SITE_URL}/blog/${input.slug}/opengraph-image`,
     author: {
       '@type': 'Person',
       name:    input.author ?? BRAND,
@@ -216,23 +217,18 @@ export function article(input: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// WebSite — declares the site root + a SearchAction so Google can show
-// the in-result search box for our brand. Cheap, no downside.
+// WebSite — declares the site root + alternate names so Google resolves the
+// brand ("XP Money" / "XPMoney") to the same entity.
 // ─────────────────────────────────────────────────────────────────────────
 export function website(locale: Locale = 'pt') {
   return {
     '@context':       'https://schema.org',
     '@type':          'WebSite',
     name:             BRAND,
+    alternateName:    ['XP Money', 'XPMoney'],
     url:              SITE_URL,
     inLanguage:       locale === 'en' ? 'en-US' : 'pt-PT',
-    potentialAction: {
-      '@type':       'SearchAction',
-      target: {
-        '@type':       'EntryPoint',
-        urlTemplate:   `${SITE_URL}/?q={search_term_string}`,
-      },
-      'query-input': 'required name=search_term_string',
-    },
+    // No SearchAction: the site has no search endpoint (`/?q=` is just the
+    // landing), and Google retired the sitelinks search box in 2024.
   }
 }

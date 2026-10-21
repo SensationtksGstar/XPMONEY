@@ -10,7 +10,7 @@ import type { Locale } from '@/lib/i18n/translations'
  * Layout (intentionally simple, no DB):
  *
  *   content/blog/
- *     ├── ynab-alternativas-portugal-2026/
+ *     ├── alternativas-ynab-portugal/
  *     │   ├── index.pt.mdx
  *     │   └── index.en.mdx
  *     ├── ler-extracto-cgd-em-30-segundos/
@@ -23,6 +23,7 @@ import type { Locale } from '@/lib/i18n/translations'
  *   title:        "5 alternativas a YNAB em Portugal · 2026"
  *   description:  "Reviewed and ranked: which finance apps actually …"
  *   date:         "2026-04-29"
+ *   updated:      "2026-10-20"                       (optional — last fact re-check)
  *   keywords:     ["ynab", "finanças", "portugal"]
  *   author:       "Bruno"
  *   ogImage:      "/blog/ynab-alternativas/og.png"   (optional)
@@ -55,6 +56,9 @@ export interface BlogPostMeta {
   description: string
   /** ISO date — `YYYY-MM-DD`. Used for sitemap lastmod and human formatting. */
   date:        string
+  /** ISO date `YYYY-MM-DD` of the last substantive edit (fact re-check). Optional;
+   *  feeds sitemap lastmod and JSON-LD dateModified. Falls back to `date`. */
+  updated?:    string
   keywords:    string[]
   author?:     string
   ogImage?:    string
@@ -91,11 +95,22 @@ function readPostFile(slug: string, locale: Locale): { filePath: string; servedL
   return null
 }
 
+/**
+ * gray-matter (js-yaml) turns an UNQUOTED `2026-10-20` into a Date object, and
+ * `String(Date)` would yield "Tue Oct 20 2026 ..." — breaking `localeCompare`
+ * sorting and JSON-LD. Normalise both quoted strings and Dates to `YYYY-MM-DD`.
+ */
+function normalizeIsoDate(v: unknown): string {
+  if (v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString().slice(0, 10)
+  return String(v)
+}
+
 function parseFrontmatter(raw: string, slug: string, filePath: string, servedLocale: Locale): BlogPost {
   const { data, content } = matter(raw)
   const title       = String(data.title       ?? slug)
   const description = String(data.description ?? '')
-  const date        = String(data.date        ?? '1970-01-01')
+  const date        = data.date ? normalizeIsoDate(data.date) : '1970-01-01'
+  const updated     = data.updated ? normalizeIsoDate(data.updated) : undefined
   const keywords    = Array.isArray(data.keywords) ? data.keywords.map(String) : []
   const author      = data.author  ? String(data.author)  : undefined
   const ogImage     = data.ogImage ? String(data.ogImage) : undefined
@@ -108,6 +123,7 @@ function parseFrontmatter(raw: string, slug: string, filePath: string, servedLoc
     title,
     description,
     date,
+    updated,
     keywords,
     author,
     ogImage,
