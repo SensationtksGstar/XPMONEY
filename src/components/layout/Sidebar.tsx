@@ -11,6 +11,7 @@ import {
 import { cn }    from '@/lib/utils'
 import { Logo }  from '@/components/ui/Logo'
 import { useT } from '@/lib/i18n/LocaleProvider'
+import { useUserPlan } from '@/lib/contexts/UserPlanContext'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
 interface NavItem {
@@ -27,11 +28,11 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/goals',        labelKey: 'nav.goals',        icon: Target,          pro: false },
   { href: '/contas',       labelKey: 'nav.networth',     icon: Wallet,          pro: false },
   { href: '/orcamento',    labelKey: 'nav.budget',       icon: PiggyBank,       pro: false },
-  { href: '/dividas',      labelKey: 'nav.debt_killer',  icon: Sword,           pro: true  },
+  { href: '/dividas',      labelKey: 'nav.debt_killer',  icon: Sword,           pro: false },
   { href: '/badges',       labelKey: 'nav.badges',       icon: Trophy,          pro: false },
   { href: '/perspetiva',   labelKey: 'nav.perspective',  icon: Star,            pro: true  },
   { href: '/simulador',    labelKey: 'nav.simulator',    icon: TrendingUp,      pro: true  },
-  { href: '/cursos',       labelKey: 'nav.academy',      icon: BookOpen,        pro: true  },
+  { href: '/cursos',       labelKey: 'nav.academy',      icon: BookOpen,        pro: false },
   { href: '/voltix',       labelKey: 'nav.pet',          icon: Zap,             pro: false },
   { href: '/settings',     labelKey: 'nav.settings',     icon: Settings,        pro: false },
 ]
@@ -39,6 +40,9 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname()
   const t        = useT()
+  // `pro` marca só rotas 100% fechadas (perspetiva, simulador). O chip e o
+  // cartão de upgrade existem só para quem ainda é free.
+  const { isFree } = useUserPlan()
 
   return (
     <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-full w-64 bg-white/3 border-r border-white/5 z-40">
@@ -60,7 +64,7 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                 isActive
-                  ? item.pro
+                  ? item.pro && isFree
                     ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20'
                     : 'bg-green-500/15 text-green-400 border border-green-500/20'
                   : 'text-white/60 hover:text-white hover:bg-white/5',
@@ -68,27 +72,29 @@ export function Sidebar() {
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1">{t(item.labelKey)}</span>
-              {item.pro && (
-                <span className="text-[11px] font-bold bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full">PRO</span>
+              {item.pro && isFree && (
+                <span className="text-[11px] font-bold bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full">{t('nav.badge_premium')}</span>
               )}
             </Link>
           )
         })}
       </nav>
 
-      {/* Pro/upgrade CTA */}
-      <div className="px-3 py-3">
-        <Link
-          href="/settings/billing"
-          className="flex items-center gap-3 px-3 py-3 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all"
-        >
-          <Crown className="w-4 h-4 text-purple-400" />
-          <div>
-            <div className="text-xs font-semibold text-purple-400">{t('nav.premium_cta')}</div>
-            <div className="text-xs text-white/40">{t('nav.premium_sub')}</div>
-          </div>
-        </Link>
-      </div>
+      {/* Pro/upgrade CTA — só para quem ainda não é Premium */}
+      {isFree && (
+        <div className="px-3 py-3">
+          <Link
+            href="/settings/billing"
+            className="flex items-center gap-3 px-3 py-3 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all"
+          >
+            <Crown className="w-4 h-4 text-purple-400" />
+            <div>
+              <div className="text-xs font-semibold text-purple-400">{t('nav.premium_cta')}</div>
+              <div className="text-xs text-white/40">{t('nav.premium_sub')}</div>
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* User */}
       <div className="flex items-center gap-3 px-6 py-4 border-t border-white/5">

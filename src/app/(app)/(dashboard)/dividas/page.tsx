@@ -716,9 +716,17 @@ function DebtForm({
   const [rate, setRate]               = useState('')
   const [minPayment, setMinPayment]   = useState('')
   const [isCustomCat, setIsCustomCat] = useState(false)
+  // Validação no handler (nunca `disabled` por formato — dead-end no mobile).
+  const [nameErr, setNameErr]         = useState('')
+  const [amountErr, setAmountErr]     = useState('')
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
+    const nameMissing   = !name.trim()
+    const amountInvalid = !((parseAmountLocale(amount) || 0) > 0)
+    setNameErr(nameMissing ? t('dividas.form.err_name') : '')
+    setAmountErr(amountInvalid ? t('dividas.form.err_amount') : '')
+    if (nameMissing || amountInvalid) return
     const finalCategory = isCustomCat
       ? (customCategory.trim().toLowerCase() || 'outro')
       : category
@@ -744,6 +752,7 @@ function DebtForm({
       <form
         onClick={e => e.stopPropagation()}
         onSubmit={submit}
+        noValidate
         className="w-full max-w-lg bg-[#0a1220] border border-white/10 rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4"
       >
         <div className="flex items-center justify-between">
@@ -770,11 +779,13 @@ function DebtForm({
           <input
             type="text"
             value={name}
-            onChange={e => setName(e.target.value)}
-            required
+            onChange={e => { setName(e.target.value); if (nameErr) setNameErr('') }}
+            aria-invalid={!!nameErr}
+            aria-describedby={nameErr ? 'debt-name-err' : undefined}
             placeholder={t('dividas.name_ph')}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white placeholder-white/30 outline-none focus:border-red-500/50 transition-colors"
           />
+          {nameErr && <p id="debt-name-err" role="alert" className="mt-1.5 text-xs text-red-300">{nameErr}</p>}
         </div>
 
         <div>
@@ -828,12 +839,14 @@ function DebtForm({
                 inputMode="decimal"
                 pattern="[0-9.,]*"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
-                required
+                onChange={e => { setAmount(e.target.value); if (amountErr) setAmountErr('') }}
+                aria-invalid={!!amountErr}
+                aria-describedby={amountErr ? 'debt-amount-err' : undefined}
                 placeholder="1500,00"
                 className="flex-1 bg-transparent text-white placeholder-white/30 outline-none"
               />
             </div>
+            {amountErr && <p id="debt-amount-err" role="alert" className="mt-1.5 text-xs text-red-300">{amountErr}</p>}
           </div>
           <div>
             <label className="block text-xs font-semibold text-white/60 mb-1.5">{t('dividas.rate')}</label>
@@ -875,7 +888,7 @@ function DebtForm({
           </button>
           <button
             type="submit"
-            disabled={disabled || submitting || !name.trim() || !amount}
+            disabled={submitting}
             className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-400 disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2"
           >
             {submitting ? <Spinner size="sm" /> : <><Check className="w-4 h-4" /> {t('dividas.register')}</>}
