@@ -82,8 +82,6 @@ export async function generateMetadata(): Promise<Metadata> {
     // generateMetadata().
     twitter: {
       card:        'summary_large_image',
-      site:        '@xpmoney',  // placeholder until handle exists; harmless
-      creator:     '@xpmoney',
       title:       t('meta.title_og'),
       description: t('meta.description_og'),
     },
@@ -138,20 +136,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <JsonLd schema={organization()} />
           <JsonLd schema={website(locale)} />
 
-          {/* Preconnect to third-party origins the app hits on every load.
-              Saves ~100-300 ms of DNS + TLS handshake on mobile cold start,
-              which on a slow 4G connection was the biggest chunk of the
-              user-reported "5 s PWA boot". Clerk + Supabase are unavoidable
-              for any authenticated route. PostHog is gated by consent so
-              `dns-prefetch` (cheaper than `preconnect`) is enough until
-              the user accepts. */}
-          <link rel="preconnect" href="https://clerk.com" crossOrigin="anonymous" />
-          <link rel="preconnect" href="https://clerk.xp-money.com" crossOrigin="anonymous" />
-          {process.env.NEXT_PUBLIC_SUPABASE_URL && (
-            <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="anonymous" />
-          )}
-          <link rel="dns-prefetch" href="https://eu.i.posthog.com" />
-          <link rel="dns-prefetch" href="https://js.stripe.com" />
+          {/* No preconnect / dns-prefetch hints on purpose (QW-C03b): the
+              old ones targeted clerk.xp-money.com (NXDOMAIN), clerk.com and
+              Supabase (the browser never talks to it — all DB access is
+              server-side), and ran on EVERY page including the providerless
+              marketing routes. Don't add hints here; add them in the
+              specific layout that really needs the origin. */}
 
           {/* AdSense — <script> NATIVO, não next/script: o crawler de
               validação do Google procura a tag literal
@@ -171,7 +161,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <body className="font-sans antialiased">
           <PostHogProvider>
             <QueryProvider>
-              <LocaleProvider>
+              <LocaleProvider initialLocale={locale}>
                 {/* Site-wide Neon Grid wallpaper — single WebGL context
                     mounted once here, behind every route. Respects
                     prefers-reduced-motion and pauses when the tab is
