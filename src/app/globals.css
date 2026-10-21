@@ -356,3 +356,17 @@
   }
 
 }
+
+/* iOS faz zoom automatico ao focar campos com letra < 16px. Em ecras de toque
+   elevamos para 16px os campos que ficariam abaixo disso (sem mexer no
+   viewport/maximum-scale, que prejudicaria a acessibilidade). Campos que ja
+   declaram texto >= 16px (text-base/lg/xl/2xl...: ex. o valor da transacao em
+   text-5xl) ficam de fora e mantem o tamanho. Fora de @layer para ganhar aos
+   utilitarios text-sm/xs. */
+@media (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([class*="text-base"]):not([class*="text-lg"]):not([class*="text-xl"]):not([class*="text-2xl"]):not([class*="text-3xl"]):not([class*="text-4xl"]):not([class*="text-5xl"]):not([class*="text-6xl"]),
+  select:not([class*="text-base"]):not([class*="text-lg"]):not([class*="text-xl"]),
+  textarea:not([class*="text-base"]):not([class*="text-lg"]):not([class*="text-xl"]) {
+    font-size: 16px !important;
+  }
+}
