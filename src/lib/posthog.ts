@@ -1,28 +1,97 @@
 'use client'
 
-import posthog from 'posthog-js'
+import { getConsent } from '@/lib/consent'
 
-// ---- Inicialização (chamar 1x no layout root) ----
-export function initPostHog() {
+/**
+ * Product-event helpers (`track.*`) for PostHog.
+ *
+ * posthog-js is NEVER imported statically here. A static `import posthog from
+ * 'posthog-js'` pulled ~50-60 KB gzipped into every chunk that touched `track`
+ * (and, via chunk sharing, into routes that never fire an event), and loaded
+ * the SDK with no consent at all. The SDK is now `await import()`-ed lazily and
+ * ONLY when ALL of these hold:
+ *   1. NEXT_PUBLIC_POSTHOG_KEY is defined (it is NOT in Vercel prod today), AND
+ *   2. the user's stored cookie-consent is "accepted".
+ *
+ * Contract with `PostHogProvider` (src/components/providers/PostHogProvider.tsx):
+ * the Provider is the ONE place that calls `posthog.init(...)`. We reuse the same
+ * singleton (same module instance from `import('posthog-js')`) and just wait for
+ * `__loaded` before capturing.
+ *
+ * Queue semantics: events fired BEFORE consent are DISCARDED (never buffered —
+ * keeping pre-consent events to send later is processing without a legal basis).
+ * The in-memory queue below only holds events fired AFTER consent while the SDK
+ * is still downloading/initialising; it is flushed in order, dropped if consent
+ * is withdrawn meanwhile, and gives up (with a warn) after MAX_WAIT_MS.
+ */
+
+type PostHog = typeof import('posthog-js').default
+
+const POLL_MS     = 250
+const MAX_WAIT_MS = 10_000
+
+let clientPromise: Promise<PostHog> | null = null
+function loadClient(): Promise<PostHog> {
+  if (!clientPromise) {
+    clientPromise = import('posthog-js').then(m => m.default)
+    // A failed chunk load (offline / deploy skew) must not be cached forever:
+    // reset so the NEXT event retries the import instead of failing until reload.
+    clientPromise.catch(() => { clientPromise = null })
+  }
+  return clientPromise
+}
+
+const queue: Array<(ph: PostHog) => void> = []
+let flushing = false
+
+async function flush() {
+  if (flushing) return
+  flushing = true
+  try {
+    const ph = await loadClient()
+    const started = Date.now()
+    while (queue.length > 0) {
+      // Consent withdrawn/rejected while we were waiting → drop everything.
+      if (getConsent() !== 'accepted') { queue.length = 0; break }
+      if (ph.__loaded) {
+        const job = queue.shift()!
+        try { job(ph) } catch (err) { console.warn('[posthog] capture failed:', err) }
+        continue
+      }
+      if (Date.now() - started > MAX_WAIT_MS) {
+        console.warn('[posthog] SDK not initialised after', MAX_WAIT_MS, 'ms — dropping', queue.length, 'queued event(s)')
+        queue.length = 0
+        break
+      }
+      await new Promise(resolve => setTimeout(resolve, POLL_MS))
+    }
+  } catch (err) {
+    console.warn('[posthog] failed to load SDK:', err)
+    queue.length = 0
+  } finally {
+    flushing = false
+  }
+}
+
+function enqueue(job: (ph: PostHog) => void) {
   if (typeof window === 'undefined') return
-  if (posthog.__loaded) return
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return   // analytics not configured
+  if (getConsent() !== 'accepted') return            // no consent → discard, never buffer
+  queue.push(job)
+  void flush()
+}
 
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-    api_host:          process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com',
-    capture_pageview:  false, // controlamos manualmente via usePathname
-    capture_pageleave: true,
-    autocapture:       false, // eventos manuais para maior controlo
-    person_profiles:   'identified_only',
-  })
+function capture(event: string, properties?: Record<string, unknown>) {
+  enqueue(ph => { ph.capture(event, properties) })
 }
 
 // ---- Identificação do utilizador ----
 export function identifyUser(userId: string, properties?: Record<string, unknown>) {
-  posthog.identify(userId, properties)
+  enqueue(ph => { ph.identify(userId, properties) })
 }
 
 export function resetUser() {
-  posthog.reset()
+  enqueue(ph => { ph.reset() })
 }
 
 // ============================================
@@ -33,67 +102,65 @@ export function resetUser() {
 // AQUISIÇÃO
 export const track = {
   // Onboarding
-  onboarding_started:    () => posthog.capture('onboarding_started'),
-  onboarding_step:       (step: number, data?: object) => posthog.capture('onboarding_step', { step, ...data }),
-  onboarding_completed:  (challenge: string) => posthog.capture('onboarding_completed', { challenge }),
+  onboarding_started:    () => capture('onboarding_started'),
+  onboarding_step:       (step: number, data?: object) => capture('onboarding_step', { step, ...data }),
+  onboarding_completed:  (challenge: string) => capture('onboarding_completed', { challenge }),
 
   // Autenticação
-  signup_completed:      (method: string) => posthog.capture('signup_completed', { method }),
-  login_completed:       (method: string) => posthog.capture('login_completed', { method }),
+  signup_completed:      (method: string) => capture('signup_completed', { method }),
+  login_completed:       (method: string) => capture('login_completed', { method }),
 
   // Core Loop
   transaction_created:   (type: string, category: string, amount: number) =>
-    posthog.capture('transaction_created', { type, category, amount }),
+    capture('transaction_created', { type, category, amount }),
   transaction_categorized: (category: string) =>
-    posthog.capture('transaction_categorized', { category }),
+    capture('transaction_categorized', { category }),
 
   // Score
   score_viewed:          (score: number, level: string) =>
-    posthog.capture('score_viewed', { score, level }),
+    capture('score_viewed', { score, level }),
   score_shared:          (score: number) =>
-    posthog.capture('score_shared', { score }),
+    capture('score_shared', { score }),
 
   // Gamificação
   xp_gained:             (amount: number, reason: string) =>
-    posthog.capture('xp_gained', { amount, reason }),
+    capture('xp_gained', { amount, reason }),
   level_up:              (new_level: number) =>
-    posthog.capture('level_up', { new_level }),
+    capture('level_up', { new_level }),
   mission_completed:     (mission_type: string, xp_reward: number) =>
-    posthog.capture('mission_completed', { mission_type, xp_reward }),
+    capture('mission_completed', { mission_type, xp_reward }),
   badge_earned:          (badge_code: string) =>
-    posthog.capture('badge_earned', { badge_code }),
+    capture('badge_earned', { badge_code }),
   streak_maintained:     (days: number) =>
-    posthog.capture('streak_maintained', { days }),
+    capture('streak_maintained', { days }),
 
   // Voltix
   voltix_interacted:     (mood: string) =>
-    posthog.capture('voltix_interacted', { mood }),
+    capture('voltix_interacted', { mood }),
 
   // Monetização
   upgrade_clicked:       (source: string, plan: string) =>
-    posthog.capture('upgrade_clicked', { source, plan }),
+    capture('upgrade_clicked', { source, plan }),
   upgrade_completed:     (plan: string, billing: string) =>
-    posthog.capture('upgrade_completed', { plan, billing }),
+    capture('upgrade_completed', { plan, billing }),
   upgrade_cancelled:     (plan: string) =>
-    posthog.capture('upgrade_cancelled', { plan }),
+    capture('upgrade_cancelled', { plan }),
 
   // Retenção
   daily_login:           (streak: number) =>
-    posthog.capture('daily_login', { streak }),
+    capture('daily_login', { streak }),
   referral_sent:         () =>
-    posthog.capture('referral_sent'),
+    capture('referral_sent'),
   referral_converted:    () =>
-    posthog.capture('referral_converted'),
+    capture('referral_converted'),
 
   // Goals
   goal_created:          (name: string, target: number) =>
-    posthog.capture('goal_created', { name, target }),
+    capture('goal_created', { name, target }),
   goal_completed:        (name: string) =>
-    posthog.capture('goal_completed', { name }),
+    capture('goal_completed', { name }),
 
   // Navegação
   page_viewed:           (path: string) =>
-    posthog.capture('$pageview', { $current_url: window.location.href, path }),
+    capture('$pageview', { $current_url: window.location.href, path }),
 }
-
-export default posthog
