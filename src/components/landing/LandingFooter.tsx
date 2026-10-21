@@ -26,8 +26,13 @@ const COLUMNS: FooterColumn[] = [
     links: [
       { labelKey: 'landing.footer.col1_l1',  href: '/#funcionalidades' },
       { labelKey: 'landing.footer.col1_l2',  href: '/#precos' },
-      { labelKey: 'landing.footer.col1_l3',  href: '/dashboard' },
-      { labelKey: 'landing.footer.col1_l4',  href: '/cursos' },
+      // "Como funciona" (anchor) replaces the old "Demo interativa" → /dashboard
+      // and "Academia" → /cursos links, which sent anonymous visitors to the
+      // sign-in wall. Re-add Academia only once a PUBLIC course page exists.
+      { labelKey: 'landing.footer.col1_l3',  href: '/#como-funciona' },
+      // Hub público das calculadoras grátis (Lote 8). Só um link — a landing
+      // não ganha blocos.
+      { labelKey: 'landing.footer.col1_l4',  href: '/ferramentas' },
     ],
   },
   {
@@ -53,7 +58,7 @@ export async function LandingFooter() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="border-t border-white/5 px-6 pt-14 pb-8 bg-[#04070e]">
+    <footer className="border-t border-white/5 px-6 pt-14 pb-8 bg-surface-0">
       <div className="max-w-6xl mx-auto">
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-10">
           {/* Brand column */}
@@ -62,15 +67,9 @@ export async function LandingFooter() {
               <Logo size={32} />
               <span className="font-bold text-lg text-white tracking-tight">XP-Money</span>
             </Link>
-            <p className="text-sm text-white/55 leading-relaxed max-w-xs mb-4">
+            <p className="text-sm text-white/55 leading-relaxed max-w-xs">
               {t('landing.footer.tagline')}
             </p>
-            <div className="flex items-center gap-3 text-xs text-white/40">
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                {t('landing.footer.status')}
-              </span>
-            </div>
           </div>
 
           {/* Link columns */}
@@ -79,20 +78,20 @@ export async function LandingFooter() {
               <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">
                 {t(col.titleKey)}
               </h3>
-              <ul className="space-y-2.5">
+              <ul className="space-y-0.5">
                 {col.links.map(l => {
                   const label = t(l.labelKey)
                   return (
                     <li key={l.labelKey}>
                       {l.soon ? (
-                        <span className="text-sm text-white/30 cursor-not-allowed flex items-center gap-2">
+                        <span className="text-sm text-white/30 cursor-not-allowed flex items-center gap-2 min-h-[44px]">
                           {label}
                           <span className="text-[11px] bg-white/10 px-1.5 py-0.5 rounded uppercase">{t('landing.footer.soon')}</span>
                         </span>
                       ) : (
                         <Link
                           href={l.href}
-                          className="text-sm text-white/60 hover:text-white transition-colors"
+                          className="text-sm text-white/60 hover:text-white transition-colors min-h-[44px] inline-flex items-center"
                         >
                           {label}
                         </Link>
