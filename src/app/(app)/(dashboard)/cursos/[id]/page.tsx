@@ -209,7 +209,14 @@ function Certificate({ course, userName, issuedAt, serverCode }: {
                 {serverCode && (
                   <>
                     <span className="hidden sm:inline text-white/20">·</span>
-                    <span>xp-money.com/verify</span>
+                    <a
+                      href={`/verify/${encodeURIComponent(serverCode)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-white/70 transition-colors"
+                    >
+                      xp-money.com/verify/{serverCode}
+                    </a>
                   </>
                 )}
                 <span className="hidden sm:inline text-white/20">·</span>

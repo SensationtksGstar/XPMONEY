@@ -1,5 +1,7 @@
+import { cache }               from 'react'
 import type { Metadata }       from 'next'
 import Link                    from 'next/link'
+import { notFound }            from 'next/navigation'
 import { ShieldCheck, ShieldX } from 'lucide-react'
 import { createSupabaseAdmin } from '@/lib/supabase'
 import { getCourseById }       from '@/lib/coursesAccess'
@@ -12,11 +14,12 @@ import { Logo }                from '@/components/ui/Logo'
  * Rota pública (listada no middleware), sem Clerk. Mostra apenas o mínimo:
  * curso, primeiro nome + inicial do titular, data de emissão. noindex — é
  * uma página de destino de partilha, não de descoberta.
+ *
+ * Código inexistente → notFound() (404 real, antes devolvia 200 com o cartão
+ * "não encontrado"). Se a LEITURA falhar (tabela em falta / erro transitório)
+ * não podemos afirmar que o código não existe: mostra o cartão "não
+ * encontrado" com 200 em vez de um 404 que poderia ser cacheado.
  */
-
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-}
 
 /** Primeiro nome + inicial do apelido — privacidade por omissão. */
 function displayName(full: string | null): string | null {
@@ -26,17 +29,12 @@ function displayName(full: string | null): string | null {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`
 }
 
-export default async function VerifyPage({
-  params,
-}: {
-  params: Promise<{ code: string }>
-}) {
-  const { code: raw } = await params
-  const code   = decodeURIComponent(raw).trim().toUpperCase()
-  const t      = await getServerT()
-  const locale = await getServerLocale()
+interface CertRow { course_id: string; user_name: string | null; issued_at: string }
 
-  let cert: { course_id: string; user_name: string | null; issued_at: string } | null = null
+/** Deduplicado por request: generateMetadata + page partilham a mesma leitura. */
+const lookupCertificate = cache(async (
+  code: string,
+): Promise<{ cert: CertRow | null; readFailed: boolean }> => {
   try {
     const db = createSupabaseAdmin()
     const { data, error } = await db
@@ -44,11 +42,61 @@ export default async function VerifyPage({
       .select('course_id, user_name, issued_at')
       .eq('code', code)
       .maybeSingle()
-    if (error) console.warn('[verify] read failed (pré-migração?):', error.message)
-    else cert = data
+    if (error) {
+      console.warn('[verify] read failed (pré-migração?):', error.message)
+      return { cert: null, readFailed: true }
+    }
+    return { cert: data, readFailed: false }
   } catch (err) {
     console.warn('[verify] unexpected error:', err)
+    return { cert: null, readFailed: true }
   }
+})
+
+function normalizeCode(raw: string): string {
+  let decoded = raw
+  try { decoded = decodeURIComponent(raw) } catch { /* % malformado: usa o literal */ }
+  return decoded.trim().toUpperCase().slice(0, 64)
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ code: string }>
+}): Promise<Metadata> {
+  const { code: raw } = await params
+  const code   = normalizeCode(raw)
+  const t      = await getServerT()
+  const locale = await getServerLocale()
+  const url    = `https://xp-money.com/verify/${encodeURIComponent(code)}`
+
+  const { cert } = await lookupCertificate(code)
+  const course   = cert ? getCourseById(cert.course_id, locale) : null
+  const title    = course
+    ? t('verify.meta_title', { course: course.title })
+    : t('verify.invalid_title')
+
+  return {
+    title,
+    robots:     { index: false, follow: true },
+    alternates: { canonical: url },
+    openGraph:  { title, url, type: 'website' },
+  }
+}
+
+export default async function VerifyPage({
+  params,
+}: {
+  params: Promise<{ code: string }>
+}) {
+  const { code: raw } = await params
+  const code   = normalizeCode(raw)
+  const t      = await getServerT()
+  const locale = await getServerLocale()
+
+  const { cert, readFailed } = await lookupCertificate(code)
+  // Linha confirmadamente inexistente → 404 real. Falha de leitura → cartão.
+  if (!cert && !readFailed) notFound()
 
   const course = cert ? getCourseById(cert.course_id, locale) : null
   const valid  = !!cert && !!course
