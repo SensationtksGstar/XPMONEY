@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { XP_REWARDS }                from '@/types'
+import type { MascotGender }         from '@/types'
+// mascotMeta é só dados (sem JSX nem 'use client') — seguro no servidor.
+import { EVO_NAMES, PENNY_EVO_NAMES } from '@/components/voltix/mascotMeta'
 import webpush                       from 'web-push'
 
 // =============================================================================
@@ -103,11 +106,11 @@ const MOTIVATION_PT: NotificationMessage[] = [
   { title: '🔥 Streak = hábito',                body: 'Consistência vence talento. Um dia de cada vez.' },
   { title: '💡 Pequenas despesas, grande soma', body: 'Netflix, Spotify, ginásio… já viste o total anual?' },
   { title: '🎯 A próxima meta?',                body: 'Define-a na app. Sem meta, não há avanço.' },
-  { title: '⚡ O dragão come XP',                body: 'Voltix cresce contigo. Registos, missões, cursos.' },
+  { title: '⚡ A tua mascote come XP',           body: 'Voltix cresce contigo. Registos, missões, cursos.' },
   { title: '🌟 Pequenos passos, grandes saltos', body: 'Em 30 dias de registos, tens um mapa claro do teu dinheiro.' },
   { title: '🧠 Gestão = liberdade',             body: 'Quem sabe onde o dinheiro está, nunca está preso.' },
   { title: '💎 O que se mede, melhora',         body: 'Sem saber, não há estratégia. Saber começa com registar.' },
-  { title: '🏆 Tens missões por cumprir',       body: 'Cada missão = +XP + Voltix mais perto da evolução 6.' },
+  { title: '🏆 Tens missões por cumprir',       body: 'Cada missão = +XP + Voltix mais perto da próxima evolução.' },
   { title: '🧭 Onde queres estar em 1 ano?',    body: 'Goals da app + depósitos regulares = lá chegas.' },
   { title: '💸 Dívida má vs boa',               body: 'Crédito habitação a 4% vs cartão a 19%. Mata o segundo primeiro.' },
   { title: '🎁 Dinheiro poupado = dinheiro ganho', body: 'Cada euro poupado é um euro que não precisas de ganhar.' },
@@ -136,11 +139,11 @@ const MOTIVATION_EN: NotificationMessage[] = [
   { title: '🔥 Streak = habit',                body: 'Consistency beats talent. One day at a time.' },
   { title: '💡 Small spends, big total',       body: 'Netflix, Spotify, gym… seen the annual total?' },
   { title: '🎯 What’s the next goal?',         body: 'Set it in the app. No goal, no progress.' },
-  { title: '⚡ The dragon eats XP',             body: 'Voltix grows with you. Logs, missions, courses.' },
+  { title: '⚡ Your companion eats XP',         body: 'Voltix grows with you. Logs, missions, courses.' },
   { title: '🌟 Small steps, big leaps',        body: 'After 30 days of logs, you’ll have a clear money map.' },
   { title: '🧠 Management = freedom',          body: 'Anyone who knows where the money is, isn’t trapped.' },
   { title: '💎 What you measure, you improve', body: 'No data, no strategy. Strategy starts with logging.' },
-  { title: '🏆 You have missions to run',      body: 'Each mission = +XP + Voltix closer to evolution 6.' },
+  { title: '🏆 You have missions to run',      body: 'Each mission = +XP + Voltix closer to the next evolution.' },
   { title: '🧭 Where in 1 year?',              body: 'App goals + regular deposits = that’s how you get there.' },
   { title: '💸 Bad debt vs good debt',         body: 'Mortgage at 4% vs card at 19%. Kill the second first.' },
   { title: '🎁 Saved = earned',                body: 'Every euro saved is one you don’t need to earn.' },
@@ -180,24 +183,43 @@ function pickMessage(
 //      dashboard dispara o POST /api/daily-checkin ao montar.
 //   2. register — sem transações nas últimas 24 h.
 //   3. motivation — todos os restantes.
-type SubscriberClass = { kind: 'streak_risk' | 'register' | 'motivation'; streak: number }
+type SubscriberClass = {
+  kind:   'streak_risk' | 'register' | 'motivation'
+  streak: number
+  /** Género da mascote ('voltix' | 'penny') e nome da forma atual. */
+  gender: MascotGender
+  mascot: string
+}
+
+const DEFAULT_MASCOT: { gender: MascotGender; mascot: string } = { gender: 'voltix', mascot: EVO_NAMES[1] }
 
 async function classify(
   db:      ReturnType<typeof createSupabaseAdmin>,
   userId:  string | null,
 ): Promise<SubscriberClass> {
-  if (!userId) return { kind: 'motivation', streak: 0 }  // landing-only subscribers
+  if (!userId) return { kind: 'motivation', streak: 0, ...DEFAULT_MASCOT }  // landing-only subscribers
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const [txRes, voltixRes] = await Promise.all([
+  const [txRes, voltixRes, userRes] = await Promise.all([
     db.from('transactions')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .gte('created_at', cutoff),
     db.from('voltix_states')
-      .select('streak_days, last_interaction')
+      .select('streak_days, last_interaction, evolution_level')
       .eq('user_id', userId)
       .maybeSingle(),
+    // mascot_gender veio de uma migração posterior: se a coluna não existir
+    // o erro é ignorado e fica 'voltix' (comportamento histórico).
+    db.from('users')
+      .select('mascot_gender')
+      .eq('id', userId)
+      .maybeSingle(),
   ])
+
+  const gender: MascotGender = userRes.data?.mascot_gender === 'penny' ? 'penny' : 'voltix'
+  const evo    = voltixRes.data?.evolution_level ?? 1
+  const names  = gender === 'penny' ? PENNY_EVO_NAMES : EVO_NAMES
+  const mascot = names[evo] ?? names[1]
 
   const streak = voltixRes.data?.streak_days ?? 0
   const last   = voltixRes.data?.last_interaction ? new Date(voltixRes.data.last_interaction) : null
@@ -208,8 +230,19 @@ async function classify(
     last.getUTCMonth()    === now.getUTCMonth() &&
     last.getUTCDate()     === now.getUTCDate()
 
-  if (streak >= 3 && !checkedInToday) return { kind: 'streak_risk', streak }
-  return { kind: (txRes.count ?? 0) === 0 ? 'register' : 'motivation', streak }
+  if (streak >= 3 && !checkedInToday) return { kind: 'streak_risk', streak, gender, mascot }
+  return { kind: (txRes.count ?? 0) === 0 ? 'register' : 'motivation', streak, gender, mascot }
+}
+
+/**
+ * Os bancos de mensagens escrevem "Voltix" fixo; quem tem a Penny (ou outra
+ * forma evoluída) vê o nome real da sua mascote. "O Voltix" em PT leva o
+ * artigo certo (a Penny é feminina).
+ */
+function personalise(msg: NotificationMessage, cls: SubscriberClass): NotificationMessage {
+  const art = cls.gender === 'penny' ? 'A' : 'O'
+  const sub = (s: string) => s.replace(/\bO Voltix\b/g, `${art} ${cls.mascot}`).replace(/\bVoltix\b/g, cls.mascot)
+  return { title: sub(msg.title), body: sub(msg.body) }
 }
 
 /** Mensagem de streak em risco — dinâmica (o número real É a mensagem),
@@ -304,9 +337,12 @@ async function sendDailyBroadcast(mode: 'daily' | 'streak-rescue' = 'daily') {
       const cls    = await classify(db, sub.user_id)
       // Resgate de streak: só os em risco recebem; o resto é saltado.
       if (mode === 'streak-rescue' && cls.kind !== 'streak_risk') return 'skipped' as const
-      const msg = cls.kind === 'streak_risk'
-        ? streakRiskMessage(cls.streak, locale)
-        : pickMessage(cls.kind, locale)
+      const msg = personalise(
+        cls.kind === 'streak_risk'
+          ? streakRiskMessage(cls.streak, locale)
+          : pickMessage(cls.kind, locale),
+        cls,
+      )
       // Sem icon/badge no payload — os defaults corretos vivem no sw.js
       // (o antigo '/icon' já foi intercetado pelo middleware do Clerk).
       return webpush.sendNotification(
@@ -314,7 +350,8 @@ async function sendDailyBroadcast(mode: 'daily' | 'streak-rescue' = 'daily') {
         JSON.stringify({
           title: msg.title,
           body:  msg.body,
-          url:   '/dashboard',
+          // 'register' abre direto o formulário (MobileNav lê ?add=1).
+          url:   cls.kind === 'register' ? '/dashboard?add=1' : '/dashboard',
         }),
         { TTL: 86400 },
       )

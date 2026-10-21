@@ -28,7 +28,7 @@
       "name": "Nova Transação",
       "short_name": "Adicionar",
       "description": "Regista uma transação rapidamente",
-      "url": "/transactions?new=true",
+      "url": "/dashboard?add=1",
       "icons": [{ "src": "/app-icon.webp", "sizes": "512x512", "type": "image/webp" }]
     },
     {

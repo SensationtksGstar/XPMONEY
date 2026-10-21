@@ -4,6 +4,12 @@ import { useState, useEffect, useRef } from 'react'
 import dynamic                         from 'next/dynamic'
 import { PlusCircle, ChevronDown, BarChart3 } from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
+import { useQueryClient }              from '@tanstack/react-query'
+import { useVoltix }                   from '@/hooks/useVoltix'
+import { useToast }                    from '@/components/ui/toaster'
+import { EVO_NAMES, PENNY_EVO_NAMES }  from '@/components/voltix/mascotMeta'
+import type { MascotGender }           from '@/types'
+import { resolveMascotGender }         from '@/lib/mascotGender'
 import { StreakChip }                  from '@/components/dashboard/StreakChip'
 import { PushNudgeCard }               from '@/components/dashboard/PushNudgeCard'
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
@@ -79,6 +85,20 @@ export default function DashboardPage() {
   } | null>(null)
   const checkinDone = useRef(false)
   const welcomeDone = useRef(false)
+  const queryClient = useQueryClient()
+  const { toast }   = useToast()
+
+  // Nome real da mascote (género + forma atual) para o ecrã de boas-vindas.
+  // Ref para o setTimeout do welcome ler o valor mais recente sem re-disparar
+  // o efeito.
+  const { voltix } = useVoltix()
+  // Sem dados ainda (GET /api/voltix em voo): cai para o localStorage, para
+  // quem escolheu a Penny não ver o nome do Voltix no welcome.
+  const mascotGender: MascotGender = voltix?.mascot_gender ?? resolveMascotGender(null)
+  const mascotNames = mascotGender === 'penny' ? PENNY_EVO_NAMES : EVO_NAMES
+  const mascotName  = mascotNames[voltix?.evolution_level ?? 1] ?? mascotNames[1]
+  const mascotNameRef = useRef(mascotName)
+  mascotNameRef.current = mascotName
 
   const firstName = user?.firstName ?? t('dashboard.greeting_default')
   // Greeting: tried a time-based "Bom dia/tarde/noite" previously, but the
@@ -112,7 +132,7 @@ export default function DashboardPage() {
               ? {
                   icon:     '⚡',
                   title:    t('dashboard.welcome_new', { name: firstName }),
-                  subtitle: t('dashboard.welcome_new_sub'),
+                  subtitle: t('dashboard.welcome_new_sub', { mascot: mascotNameRef.current }),
                   xp:       0,
                 }
               : {
@@ -135,7 +155,9 @@ export default function DashboardPage() {
 
   /* ── daily check-in ── */
   useEffect(() => {
-    if (checkinDone.current || !user) return
+    // Corre no mount: a rota autentica por cookie, não precisa de esperar
+    // pelo clerk-js (useUser) — isso atrasava o check-in vários segundos.
+    if (checkinDone.current) return
     checkinDone.current = true
 
     const controller = new AbortController()
@@ -145,7 +167,14 @@ export default function DashboardPage() {
       .then(res => {
         if (!res || res.already_checked) return
 
+        // O GET /api/voltix, /api/xp e /api/missions correram em paralelo
+        // com este POST e trouxeram os valores de ontem: refresca-os.
+        void queryClient.invalidateQueries({ queryKey: ['voltix'] })
+        void queryClient.invalidateQueries({ queryKey: ['xp'] })
+        void queryClient.invalidateQueries({ queryKey: ['missions'] })
+
         const streak = res.streak ?? 0
+        if (res.freeze_earned) toast(t('streak.freeze_earned'), 'info')
         if (streak === 7) {
           setCelebration({ icon: '🔥', title: t('dashboard.streak_7_title'), subtitle: t('dashboard.streak_7_sub'), xp: res.xp_earned })
         } else if (streak === 30) {
@@ -182,9 +211,15 @@ export default function DashboardPage() {
         }
       })
 
-    return () => controller.abort()
+    return () => {
+      controller.abort()
+      // StrictMode (dev) monta → limpa → remonta: sem repor a guarda, o fetch
+      // abortado nunca seria repetido e o cliente não veria a resposta.
+      // O servidor é idempotente (already_checked), por isso repetir é seguro.
+      checkinDone.current = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [])
 
   return (
     <div className="space-y-4 pb-2">

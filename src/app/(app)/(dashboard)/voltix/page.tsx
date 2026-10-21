@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 
 import { useUser }  from '@clerk/nextjs'
+import { useQueryClient } from '@tanstack/react-query'
 import { useVoltix } from '@/hooks/useVoltix'
 import { useXP }     from '@/hooks/useXP'
 import { useToast }  from '@/components/ui/toaster'
@@ -45,6 +46,7 @@ export default function VoltixPage() {
   const [tapped, setTapped] = useState(false)
   const [preview, setPreview] = useState<number | null>(null)
   const { toast }           = useToast()
+  const queryClient         = useQueryClient()
   const checkinDone         = useRef(false)
 
   // Daily check-in — AbortController cleanup (project rule) so a toast
@@ -57,6 +59,13 @@ export default function VoltixPage() {
       .then(r => r.ok ? r.json() : null)
       .then(res => {
         if (!res) return
+        if (!res.already_checked) {
+          // Os GET paralelos trouxeram os valores de ontem: refresca.
+          void queryClient.invalidateQueries({ queryKey: ['voltix'] })
+          void queryClient.invalidateQueries({ queryKey: ['xp'] })
+          void queryClient.invalidateQueries({ queryKey: ['missions'] })
+          if (res.freeze_earned) toast(t('streak.freeze_earned'), 'info')
+        }
         res.badges_awarded?.forEach((b: { name: string; icon: string }) =>
           toast(t('voltix.badge_toast', { icon: b.icon, name: b.name }), 'xp')
         )

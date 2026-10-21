@@ -1,8 +1,8 @@
 'use client'
 
 import Link            from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useState }    from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState, useEffect }    from 'react'
 import {
   LayoutDashboard, ArrowLeftRight,
   Target, BookOpen, Plus, MoreHorizontal,
@@ -12,6 +12,7 @@ import {
 import { cn }              from '@/lib/utils'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
 import { useT }            from '@/lib/i18n/LocaleProvider'
+import { useUserPlan }     from '@/lib/contexts/UserPlanContext'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
 // 5-cell primary nav with the FAB at cell 3 → literally 50% of the width.
@@ -53,7 +54,7 @@ const MORE_GROUPS: MoreGroup[] = [
     items: [
       { href: '/contas',    labelKey: 'nav.networth',    icon: Wallet,    badge: null                },
       { href: '/orcamento', labelKey: 'nav.budget',      icon: PiggyBank, badge: null                },
-      { href: '/dividas',   labelKey: 'nav.debt_killer', icon: Sword,     badge: 'nav.badge_premium' },
+      { href: '/dividas',   labelKey: 'nav.debt_killer', icon: Sword,     badge: null                },
     ],
   },
   {
@@ -82,9 +83,22 @@ const MORE_GROUPS: MoreGroup[] = [
 
 export function MobileNav() {
   const pathname                = usePathname()
+  const router                  = useRouter()
   const t                       = useT()
+  const { isFree }              = useUserPlan()
   const [showForm, setShowForm] = useState(false)
   const [showMore, setShowMore] = useState(false)
+
+  // Deep link do atalho PWA / push de registo: `?add=1` (ou o legado `new=true`)
+  // abre o formulário e limpa o parâmetro. Lido via window.location em vez de
+  // useSearchParams para não obrigar a <Suspense> no layout.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    if (sp.get('add') === '1' || sp.get('new') === 'true') {
+      setShowForm(true)
+      router.replace(window.location.pathname)
+    }
+  }, [pathname, router])
 
   // Is the current page one of the "more" pages?
   const moreActive = MORE_GROUPS.some(g => g.items.some(item => pathname.startsWith(item.href)))
@@ -209,7 +223,7 @@ export function MobileNav() {
                         >
                           <Icon className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-green-400' : 'text-white/45')} />
                           <span className="flex-1 text-sm font-medium">{t(item.labelKey)}</span>
-                          {item.badge && (
+                          {item.badge && isFree && (
                             <span className="text-[11px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/25 px-1.5 py-0.5 rounded-full">
                               {t(item.badge)}
                             </span>
