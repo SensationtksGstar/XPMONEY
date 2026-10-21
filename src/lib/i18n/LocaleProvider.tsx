@@ -1,9 +1,9 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES, TABLES,
+  LOCALE_COOKIE, LOCALES, TABLES,
   type Locale, type TranslationKey,
 } from './translations'
 
@@ -18,24 +18,16 @@ const LocaleContext = createContext<LocaleContextValue | null>(null)
 const STORAGE_KEY = 'xpmoney:locale'
 
 /**
- * Resolve initial locale. Order of precedence:
- *   1. localStorage override (explicit user choice — survives between visits)
- *   2. navigator.language (so a British user sees English on first load)
- *   3. DEFAULT_LOCALE (pt)
- *
- * SSR-safe: returns DEFAULT_LOCALE when `window` is undefined, then the
- * provider re-syncs on mount via useEffect.
+ * Read the explicit locale choice stored by a previous visit, if any.
+ * Browser-only; returns null when storage is blocked or holds junk.
  */
-function resolveInitial(): Locale {
-  if (typeof window === 'undefined') return DEFAULT_LOCALE
+function readStoredLocale(): Locale | null {
+  if (typeof window === 'undefined') return null
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY) as Locale | null
     if (stored && LOCALES.includes(stored)) return stored
-    const browser = window.navigator.language?.toLowerCase() ?? ''
-    if (browser.startsWith('pt')) return 'pt'
-    if (browser.startsWith('en')) return 'en'
-  } catch { /* storage / navigator unavailable */ }
-  return DEFAULT_LOCALE
+  } catch { /* storage unavailable */ }
+  return null
 }
 
 /**
@@ -50,15 +42,37 @@ function interpolate(str: string, vars?: Record<string, string | number>) {
   )
 }
 
-export function LocaleProvider({ children }: { children: React.ReactNode }) {
+export function LocaleProvider({
+  children,
+  initialLocale,
+}: {
+  children: React.ReactNode
+  /** Locale already resolved on the server (cookie > Accept-Language). */
+  initialLocale: Locale
+}) {
   const router = useRouter()
-  // Start with the SSR-safe default. useEffect below hydrates from storage.
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
+  // Start from the SERVER's locale so the island SSR output and the first
+  // client render agree (no PT flash on EN pages, no re-render of the tree).
+  const [locale, setLocaleState] = useState<Locale>(initialLocale)
+  const syncedRef = useRef(false)
 
-  // Hydrate after mount — prevents SSR/CSR mismatch on the first paint.
+  // The server only sees the cookie / Accept-Language. If the visitor made an
+  // explicit choice on a previous visit (localStorage) that the cookie lost,
+  // persist it to the cookie and refresh the RSC tree ONCE so server and
+  // client agree from then on.
   useEffect(() => {
-    const initial = resolveInitial()
-    if (initial !== locale) setLocaleState(initial)
+    if (syncedRef.current) return
+    syncedRef.current = true
+    const stored = readStoredLocale()
+    if (!stored || stored === initialLocale) return
+    try {
+      document.cookie = `${LOCALE_COOKIE}=${stored}; Path=/; Max-Age=31536000; SameSite=Lax`
+    } catch (err) {
+      console.warn('[locale] cookie write failed:', err)
+      return
+    }
+    setLocaleState(stored)
+    router.refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -103,8 +117,10 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     [locale],
   )
 
+  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t])
+
   return (
-    <LocaleContext.Provider value={{ locale, setLocale, t }}>
+    <LocaleContext.Provider value={value}>
       {children}
     </LocaleContext.Provider>
   )
