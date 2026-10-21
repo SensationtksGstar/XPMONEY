@@ -27,25 +27,37 @@
 // Bump these strings whenever the cache logic itself changes so old
 // caches get purged on next activate. NOT tied to app version — Next's
 // static chunks are already content-hashed.
-const STATIC_CACHE  = 'xpmoney-static-v3'
-const RUNTIME_CACHE = 'xpmoney-runtime-v3'
+const STATIC_CACHE  = 'xpmoney-static-v4'
+const RUNTIME_CACHE = 'xpmoney-runtime-v4'
 
-// Files cached on install so the PWA boots even fully offline.
+// Files cached on install so the PWA boots even fully offline. Every entry
+// MUST be a 200 that exists — no redirects (/dashboard is a 307 for guests)
+// and no missing files (public/icons never existed). A single bad entry used
+// to fail the atomic cache.addAll() and leave the cache empty.
 const PRECACHE_URLS = [
   '/',
-  '/dashboard',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  '/app-icon.webp',
 ]
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then(cache => cache.addAll(PRECACHE_URLS).catch(err => {
-        // One missing icon shouldn't block install — log and continue.
-        console.warn('[sw] precache partial failure:', err)
-      }))
+      // Per-URL fetch+put (not addAll): one failure never discards the others,
+      // and a redirected / non-2xx response is never stored.
+      .then(cache => Promise.allSettled(
+        PRECACHE_URLS.map(u =>
+          fetch(u)
+            .then(res => {
+              if (!res.ok || res.redirected) throw new Error('unusable response ' + res.status)
+              return cache.put(u, res)
+            })
+            .catch(err => {
+              console.warn('[sw] precache failed', u, err)
+              throw err
+            })
+        )
+      ))
       .then(() => self.skipWaiting())
   )
 })
@@ -120,7 +132,11 @@ async function cacheFirst(request, cacheName) {
 
   try {
     const response = await fetch(request)
-    if (response.ok) cache.put(request, response.clone())
+    if (response.ok && !response.redirected) {
+      cache.put(request, response.clone()).catch(err => {
+        console.warn('[sw] cache put failed:', err)
+      })
+    }
     return response
   } catch (err) {
     // Offline + no cache — let the fetch error propagate so the browser
@@ -141,9 +157,13 @@ async function networkFirst(request, cacheName, timeoutMs = 4000) {
     const timer = setTimeout(() => controller.abort(), timeoutMs)
     const response = await fetch(request, { signal: controller.signal })
     clearTimeout(timer)
-    if (response.ok) {
+    // Never cache redirects (a guest's 307 chain would be replayed as the
+    // page) or non-2xx responses.
+    if (response.ok && !response.redirected) {
       // Clone before consuming — Response body can only be read once.
-      cache.put(request, response.clone()).catch(() => { /* quota — ignore */ })
+      cache.put(request, response.clone()).catch(err => {
+        console.warn('[sw] cache put failed:', err)
+      })
     }
     return response
   } catch {
@@ -158,10 +178,10 @@ async function networkFirst(request, cacheName, timeoutMs = 4000) {
 
 // ── Push notification handler (unchanged from v1) ────────────────────────────
 self.addEventListener('push', function (event) {
-  let data = { title: 'XP Money 💰', body: 'Cuida das tuas finanças hoje!', icon: '/icons/icon-192.png', badge: '/icons/icon-96.png', url: '/dashboard' }
+  let data = { title: 'XP Money 💰', body: 'Cuida das tuas finanças hoje!', icon: '/app-icon.webp', badge: '/app-icon.webp', url: '/dashboard' }
 
   if (event.data) {
-    try { data = { ...data, ...event.data.json() } } catch (_) {}
+    try { data = { ...data, ...event.data.json() } } catch (err) { console.warn('[sw] push payload not JSON:', err) }
   }
 
   const options = {

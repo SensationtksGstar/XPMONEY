@@ -33,17 +33,21 @@ export function ServiceWorkerRegistrar() {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return
 
     const register = () => {
+      // Captured BEFORE register(): on a first-ever install there is no
+      // controller yet, and the new SW's clients.claim() would otherwise make
+      // the check below true and reload a page that has nothing stale.
+      const hadController = !!navigator.serviceWorker.controller
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .then(reg => {
-          // Soft reload when an updated SW activates. Avoids the
-          // "stale chunks + new HTML" black-screen-on-route-change bug.
+          // Soft reload when an UPDATED SW activates (not on first install).
+          // Avoids the "stale chunks + new HTML" black-screen bug.
           let didReload = false
           reg.addEventListener('updatefound', () => {
             const nw = reg.installing
             if (!nw) return
             nw.addEventListener('statechange', () => {
-              if (nw.state === 'activated' && navigator.serviceWorker.controller && !didReload) {
+              if (nw.state === 'activated' && hadController && !didReload) {
                 didReload = true
                 window.location.reload()
               }
