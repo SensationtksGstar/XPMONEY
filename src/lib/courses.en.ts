@@ -88,7 +88,7 @@ In XP-Money, categorise every transaction and see in real time which bucket you'
 The emergency fund should be **separate from your checking account** (so you don't spend it without thinking) but **immediately accessible** (not locked in investments):
 → Savings account with good liquidity
 → Certificados de Aforro (Portuguese state savings) — capital guaranteed, liquidity in 30 days
-→ Low-risk money-market ETF (better yield, accessible in 2-3 days)
+→ Low-risk money-market products (not deposits and without guaranteed capital; check the risk and redemption time)
 
 **How to build it fast?**
 1. Set a target (e.g. €5,000 for 6 months at €830/month)
@@ -162,7 +162,9 @@ Snowball: focus on the card (€400) → personal → car
     lessons: {
       l1: {
         title:   'Where to start investing',
-        content: `Investing isn't just for the wealthy. With €50/month and consistency, anyone can build long-term wealth. The barrier isn't capital — it's knowledge and habit.
+        content: `⚠️ **Educational content. Not financial advice or an investment recommendation.**
+
+Investing isn't just for the wealthy. With €50/month and consistency, anyone can build long-term wealth. The barrier isn't capital — it's knowledge and habit.
 
 **Before you invest, confirm:**
 ✅ You have an emergency fund (3-6 months of expenses)
@@ -172,12 +174,12 @@ Snowball: focus on the card (€400) → personal → car
 **The main investment vehicles:**
 → **Time deposits** — Guaranteed interest, protected capital. Ideal for short-term (<2 years)
 → **Bonds** — Loans to companies/governments with fixed interest. Low-to-medium risk
-→ **Stocks** — Ownership in companies. High volatility, historical return ~7-10%/year
-→ **ETFs** — A basket of stocks/bonds in one product. The best option for beginners
+→ **Stocks** — Ownership in companies. High volatility; long-term historical returns have been positive, but are not guaranteed
+→ **ETFs** — A basket of stocks/bonds in one product. A common, low-cost option, but not right for everyone
 → **Real estate** — Requires significant capital but is tangible and familiar
 
-**The rule of 100:**
-Subtract your age from 100. That's the ideal % in stocks:
+**The rule of 100 (a simplified rule of thumb, not a recommendation):**
+Subtract your age from 100. The result would be the % in stocks under this rule of thumb:
 → 25 years old → 75% stocks, 25% bonds/cash
 → 45 years old → 55% stocks, 45% bonds/cash
 → 65 years old → 35% stocks, 65% bonds/cash
@@ -186,7 +188,9 @@ The younger you are, the more time you have to recover from drops — so you can
       },
       l2: {
         title:   'Risk and Return',
-        content: `The relationship between risk and return is the fundamental law of investing: **higher potential return demands higher risk**. There are no free lunches in financial markets.
+        content: `⚠️ **Educational content. Not financial advice or an investment recommendation.**
+
+The relationship between risk and return is the fundamental law of investing: **higher potential return demands higher risk**. There are no free lunches in financial markets.
 
 **Types of risk:**
 → **Market risk** — Asset prices go up and down. Unavoidable in markets
@@ -195,7 +199,7 @@ The younger you are, the more time you have to recover from drops — so you can
 → **Liquidity risk** — You can't sell when you need to (e.g. real estate)
 
 **Volatility isn't the enemy:**
-A stock portfolio can drop 30-40% in a crisis. But historically it recovered and went even higher. The problem isn't the drop — it's selling during the drop.
+A stock portfolio can drop 30-40% in a crisis. But historically it recovered (past performance doesn't guarantee the future). The problem isn't the drop — it's selling during the drop.
 
 **Golden rule:**
 → Money you need in <2 years → DO NOT put in stocks
@@ -206,39 +210,42 @@ A stock portfolio can drop 30-40% in a crisis. But historically it recovered and
 Be honest with yourself. If watching your investment fall 20% keeps you up at night and makes you want to sell everything — your profile is conservative. That's fine. The best investment is the one you can actually hold through the tough moments.`,
       },
       l3: {
-        title:   'ETFs — The Passive Investor\'s Best Friend',
-        content: `An ETF (Exchange-Traded Fund) is a fund that tracks a market index (e.g. S&P 500, MSCI World) and trades on an exchange like a stock. By far the best way to start investing.
+        title:   'ETFs — A Common, Low-Cost Way to Invest',
+        content: `An ETF (Exchange-Traded Fund) is a fund that tracks a market index (e.g. S&P 500, MSCI World) and trades on an exchange like a stock. It is a common, low-cost way to invest, but it isn't right for everyone and it isn't risk-free: the value can fall.
 
-**Why ETFs are ideal for beginners:**
-→ **Instant diversification** — An S&P 500 ETF gives you exposure to 500 US companies in one purchase
-→ **Low costs** — TER (Total Expense Ratio) of 0.03% to 0.20% a year, vs 1.5-2.5% for active funds
-→ **Transparency** — You know exactly what you're buying
-→ **Liquidity** — Buy and sell at any time during market hours
+**Why they are popular with people starting out:**
+→ **Diversification** — An ETF tracking a broad index gives you exposure to many companies at once
+→ **Generally low costs** — The TER (Total Expense Ratio) is usually lower than that of actively managed funds
+→ **Transparency** — You can see the holdings and the index the ETF tracks
+→ **Liquidity** — Buy and sell during market hours
 
-**The most popular ETFs for beginners:**
-| ETF | Index | TER | Holdings |
-|-----|--------|-----|-------------|
-| VWCE | FTSE All-World | 0.22% | ~3,700 global companies |
-| CSPX | S&P 500 | 0.07% | 500 largest US companies |
-| IWDA | MSCI World | 0.20% | 1,500 developed-market companies |
+**How to evaluate an ETF (criteria, not recommendations):**
+→ **Tracked index** — Which markets does it cover? Is it concentrated in one country or sector?
+→ **ISIN and key information document (KID)** — Confirm the ISIN and read the KID before buying
+→ **Total costs** — TER, bid-ask spread and your broker's commissions
+→ **Domicile and taxation** — Where the fund is domiciled and how income and capital gains are taxed in Portugal. Check with the tax authority (AT) or an accountant
+→ **Distributing or accumulating** — Does it pay out dividends or reinvest them?
 
-**Where to buy ETFs from Portugal:**
-→ Interactive Brokers (lowest fees, ideal for amounts above €1,000)
-→ Trading 212 (no commission, fractional ETFs, great to start)
-→ Degiro (low fees, simple interface)
+**How to choose where to buy (criteria):**
+→ **Regulated intermediary** — Check that it is authorised and supervised (in Portugal, the CMVM publishes the list of authorised entities; for firms from other EU countries, check the home-country authority)
+→ **Total costs** — Buy/sell commissions, custody, currency conversion and other fees
+→ **Safety of your assets** — How client assets are segregated and what protection exists
+→ **Ease of use and support** — In your language, if that matters to you
 
 **DCA strategy (Dollar-Cost Averaging):**
-Invest a fixed amount every month, regardless of price. In down months you buy cheaper. In up months you buy less. The average cost is optimised automatically.`,
+Invest a fixed amount every month, regardless of price. In down months you buy cheaper. In up months you buy less. It smooths your average entry price, but it doesn't remove risk or guarantee a profit.`,
       },
       l4: {
         title:   'Compound Interest — The 8th Wonder of the World',
-        content: `"He who understands compound interest, earns it. He who doesn't, pays it." — Albert Einstein (attributed)
+        content: `⚠️ **Educational content. Not financial advice or an investment recommendation.**
+
+"He who understands compound interest, earns it. He who doesn't, pays it." — Albert Einstein (attributed)
 
 **What is compound interest?**
 It's when your interest generates new interest. Your money works, and the fruits of your money's work also work. It's a financial snowball.
 
 **A concrete example:**
-€10,000 invested at 7%/year for 30 years:
+Illustrative example (no guaranteed return): €10,000 invested at 7%/year for 30 years:
 → Without compounding (principal only): €10,000 + €21,000 interest = €31,000
 → With compounding: €76,122 (!!)
 
@@ -402,7 +409,7 @@ Open an account separate from your checking, ideally at another bank to add fric
 On the same day you get paid, set up an automatic transfer to the savings account. You'll never see the money in checking — what you don't see, you don't spend.
 
 **Step 3 — Automatic monthly investment**
-If you already have an emergency fund, set up an automatic investment plan (DCA) on your broker of choice (Trading 212, DEGIRO, etc.). Fixed amount, same day every month.
+If you already have an emergency fund, set up an automatic investment plan (DCA) with the regulated intermediary you choose. Fixed amount, same day every month.
 
 **Step 4 — Quarterly review (not monthly)**
 Checking your portfolio every day is anxiety with no purpose. Review it quarterly: are you saving the planned %? Has the savings rate held? Has any expense crept up?

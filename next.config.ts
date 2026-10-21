@@ -33,6 +33,18 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
 
+  // Evergreen blog slugs (renamed Oct 2026 — the year lives in the title only).
+  // 308 permanent: the blog was behind a 307 for crawlers until July 2026, so
+  // the old URLs were never indexed and the rename costs ~nothing in SEO.
+  async redirects() {
+    return [
+      { source: '/blog/irs-2026-7-deducoes-esquecidas',     destination: '/blog/deducoes-irs',              permanent: true },
+      { source: '/blog/reembolso-irs-2026-o-que-fazer',     destination: '/blog/reembolso-irs',             permanent: true },
+      { source: '/blog/subsidio-de-ferias-2026-o-que-fazer', destination: '/blog/subsidio-de-ferias',       permanent: true },
+      { source: '/blog/ynab-alternativas-portugal-2026',    destination: '/blog/alternativas-ynab-portugal', permanent: true },
+    ]
+  },
+
   async headers() {
     return [
       {

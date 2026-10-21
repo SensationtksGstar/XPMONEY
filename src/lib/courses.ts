@@ -110,7 +110,7 @@ Na XP-Money, categoriza cada transação e vê automaticamente em que percentage
 O fundo de emergência deve estar **separado da conta corrente** (para não gastar sem pensar) mas **imediatamente acessível** (não em investimentos):
 → Conta poupança com boa liquidez
 → Certificados de Aforro (Portugal) — capital garantido e liquidez em 30 dias
-→ ETF monetário de baixo risco (mais rendimento, acessível em 2-3 dias)
+→ Produtos monetários de baixo risco (não são depósitos e não têm capital garantido; confirma o risco e o prazo de resgate)
 
 **Como construir rapidamente?**
 1. Define o valor-alvo (ex: €5.000 para 6 meses de €830/mês)
@@ -205,7 +205,9 @@ Com Bola de Neve: foca o cartão (€400) → pessoal → carro
         emoji:    '🚀',
         title:    'Por onde começar a investir',
         duration: 3,
-        content: `Investir não é apenas para ricos. Com €50/mês e consistência, qualquer pessoa pode construir riqueza a longo prazo. A barreira não é o capital — é o conhecimento e o hábito.
+        content: `⚠️ **Conteúdo educativo. Não é aconselhamento financeiro nem recomendação de investimento.**
+
+Investir não é apenas para ricos. Com €50/mês e consistência, qualquer pessoa pode construir riqueza a longo prazo. A barreira não é o capital — é o conhecimento e o hábito.
 
 **Antes de investires, confirma:**
 ✅ Tens fundo de emergência (3-6 meses de despesas)
@@ -215,12 +217,12 @@ Com Bola de Neve: foca o cartão (€400) → pessoal → carro
 **Os principais veículos de investimento:**
 → **Depósitos a prazo** — Juro garantido, capital protegido. Ideal para curto prazo (<2 anos)
 → **Obrigações** — Empréstimos a empresas/governos com juro fixo. Risco baixo-médio
-→ **Ações** — Participação em empresas. Volatilidade alta, retorno histórico ~7-10%/ano
-→ **ETFs** — Cesta de ações/obrigações num único produto. A melhor opção para iniciantes
+→ **Ações** — Participação em empresas. Volatilidade alta; o retorno histórico foi positivo a longo prazo, mas não está garantido
+→ **ETFs** — Cesta de ações/obrigações num único produto. Uma opção comum e de custo baixo, mas não é adequada a toda a gente
 → **Imobiliário** — Requer capital elevado mas é tangível e familiar
 
-**A regra dos 100:**
-Subtrai a tua idade a 100. Esse é o % ideal em ações:
+**A regra dos 100 (heurística simplificada, não uma recomendação):**
+Subtrai a tua idade a 100. O resultado seria o % em ações segundo esta regra de bolso:
 → 25 anos → 75% ações, 25% obrigações/cash
 → 45 anos → 55% ações, 45% obrigações/cash
 → 65 anos → 35% ações, 65% obrigações/cash
@@ -232,7 +234,9 @@ Quanto mais novo, mais tempo tens para recuperar de quedas — logo, podes assum
         emoji:    '⚖️',
         title:    'Risco e Retorno',
         duration: 3,
-        content: `A relação entre risco e retorno é a lei fundamental do investimento: **maior retorno potencial exige maior risco**. Não há almoços grátis nos mercados financeiros.
+        content: `⚠️ **Conteúdo educativo. Não é aconselhamento financeiro nem recomendação de investimento.**
+
+A relação entre risco e retorno é a lei fundamental do investimento: **maior retorno potencial exige maior risco**. Não há almoços grátis nos mercados financeiros.
 
 **Tipos de risco:**
 → **Risco de mercado** — O preço do ativo sobe e desce. Inevitável nos mercados
@@ -241,7 +245,7 @@ Quanto mais novo, mais tempo tens para recuperar de quedas — logo, podes assum
 → **Risco de liquidez** — Não consegues vender o ativo quando precisas (ex: imobiliário)
 
 **A volatilidade não é o inimigo:**
-Uma carteira de ações pode cair 30-40% numa crise. Mas historicamente recuperou e subiu ainda mais. O problema não é a queda — é vender quando está em queda.
+Uma carteira de ações pode cair 30-40% numa crise. Mas historicamente recuperou (o passado não garante o futuro). O problema não é a queda — é vender quando está em queda.
 
 **Regra de ouro:**
 → Dinheiro que precisas em <2 anos → NÃO invistas em ações
@@ -254,43 +258,46 @@ Sê honesto contigo. Se ao ver o teu investimento a cair 20% dormires mal e quis
       {
         id:       'l3',
         emoji:    '🧺',
-        title:    'ETFs — O Melhor Amigo do Investidor Passivo',
+        title:    'ETFs — Uma Forma Comum e de Baixo Custo de Investir',
         duration: 4,
-        content: `Um ETF (Exchange-Traded Fund) é um fundo que replica um índice de mercado (ex: S&P 500, MSCI World) e é negociado em bolsa como uma ação. É, de longe, a melhor forma de começar a investir.
+        content: `Um ETF (Exchange-Traded Fund) é um fundo que replica um índice de mercado (ex: S&P 500, MSCI World) e é negociado em bolsa como uma ação. É uma forma comum e de baixo custo de investir, mas não é adequada a toda a gente nem está livre de risco: o valor pode descer.
 
-**Por que ETFs são ideais para iniciantes:**
-→ **Diversificação imediata** — Um ETF do S&P 500 dá-te exposição a 500 empresas americanas de uma vez
-→ **Custos baixos** — TER (Total Expense Ratio) de 0,03% a 0,20% ao ano, vs 1,5-2,5% de fundos ativos
-→ **Transparência** — Sabes exatamente o que estás a comprar
-→ **Liquidez** — Compras e vendes a qualquer momento durante o horário de bolsa
+**Porque são populares entre quem começa:**
+→ **Diversificação** — Um ETF que replica um índice largo dá-te exposição a muitas empresas de uma vez
+→ **Custos geralmente baixos** — O TER (Total Expense Ratio) costuma ser inferior ao dos fundos de gestão ativa
+→ **Transparência** — Podes ver a composição e o índice que o ETF replica
+→ **Liquidez** — Compras e vendes durante o horário de bolsa
 
-**Os ETFs mais populares para iniciantes:**
-| ETF | Índice | TER | O que inclui |
-|-----|--------|-----|-------------|
-| VWCE | FTSE All-World | 0,22% | ~3.700 empresas globais |
-| CSPX | S&P 500 | 0,07% | 500 maiores EUA |
-| IWDA | MSCI World | 0,20% | 1.500 empresas países desenvolvidos |
+**Como avaliar um ETF (critérios, não recomendações):**
+→ **Índice replicado** — Que mercados cobre? Está concentrado num país ou setor?
+→ **ISIN e documento de informações fundamentais (KID)** — Confirma o ISIN e lê o KID antes de comprar
+→ **Custos totais** — TER, diferencial de compra/venda (spread) e comissões do intermediário
+→ **Domicílio e tributação** — Onde está domiciliado o fundo e como os rendimentos e mais-valias são tributados em Portugal. Confirma com a AT ou um contabilista
+→ **Distribuição ou acumulação** — Paga dividendos ou reinveste-os?
 
-**Onde comprar ETFs em Portugal:**
-→ Interactive Brokers (comissões mais baixas, ideal para valores acima de €1.000)
-→ Trading 212 (sem comissão, frações de ETF, ótimo para começar)
-→ Degiro (comissões baixas, interface simples)
+**Como escolher onde comprar (critérios):**
+→ **Intermediário regulado** — Verifica se está autorizado e supervisionado (a CMVM, em Portugal, publica a lista de entidades autorizadas; para entidades de outros países da UE, confirma a autoridade do país de origem)
+→ **Custos totais** — Comissões de compra e venda, custódia, câmbio e outras taxas
+→ **Segurança dos teus ativos** — Como estão separados os ativos do cliente e que proteção existe
+→ **Facilidade de uso e apoio** — Em português, se for importante para ti
 
 **Estratégia DCA (Dollar-Cost Averaging):**
-Investe um valor fixo todos os meses, independentemente do preço. Em meses de queda compras mais barato. Em meses de subida compras menos. A média do custo é otimizada automaticamente.`,
+Investe um valor fixo todos os meses, independentemente do preço. Em meses de queda compras mais barato. Em meses de subida compras menos. Suaviza o preço médio de entrada, mas não elimina o risco nem garante lucro.`,
       },
       {
         id:       'l4',
         emoji:    '✨',
         title:    'O Juro Composto — A 8ª Maravilha do Mundo',
         duration: 3,
-        content: `"Aquele que compreende o juro composto, ganha-o. Aquele que não compreende, paga-o." — Albert Einstein (atribuído)
+        content: `⚠️ **Conteúdo educativo. Não é aconselhamento financeiro nem recomendação de investimento.**
+
+"Aquele que compreende o juro composto, ganha-o. Aquele que não compreende, paga-o." — Albert Einstein (atribuído)
 
 **O que é o juro composto?**
 É quando os teus juros geram novos juros. O teu dinheiro trabalha, e os frutos do trabalho do teu dinheiro também trabalham. É uma bola de neve financeira.
 
 **Exemplo concreto:**
-€10.000 investidos a 7%/ano durante 30 anos:
+Exemplo ilustrativo (sem garantia de rentabilidade): €10.000 investidos a 7%/ano durante 30 anos:
 → Sem juro composto (apenas o capital inicial): €10.000 + €21.000 juros = €31.000
 → Com juro composto: €76.122 (!!)
 
@@ -481,7 +488,7 @@ Abre uma conta separada da tua conta corrente, idealmente noutro banco para cria
 No mesmo dia em que recebes o salário, configura uma transferência automática para a conta de poupança. Nunca verás esse dinheiro na conta corrente — o que não vês, não gastas.
 
 **Passo 3 — Investimento Automático Mensal**
-Se já tens fundo de emergência, configura um plano de investimento automático (DCA) na plataforma que usas (Trading 212, DEGIRO, etc.). Valor fixo, mesmo dia todo mês.
+Se já tens fundo de emergência, configura um plano de investimento automático (DCA) no intermediário regulado que escolheres. Valor fixo, mesmo dia todo mês.
 
 **Passo 4 — Revisão Trimestral (não mensal)**
 Verificar a carteira todos os dias é ansiedade sem propósito. Revê trimestralmente: estás a poupar o % planeado? A taxa de poupança manteve-se? Alguma despesa cresceu sem notar?
