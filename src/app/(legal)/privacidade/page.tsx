@@ -4,7 +4,7 @@ import { breadcrumb } from '@/lib/seo/jsonLd'
 
 export const metadata: Metadata = {
   title:       'Política de Privacidade',
-  description: 'Como o XP-Money trata os teus dados pessoais e financeiros — RGPD/GDPR-compliant. Dados na UE (Supabase eu-central-1), nunca partilhados, apagáveis em 1 clique.',
+  description: 'Como o XP-Money trata os teus dados pessoais e financeiros — RGPD/GDPR-compliant. Dados na UE (Supabase eu-central-1), nunca vendidos, apagáveis em 1 clique.',
   alternates:  { canonical: '/privacidade' },
   openGraph:   {
     type:        'article',
@@ -34,7 +34,7 @@ export default function PrivacidadePage() {
         { name: 'Política de Privacidade', href: '/privacidade' },
       ])} />
       <h1>Política de Privacidade</h1>
-      <p className="updated">Última atualização: 17 de abril de 2026</p>
+      <p className="updated">Última atualização: 20 de outubro de 2026</p>
 
       <div className="tldr">
         <strong>TL;DR:</strong> Tratamos dados pessoais teus (email, nome, dados
@@ -80,7 +80,9 @@ export default function PrivacidadePage() {
 
       <h3>2.3. Dados técnicos automáticos</h3>
       <ul>
-        <li><strong>Analytics (PostHog):</strong> eventos anonimizados para sabermos que funcionalidades usas — sem teu nome nem email.</li>
+        <li><strong>Analytics opcional (PostHog):</strong> eventos anonimizados para sabermos que funcionalidades usas — sem teu nome nem email. Só com o teu consentimento no banner de cookies.</li>
+        <li><strong>Medição anónima (Vercel Analytics):</strong> contagem de visitas e desempenho, sem cookies nem identificadores persistentes.</li>
+        <li><strong>Publicidade (Google AdSense):</strong> no plano grátis e em algumas páginas do site, a Google pode tratar identificadores publicitários do teu dispositivo. Ver <a href="/cookies">Política de Cookies</a>.</li>
         <li><strong>Logs de erro:</strong> mensagens de erro + user-agent para corrigir bugs (limpamos após 30 dias).</li>
         <li><strong>Cookies:</strong> ver <a href="/cookies">Política de Cookies</a>.</li>
       </ul>
@@ -99,13 +101,14 @@ export default function PrivacidadePage() {
         <li><strong>Comunicação:</strong> enviar notificações diárias (se ativadas), responder a mensagens.</li>
         <li><strong>Faturação:</strong> processar subscrições pagas via Stripe.</li>
         <li><strong>Melhoria do produto:</strong> analisar eventos anónimos para priorizar funcionalidades.</li>
+        <li><strong>Publicidade no plano grátis:</strong> mostrar anúncios (Google AdSense) que financiam o plano grátis. Os utilizadores Premium não veem anúncios.</li>
         <li><strong>Segurança:</strong> detetar abuso e cumprir obrigações legais.</li>
       </ol>
 
       <h2>4. Base legal (Art. 6º RGPD)</h2>
       <ul>
         <li><strong>Execução de contrato</strong> (Art. 6.1.b): tudo o que é necessário para a app funcionar.</li>
-        <li><strong>Consentimento</strong> (Art. 6.1.a): notificações push, cookies analíticos.</li>
+        <li><strong>Consentimento</strong> (Art. 6.1.a): notificações push, cookies analíticos e, quando exigido, identificadores publicitários (Google AdSense).</li>
         <li><strong>Interesse legítimo</strong> (Art. 6.1.f): prevenção de fraude, logs de segurança.</li>
         <li><strong>Obrigação legal</strong> (Art. 6.1.c): retenção de registos fiscais de faturação.</li>
       </ul>
@@ -115,13 +118,15 @@ export default function PrivacidadePage() {
       <ul>
         <li><strong>Clerk</strong> (EUA, EU-US DPF) — autenticação.</li>
         <li><strong>Supabase</strong> (UE, Frankfurt) — base de dados e storage.</li>
-        <li><strong>Vercel</strong> (EUA, EU-US DPF) — alojamento da aplicação.</li>
+        <li><strong>Vercel</strong> (EUA, EU-US DPF; funções da aplicação em Frankfurt) — alojamento da aplicação.</li>
         <li><strong>Stripe</strong> (Irlanda) — processamento de pagamentos.</li>
-        <li><strong>Google Gemini</strong> (UE) — scan de recibos e processamento de IA (imagens apagadas após processamento).</li>
-        <li><strong>PostHog</strong> (UE) — analytics anonimizados.</li>
+        <li><strong>Google</strong> (Google Ireland Limited) — Gemini, para a leitura de talões e extratos com IA (não guardamos as imagens nem os documentos após o processamento), e AdSense, para publicidade no plano grátis.</li>
+        <li><strong>Groq</strong> (EUA) — IA de reserva, usada apenas se o fornecedor principal de IA estiver indisponível.</li>
+        <li><strong>Resend</strong> (EUA) — envio de emails (newsletter e avisos de serviço).</li>
+        <li><strong>PostHog</strong> (UE) — analítica opcional, só com consentimento.</li>
       </ul>
       <p>
-        <strong>Não vendemos nem alugamos dados a terceiros.</strong> Qualquer transferência
+        <strong>Não vendemos nem alugamos os teus dados.</strong> Qualquer transferência
         internacional é feita sob cláusulas contratuais-tipo aprovadas pela Comissão Europeia.
       </p>
 
