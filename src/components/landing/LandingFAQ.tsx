@@ -29,7 +29,11 @@ import type { TranslationKey } from '@/lib/i18n/translations'
 
 interface QA { qKey: TranslationKey; aKey: TranslationKey }
 
+// ORDER MATTERS: q8 ("Tenho de dar acesso à minha conta bancária?") goes FIRST
+// — it's the #1 objection in PT and the only entry open by default. Keep the
+// same order in src/app/page.tsx (FAQPage JSON-LD must match what's visible).
 const FAQS: QA[] = [
+  { qKey: 'landing.faq.q8', aKey: 'landing.faq.a8' },
   { qKey: 'landing.faq.q1', aKey: 'landing.faq.a1' },
   { qKey: 'landing.faq.q2', aKey: 'landing.faq.a2' },
   { qKey: 'landing.faq.q3', aKey: 'landing.faq.a3' },
@@ -37,7 +41,6 @@ const FAQS: QA[] = [
   { qKey: 'landing.faq.q5', aKey: 'landing.faq.a5' },
   { qKey: 'landing.faq.q6', aKey: 'landing.faq.a6' },
   { qKey: 'landing.faq.q7', aKey: 'landing.faq.a7' },
-  { qKey: 'landing.faq.q8', aKey: 'landing.faq.a8' },
 ]
 
 export async function LandingFAQ() {

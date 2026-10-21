@@ -49,6 +49,7 @@ const PLANS: {
       'billing.free_f4',
       'billing.free_f5',
       'billing.free_f6',
+      'billing.free_f11', // Certificados verificáveis nos 3 cursos grátis (sync com pricing.free_f9)
       'billing.free_f9',  // Orçamento 50/30/20 — high-value free hook
       'billing.free_f10', // Mata-Dívidas (1 dívida) — teaser into Premium
       'billing.free_f7',

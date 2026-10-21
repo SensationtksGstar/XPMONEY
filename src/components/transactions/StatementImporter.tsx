@@ -445,7 +445,8 @@ export function StatementImporter({ onClose }: Props) {
               {t('import.price_anchor')}
             </p>
 
-            {/* Social proof + secondary link (the "hesitant" exit). */}
+            {/* No-lock-in reassurance + secondary link (the "hesitant" exit).
+                Never put user counts here — they must be real. */}
             <div className="pt-3 border-t border-white/10 space-y-2">
               <p className="text-[11px] text-white/55 flex items-center justify-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-emerald-400" />

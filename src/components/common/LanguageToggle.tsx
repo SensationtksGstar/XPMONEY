@@ -30,9 +30,15 @@ interface Props {
   /** `compact` shrinks padding to fit a mobile TopBar (default). */
   size?:       'compact' | 'default'
   className?:  string
+  /**
+   * Below the `sm` breakpoint show ONLY the inactive language (one tap =
+   * switch). Used by the landing nav so it fits a 360px phone together with
+   * the install + sign-in + CTA buttons. From `sm` up it's the full pill.
+   */
+  collapseOnMobile?: boolean
 }
 
-export function LanguageToggle({ size = 'compact', className = '' }: Props) {
+export function LanguageToggle({ size = 'compact', className = '', collapseOnMobile = false }: Props) {
   const { locale, setLocale } = useLocale()
 
   // Padding tuned so each button hits ≥44 px on the long axis even in
@@ -69,6 +75,8 @@ export function LanguageToggle({ size = 'compact', className = '' }: Props) {
             className={cn(
               'rounded-full font-semibold transition-all flex items-center justify-center gap-1 touch-manipulation select-none',
               pad,
+              collapseOnMobile && 'max-sm:min-h-[44px]',
+              collapseOnMobile && active && 'max-sm:hidden',
               active
                 ? 'bg-white text-black shadow-sm cursor-default'
                 : 'text-white/60 hover:text-white active:bg-white/10',

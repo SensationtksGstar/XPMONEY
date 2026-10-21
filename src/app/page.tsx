@@ -5,7 +5,7 @@ import { LandingHero }            from '@/components/landing/LandingHero'
 import { LandingHowItWorks }      from '@/components/landing/LandingHowItWorks'
 import { LandingFeatures }        from '@/components/landing/LandingFeatures'
 import { LandingMascotShowcase }    from '@/components/landing/LandingMascotShowcase'
-import { LandingReviews }         from '@/components/landing/LandingReviews'
+import { LandingFounder }         from '@/components/landing/LandingFounder'
 import { LandingFAQ }             from '@/components/landing/LandingFAQ'
 import { LandingPricing }         from '@/components/landing/LandingPricing'
 import { LandingFooter }          from '@/components/landing/LandingFooter'
@@ -13,11 +13,12 @@ import { LanguageToggle }         from '@/components/common/LanguageToggle'
 import { InstallAppButton }       from '@/components/common/InstallAppButton'
 import { NewsletterSignup }       from '@/components/common/NewsletterSignup'
 // FAB is lazy-loaded behind a small client-component wrapper. Next.js 15
-// forbids `dynamic({ ssr:false })` inside server components — the wrapper
-// `DragonCoinFABLazy` is the client boundary that holds the dynamic import.
-// Same chunk-splitting outcome (~25 KB gzipped off the critical path),
-// just compliant with the new constraint.
-import { DragonCoinFABLazy }      from '@/components/common/DragonCoinFABLazy'
+// forbids `dynamic({ ssr:false })` inside server components — the wrapper is
+// the client boundary that holds the dynamic import. It is LANDING-ONLY
+// (`LandingFABLazy`, mounts on first interaction / idle): the dashboard keeps
+// `DragonCoinFABLazy`. Sharing one wrapper made the landing pull dashboard
+// layout chunks into its client manifest — don't merge them back.
+import { LandingFABLazy }         from '@/components/landing/LandingFABLazy'
 import { JsonLd }                 from '@/components/seo/JsonLd'
 import { softwareApplication, faqPage, premiumProduct } from '@/lib/seo/jsonLd'
 import { getServerT, getServerLocale } from '@/lib/i18n/server'
@@ -37,7 +38,7 @@ import { getServerT, getServerLocale } from '@/lib/i18n/server'
  *   2. How it works      — de-risks the first 30 seconds
  *   3. Features          — 8 cards, real features (scan, import PDF, etc.)
  *   4. Mascot showcase   — the unique differentiator (dual 6-evo mascots)
- *   5. Reviews           — 6 testimonials with ratings
+ *   5. Founder           — quem está por trás (substitui reviews fabricadas, out/2026)
  *   6. FAQ               — 8 real objections, answered (feeds FAQPage JSON-LD)
  *   7. Pricing           — Free / Premium with honest features
  *   8. Newsletter + Final CTA — lead capture, last push to /sign-up
@@ -56,7 +57,8 @@ export default async function LandingPage() {
   // these in sync with src/components/landing/LandingFAQ.tsx (same keys).
   // If the FAQ list grows, append to this array — Google penalises FAQ
   // schemas that don't match the visible page content.
-  const faqs = [1, 2, 3, 4, 5, 6, 7, 8].map(i => ({
+  // Order mirrors LandingFAQ: the bank-access question (q8) comes first.
+  const faqs = [8, 1, 2, 3, 4, 5, 6, 7].map(i => ({
     q: t(`landing.faq.q${i}` as `landing.faq.q1`),
     a: t(`landing.faq.a${i}` as `landing.faq.a1`),
   }))
@@ -71,10 +73,12 @@ export default async function LandingPage() {
       <JsonLd schema={premiumProduct(locale)} />
 
       {/* ── NAV ─────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3.5 border-b border-white/5 bg-surface-0/85 backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-4 sm:px-6 py-2.5 sm:py-3.5 border-b border-white/5 bg-surface-0/85 backdrop-blur-md">
+        <Link href="/" className="flex items-center gap-2 min-h-[44px] shrink-0" aria-label="XP-Money">
           <Logo size={32} />
-          <span className="font-bold text-lg text-white tracking-tight">XP-Money</span>
+          {/* Wordmark hidden below 440px so the right-hand actions fit a
+              360px phone without clipping the primary CTA. */}
+          <span className="hidden min-[440px]:inline font-bold text-lg text-white tracking-tight">XP-Money</span>
         </Link>
 
         {/* Middle nav (desktop only) */}
@@ -85,20 +89,20 @@ export default async function LandingPage() {
           <a href="#faq"              className="hover:text-white transition-colors">{t('landing.nav.faq')}</a>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
           {/* Install app — only renders when PWAInstallPrompt has detected
               a real install path (Chromium with BIP, or iOS Safari).
               Self-hiding on desktop Firefox / already-standalone / etc. */}
-          <InstallAppButton />
+          <InstallAppButton iconOnlyMobile />
           {/* Language toggle — EN visitors flip here without hunting through
               the app. Persists via cookie + localStorage, reloads instantly. */}
-          <LanguageToggle className="mr-0.5 sm:mr-1" />
+          <LanguageToggle collapseOnMobile className="sm:mr-1" />
           {/* Sign-in ALWAYS visible — mobile users with existing accounts
               had no way back in before (was `hidden sm:inline-block`).
               Compact padding on mobile to keep the row balanced. */}
           <Link
             href="/sign-in"
-            className="text-xs sm:text-sm text-white/70 hover:text-white transition-colors px-2 sm:px-3 py-1.5 sm:py-2"
+            className="inline-flex items-center min-h-[44px] text-xs sm:text-sm text-white/70 hover:text-white transition-colors px-2 sm:px-3 touch-manipulation"
           >
             {t('landing.nav.sign_in')}
           </Link>
@@ -107,7 +111,7 @@ export default async function LandingPage() {
               longer dominates the nav strip. */}
           <Link
             href="/sign-up"
-            className="text-xs sm:text-sm bg-green-500 hover:bg-green-400 text-black font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg transition-colors"
+            className="inline-flex items-center whitespace-nowrap min-h-[44px] text-xs sm:text-sm bg-green-500 hover:bg-green-400 text-black font-semibold px-3 sm:px-4 rounded-md sm:rounded-lg transition-colors touch-manipulation"
           >
             {t('landing.nav.cta')}
           </Link>
@@ -130,8 +134,8 @@ export default async function LandingPage() {
       {/* ── 4. MASCOT SHOWCASE ──────────────────────────────────────── */}
       <LandingMascotShowcase />
 
-      {/* ── 5. REVIEWS ──────────────────────────────────────────────── */}
-      <LandingReviews />
+      {/* ── 5. FOUNDER ──────────────────────────────────────────────── */}
+      <LandingFounder />
 
       {/* ── 8. FAQ ──────────────────────────────────────────────────── */}
       <div id="faq" className="scroll-mt-20">
@@ -150,9 +154,6 @@ export default async function LandingPage() {
 
       {/* ── 10. FINAL CTA ───────────────────────────────────────────── */}
       <section className="px-6 py-24 text-center relative overflow-hidden">
-        <div aria-hidden className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/10 rounded-full blur-3xl" />
-        </div>
         <div className="relative max-w-2xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
             {t('landing.cta.title_a')}{' '}
@@ -180,7 +181,7 @@ export default async function LandingPage() {
       <LandingFooter />
 
       {/* Persistent Dragon Coin chat FAB — visible on every landing section. */}
-      <DragonCoinFABLazy />
+      <LandingFABLazy />
     </main>
   )
 }

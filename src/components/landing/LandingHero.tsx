@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Sparkles, Star, Zap, Shield } from 'lucide-react'
+import { ArrowRight, Sparkles, Zap, Shield } from 'lucide-react'
 import { getServerT }   from '@/lib/i18n/server'
 
 /**
@@ -9,14 +9,17 @@ import { getServerT }   from '@/lib/i18n/server'
  * Rebuilt in April 2026 after the visual was flagged as "weak and unprofessional".
  * The new brief from the founder:
  *   - make the mascot the hero (people fall in love with Voltix/Penny first)
- *   - surface the annual discount (~33% off) as a real wallet lift, not a footnote
+ *   - (annual-discount callout REMOVED in Oct/2026: yearly pricing lives in Pricing)
  *   - hint at NFT certificates without leading with crypto
  *   - keep the device card so it still reads as a real product, not a mood board
  *
  * Layout:
- *   LEFT  — copy + dual CTA + trust row + monthly/annual savings callout
+ *   LEFT  — copy + dual CTA + honest trust row (no ratings / user counts)
  *   RIGHT — device card framed by the NEW cleaner mascot art (stage 4),
  *           with an "evolve-to-6" rail under it and a floating +XP chip.
+ *
+ * Mobile: both grid columns are `min-w-0` and the grid is `grid-cols-1` —
+ * keep it so (the hero overflowed <430px and clipped the CTA before).
  *
  * Everything above-the-fold is server-rendered. No hooks, no effects.
  * `priority` is set on the mascot image because it *is* the LCP on
@@ -57,8 +60,6 @@ export async function LandingHero() {
               'radial-gradient(ellipse at center, transparent 40%, #0b0d10 85%)',
           }}
         />
-        <div className="absolute top-40 right-[18%] w-[380px] h-[380px] bg-yellow-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-20 left-[10%] w-[320px] h-[320px] bg-purple-500/10 rounded-full blur-3xl" />
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
@@ -69,9 +70,12 @@ export async function LandingHero() {
         />
       </div>
 
-      <div className="relative max-w-6xl mx-auto grid lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center">
+      {/* grid-cols-1 + min-w-0 on the columns: without them the implicit auto track
+          grows to the widest min-content (truncate/long words) and the hero
+          overflows below ~430px, clipping the primary CTA. */}
+      <div className="relative max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center">
         {/* ── Copy side ─────────────────────────────────────────────── */}
-        <div className="text-center lg:text-left">
+        <div className="min-w-0 text-center lg:text-left">
           <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
             <Sparkles className="w-3 h-3" />
             {t('landing.hero.badge')}
@@ -93,12 +97,7 @@ export async function LandingHero() {
           <p className="text-lg text-white/70 max-w-xl mx-auto lg:mx-0 mb-7 leading-relaxed">
             {t('landing.hero.sub_a')} <strong className="text-white">{t('landing.hero.sub_evo')}</strong>
             {t('landing.hero.sub_b')}{' '}
-            <span className="relative inline-block">
-              <strong className="text-white">{t('landing.hero.sub_cert')}</strong>
-              <span className="absolute -top-2 -right-10 text-[11px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-1.5 py-0.5 rounded-full rotate-3">
-                {t('landing.hero.sub_new')}
-              </span>
-            </span>{' '}
+            <strong className="text-white">{t('landing.hero.sub_cert')}</strong>{' '}
             {t('landing.hero.sub_c')}
           </p>
 
@@ -120,32 +119,10 @@ export async function LandingHero() {
             </Link>
           </div>
 
-          {/* Annual savings callout */}
-          <div className="inline-flex items-center gap-3 mb-5 p-3 pr-5 rounded-xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-transparent">
-            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-purple-300" />
-            </div>
-            <div className="text-left">
-              <p className="text-[13px] text-white/85 font-semibold leading-tight">
-                {t('landing.hero.annual_title')}{' '}
-                <span className="text-purple-300 font-bold">{t('landing.hero.annual_month')}</span>
-                <span className="text-white/50"> {t('landing.hero.annual_savings')}</span>
-              </p>
-              <p className="text-[11px] text-white/50 mt-0.5">{t('landing.hero.annual_compare')}</p>
-            </div>
-          </div>
-
           {/* Inline trust row */}
           <div className="flex items-center justify-center lg:justify-start gap-4 text-xs text-white/45 flex-wrap">
-            <span className="flex items-center gap-1.5">
-              <div className="flex items-center gap-0.5 text-yellow-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3 h-3 fill-current" />
-                ))}
-              </div>
-              <span className="font-semibold text-white/75">4,9</span>
-              <span className="text-white/50">{t('landing.hero.trust_reviews')}</span>
-            </span>
+            {/* Verifiable facts only — no ratings or user counts (Omnibus). */}
+            <span className="flex items-center gap-1">{t('landing.hero.trust_reviews')}</span>
             <span className="hidden sm:inline text-white/20">·</span>
             <span className="flex items-center gap-1">{t('landing.hero.trust_country')}</span>
             <span className="hidden sm:inline text-white/20">·</span>
@@ -161,12 +138,7 @@ export async function LandingHero() {
         </div>
 
         {/* ── Visual side ───────────────────────────────────────────── */}
-        <div className="relative flex flex-col items-center justify-center">
-          {/* Backdrop halo */}
-          <div aria-hidden className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[460px] h-[460px] rounded-full bg-gradient-to-b from-green-500/25 via-emerald-500/10 to-transparent blur-2xl" />
-            <div className="absolute w-[320px] h-[320px] rounded-full bg-yellow-500/10 blur-2xl" />
-          </div>
+        <div className="relative min-w-0 flex flex-col items-center justify-center">
 
           {/* Main mascot — the "imagem de abertura" hero render (Voltix warrior
               holding the app). Shown as the plain image: NO glow, NO drop shadow
@@ -184,7 +156,7 @@ export async function LandingHero() {
 
           {/* Device card */}
           <div className="relative w-full max-w-md z-10">
-            <div className="relative bg-gradient-to-b from-white/10 to-white/[0.02] border border-white/15 backdrop-blur-xl rounded-3xl p-6 pt-10 shadow-2xl">
+            <div className="relative bg-surface-1 border border-hairline rounded-3xl p-6 pt-10 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
               {/* Top stats row */}
               <div className="grid grid-cols-3 gap-2 mb-5">
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
@@ -216,7 +188,7 @@ export async function LandingHero() {
                   <span>{t('landing.hero.card_xp_val')}</span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full w-[82%] bg-gradient-to-r from-green-400 to-emerald-300 rounded-full" />
+                  <div className="h-full w-[78%] bg-gradient-to-r from-green-400 to-emerald-300 rounded-full" />
                 </div>
               </div>
 

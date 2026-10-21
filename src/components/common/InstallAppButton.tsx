@@ -28,9 +28,15 @@ interface Props {
    * and shows just the icon. ARIA label is preserved either way.
    */
   iconOnly?: boolean
+  /**
+   * Icon-only below the `sm` breakpoint, icon + label from `sm` up. Keeps
+   * the landing nav from overflowing on 360px phones (the aria-label stays
+   * either way) while the touch target stays 44×44.
+   */
+  iconOnlyMobile?: boolean
 }
 
-export function InstallAppButton({ className, iconOnly = false }: Props) {
+export function InstallAppButton({ className, iconOnly = false, iconOnlyMobile = false }: Props) {
   const t = useT()
   const [available, setAvailable] = useState<InstallKind | null>(null)
 
@@ -58,11 +64,11 @@ export function InstallAppButton({ className, iconOnly = false }: Props) {
       aria-label={label}
       className={
         className ??
-        'inline-flex items-center gap-1.5 text-xs sm:text-sm border border-white/15 bg-white/5 hover:bg-white/10 text-white/90 font-medium px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-md sm:rounded-lg transition-colors min-h-[36px] sm:min-h-[40px]'
+        'inline-flex items-center justify-center gap-1.5 text-xs sm:text-sm border border-white/15 bg-white/5 hover:bg-white/10 text-white/90 font-medium px-2.5 sm:px-3 rounded-md sm:rounded-lg transition-colors min-h-[44px] min-w-[44px] sm:min-w-0 touch-manipulation max-[339px]:hidden'
       }
     >
       <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-      {!iconOnly && <span>{label}</span>}
+      {!iconOnly && <span className={iconOnlyMobile ? 'hidden sm:inline' : undefined}>{label}</span>}
     </button>
   )
 }

@@ -57,6 +57,7 @@ const FREE_FEATURE_KEYS: TranslationKey[] = [
   'pricing.free_f5',
   'pricing.free_f8',                  // Mata-Dívidas (1 dívida) — teaser into Premium
   'pricing.free_f6',
+  'pricing.free_f9',                  // Certificados verificáveis nos 3 cursos grátis
 ]
 
 export async function LandingPricing() {

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Crown, Lock, Sparkles, Check, ArrowRight, Users } from 'lucide-react'
+import { Crown, Lock, Sparkles, Check, ArrowRight } from 'lucide-react'
 
 /**
  * PremiumFeatureLock — shared paywall used by full-page Premium features.
@@ -12,9 +12,9 @@ import { Crown, Lock, Sparkles, Check, ArrowRight, Users } from 'lucide-react'
  *     losing ~40% of paywall views in PostHog funnels).
  *   - Added a "less than a coffee" price anchor right below the button —
  *     cognitive compression from €-per-month to a lived daily cost.
- *   - Added social-proof chip ("+1.200 já fizeram upgrade") because the
- *     teaser-paywall literature is consistent: a visible signal of peer
- *     behaviour lifts conversion 8-20% on consumer SaaS.
+ *   - (Oct/2026) The social-proof chip ("+1.200 já fizeram upgrade") was
+ *     REMOVED: the number was fabricated. Don't add peer-count chips back
+ *     unless they come from real data.
  *   - Added a secondary link ("ver tudo o que incluo") for the hesitant
  *     visitor. Without it, the only exit was closing the tab.
  *
@@ -137,14 +137,10 @@ export function PremiumFeatureLock({
               : '€3,33/mês no anual · menos que um café · cancelas quando quiseres'}
           </p>
 
-          {/* Social proof + secondary link. Not a decorative afterthought
-              — these two together lift paywall conversion materially in
-              PostHog A/B tests. */}
+          {/* Secondary link for the hesitant visitor. NO user-count chip here:
+              the old "+1.200 já fizeram upgrade" was fabricated (Omnibus /
+              DL 109-G/2021) — never reintroduce numbers that aren't real. */}
           <div className="mt-5 pt-4 border-t border-white/10 space-y-3">
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/55">
-              <Users className="w-3 h-3 text-emerald-400" />
-              <span>+1.200 utilizadores já fizeram upgrade</span>
-            </div>
             <Link
               href="/#precos"
               className="inline-block text-[11px] font-semibold text-purple-300 hover:text-purple-200 transition-colors"
