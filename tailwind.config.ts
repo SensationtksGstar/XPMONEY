@@ -9,6 +9,18 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Escala de opacidade alargada: o default do Tailwind salta de 0 para 5,
+      // pelo que bg-white/3, border-white/8, etc. (86 usos) NAO geravam CSS e
+      // skeletons/estados selecionados ficavam sem fundo.
+      opacity: {
+        2:  '0.02',
+        3:  '0.03',
+        4:  '0.04',
+        6:  '0.06',
+        8:  '0.08',
+        12: '0.12',
+        22: '0.22',
+      },
       colors: {
         // XP Money Design System — Apple-calm pass (July 2026)
         // Neutral surface ladder: 90% of chrome lives on these. Elevation =
