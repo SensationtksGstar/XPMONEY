@@ -64,7 +64,10 @@ float fbm(vec2 p) {
 // ── 1. Neon Grid ─────────────────────────────────────────────────────
 // Tron-style perspective floor receding into a green horizon. Mouse
 // brightens a localised patch of the grid to simulate "cursor light".
-const NEON_GRID = HEADER + HELPERS + /* glsl */ `
+// Export nomeado: o caminho quente (NeonShaderLayer) importa so este e nao o
+// array SHADERS (que referencia os 5 shaders). Os outros 4 ficam como seed
+// de um futuro theme picker.
+export const NEON_GRID = HEADER + HELPERS + /* glsl */ `
 void main() {
   vec2 fragCoord = gl_FragCoord.xy;
   vec2 uv = fragCoord / iResolution;

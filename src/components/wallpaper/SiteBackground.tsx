@@ -2,43 +2,47 @@
 
 import { useEffect, useState } from 'react'
 import dynamic                   from 'next/dynamic'
-import { SHADERS }               from './shaders'
+import { usePathname }           from 'next/navigation'
 
-// Dynamic-import the WebGL canvas. ShaderCanvas pulls in WebGL2 setup,
-// uniform-binding plumbing and a rAF loop — ~10-20 KB gzipped of code
-// the mobile fallback never executes. Keeping it out of the initial
-// bundle is the biggest mobile-bundle win on this component. SHADERS
-// itself is just GLSL string constants (~3 KB total) so we keep that
-// static for simpler typing.
-const ShaderCanvas = dynamic(
-  () => import('./ShaderCanvas').then(m => m.ShaderCanvas),
+// O shader (WebGL2 + loop rAF + GLSL) vem num chunk proprio, so carregado em
+// desktop de ponteiro fino e fora das rotas da app. O mobile nunca o descarrega.
+const NeonShaderLayer = dynamic(
+  () => import('./NeonShaderLayer').then(m => m.NeonShaderLayer),
   { ssr: false },
 )
+
+// Rotas da app: o .dashboard-bg e opaco e tapa por completo o wallpaper, por
+// isso correr o shader ai seria GPU gasta sem ninguem o ver. /onboarding fica
+// de fora da lista de proposito: o seu <main> e transparente, o wallpaper ve-se.
+const APP_ROUTE_PREFIXES = [
+  '/dashboard', '/transactions', '/goals', '/missions', '/contas',
+  '/orcamento', '/dividas', '/perspetiva', '/simulador', '/cursos',
+  '/badges', '/voltix', '/settings', '/sign-in', '/sign-up',
+] as const
+
+function isAppRoute(pathname: string | null): boolean {
+  if (!pathname) return false
+  return APP_ROUTE_PREFIXES.some(p => pathname === p || pathname.startsWith(p + '/'))
+}
 
 /**
  * SiteBackground — fullscreen fixed Neon Grid behind every page.
  *
- * Mobile-aware (April 2026):
- *   The WebGL2 fragment shader runs at 60 fps and is the single most
- *   expensive piece of "always-on" client code. On low-end Android it
- *   adds 200-400 ms to first interaction and noticeably warms the
- *   battery. We measured the regression with PostHog and the
- *   bounce-rate-on-mobile delta was non-trivial.
- *
- *   Mitigation: detect mobile at hydrate time and replace the canvas
- *   with a tuned static CSS gradient that visually approximates the
- *   neon-grid mood (deep navy → emerald rim) without burning a GPU
- *   cycle. Desktop and tablets ≥1024 px keep the live shader.
+ * Arquitetura (Out 2026, sem CLS):
+ *   - A camada de gradiente estatico renderiza SEMPRE, pintada desde o SSR,
+ *     sem depender de estado. E a unica camada em mobile / ponteiro grosseiro
+ *     e nas rotas da app.
+ *   - Em desktop (>=1024px, pointer fine) e fora das rotas da app, o shader
+ *     monta numa camada IRMA por cima, com opacity 0 e fade-in quando o
+ *     primeiro frame esta pronto. Antes, a subarvore era trocada quando o
+ *     media query resolvia e o React movia nos (CLS 0,23 em desktop).
  *
  * Stacking note (unchanged): fixed + z-0 + pointer-events-none, with
  * the page content wrapped in a relative z-10 div in the root layout
  * so navigation never lands behind the wallpaper.
  */
 export function SiteBackground() {
-  // Default to "small screen" so SSR and the very first paint render the
-  // cheap CSS path. After hydration we promote to the WebGL canvas if the
-  // viewport is wide enough. This mirrors how Vercel's own marketing site
-  // feature-detects expensive backgrounds.
+  const pathname = usePathname()
   const [isLargeScreen, setIsLargeScreen] = useState(false)
 
   useEffect(() => {
@@ -49,61 +53,40 @@ export function SiteBackground() {
     return () => mq.removeEventListener('change', apply)
   }, [])
 
-  const neon = SHADERS.find(s => s.id === 'neon')
-  if (!neon) return null
+  const showShader = isLargeScreen && !isAppRoute(pathname)
 
-  // Mobile / tablet / coarse-pointer fallback: a static layered gradient
-  // that hints at the neon grid (radial emerald glow + deep navy
-  // perspective fade) but ships ZERO JS frames. ~6 KB of CSS-only
-  // elements, no canvas, no rAF, no WebGL context.
-  if (!isLargeScreen) {
-    return (
-      <div
-        aria-hidden
-        className="fixed inset-0 z-0 pointer-events-none"
-      >
-        {/* Base deep navy fill (matches body bg) */}
-        <div className="absolute inset-0 bg-surface-0" />
-        {/* Top horizon glow — emerald hint, fakes the grid vanishing point */}
-        <div
-          className="absolute inset-x-0 top-1/3 h-[55vh]"
-          style={{
-            background:
-              'radial-gradient(ellipse 100% 60% at 50% 50%, rgba(39,194,107,0.12) 0%, rgba(39,194,107,0.04) 35%, transparent 70%)',
-          }}
-        />
-        {/* Faint perspective lines — pure CSS, repeating linear gradient.
-            Half-screen height + bottom-anchored so it reads like the
-            ground plane in the desktop shader. */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-1/2 opacity-40"
-          style={{
-            background:
-              'repeating-linear-gradient(to bottom, transparent 0px, transparent 26px, rgba(39,194,107,0.06) 26px, rgba(39,194,107,0.06) 27px)',
-            maskImage:
-              'linear-gradient(to top, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)',
-            WebkitMaskImage:
-              'linear-gradient(to top, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)',
-          }}
-        />
-        {/* Same dim veil as desktop so on-top copy contrast matches */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-surface-0/30 to-surface-0/60" />
-      </div>
-    )
-  }
-
-  // Desktop fine-pointer path — live cursor-reactive WebGL shader.
   return (
     <div
       aria-hidden
       className="fixed inset-0 z-0 pointer-events-none"
     >
-      <ShaderCanvas
-        fragment={neon.fragment}
-        interactive="window"
-        className="absolute inset-0 w-full h-full"
-        ariaLabel=""
+      {/* Base deep navy fill (matches body bg) */}
+      <div className="absolute inset-0 bg-surface-0" />
+      {/* Top horizon glow — emerald hint, fakes the grid vanishing point */}
+      <div
+        className="absolute inset-x-0 top-1/3 h-[55vh]"
+        style={{
+          background:
+            'radial-gradient(ellipse 100% 60% at 50% 50%, rgba(39,194,107,0.12) 0%, rgba(39,194,107,0.04) 35%, transparent 70%)',
+        }}
       />
+      {/* Faint perspective lines — pure CSS, repeating linear gradient.
+          Half-screen height + bottom-anchored so it reads like the
+          ground plane in the desktop shader. */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-1/2 opacity-40"
+        style={{
+          background:
+            'repeating-linear-gradient(to bottom, transparent 0px, transparent 26px, rgba(39,194,107,0.06) 26px, rgba(39,194,107,0.06) 27px)',
+          maskImage:
+            'linear-gradient(to top, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)',
+          WebkitMaskImage:
+            'linear-gradient(to top, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)',
+        }}
+      />
+      {/* Shader por cima (so desktop, fora da app); fade-in interno. */}
+      {showShader && <NeonShaderLayer />}
+      {/* Same dim veil on every path so on-top copy contrast matches */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-surface-0/30 to-surface-0/60" />
     </div>
   )

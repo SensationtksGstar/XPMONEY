@@ -49,6 +49,8 @@ interface Props {
   interactive?: boolean | 'window'
   className?: string
   ariaLabel?: string
+  /** Chamado uma vez, depois do primeiro frame desenhado (para fade-in). */
+  onReady?:   () => void
 }
 
 export function ShaderCanvas({
@@ -57,8 +59,12 @@ export function ShaderCanvas({
   interactive = true,
   className   = '',
   ariaLabel,
+  onReady,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Ref para o callback nao entrar nas deps do efeito (nao recria o contexto GL).
+  const onReadyRef = useRef(onReady)
+  useEffect(() => { onReadyRef.current = onReady })
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -120,10 +126,13 @@ export function ShaderCanvas({
     const uRes   = gl.getUniformLocation(prog, 'iResolution')
     const uMouse = gl.getUniformLocation(prog, 'iMouse')
 
-    // ── Resize (DPR-capped at 2 so mobile GPUs survive) ───────────
+    // ── Resize ─────────────────────────────────────────────────────
+    // Fundo de ecra inteiro, de baixo contraste: renderizar a 0.75x do pixel
+    // CSS (nunca acima de 1x) poupa GPU sem diferenca visivel, e o canvas e
+    // esticado por CSS.
     const resize = () => {
       const rect = canvas.getBoundingClientRect()
-      const dpr  = Math.min(window.devicePixelRatio || 1, 2)
+      const dpr  = Math.min(window.devicePixelRatio || 1, 1) * 0.75
       const w    = Math.max(1, Math.floor(rect.width  * dpr))
       const h    = Math.max(1, Math.floor(rect.height * dpr))
       if (canvas.width !== w || canvas.height !== h) {
@@ -164,16 +173,23 @@ export function ShaderCanvas({
     const reduced = typeof window !== 'undefined'
       && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
+    let readyFired = false
     const draw = (t: number) => {
       gl.uniform1f(uTime, (t - start) / 1000)
       gl.uniform2f(uRes, canvas.width, canvas.height)
       gl.uniform2f(uMouse, mouse.x, mouse.y)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+      if (!readyFired) {
+        readyFired = true
+        onReadyRef.current?.()
+      }
     }
 
+    // ~30 fps: desenha so frames alternados.
+    let frame = 0
     const loop = (t: number) => {
       if (!running) return
-      draw(t)
+      if ((frame++ & 1) === 0) draw(t)
       raf = requestAnimationFrame(loop)
     }
 
