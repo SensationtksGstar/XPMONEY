@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { Mission } from '@/types'
 
-async function fetchMissions(): Promise<Mission[]> {
+export async function fetchMissions(): Promise<Mission[]> {
   const res = await fetch('/api/missions')
   if (!res.ok) return []
   const { data } = await res.json()

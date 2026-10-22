@@ -6,6 +6,7 @@ import { Sparkles, MessageCircle } from 'lucide-react'
 import { useVoltix } from '@/hooks/useVoltix'
 import { useFinancialScore } from '@/hooks/useFinancialScore'
 import { useSpendForecast } from '@/hooks/useSpendForecast'
+import { useMascotDayContext } from '@/hooks/useMascotDayContext'
 import { approxEur } from '@/lib/spendForecast'
 import { MOOD_PALETTE } from './mascotMeta'
 import {
@@ -57,8 +58,14 @@ interface Props {
 
 /** Balão de fala do mascote — pop suave a cada frase nova (remount por key). */
 function SpeechBubble({
-  text, tail, className,
-}: { text: string; tail: 'left' | 'top'; className?: string }) {
+  text, tail, className, cta,
+}: {
+  text: string
+  tail: 'left' | 'top'
+  className?: string
+  /** Link opcional dentro do balão (ex.: missão pronta → /missions). */
+  cta?: { href: string; label: string }
+}) {
   return (
     <div
       className={cn(
@@ -84,6 +91,14 @@ function SpeechBubble({
         )}
       />
       {text}
+      {cta && (
+        <Link
+          href={cta.href}
+          className="mt-1 flex min-h-[44px] items-center justify-center sm:justify-start gap-1 text-xs font-semibold text-green-400 hover:text-green-300 transition-colors touch-manipulation"
+        >
+          {cta.label} <span aria-hidden>→</span>
+        </Link>
+      )}
     </div>
   )
 }
@@ -94,6 +109,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
   const { voltix, loading } = useVoltix(userId)
   const { score } = useFinancialScore(userId)
   const { forecast } = useSpendForecast()   // premium-only fetch (enabled: isPaid)
+  const day = useMascotDayContext()          // fome / comeu hoje / missão pronta
   const { t, locale } = useLocale()
 
   const [tapCount, setTapCount] = useState(0)
@@ -152,8 +168,10 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
     score: score?.score ?? null,
     tapCount,
     forecastDelta,
+    ...day,
   })
   const speech = t(line.key, line.params)
+  const cta = line.href && line.ctaKey ? { href: line.href, label: t(line.ctaKey) } : undefined
 
   function handleTap() {
     setTapped(true)
@@ -219,6 +237,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
             <SpeechBubble
               key={`${line.key}-${tapCount}`}
               text={speech}
+              cta={cta}
               tail="left"
               className="mb-3 mx-auto sm:mx-0 max-w-md"
             />
@@ -316,6 +335,7 @@ export function VoltixWidget({ userId, variant, expanded }: Props) {
       <SpeechBubble
         key={`${line.key}-${tapCount}`}
         text={speech}
+        cta={cta}
         tail="top"
         className="mb-3 max-w-[240px]"
       />

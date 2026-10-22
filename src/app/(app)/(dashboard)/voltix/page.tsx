@@ -22,6 +22,8 @@ import { useT } from '@/lib/i18n/LocaleProvider'
 import type { TranslationKey } from '@/lib/i18n/translations'
 import { useFinancialScore } from '@/hooks/useFinancialScore'
 import { mascotLine } from '@/lib/mascotSpeak'
+import { useMascotDayContext } from '@/hooks/useMascotDayContext'
+import Link from 'next/link'
 import type { VoltixMood } from '@/types'
 
 /* ── Mood config ─────────────────────────────────────────────────────
@@ -41,6 +43,7 @@ export default function VoltixPage() {
   const { voltix, loading } = useVoltix(user?.id ?? '')
   const { xp }              = useXP(user?.id ?? '')
   const { score }           = useFinancialScore(user?.id ?? '')
+  const day                 = useMascotDayContext()
   const t                   = useT()
   const [msgIdx, setMsgIdx] = useState(0)
   const [tapped, setTapped] = useState(false)
@@ -89,6 +92,7 @@ export default function VoltixPage() {
     mood, evo, streak,
     score: score?.score ?? null,
     tapCount: msgIdx,
+    ...day,
   })
 
   // Creature to display (real or preview)
@@ -180,6 +184,15 @@ export default function VoltixPage() {
         >
           {t(line.key, line.params)}
         </p>
+        {line.href && line.ctaKey && (
+          <Link
+            href={line.href}
+            onClick={e => e.stopPropagation()}
+            className="relative z-10 mb-3 -mt-2 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-green-400 hover:text-green-300 transition-colors touch-manipulation"
+          >
+            {t(line.ctaKey)} <span aria-hidden>→</span>
+          </Link>
+        )}
 
         <p className="text-[11px] text-white/22 flex items-center gap-1 relative z-10">
           <MessageCircle className="w-3 h-3" /> {t('voltix.tap_hint')}
