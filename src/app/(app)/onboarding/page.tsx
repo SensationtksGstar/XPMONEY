@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
-import { ArrowLeft, ArrowRight, Check, PlusCircle, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Egg } from 'lucide-react'
 import { track } from '@/lib/posthog'
 import { MascotCreature, type MascotGender } from '@/components/voltix/MascotCreature'
 import { saveMascotGenderLocal } from '@/lib/mascotGender'
 import { parseAmountLocale } from '@/lib/safeNumber'
+import { stripThousandsOnly } from '@/lib/tools/amountText'
 import { Spinner } from '@/components/ui/Spinner'
-import { useT } from '@/lib/i18n/LocaleProvider'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
+import { formatCurrency } from '@/lib/utils'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
 /**
@@ -19,9 +21,16 @@ import type { TranslationKey } from '@/lib/i18n/translations'
  * perguntas pessoais, cada resposta é 1 toque e auto-avança.
  *
  * O onboarding é a única janela em que o utilizador responde a perguntas
- * de borla — os ecrãs 2/3/6 (motivação, fase de vida, como nos encontrou)
+ * de borla — os ecrãs 2/6 (motivação; fase de vida + como nos encontrou)
  * alimentam `users.onboarding_profile` (jsonb, agregável) para o dono
  * conhecer quem chega. Skip grava null: "não quis responder" também é dado.
+ *
+ * "Dia 1 em 90 segundos" (out. 2026): o ecrã 3 pergunta o rendimento mensal
+ * líquido. O servidor regista-o como a 1.ª receita (createTransaction, mesma
+ * cadeia do POST /api/transactions) → score ≥ 18 → o ovo choca ao entrar no
+ * dashboard (hatch 1→2 isento de cooldown). Uma 1.ª DESPESA dava score ≈13
+ * e o ovo ficava parado. A fase de vida passou para o ecrã 6, em chips
+ * compactos ao lado da origem — 6 ecrãs na mesma, nenhum dado perdido.
  */
 
 type Option = { id: string; icon: string; textKey: TranslationKey }
@@ -82,6 +91,66 @@ function AskBubble({ text }: { text: string }) {
   )
 }
 
+/** Teto sensato para o rendimento (o servidor recusa acima de 10M). */
+const INCOME_MAX = 10_000_000
+
+/** Mesma chave do MascotEvolutionWatcher: sem valor guardado, o 1.º
+ *  encontro hidrata em silêncio e o hatch do dia 1 passava sem cinematic. */
+const LAST_EVO_KEY = 'xpmoney:mascot_last_evo'
+
+/** Montantes do onboarding (rendimento + meta): "1.300" é mil e trezentos
+ *  para quem escreve em PT, não 1,30 — parseAmountLocale sozinho lê um
+ *  separador isolado como decimal. stripThousandsOnly trata 1 separador +
+ *  exatamente 3 dígitos como milhar; "1.300,50" e "12,5" passam intactos. */
+function parseOnboardingAmount(raw: string): number {
+  return parseAmountLocale(stripThousandsOnly(raw))
+}
+
+/** Linha de opção partilhada (lista vertical, 1 toque). Module scope: um
+ *  componente declarado dentro do pai muda de tipo a cada render. */
+function OptionRow({
+  opt, label, selected, onSelect,
+}: { opt: Option; label: string; selected: boolean; onSelect: (id: string) => void }) {
+  return (
+    <button
+      onClick={() => onSelect(opt.id)}
+      aria-pressed={selected}
+      className={`w-full flex items-center gap-4 min-h-[56px] px-4 rounded-2xl border transition-all text-left active:scale-[0.99] ${
+        selected
+          ? 'border-green-500/60 bg-green-500/10 text-white'
+          : 'border-white/10 bg-surface-1 text-white/75 hover:border-white/20 hover:text-white'
+      }`}
+    >
+      <span className="text-2xl" aria-hidden>{opt.icon}</span>
+      <span className="font-medium text-sm">{label}</span>
+      {selected && <Check className="w-4 h-4 text-green-400 ml-auto flex-shrink-0" />}
+    </button>
+  )
+}
+
+/** Chip compacto (ecrã 6): toggle, 44px de alvo, sem auto-avanço. Em module
+ *  scope para o React não desmontar o botão a cada toggle (o foco de teclado
+ *  caía para o <body>). */
+function ChipOption({
+  opt, label, selected, onToggle,
+}: { opt: Option; label: string; selected: boolean; onToggle: (id: string) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(opt.id)}
+      aria-pressed={selected}
+      className={`inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full border text-sm font-medium transition-colors touch-manipulation active:scale-[0.98] ${
+        selected
+          ? 'border-green-500/60 bg-green-500/10 text-white'
+          : 'border-white/10 bg-surface-1 text-white/75 hover:border-white/20 hover:text-white'
+      }`}
+    >
+      <span aria-hidden>{opt.icon}</span>
+      {label}
+    </button>
+  )
+}
+
 /** Cabeçalho-entrevista dos passos ≥2: o ovo escolhido + a pergunta. */
 function MascotAsks({
   gender, question, subtitle,
@@ -103,12 +172,14 @@ function MascotAsks({
 
 export default function OnboardingPage() {
   const { user } = useUser()
-  const t = useT()
+  const { t, locale } = useLocale()
   const [step, setStep]                       = useState<Step>(1)
   const [mascot, setMascot]                   = useState<MascotGender | ''>('')
   const [motivation, setMotivation]           = useState<string>('')
   const [lifeStage, setLifeStage]             = useState<string | null>(null)
   const [goal, setGoal]                       = useState<string>('')
+  const [income, setIncome]                   = useState<string>('')
+  const [incomeError, setIncomeError]         = useState<string | null>(null)
   const [goalAmount, setGoalAmount]           = useState<string>('')
   const [amountError, setAmountError]         = useState<string | null>(null)
   const [discoverySource, setDiscoverySource] = useState<string | null>(null)
@@ -138,15 +209,32 @@ export default function OnboardingPage() {
     advanceAfter(3)
   }
 
-  function handleStageSelect(id: string) {
-    setLifeStage(id)
-    track.onboarding_step(3, { life_stage: id })
-    advanceAfter(4)
+  /** Rendimento válido (> 0, ≤ teto) ou null. Vazio também é null. */
+  function parsedIncome(): number | null {
+    const raw = income.trim()
+    if (!raw) return null
+    const n = parseOnboardingAmount(raw)
+    return Number.isFinite(n) && n > 0 && n <= INCOME_MAX ? n : null
   }
 
-  function handleStageSkip() {
-    setLifeStage(null)
-    track.onboarding_step(3, { life_stage: 'skipped' })
+  /** Passo 3: validação no handler, nunca botão disabled (regra mobile).
+   *  Vazio + Continuar = saltar (não é erro — o "Agora não" é o explícito). */
+  function handleIncomeContinue() {
+    const raw = income.trim()
+    if (raw && parsedIncome() === null) {
+      setIncomeError(t('onboarding.amount_error'))
+      return
+    }
+    setIncomeError(null)
+    // Só o facto, nunca o valor (dado financeiro não vai para analytics).
+    track.onboarding_step(3, { income: raw ? 'given' : 'skipped' })
+    setStep(4)
+  }
+
+  function handleIncomeSkip() {
+    setIncome('')
+    setIncomeError(null)
+    track.onboarding_step(3, { income: 'skipped' })
     setStep(4)
   }
 
@@ -160,7 +248,7 @@ export default function OnboardingPage() {
   function handleAmountContinue() {
     const raw = goalAmount.trim()
     if (raw) {
-      const n = parseAmountLocale(raw)
+      const n = parseOnboardingAmount(raw)
       if (!Number.isFinite(n) || n < 0) {
         setAmountError(t('onboarding.amount_error'))
         return
@@ -183,7 +271,8 @@ export default function OnboardingPage() {
     setLoading(true)
     setErrorMsg(null)
     try {
-      const amountNum = goalAmount.trim() ? parseAmountLocale(goalAmount) : 0
+      const amountNum = goalAmount.trim() ? parseOnboardingAmount(goalAmount) : 0
+      const incomeNum = parsedIncome()
 
       const res = await fetch('/api/onboarding', {
         method: 'POST',
@@ -198,6 +287,7 @@ export default function OnboardingPage() {
           goal,
           goal_amount:      Number.isFinite(amountNum) && amountNum > 0 ? amountNum : 0,
           discovery_source: discoverySource,
+          initial_income:   incomeNum,
         }),
       })
 
@@ -213,6 +303,19 @@ export default function OnboardingPage() {
       }
 
       track.onboarding_completed(motivation)
+      track.onboarding_step(6, { life_stage: lifeStage ?? 'skipped' })
+
+      // O ovo (evo 1) é a forma que o utilizador acabou de ver. Gravar isto
+      // ANTES do dashboard faz o MascotEvolutionWatcher tocar a cinematic do
+      // hatch (1→2) em vez de hidratar em silêncio no 1.º encontro. Só se
+      // ainda não houver valor (nunca rebobinar um dispositivo já usado).
+      try {
+        if (window.localStorage.getItem(LAST_EVO_KEY) === null) {
+          window.localStorage.setItem(LAST_EVO_KEY, '1')
+        }
+      } catch (err) {
+        console.warn('[onboarding] could not seed last evo (storage blocked):', err)
+      }
 
       // Reload Clerk session to pick up publicMetadata changes (best-effort)
       await user?.reload()
@@ -228,26 +331,7 @@ export default function OnboardingPage() {
     }
   }
 
-  /** Linha de opção partilhada (lista vertical, 1 toque). */
-  function OptionRow({
-    opt, selected, onSelect,
-  }: { opt: Option; selected: boolean; onSelect: (id: string) => void }) {
-    return (
-      <button
-        onClick={() => onSelect(opt.id)}
-        aria-pressed={selected}
-        className={`w-full flex items-center gap-4 min-h-[56px] px-4 rounded-2xl border transition-all text-left active:scale-[0.99] ${
-          selected
-            ? 'border-green-500/60 bg-green-500/10 text-white'
-            : 'border-white/10 bg-surface-1 text-white/75 hover:border-white/20 hover:text-white'
-        }`}
-      >
-        <span className="text-2xl" aria-hidden>{opt.icon}</span>
-        <span className="font-medium text-sm">{t(opt.textKey)}</span>
-        {selected && <Check className="w-4 h-4 text-green-400 ml-auto flex-shrink-0" />}
-      </button>
-    )
-  }
+  const incomeValue = parsedIncome()
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
@@ -347,30 +431,56 @@ export default function OnboardingPage() {
             />
             <div className="space-y-3">
               {MOTIVATIONS.map(o => (
-                <OptionRow key={o.id} opt={o} selected={motivation === o.id} onSelect={handleMotivationSelect} />
+                <OptionRow key={o.id} opt={o} label={t(o.textKey)} selected={motivation === o.id} onSelect={handleMotivationSelect} />
               ))}
             </div>
           </div>
         )}
 
-        {/* PASSO 3 — Fase de vida (opcional, saltável) */}
+        {/* PASSO 3 — Rendimento mensal (opcional) → 1.ª receita → o ovo choca */}
         {step === 3 && (
           <div key="step3" className="animate-fade-in-up">
             <MascotAsks
               gender={askGender}
-              question={t('onboarding.s_stage_title')}
-              subtitle={t('onboarding.s_stage_subtitle')}
+              question={t('onboarding.s_income_title')}
+              subtitle={t('onboarding.s_income_subtitle')}
             />
-            <div className="space-y-3">
-              {LIFE_STAGES.map(o => (
-                <OptionRow key={o.id} opt={o} selected={lifeStage === o.id} onSelect={handleStageSelect} />
-              ))}
+
+            <div className="bg-surface-1 border border-white/10 rounded-2xl p-6 mb-6">
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus-within:border-green-500/50 transition-colors">
+                <span className="text-white/40 font-medium" aria-hidden>€</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9.,]*"
+                  placeholder="1300"
+                  value={income}
+                  onChange={e => { setIncome(e.target.value.replace(/[^\d.,]/g, '')); setIncomeError(null) }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleIncomeContinue() }}
+                  aria-label={t('onboarding.income_label')}
+                  aria-invalid={incomeError ? true : undefined}
+                  aria-describedby={incomeError ? 'onb-income-error' : undefined}
+                  className="flex-1 min-w-0 bg-transparent text-white placeholder-white/30 outline-none text-xl font-bold tabular-nums"
+                  autoFocus
+                />
+              </div>
+              {incomeError && (
+                <p id="onb-income-error" className="text-xs text-red-400 mt-2" role="alert">{incomeError}</p>
+              )}
             </div>
+
             <button
-              onClick={handleStageSkip}
-              className="w-full min-h-[44px] mt-4 text-sm font-medium text-white/50 hover:text-white transition-colors"
+              onClick={handleIncomeContinue}
+              className="w-full flex items-center justify-center gap-2 min-h-[52px] bg-green-500 hover:bg-green-400 text-black font-bold rounded-2xl transition-all active:scale-[0.98]"
             >
-              {t('onboarding.skip')}
+              {t('onboarding.continue')}
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleIncomeSkip}
+              className="w-full min-h-[44px] mt-2 text-sm font-medium text-white/50 hover:text-white transition-colors"
+            >
+              {t('onboarding.amount_skip')}
             </button>
           </div>
         )}
@@ -455,41 +565,53 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* PASSO 6 — Como nos encontraste? + entrada (CTA sempre ativo) */}
+        {/* PASSO 6 — Perfil (fase de vida + origem, ambos opcionais) + entrada */}
         {step === 6 && (
           <div key="step6" className="animate-fade-in-up">
             <MascotAsks
               gender={askGender}
-              question={t('onboarding.s_source_title')}
-              subtitle={t('onboarding.s_source_subtitle')}
+              question={t('onboarding.s_profile_title')}
+              subtitle={t('onboarding.s_profile_subtitle')}
             />
-            <div className="space-y-3 mb-6">
-              {SOURCES.map(o => (
-                <OptionRow
-                  key={o.id}
-                  opt={o}
-                  selected={discoverySource === o.id}
-                  onSelect={id => setDiscoverySource(cur => (cur === id ? null : id))}
-                />
-              ))}
-            </div>
 
-            {/* O que acontece a seguir — um cartão calmo, não dois berrantes */}
-            <div className="bg-surface-1 border border-white/10 rounded-2xl p-4 mb-6 space-y-3">
-              <div className="flex items-center gap-3">
-                <PlusCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white">{t('onboarding.s4_mission_title')}</p>
-                  <p className="text-xs text-white/50 mt-0.5">{t('onboarding.s4_mission_desc')}</p>
-                </div>
+            <fieldset className="mb-5">
+              <legend className="text-sm font-medium text-white/75 mb-3">{t('onboarding.stage_label')}</legend>
+              <div className="flex flex-wrap gap-2">
+                {LIFE_STAGES.map(o => (
+                  <ChipOption
+                    key={o.id}
+                    opt={o}
+                    label={t(o.textKey)}
+                    selected={lifeStage === o.id}
+                    onToggle={id => setLifeStage(cur => (cur === id ? null : id))}
+                  />
+                ))}
               </div>
-              <div className="flex items-center gap-3">
-                <Zap className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white">{t('onboarding.s4_bonus_title')}</p>
-                  <p className="text-xs text-white/50 mt-0.5">{t('onboarding.s4_bonus_desc')}</p>
-                </div>
+            </fieldset>
+
+            <fieldset className="mb-6">
+              <legend className="text-sm font-medium text-white/75 mb-3">{t('onboarding.source_label')}</legend>
+              <div className="flex flex-wrap gap-2">
+                {SOURCES.map(o => (
+                  <ChipOption
+                    key={o.id}
+                    opt={o}
+                    label={t(o.textKey)}
+                    selected={discoverySource === o.id}
+                    onToggle={id => setDiscoverySource(cur => (cur === id ? null : id))}
+                  />
+                ))}
               </div>
+            </fieldset>
+
+            {/* O que acontece a seguir — uma linha calma, ligada ao passo 3 */}
+            <div className="flex items-start gap-3 bg-surface-1 border border-white/10 rounded-2xl p-4 mb-6">
+              <Egg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" aria-hidden />
+              <p className="text-sm text-white/75">
+                {incomeValue !== null
+                  ? t('onboarding.income_ready', { amount: formatCurrency(incomeValue, 'EUR', locale) })
+                  : t('onboarding.income_skipped_hint')}
+              </p>
             </div>
 
             <button

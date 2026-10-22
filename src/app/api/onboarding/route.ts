@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag }             from 'next/cache'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { MISSION_TEMPLATES }         from '@/lib/gamification'
-import { getServerLocale }           from '@/lib/i18n/server'
+import { getServerLocale, getServerT } from '@/lib/i18n/server'
+import { createTransaction }         from '@/lib/createTransaction'
 import { z }                         from 'zod'
 
 // Ids dos ecrãs de perfil (julho 2026). `challenge` legado continua aceite
@@ -17,6 +18,10 @@ const OnboardingSchema = z.object({
   motivation:       z.enum(['debts', 'save_goal', 'track', 'invest', 'curious']).nullish(),
   life_stage:       z.enum(['student', 'first_job', 'independent', 'family', 'pre_retire']).nullish(),
   discovery_source: z.enum(['social', 'search', 'friend', 'blog', 'other']).nullish(),
+  // Rendimento mensal líquido (out. 2026, "dia 1 em 90 segundos"): vira a
+  // 1.ª receita do utilizador → score ≥ 18 → o ovo choca no fim do
+  // onboarding (hatch 1→2 isento de cooldown). Opcional; null = saltou.
+  initial_income:   z.number().positive().max(10_000_000).nullish(),
 })
 
 // Nome + ícone do objetivo semeado. (O antigo `icon: goal.slice(0,2)` gravava
@@ -32,6 +37,78 @@ const GOAL_META: Record<string, { name: string; icon: string }> = {
 }
 
 type UserRow = { id: string } | null
+
+const lisbonToday = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Lisbon',
+  year: 'numeric', month: '2-digit', day: '2-digit',
+})
+
+/**
+ * Cria a 1.ª receita via createTransaction (mesma cadeia do POST
+ * /api/transactions). IDEMPOTENTE: só cria se o utilizador ainda não tiver
+ * NENHUMA transação — re-submeter o onboarding (retry após erro, duplo
+ * envio, onboarding refeito) nunca gera uma 2.ª receita, e quem já registou
+ * movimentos não leva com uma estimativa por cima. Probe com erro → não cria
+ * (fail closed: melhor sem receita do que duplicada). Devolve true se criou.
+ */
+async function seedInitialIncome(
+  db:         ReturnType<typeof createSupabaseAdmin>,
+  internalId: string,
+  amount:     number,
+): Promise<boolean> {
+  const [txProbe, accRes, catRes] = await Promise.all([
+    db.from('transactions').select('id').eq('user_id', internalId).limit(1),
+    db.from('accounts')
+      .select('id, is_default')
+      .eq('user_id', internalId)
+      .order('is_default', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db.from('categories')
+      .select('id, name, transaction_type')
+      .eq('is_default', true)
+      .in('transaction_type', ['income', 'both']),
+  ])
+
+  if (txProbe.error) {
+    console.warn('[onboarding] income idempotency probe failed:', txProbe.error)
+    return false
+  }
+  if ((txProbe.data ?? []).length > 0) return false
+
+  if (accRes.error || !accRes.data) {
+    console.warn('[onboarding] income: no account to attach to:', accRes.error)
+    return false
+  }
+
+  // Categoria seed 'Salário' (database/schema.sql); fallback para qualquer
+  // categoria default de receita se o seed tiver sido renomeado.
+  const cats = (catRes.data ?? []) as { id: string; name: string; transaction_type: string }[]
+  if (catRes.error) console.warn('[onboarding] income categories lookup failed:', catRes.error)
+  const category =
+    cats.find(c => c.name === 'Salário') ??
+    cats.find(c => c.transaction_type === 'income') ??
+    cats[0]
+  if (!category) {
+    console.warn('[onboarding] income: no default income category found')
+    return false
+  }
+
+  const t = await getServerT()
+  const result = await createTransaction(db, internalId, {
+    account_id:  accRes.data.id,
+    category_id: category.id,
+    type:        'income',
+    amount:      Math.round(amount * 100) / 100,
+    description: t('onboarding.income_tx_desc'),
+    date:        lisbonToday.format(new Date()),
+  })
+  if (!result.ok) {
+    console.warn('[onboarding] income createTransaction failed:', result.status, result.error)
+    return false
+  }
+  return true
+}
 
 /**
  * Insert/update em `users` com fallback de colunas opcionais: as colunas
@@ -88,6 +165,7 @@ export async function POST(req: NextRequest) {
     goal:             parsed.data.goal || null,
     goal_amount:      parsed.data.goal_amount || 0,
     discovery_source: parsed.data.discovery_source ?? null,
+    gave_income:      !!parsed.data.initial_income,
     challenge_legacy: parsed.data.challenge || null,
     answered_at:      new Date().toISOString(),
   }
@@ -262,6 +340,19 @@ export async function POST(req: NextRequest) {
     if (error) console.warn('[onboarding] badge upsert failed:', error)
   }
 
+  // 1.ª receita (opcional) — DEPOIS de conta, xp_progress, voltix_states e
+  // missões existirem, porque a cadeia (awardXP / recalculateScore →
+  // maybeEvolveMascot / updateMissionProgress) lê essas rows. Best-effort:
+  // o onboarding já está persistido, uma falha aqui nunca o 500-a.
+  let incomeCreated = false
+  if (parsed.data.initial_income) {
+    try {
+      incomeCreated = await seedInitialIncome(db, user.id, parsed.data.initial_income)
+    } catch (err) {
+      console.warn('[onboarding] initial income failed:', err)
+    }
+  }
+
   // Update Clerk publicMetadata — flag + respostas de perfil (backup sem DDL:
   // funciona hoje mesmo sem a migração onboarding_profile e permite
   // re-hidratar a coluna mais tarde). Best-effort: uma falha aqui não pode
@@ -287,5 +378,5 @@ export async function POST(req: NextRequest) {
   // insert — drop any cached entry so every route sees the new user now.
   revalidateTag(`user-id-${userId}`)
 
-  return NextResponse.json({ success: true, error: null })
+  return NextResponse.json({ success: true, income_created: incomeCreated, error: null })
 }
