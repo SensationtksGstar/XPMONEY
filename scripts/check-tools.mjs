@@ -13,6 +13,10 @@ import { compute503020 } from '../src/lib/tools/budget503020.ts'
 import { computeSubsidioNatal, splitPlan } from '../src/lib/tools/subsidioNatal.ts'
 import { stripThousandsOnly } from '../src/lib/tools/amountText.ts'
 import { parseAmountLocale } from '../src/lib/safeNumber.ts'
+import { simulatePlan, compareStrategies, orderByStrategy } from '../src/lib/killDebt.ts'
+import {
+  toSimDebts, whatIfLadder, plansEquivalent, savingsVsBase, MAX_DEBTS,
+} from '../src/lib/tools/mataDividas.ts'
 
 let failures = 0
 function check(name, ok, detail = '') {
@@ -123,6 +127,79 @@ console.log('stripThousandsOnly + parseAmountLocale')
   }
   check('percentagem "7.500" nao e milhar (7.5)', eq(parse('7.500', true), 7.5), String(parse('7.500', true)))
   check('percentagem "7,500" nao e milhar (7.5)', eq(parse('7,500', true), 7.5), String(parse('7,500', true)))
+}
+
+// ── Mata-Dívidas público (Avalanche vs Bola de Neve) ────────────────────
+// A matemática é a do killDebt.ts (também guardada em check-killdebt.mjs);
+// aqui fixamos o caso-ouro da ferramenta pública e os helpers à volta.
+console.log('mata-dividas (killDebt + helpers)')
+{
+  const example = toSimDebts([
+    { name: 'Cartão',  balance: 500,  ratePct: 20, min: 50  },
+    { name: 'Crédito', balance: 5000, ratePct: 10, min: 100 },
+  ])
+  const ava = simulatePlan(example, 0, 'avalanche')
+  check('exemplo avalanche extra 0: 45 meses', ava.monthsToFree === 45, String(ava.monthsToFree))
+  check('exemplo avalanche extra 0: juros 1126,94', eq(ava.totalInterest, 1126.94), String(ava.totalInterest))
+  check('exemplo: nao infinito', ava.infinite === false)
+
+  const cmp = compareStrategies(example, 0)
+  check('exemplo: avalanche e bola de neve equivalentes (cartao e o mais pequeno e o mais caro)',
+    plansEquivalent(cmp.avalanche, cmp.snowball))
+  const order = orderByStrategy(example, 'avalanche').map(d => d.name)
+  check('exemplo: ordem de ataque Cartão -> Crédito', order.join('>') === 'Cartão>Crédito', order.join('>'))
+
+  // Mais extra nunca piora: meses e juros descem (ou ficam).
+  const e100 = simulatePlan(example, 100, 'avalanche')
+  check('extra 100: menos meses que extra 0', e100.monthsToFree < ava.monthsToFree, String(e100.monthsToFree))
+  check('extra 100: menos juros que extra 0', e100.totalInterest < ava.totalInterest, String(e100.totalInterest))
+  const sv = savingsVsBase(ava, e100)
+  check('extra 100: savings kind=saves', sv.kind === 'saves' && sv.months > 0 && sv.interest > 0, JSON.stringify(sv))
+  check('extra 100: savings bate com a diferenca de juros', eq(sv.interest, Math.round((ava.totalInterest - e100.totalInterest) * 100) / 100))
+}
+{
+  // Metodos diferentes: a dívida pequena é barata (5%), a grande é cara (25%).
+  const d = toSimDebts([
+    { name: 'Pequena', balance: 800,  ratePct: 5,  min: 40 },
+    { name: 'Grande',  balance: 4000, ratePct: 25, min: 100 },
+  ])
+  const c = compareStrategies(d, 100)
+  check('metodos distintos: nao equivalentes', !plansEquivalent(c.avalanche, c.snowball))
+  check('avalanche paga menos juros que a bola de neve aqui', c.avalanche.totalInterest < c.snowball.totalInterest,
+    `${c.avalanche.totalInterest} vs ${c.snowball.totalInterest}`)
+  check('ordem avalanche = maior taxa primeiro', orderByStrategy(d, 'avalanche')[0].name === 'Grande')
+  check('ordem bola de neve = menor saldo primeiro', orderByStrategy(d, 'snowball')[0].name === 'Pequena')
+}
+{
+  // Mínimo que não cobre o juro => infinite, e extra suficiente resolve.
+  const d = toSimDebts([{ name: 'Cartão', balance: 5000, ratePct: 24, min: 50 }])
+  const p0 = simulatePlan(d, 0, 'avalanche')
+  check('minimo < juro: infinite', p0.infinite === true)
+  const p1 = simulatePlan(d, 200, 'avalanche')
+  check('com extra suficiente deixa de ser infinito', p1.infinite === false && p1.monthsToFree > 0)
+  check('savingsVsBase: base infinita + cenario finito = ends', savingsVsBase(p0, p1).kind === 'ends')
+  check('savingsVsBase: cenario infinito = never', savingsVsBase(p1, p0).kind === 'never')
+  const one = compareStrategies(d, 200)
+  check('um so cartao: estrategias equivalentes', plansEquivalent(one.avalanche, one.snowball))
+}
+{
+  // Uma dívida sem juros e sem prestação nunca fecha (infinite), nunca NaN.
+  const d = toSimDebts([{ name: 'Amigo', balance: 300, ratePct: 0, min: 0 }])
+  const p = simulatePlan(d, 0, 'avalanche')
+  check('sem juros e sem pagamento: infinite, sem NaN', p.infinite === true && Number.isFinite(p.totalInterest))
+  const q = simulatePlan(d, 100, 'avalanche')
+  check('0% e extra 100 sobre 300: 3 meses, 0 juros', q.monthsToFree === 3 && q.totalInterest === 0, JSON.stringify(q))
+}
+{
+  const l0 = whatIfLadder(0)
+  check('escada com extra 0: 0/50/100/200', l0.join(',') === '0,50,100,200', l0.join(','))
+  const l1 = whatIfLadder(75)
+  check('escada com extra 75: inclui o atual, ordenada', l1.join(',') === '0,50,75,100,200', l1.join(','))
+  const l2 = whatIfLadder(100)
+  check('escada com extra 100: sem duplicados', l2.join(',') === '0,50,100,200', l2.join(','))
+  const l3 = whatIfLadder(NaN)
+  check('escada com NaN: so os fixos', l3.join(',') === '0,50,100,200', l3.join(','))
+  check('limite de 6 dividas', MAX_DEBTS === 6)
 }
 
 if (failures > 0) {

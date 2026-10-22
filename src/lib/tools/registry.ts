@@ -38,9 +38,16 @@ export const TOOLS: readonly ToolEntry[] = [
     descKey:  'tools.503020.card_desc',
     updated:  '2026-10-20',
   },
+  {
+    id:       'mata-dividas',
+    slug:     'mata-dividas',
+    titleKey: 'tools.dividas.card_title',
+    descKey:  'tools.dividas.card_desc',
+    updated:  '2026-10-22',
+  },
 ]
 
-export const TOOLS_HUB_UPDATED = '2026-10-20'
+export const TOOLS_HUB_UPDATED = '2026-10-22'
 
 export function toolPath(slug: string): string {
   return `/ferramentas/${slug}`
