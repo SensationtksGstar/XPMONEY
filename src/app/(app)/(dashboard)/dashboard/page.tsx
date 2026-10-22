@@ -6,6 +6,7 @@ import { PlusCircle, ChevronDown, BarChart3 } from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
 import { useQueryClient }              from '@tanstack/react-query'
 import { useVoltix }                   from '@/hooks/useVoltix'
+import { xpQueryOptions }              from '@/hooks/useXP'
 import { useToast }                    from '@/components/ui/toaster'
 import { EVO_NAMES, PENNY_EVO_NAMES }  from '@/components/voltix/mascotMeta'
 import type { MascotGender }           from '@/types'
@@ -19,9 +20,10 @@ import { useT }                        from '@/lib/i18n/LocaleProvider'
 import Link                            from 'next/link'
 
 // ── Dynamic imports — only load when needed (reduces mobile JS) ──────────────
-// PeriodFilter pulls framer-motion (~35 KB gz); it was the ONLY statically-
-// reachable framer-motion import on the route, single-handedly defeating the
-// careful dynamic-importing of every other motion consumer below.
+// O glance (tudo acima do expander "Análise detalhada") NÃO importa
+// framer-motion (~36 kB gz): PeriodFilter e MonthlySummary animam com CSS
+// (out. 2026). A lib só carrega com a cinemática de evolução e com os widgets
+// do expander. Não reintroduzir `framer-motion` num componente do glance.
 const PeriodFilter = dynamic(
   () => import('@/components/dashboard/PeriodFilter').then(m => ({ default: m.PeriodFilter })),
   { ssr: false, loading: () => <div className="h-10 bg-white/5 rounded-xl animate-pulse" /> },
@@ -116,13 +118,16 @@ export default function DashboardPage() {
     const key = `xpm_welcomed_${user.id}`
     if (localStorage.getItem(key)) return
 
-    const controller = new AbortController()
+    let cancelled = false
 
-    fetch('/api/xp', { signal: controller.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(res => {
-        const xpTotal = res?.data?.xp_total ?? 0
-        const level   = res?.data?.level ?? 1
+    // Mesmas opções que o useXP (XPProgressBar), importadas do hook: o React
+    // Query reaproveita o pedido em voo ou a cache em vez de um 2.º GET
+    // /api/xp cru, e o fetch leva o `signal` da query.
+    queryClient.fetchQuery(xpQueryOptions)
+      .then(xp => {
+        if (cancelled) return
+        const xpTotal = xp?.xp_total ?? 0
+        const level   = xp?.level ?? 1
         const isBrandNew = xpTotal === 0 && level === 1
 
         // Delay so daily-checkin celebration (if any) shows first
@@ -147,10 +152,10 @@ export default function DashboardPage() {
         localStorage.setItem(key, String(Date.now()))
       })
       .catch(err => {
-        if (err?.name !== 'AbortError') console.warn('[welcome] failed:', err)
+        console.warn('[welcome] failed:', err)
       })
 
-    return () => controller.abort()
+    return () => { cancelled = true }
   }, [user?.id, firstName])
 
   /* ── daily check-in ── */

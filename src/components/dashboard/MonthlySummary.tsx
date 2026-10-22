@@ -1,7 +1,6 @@
 'use client'
 
 import { TrendingUp, TrendingDown, PiggyBank, Info, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
@@ -42,23 +41,20 @@ function DeltaBadge({ pct, kind }: { pct: number; kind: 'income' | 'expense' | '
 }
 
 /**
- * Card animation — stagger children so they slide in sequentially on
- * mount, then settle. Reduced-motion users get the same end-state
- * instantly (framer-motion handles this automatically).
+ * Card animation — CSS-only stagger (era framer-motion: ~36 kB gz no glance
+ * do dashboard só para isto). Cada cartão entra com o keyframe `fade-in-up`
+ * do tailwind, atrasado 80 ms em cascata; `both` mantém-no invisível durante
+ * o atraso. `motion-safe:` = reduced-motion vê o estado final de imediato.
+ * Duração/curva/cascata iguais às do framer; o deslocamento é 16 px (o do
+ * keyframe partilhado) em vez dos 12 px de antes — diferença aceite.
  */
-const cardVariants = {
-  hidden:  { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.2, 0.9, 0.3, 1] } },
-}
-const containerVariants = {
-  hidden:  {},
-  visible: { transition: { staggerChildren: 0.08 } },
-}
+const CARD_ANIM = 'motion-safe:animate-[fade-in-up_0.32s_cubic-bezier(0.2,0.9,0.3,1)_both]'
+const cardDelay = (i: number) => ({ animationDelay: `${i * 80}ms` })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function MonthlySummary({ userId: _userId }: { userId?: string }) {
   const { t, locale } = useLocale()
-  const { queryString, key } = usePeriod()
+  const { queryString } = usePeriod()
   const qs = queryString()
   const { data: summary, isLoading } = useQuery({
     // Period in the key → React Query auto-refetches when the user
@@ -70,7 +66,9 @@ export function MonthlySummary({ userId: _userId }: { userId?: string }) {
 
   if (isLoading || !summary) {
     return (
-      <div className="grid grid-cols-3 gap-4">
+      // Mesma grelha do estado carregado (1 coluna em mobile) — antes o
+      // skeleton era sempre 3 colunas e o conteúdo saltava ao chegar (CLS).
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" aria-busy="true">
         {[1, 2, 3].map(i => (
           <div key={i} className="glass-card p-5 animate-pulse">
             <div className="h-3 bg-white/10 rounded w-1/2 mb-3" />
@@ -101,16 +99,13 @@ export function MonthlySummary({ userId: _userId }: { userId?: string }) {
         </div>
       )}
 
-      <motion.div
-        // Key re-renders the wrapper when the period changes, retriggering
+      <div
+        // Key re-mounts the wrapper when the period changes, retriggering
         // the stagger animation. Subtle but signals "fresh data" to the eye.
         key={qs}
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
         className="grid grid-cols-1 sm:grid-cols-3 gap-4"
       >
-        <motion.div variants={cardVariants} className="glass-card p-5">
+        <div className={`glass-card p-5 ${CARD_ANIM}`} style={cardDelay(0)}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-green-400" />
             <span className="text-sm text-white/50">{t('summary.revenues')}</span>
@@ -120,12 +115,12 @@ export function MonthlySummary({ userId: _userId }: { userId?: string }) {
           <div className="text-xs text-white/30 mt-1 capitalize">{periodLabel}</div>
           {cmp && (
             <div className="text-[11px] text-white/40 mt-0.5 tabular-nums">
-              período anterior: {formatCurrency(cmp.income, 'EUR', locale)}
+              {t('summary.prev_period', { amount: formatCurrency(cmp.income, 'EUR', locale) })}
             </div>
           )}
-        </motion.div>
+        </div>
 
-        <motion.div variants={cardVariants} className="glass-card p-5">
+        <div className={`glass-card p-5 ${CARD_ANIM}`} style={cardDelay(1)}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown className="w-4 h-4 text-red-400" />
             <span className="text-sm text-white/50">{t('summary.expenses')}</span>
@@ -135,12 +130,12 @@ export function MonthlySummary({ userId: _userId }: { userId?: string }) {
           <div className="text-xs text-white/30 mt-1 capitalize">{periodLabel}</div>
           {cmp && (
             <div className="text-[11px] text-white/40 mt-0.5 tabular-nums">
-              período anterior: {formatCurrency(cmp.expense, 'EUR', locale)}
+              {t('summary.prev_period', { amount: formatCurrency(cmp.expense, 'EUR', locale) })}
             </div>
           )}
-        </motion.div>
+        </div>
 
-        <motion.div variants={cardVariants} className="glass-card p-5">
+        <div className={`glass-card p-5 ${CARD_ANIM}`} style={cardDelay(2)}>
           <div className="flex items-center gap-2 mb-2">
             <PiggyBank className="w-4 h-4 text-yellow-400" />
             <span className="text-sm text-white/50">{t('summary.savings')}</span>
@@ -154,13 +149,11 @@ export function MonthlySummary({ userId: _userId }: { userId?: string }) {
           </div>
           {cmp && (
             <div className="text-[11px] text-white/40 mt-0.5 tabular-nums">
-              período anterior: {formatCurrency(cmp.savings, 'EUR', locale)}
+              {t('summary.prev_period', { amount: formatCurrency(cmp.savings, 'EUR', locale) })}
             </div>
           )}
-        </motion.div>
-      </motion.div>
-      {/* Period key referenced to silence lint when not used elsewhere */}
-      <span className="sr-only">period:{key}</span>
+        </div>
+      </div>
     </div>
   )
 }
