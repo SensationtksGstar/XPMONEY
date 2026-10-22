@@ -11,7 +11,7 @@ import { tryDeterministicParse }       from '@/lib/statementParsers'
 import { getServerLocale }             from '@/lib/i18n/server'
 import type { Locale }                 from '@/lib/i18n/translations'
 import { guardUser }                   from '@/lib/rateLimit'
-import { isPremiumActive }             from '@/lib/plan'
+import { isPremiumActive, fetchPlanRow } from '@/lib/plan'
 import {
   normalizeDescription, getCachedCategoriesBulk,
 } from '@/lib/merchantCache'
@@ -102,8 +102,13 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   // Plan gate — effective plan (isPremiumActive respects pass expiry).
-  // Matches /api/scan-receipt.
-  if (!isPremiumActive(user.plan, user.premium_until ?? null)) {
+  // Matches /api/scan-receipt. A live Stripe subscription also grants
+  // Premium even when plan/premium_until say otherwise (expired pass +
+  // new subscription) — only the negative path pays the extra
+  // fetchPlanRow, so Premium users keep the single lookup.
+  const premium = isPremiumActive(user.plan, user.premium_until ?? null)
+    || Boolean((await fetchPlanRow(db, 'id', user.id))?.isPremium)
+  if (!premium) {
     return NextResponse.json(
       {
         error: L(locale,

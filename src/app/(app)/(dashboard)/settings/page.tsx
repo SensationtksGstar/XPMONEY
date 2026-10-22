@@ -32,11 +32,12 @@ export default async function SettingsPage() {
 
   const t = await getServerT()
 
-  // Plan from shared cache — no extra DB call
-  const cached = await getUserProfile(userId)
-  const plan     = (cached?.plan ?? 'free') as string
-  const planInfo = PLAN_LABELS[plan] ?? PLAN_LABELS.free
-  const isPaid   = plan !== 'free'
+  // Plan from shared cache — no extra DB call. Label + badge follow the
+  // EFFECTIVE plan (src/lib/plan.ts: expired pass = Free, live subscription
+  // = Premium even when users.plan says 'free'), never the raw `plan`.
+  const cached   = await getUserProfile(userId)
+  const isPaid   = !!cached?.isPremium
+  const planInfo = PLAN_LABELS[isPaid ? 'premium' : 'free']
 
   // Profile details (name, email, etc.) — fetch separately since they change more often.
   // `challenge` and `goal` live in Clerk publicMetadata (see /api/profile for the why).

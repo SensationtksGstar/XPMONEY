@@ -2,6 +2,8 @@ import { auth, currentUser }      from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createCheckoutSession, createPassCheckoutSession, STRIPE_PRICES } from '@/lib/stripe'
 import { createSupabaseAdmin }       from '@/lib/supabase'
+import { isSubscriptionPremium, SUB_SNAPSHOT_COLS, type SubscriptionSnapshot } from '@/lib/plan'
+import { getServerT }                from '@/lib/i18n/server'
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth()
@@ -62,6 +64,32 @@ export async function POST(req: NextRequest) {
       { error: 'A tua conta ainda não está totalmente inicializada. Completa o onboarding primeiro.' },
       { status: 404 },
     )
+  }
+
+  // Guarda de checkout duplicado (sec-9): quem já tem uma subscrição viva não
+  // abre um 2.º checkout de SUBSCRIÇÃO — o BillingClient só escondia os botões
+  // no cliente (dois separadores / duplo clique bastavam), o Stripe criava um
+  // Customer novo e o upsert onConflict user_id do webhook sobrescrevia o id da
+  // 1.ª subscrição → dupla cobrança com uma subscrição órfã fora do Portal.
+  // Mudar de ciclo, renovar (cancel_at_period_end) ou cancelar = Portal.
+  // O Passe Anual continua permitido: é one-time e empilha premium_until.
+  if (cycle !== 'pass') {
+    const subRes = await db
+      .from('subscriptions')
+      .select(SUB_SNAPSHOT_COLS)
+      .eq('user_id', dbUser.id)
+      .maybeSingle()
+    if (subRes.error) {
+      // Tabela ausente (42P01/PGRST205) ou falha de leitura: não bloqueamos a
+      // venda (comportamento anterior), mas fica registado.
+      console.warn('[billing/checkout] subscription probe failed (continuing):', subRes.error)
+    } else if (isSubscriptionPremium(subRes.data as SubscriptionSnapshot | null)) {
+      const t = await getServerT()
+      return NextResponse.json(
+        { error: t('billing.err_already_subscribed'), code: 'already_subscribed' },
+        { status: 409 },
+      )
+    }
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'

@@ -49,15 +49,6 @@ export const metadata = { title: 'Relatório financeiro' }
 export const dynamic    = 'force-dynamic'
 export const revalidate = 0
 
-const PLAN_RANK: Record<string, number> = {
-  free:    0,
-  premium: 1,
-  // legacy aliases — antigos plus/pro/family continuam a poder exportar
-  plus:    1,
-  pro:     1,
-  family:  1,
-}
-
 // PT IRS-deductible categories. Names match the seed in database/schema.sql.
 // When the user switches to standard regime / changes category names this
 // stays correct because it's matched on the seeded `name`.
@@ -89,12 +80,13 @@ export default async function ReportPrintPage() {
   const t      = await getServerT()
   const locale = await getServerLocale()
 
+  // Gate on the EFFECTIVE plan (src/lib/plan.ts): an expired Annual Pass
+  // (plan='premium', premium_until past) is Free, and a live subscription
+  // counts even when users.plan says 'free'. Never gate on raw `plan`.
   const cached = await getUserProfile(userId)
-  const plan   = (cached?.plan ?? 'free') as keyof typeof PLAN_RANK
-  const rank   = PLAN_RANK[plan] ?? 0
 
   // Free users see an upsell. Premium gets the full report.
-  if (rank < 1) {
+  if (!cached?.isPremium) {
     return (
       <main className="min-h-screen bg-[#0a0f1e] text-white flex items-center justify-center p-6 print:hidden">
         <div className="max-w-md text-center space-y-4">
@@ -372,7 +364,8 @@ export default async function ReportPrintPage() {
             <p className="text-xs text-gray-500 uppercase tracking-wider">{t('report.issued')}</p>
             <p className="font-bold">{issuedAt}</p>
             <p className="text-[10px] text-gray-400 mt-1">
-              {t('report.plan_prefix')} {plan === 'free' ? 'FREE' : 'PREMIUM'}
+              {/* Past the gate above the user is effectively Premium. */}
+              {t('report.plan_prefix')} PREMIUM
             </p>
           </div>
         </header>
