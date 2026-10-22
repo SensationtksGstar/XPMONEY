@@ -1,0 +1,165 @@
+import 'server-only'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { awardBadge }       from '@/lib/awardBadge'
+import { awardXP }          from '@/lib/awardXP'
+import { recalculateScore } from '@/lib/recalculateScore'
+import { updateMissionProgress, completeReadyMissions } from '@/lib/updateMissionProgress'
+import { XP_REWARDS }       from '@/types'
+
+/**
+ * Criação de UMA transação + a cadeia de gamificação completa (out. 2026).
+ *
+ * Extraída do POST /api/transactions para o onboarding poder registar a
+ * 1.ª receita NO SERVIDOR (o ovo choca no fim do onboarding) sem 3 fetches
+ * do cliente nem lógica duplicada. Qualquer novo ponto que crie transações
+ * "pelo utilizador" deve passar por aqui — nunca re-implementar a cadeia.
+ *
+ * Contrato da cadeia (CLAUDE.md "XP de missões" / "Fire-and-forget"):
+ *   - tudo AWAITED (nada em after()): o cliente invalida ['score']/['xp']/
+ *     ['missions']/['voltix'] assim que a resposta chega;
+ *   - awardXP + awardBadge + recalculateScore (→ maybeEvolveMascot) +
+ *     updateMissionProgress em Promise.allSettled;
+ *   - missões prontas pagas por completeReadyMissions() DEPOIS desse batch e
+ *     em série (nunca dois awardXP concorrentes pelo pagamento de missões).
+ *
+ * Não valida o formato do input (o chamador valida — zod na rota); valida
+ * a POSSE do account_id/category_id, porque são UUIDs vindos do cliente.
+ */
+
+export interface CreateTransactionInput {
+  account_id:  string
+  amount:      number
+  type:        'income' | 'expense' | 'transfer'
+  category_id: string
+  description: string
+  /** YYYY-MM-DD */
+  date:        string
+}
+
+export interface CreatedMission {
+  type:         string
+  target_value: number
+  xp:           number
+}
+
+export type CreateTransactionResult =
+  | {
+      ok:                 true
+      /** Row inserida com o join `category` (mesmo shape do GET). */
+      data:               Record<string, unknown>
+      xp:                 { amount: number; critical: boolean } | null
+      missions_completed: CreatedMission[]
+    }
+  | { ok: false; status: 400 | 500; error: string }
+
+const TX_SELECT = '*, category:categories(id,name,icon,color,transaction_type,is_default)'
+
+export async function createTransaction(
+  db:         SupabaseClient,
+  internalId: string,
+  input:      CreateTransactionInput,
+): Promise<CreateTransactionResult> {
+  // FK ownership check — don't trust client-supplied UUIDs.
+  // Without this, a malicious client could POST a transaction referencing
+  // another user's account_id or a non-default category_id belonging to
+  // someone else. Even if the insert sets user_id correctly, the cross-
+  // reference pollutes any view that joins by FK without re-applying the
+  // user_id filter — and it leaks UUID existence via success/fail status.
+  const accountId  = input.account_id
+  const categoryId = input.category_id
+
+  // The two probes are independent — run them in parallel (saves a
+  // round-trip on every transaction create, the hottest write in the app).
+  const [accProbe, catProbe] = await Promise.all([
+    accountId
+      ? db
+          .from('accounts')
+          .select('id')
+          .eq('id', accountId)
+          .eq('user_id', internalId)
+          .maybeSingle()
+      : Promise.resolve(null),
+    categoryId
+      ? db
+          .from('categories')
+          .select('id, is_default, user_id')
+          .eq('id', categoryId)
+          .maybeSingle()
+      : Promise.resolve(null),
+  ])
+
+  if (accountId && !accProbe?.data) {
+    return { ok: false, status: 400, error: 'Invalid account' }
+  }
+  if (categoryId) {
+    // A category is OK if it's the caller's OR a default seeded category
+    // (is_default=true + user_id null) that every user can use.
+    const cat = catProbe?.data
+    const ownsCategory =
+      !!cat && (cat.is_default === true || cat.user_id === internalId)
+    if (!ownsCategory) return { ok: false, status: 400, error: 'Invalid category' }
+  }
+
+  const { data, error } = await db
+    .from('transactions')
+    .insert({ ...input, user_id: internalId })
+    .select(TX_SELECT)
+    .single()
+
+  if (error || !data) {
+    return { ok: false, status: 500, error: error?.message ?? 'insert returned no row' }
+  }
+
+  // Secondary effects run concurrently but ARE awaited: the client
+  // invalidates ['score']/['xp']/['missions']/['voltix'] the moment the 201
+  // lands (useTransactions.ts), so deferring these (e.g. via after()) would
+  // make that refetch read stale values — the score wouldn't move after
+  // logging a transaction. Total latency = slowest branch (recalculateScore).
+  // Recompensa VARIÁVEL (julho 2026): 15 XP base com ~10% de hipótese de
+  // "crítico" 3-5×, decidido no SERVIDOR (nunca no cliente — seria farmável).
+  // Era a peça do modelo Hooked em falta: recompensa fixa habitua em dias;
+  // a antecipação do talvez é o que faz voltar. Mesmo reason no ledger —
+  // o amount na xp_history já conta a história.
+  const isCrit   = Math.random() < 0.10
+  const critMult = isCrit ? 3 + Math.floor(Math.random() * 3) : 1 // 3, 4 ou 5
+  const xpAmount = XP_REWARDS.TRANSACTION_REGISTERED * critMult
+
+  // Missões que este pedido levou ao alvo: as do register_transactions e as
+  // que o recalculateScore empurrou (improve_score/categorize_all/
+  // reach_savings_goal — recolhidas pelo out-array, nunca pagas lá dentro).
+  const readyFromScore: string[] = []
+  const [xpRes, , , missionRes] = await Promise.allSettled([
+    awardXP(db, internalId, xpAmount, 'transaction_registered'),
+    awardBadge(db, internalId, 'first_transaction'),
+    recalculateScore(db, internalId, { readyMissionIds: readyFromScore }),
+    // Bump the "log N transactions" mission. Other mission types depend on
+    // daily-checkin (streaks) and score recalc (score delta) so they tick
+    // from their own call sites.
+    updateMissionProgress(db, internalId, { type: 'register_transactions' }),
+  ])
+
+  // Pagamento do XP das missões prontas — DEPOIS do batch acima e em série,
+  // para nunca haver dois awardXP concorrentes no xp_progress (RMW). Fica
+  // awaited (não after()): o cliente invalida ['xp']/['missions'] assim que
+  // a resposta chega e tem de ver o XP já pago.
+  const readyIds = [
+    ...(missionRes.status === 'fulfilled' ? missionRes.value : []),
+    ...readyFromScore,
+  ]
+  const missionsCompleted = readyIds.length > 0
+    ? (await completeReadyMissions(db, internalId, readyIds))
+        .map(m => ({ type: m.type, target_value: m.target_value, xp: m.xp }))
+    : []
+
+  const xpInfo =
+    xpRes.status === 'fulfilled' && xpRes.value
+      ? { amount: xpAmount, critical: isCrit }
+      : null
+
+  return {
+    ok:                 true,
+    data:               data as Record<string, unknown>,
+    xp:                 xpInfo,
+    missions_completed: missionsCompleted,
+  }
+}
