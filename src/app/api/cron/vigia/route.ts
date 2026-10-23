@@ -93,6 +93,18 @@ async function expectStatus(name: string, path: string, expected: number): Promi
   }
 }
 
+/** OG image of a public share page: 200 + image/png (a 307 or an HTML error
+ *  page means WhatsApp/Facebook previews silently break). */
+async function expectPng(name: string, path: string): Promise<Check> {
+  const res = await probe(path)
+  await res.arrayBuffer().catch((err: unknown) => {
+    console.warn('[vigia] body drain failed:', path, errMsg(err))
+  })
+  const type = res.headers.get('content-type') ?? ''
+  const ok   = res.status === 200 && type.startsWith('image/png')
+  return { name, ok, detail: `${path} → ${res.status} ${type || '(sem content-type)'}${ok ? '' : ' — esperado 200 image/png'}` }
+}
+
 /** First blog slug: from the filesystem when it's bundled into this lambda,
  *  else parsed from the live sitemap (content/ may not be traced here). */
 async function firstBlogSlug(): Promise<string | null> {
@@ -178,6 +190,11 @@ export async function GET(req: NextRequest) {
     ...pages.map(p => ({ name: `crawler:${p}`, run: () => expectStatus(`crawler:${p}`, p, 200) })),
     { name: 'crawler:/blog/<artigo>', run: checkBlogArticle },
     { name: 'http:404', run: () => expectStatus('http:404', `/vigia-${Date.now()}`, 404) },
+    // Partilha pública (/p/*): conjuntos fechados → 200 dentro, 404 fora.
+    { name: 'share:/p/evo/voltix-3', run: () => expectStatus('share:/p/evo/voltix-3', '/p/evo/voltix-3', 200) },
+    { name: 'share:/p/streak/7',     run: () => expectStatus('share:/p/streak/7', '/p/streak/7', 200) },
+    { name: 'share:/p/streak/8',     run: () => expectStatus('share:/p/streak/8', '/p/streak/8', 404) },
+    { name: 'share:/p/streak/7/og',  run: () => expectPng('share:/p/streak/7/og', '/p/streak/7/opengraph-image') },
     { name: 'stripe:webhook-endpoint', run: checkStripeWebhook },
   ]
 
