@@ -2,6 +2,8 @@ import { auth }              from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin }       from '@/lib/supabase'
 import { resolveUser }               from '@/lib/resolveUser'
+import { revertXP }                  from '@/lib/awardXP'
+import { XP_REWARDS }                from '@/types'
 
 export async function DELETE(
   _req: NextRequest,
@@ -31,32 +33,14 @@ export async function DELETE(
   // o valor BASE (15): num registo que calhou crítico o user fica com o
   // bónus, mas o farm deixa de ser rentável (esperança de lucro por ciclo
   // ≈ +2 XP com fricção de 2 requests — morto na prática). Clamp a 0 e
-  // best-effort: falhar o revert nunca falha o delete.
+  // best-effort: falhar o revert nunca falha o delete. Vai pelo MESMO
+  // caminho do awardXP (RPC atómico award_xp com delta negativo, fallback
+  // read-modify-write) — o nível passa a acompanhar o xp_total.
   if (deleted && deleted.length > 0) {
-    try {
-      const { data: xp } = await db
-        .from('xp_progress')
-        .select('xp_total')
-        .eq('user_id', internalId)
-        .maybeSingle()
-      if (xp) {
-        const revert   = Math.min(15, xp.xp_total ?? 0)
-        if (revert > 0) {
-          const now = new Date().toISOString()
-          await Promise.allSettled([
-            db.from('xp_progress')
-              .update({ xp_total: (xp.xp_total ?? 0) - revert, updated_at: now })
-              .eq('user_id', internalId),
-            db.from('xp_history').insert({
-              user_id: internalId, amount: -revert,
-              reason: 'transaction_deleted', earned_at: now,
-            }),
-          ])
-        }
-      }
-    } catch (err) {
-      console.warn('[tx-delete] XP revert failed:', err)
-    }
+    const reverted = await revertXP(
+      db, internalId, XP_REWARDS.TRANSACTION_REGISTERED, 'transaction_deleted',
+    )
+    if (!reverted) console.warn('[tx-delete] XP revert skipped/failed for', internalId)
   }
 
   return NextResponse.json({ success: true })

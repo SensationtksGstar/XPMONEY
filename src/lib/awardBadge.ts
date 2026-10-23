@@ -1,4 +1,4 @@
-import { calculateXPProgress } from '@/lib/gamification'
+import { awardXP } from '@/lib/awardXP'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 interface AwardBadgeResult {
@@ -60,35 +60,18 @@ export async function awardBadge(
       return { awarded: false, badge }
     }
 
-    // 4. Increment XP in xp_progress
-    const { data: xp } = await db
-      .from('xp_progress')
-      .select('xp_total, level')
-      .eq('user_id', userId)
-      .single()
-
-    if (xp && badge.xp_reward > 0) {
-      const newTotal = (xp.xp_total ?? 0) + badge.xp_reward
-      const progress = calculateXPProgress(newTotal)
-      await db.from('xp_progress').update({
-        xp_total:         newTotal,
-        level:            progress.level,
-        last_activity_at: new Date().toISOString(),
-        updated_at:       new Date().toISOString(),
-      }).eq('user_id', userId)
-
-      // 5. Log to xp_history
-      await db.from('xp_history').insert({
-        user_id:   userId,
-        amount:    badge.xp_reward,
-        reason:    `badge_${badge.code}`,
-        earned_at: new Date().toISOString(),
-      })
+    // 4. XP do badge pelo awardXP (incremento atómico via RPC award_xp +
+    //    ledger xp_history). Era um read-modify-write inline que corria no
+    //    mesmo Promise.allSettled que o awardXP da transação e apagava o
+    //    incremento um do outro.
+    if (badge.xp_reward > 0) {
+      await awardXP(db, userId, badge.xp_reward, `badge_${badge.code}`)
     }
 
     return { awarded: true, badge }
-  } catch {
+  } catch (err) {
     // Never throw — return a safe fallback
+    console.warn('[awardBadge] failed:', err)
     return { awarded: false, badge: null }
   }
 }

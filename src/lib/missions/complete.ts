@@ -122,11 +122,14 @@ export async function completeMission(
 
   const res = await awardXP(db, userId, reward, reason)
   if (!res) {
-    // awardXP só devolve null ANTES de escrever (sem row xp_progress ou
-    // exceção na leitura) → nada foi pago. Libertamos o claim: a missão
-    // volta a 'active' no alvo e o próximo tick (updateMissionProgress
-    // devolve-a em readyIds, o GET das vencidas, ou o botão de resgate)
-    // tenta de novo. Sem isto ficaria 'completed' por pagar para sempre.
+    // null = pagamento NÃO confirmado. Quase sempre nada foi escrito (sem
+    // row xp_progress, rollback dentro do RPC, fallback com leitura ou as
+    // duas escritas falhadas); mas um erro de rede/timeout no RPC depois do
+    // commit pode ter pago. Libertamos o claim na mesma: a missão volta a
+    // 'active' no alvo e o próximo tick (updateMissionProgress devolve-a em
+    // readyIds, o GET das vencidas, ou o botão de resgate) tenta de novo — e
+    // a probe ao ledger acima apanha o caso "já pago" e devolve 'already'.
+    // Sem isto ficaria 'completed' por pagar para sempre.
     console.warn(`[completeMission] awardXP returned null for ${missionId}`)
     await releaseClaim(db, userId, missionId)
     return { status: 'error', xp: 0, mission: info }
