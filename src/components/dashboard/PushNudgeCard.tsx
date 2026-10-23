@@ -6,6 +6,7 @@ import { useUser }             from '@clerk/nextjs'
 import { useVoltix }           from '@/hooks/useVoltix'
 import { PushOptIn }           from '@/components/notifications/PushOptIn'
 import { useT }                from '@/lib/i18n/LocaleProvider'
+import { useMoment }           from '@/lib/momentQueue'
 
 const DISMISS_KEY  = 'xpmoney:push_nudge_dismissed'
 const DISMISS_DAYS = 14
@@ -28,7 +29,12 @@ export function PushNudgeCard() {
   const t          = useT()
   const { user }   = useUser()
   const { voltix } = useVoltix(user?.id ?? '')
-  const [visible, setVisible] = useState(false)
+  // `eligible` = reúne as condições; `visible` = a fila de momentos deu-lhe
+  // o lugar (máx. 1 pedido por sessão e por dia, nunca por cima de uma
+  // cinematic/celebração/boas-vindas).
+  const [eligible, setEligible] = useState(false)
+  const slot    = useMoment('request', eligible, 'push-nudge')
+  const visible = slot === 'granted'
 
   const streak = voltix?.streak_days ?? 0
 
@@ -39,15 +45,21 @@ export function PushNudgeCard() {
     try {
       const dismissed = localStorage.getItem(DISMISS_KEY)
       if (dismissed && Date.now() - Number(dismissed) < DISMISS_DAYS * 86_400_000) return
-    } catch { /* localStorage indisponível — mostra na mesma */ }
-    if (streak >= 2) setVisible(true)
+    } catch (err) {
+      console.warn('[pushcard] localStorage unavailable, showing anyway:', err)
+    }
+    if (streak >= 2) setEligible(true)
   }, [streak])
 
   if (!visible) return null
 
   function dismiss() {
-    try { localStorage.setItem(DISMISS_KEY, String(Date.now())) } catch { /* quota */ }
-    setVisible(false)
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now()))
+    } catch (err) {
+      console.warn('[pushcard] could not persist dismissal:', err)
+    }
+    setEligible(false)
   }
 
   return (

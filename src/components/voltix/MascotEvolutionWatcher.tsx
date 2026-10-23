@@ -26,6 +26,7 @@ import { useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import { useVoltix } from '@/hooks/useVoltix'
+import { useMoment } from '@/lib/momentQueue'
 import type { EvoStage } from '@/lib/mascotEvolution'
 import type { MascotGender } from '@/types'
 
@@ -43,7 +44,8 @@ function readLastEvo(): EvoStage | null {
     const n = Number(raw)
     if (!Number.isFinite(n) || n < 1 || n > 6) return null
     return n as EvoStage
-  } catch {
+  } catch (err) {
+    console.warn('[mascot-watcher] could not read last evo:', err)
     return null
   }
 }
@@ -52,8 +54,9 @@ function writeLastEvo(evo: EvoStage): void {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(LAST_EVO_KEY, String(evo))
-  } catch {
-    /* storage disabled — we'll just re-fire once next session, not critical */
+  } catch (err) {
+    // storage disabled — we'll just re-fire once next session, not critical
+    console.warn('[mascot-watcher] could not persist last evo:', err)
   }
 }
 
@@ -70,6 +73,8 @@ export function MascotEvolutionWatcher() {
     gender:  MascotGender
     fromEvo: EvoStage
     toEvo:   EvoStage
+    /** Só as evoluções reais gravam o "visto"; o preview de dev não toca no storage. */
+    persist: boolean
   } | null>(null)
 
   // ── Dev preview: ?previewEvo=2-3 ───────────────────────────────────────
@@ -81,7 +86,7 @@ export function MascotEvolutionWatcher() {
     const to   = clampEvo(toStr)
     if (to <= from) return
     const gender = (voltix?.mascot_gender ?? 'voltix') as MascotGender
-    setCinematic({ gender, fromEvo: from, toEvo: to })
+    setCinematic({ gender, fromEvo: from, toEvo: to, persist: false })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params])
 
@@ -99,8 +104,15 @@ export function MascotEvolutionWatcher() {
 
     if (serverEvo > lastSeen) {
       const gender = (voltix.mascot_gender ?? 'voltix') as MascotGender
-      setCinematic({ gender, fromEvo: lastSeen, toEvo: serverEvo })
-      writeLastEvo(serverEvo)
+      // O "visto" só é gravado quando a cinematic chega mesmo ao ecrã (efeito
+      // abaixo): se o user recarregar/fechar o separador enquanto ela espera
+      // pela fila, a evolução volta a tocar em vez de se perder. Re-deteções
+      // do mesmo destino (refetch do useVoltix) mantêm o estado atual.
+      setCinematic(prev => (
+        prev && prev.persist && prev.toEvo === serverEvo && prev.fromEvo === lastSeen
+          ? prev
+          : { gender, fromEvo: lastSeen, toEvo: serverEvo, persist: true }
+      ))
     } else if (serverEvo < lastSeen) {
       // Defensive: if some migration / debug lowered the server value, just sync down.
       writeLastEvo(serverEvo)
@@ -112,7 +124,18 @@ export function MascotEvolutionWatcher() {
   // render obrigava o cinematic a re-orquestrar a timeline.
   const handleClose = useCallback(() => setCinematic(null), [])
 
-  if (!cinematic) return null
+  // Fila de momentos: a cinematic tem a prioridade máxima (ganha às
+  // celebrações, às boas-vindas e aos pedidos de push/PWA), mas só monta
+  // quando o lugar é concedido — sem isso o modal "Bem-vindo" do dashboard
+  // tapava o hatch do dia 1. O chunk framer-motion só carrega aqui.
+  const slot = useMoment('cinematic', cinematic !== null)
+
+  // Cinematic no ecrã → a evolução fica registada como vista neste dispositivo.
+  useEffect(() => {
+    if (slot === 'granted' && cinematic?.persist) writeLastEvo(cinematic.toEvo)
+  }, [slot, cinematic])
+
+  if (!cinematic || slot !== 'granted') return null
 
   return (
     <MascotEvolutionCinematic

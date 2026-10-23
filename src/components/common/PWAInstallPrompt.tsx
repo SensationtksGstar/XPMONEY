@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from 'react'
 import { Download, X, Share, Plus } from 'lucide-react'
 import { useT, useLocale } from '@/lib/i18n/LocaleProvider'
+import { useMoment } from '@/lib/momentQueue'
 
 /**
  * PWA install prompt — handles BOTH browser ecosystems honestly:
@@ -60,7 +61,10 @@ function wasDismissedRecently(): boolean {
     const ts = Number(window.localStorage.getItem(DISMISS_KEY))
     if (!ts) return false
     return Date.now() - ts < DISMISS_TTL_MS
-  } catch { return false }
+  } catch (err) {
+    console.warn('[pwa] could not read dismissal:', err)
+    return false
+  }
 }
 
 function isStandalone(): boolean {
@@ -89,7 +93,15 @@ export function PWAInstallPrompt() {
 
   const [bipEvent,   setBipEvent]   = useState<BeforeInstallPromptEvent | null>(null)
   const [showIos,    setShowIos]    = useState(false)
-  const [open,       setOpen]       = useState(false)
+  // Duas vias para abrir:
+  //   - manual (botão "Instalar app" → OPEN_EVENT): pedido explícito do
+  //     utilizador, ignora a fila e o limite de pedidos;
+  //   - automática (timer): passa pela fila de momentos — nunca por cima de
+  //     cinematic/celebração/boas-vindas e no máximo 1 pedido por sessão/dia.
+  const [manualOpen, setManualOpen] = useState(false)
+  const [autoReady,  setAutoReady]  = useState(false)
+  const slot = useMoment('request', autoReady && !manualOpen, 'pwa-install')
+  const open = manualOpen || slot === 'granted'
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -126,14 +138,14 @@ export function PWAInstallPrompt() {
   // A click on the nav "Install app" button bypasses both, because that's
   // an explicit user request — they want it now.
   useEffect(() => {
-    function onOpen() { setOpen(true) }
+    function onOpen() { setManualOpen(true) }
     window.addEventListener(OPEN_EVENT, onOpen)
 
     if ((!bipEvent && !showIos) || wasDismissedRecently()) {
       return () => window.removeEventListener(OPEN_EVENT, onOpen)
     }
     const delay = bipEvent ? 5000 : 8000
-    const timer = window.setTimeout(() => setOpen(true), delay)
+    const timer = window.setTimeout(() => setAutoReady(true), delay)
     return () => {
       window.clearTimeout(timer)
       window.removeEventListener(OPEN_EVENT, onOpen)
@@ -141,8 +153,11 @@ export function PWAInstallPrompt() {
   }, [bipEvent, showIos])
 
   function dismiss() {
-    setOpen(false)
-    try { window.localStorage.setItem(DISMISS_KEY, String(Date.now())) } catch { /* */ }
+    setManualOpen(false)
+    setAutoReady(false)
+    try { window.localStorage.setItem(DISMISS_KEY, String(Date.now())) } catch (err) {
+      console.warn('[pwa] could not persist dismissal:', err)
+    }
   }
 
   async function install() {
@@ -150,7 +165,8 @@ export function PWAInstallPrompt() {
     await bipEvent.prompt()
     const { outcome } = await bipEvent.userChoice
     if (outcome === 'accepted') {
-      setOpen(false)
+      setManualOpen(false)
+      setAutoReady(false)
       setBipEvent(null)
     } else {
       dismiss()

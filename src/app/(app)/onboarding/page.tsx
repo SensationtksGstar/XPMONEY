@@ -322,7 +322,10 @@ export default function OnboardingPage() {
 
       // Force full-page navigation — dashboard layout reads Supabase directly
       // so it will see onboarding_completed: true immediately.
-      window.location.href = '/dashboard'
+      // `?welcome=1`: sinal fiável de "utilizador novo" para o dashboard
+      // (boas-vindas de 1.ª vez, nunca "de volta"). O dashboard lê-o e limpa
+      // o URL com history.replaceState (sem round-trip RSC).
+      window.location.href = '/dashboard?welcome=1'
     } catch (err) {
       console.warn('[onboarding] complete failed:', err)
       setErrorMsg(err instanceof Error ? err.message : String(err))

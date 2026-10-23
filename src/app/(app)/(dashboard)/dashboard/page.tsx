@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic                         from 'next/dynamic'
 import { PlusCircle, ChevronDown, BarChart3 } from 'lucide-react'
 import { useUser }                     from '@clerk/nextjs'
@@ -17,13 +17,31 @@ import { TransactionForm }             from '@/components/transactions/Transacti
 import { CelebrationModal }            from '@/components/ui/CelebrationModal'
 import { formatMonth }                 from '@/lib/utils'
 import { useT }                        from '@/lib/i18n/LocaleProvider'
+import { useMoment }                   from '@/lib/momentQueue'
 import Link                            from 'next/link'
+
+interface Celebration {
+  id:        number
+  icon:      string
+  title:     string
+  subtitle:  string
+  xp?:       number
+}
+
+type WelcomePlan =
+  | { kind: 'new' }
+  | { kind: 'back'; level: number; xp: number }
 
 // ── Dynamic imports — only load when needed (reduces mobile JS) ──────────────
 // O glance (tudo acima do expander "Análise detalhada") NÃO importa
 // framer-motion (~36 kB gz): PeriodFilter e MonthlySummary animam com CSS
 // (out. 2026). A lib só carrega com a cinemática de evolução e com os widgets
 // do expander. Não reintroduzir `framer-motion` num componente do glance.
+// Conta com < 24 h só conta como "nova" abaixo deste XP (o hatch do dia 1 já
+// paga 300 + 1.ª receita 15 + meta 100). Protege contra createdAt falso após
+// a migração do Clerk.
+const NEW_ACCOUNT_MAX_XP = 1000
+
 const PeriodFilter = dynamic(
   () => import('@/components/dashboard/PeriodFilter').then(m => ({ default: m.PeriodFilter })),
   { ssr: false, loading: () => <div className="h-10 bg-white/5 rounded-xl animate-pulse" /> },
@@ -82,25 +100,51 @@ export default function DashboardPage() {
   // Análises colapsadas por defeito (dashboard diet): os chunks recharts
   // dos widgets lá dentro só carregam quando o user expande.
   const [showInsights, setShowInsights] = useState(false)
-  const [celebration, setCelebration]   = useState<{
-    icon: string; title: string; subtitle: string; xp?: number
-  } | null>(null)
-  const checkinDone = useRef(false)
-  const welcomeDone = useRef(false)
+  // Fila de celebrações (streak/freeze/badge): FIFO, uma de cada vez. Antes
+  // cada setCelebration substituía a anterior (e usava setTimeout para
+  // "ordenar"). O modal só abre quando a fila de momentos dá o lugar
+  // (cinematic > celebração > boas-vindas > pedidos).
+  const [celebrations, setCelebrations] = useState<Celebration[]>([])
+  const celebrationSeq = useRef(0)
+  const pushCelebration = useCallback((c: Omit<Celebration, 'id'>) => {
+    celebrationSeq.current += 1
+    const id = celebrationSeq.current
+    setCelebrations(q => [...q, { ...c, id }])
+  }, [])
+  const closeCelebration = useCallback(() => setCelebrations(q => q.slice(1)), [])
+  const celebrationSlot = useMoment('celebration', celebrations.length > 0)
+
+  // Boas-vindas: decididas uma vez (nova vs. de volta), mostradas pela fila.
+  const [welcomePlan, setWelcomePlan]   = useState<WelcomePlan | null>(null)
+  const [welcomeReady, setWelcomeReady] = useState(false)
+  const welcomeSlot = useMoment('welcome', welcomePlan !== null && welcomeReady)
+  const closeWelcome = useCallback(() => { setWelcomePlan(null); setWelcomeReady(false) }, [])
+  const checkinDone  = useRef(false)
+  const welcomeDone  = useRef(false)
+  // `?welcome=1` (vindo do onboarding) lido UMA vez no mount, antes de o
+  // Clerk carregar; o URL é limpo logo a seguir.
+  const welcomeParam   = useRef(false)
+  // Já foram mostradas neste mount (evita repetir se o storage falhar e o
+  // efeito voltar a correr).
+  const welcomeShown   = useRef(false)
+  const welcomeChecked = useRef(false)
   const queryClient = useQueryClient()
   const { toast }   = useToast()
 
   // Nome real da mascote (género + forma atual) para o ecrã de boas-vindas.
-  // Ref para o setTimeout do welcome ler o valor mais recente sem re-disparar
-  // o efeito.
+  // Resolvido no RENDER do modal (não congelado ao agendar): se o hatch do
+  // dia 1 tocar primeiro, as boas-vindas já mostram a forma nova.
   const { voltix } = useVoltix()
   // Sem dados ainda (GET /api/voltix em voo): cai para o localStorage, para
   // quem escolheu a Penny não ver o nome do Voltix no welcome.
   const mascotGender: MascotGender = voltix?.mascot_gender ?? resolveMascotGender(null)
   const mascotNames = mascotGender === 'penny' ? PENNY_EVO_NAMES : EVO_NAMES
   const mascotName  = mascotNames[voltix?.evolution_level ?? 1] ?? mascotNames[1]
-  const mascotNameRef = useRef(mascotName)
-  mascotNameRef.current = mascotName
+  const voltixLoaded = voltix !== null
+
+  // Primitivo nas deps: o Clerk reconstrói o objeto User (e o Date createdAt)
+  // em atualizações de sessão, o que re-corria o efeito das boas-vindas.
+  const createdMs = user?.createdAt ? new Date(user.createdAt).getTime() : NaN
 
   const firstName = user?.firstName ?? t('dashboard.greeting_default')
   // Greeting: tried a time-based "Bom dia/tarde/noite" previously, but the
@@ -109,14 +153,52 @@ export default function DashboardPage() {
   // works for every user at every hour — also easier to i18n later.
   const greeting  = t('common.hello')
 
-  /* ── first-login welcome (once per user per device) ── */
+  /* ── deep link ?welcome=1 (vem do onboarding) ──
+     Lido uma vez no mount (não espera pelo Clerk) e limpo do URL. O ref
+     guarda o valor: o StrictMode de dev corre o efeito duas vezes e a 2.ª
+     leitura já podia não ver o parâmetro. */
   useEffect(() => {
-    if (welcomeDone.current || !user?.id) return
+    if (welcomeChecked.current) return
+    welcomeChecked.current = true
+    try {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('welcome') === '1') {
+        welcomeParam.current = true
+        // history.replaceState (integrado com o router do Next ≥14.1) limpa
+        // o URL sem o round-trip RSC de um router.replace — o layout é
+        // force-dynamic (auth + BD) e não há motivo para o repetir.
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+    } catch (err) {
+      console.warn('[welcome] could not read ?welcome param:', err)
+    }
+  }, [])
+
+  /* ── boas-vindas (uma vez por utilizador e dispositivo) ──
+     "Novo" decide-se de forma fiável: veio do onboarding (?welcome=1) — o
+     sinal principal — OU a conta Clerk tem < 24 h E quase nenhum XP. A
+     heurística antiga (xp_total === 0) falhava sempre — a 1.ª receita do
+     onboarding já dá XP — e mostrava "de volta" a quem acabou de chegar.
+     O createdAt sozinho não chega: na migração para o Clerk de produção todos
+     os utilizadores existentes passam a ter createdAt = data da migração, e
+     veriam o "Bem-vindo" de 1.ª vez; o limiar de XP separa-os dos novos. */
+  useEffect(() => {
+    if (welcomeDone.current || welcomeShown.current || !user?.id) return
     welcomeDone.current = true
 
-    if (typeof window === 'undefined') return
     const key = `xpm_welcomed_${user.id}`
-    if (localStorage.getItem(key)) return
+    try {
+      if (localStorage.getItem(key)) return
+    } catch (err) {
+      console.warn('[welcome] localStorage unavailable:', err)
+    }
+
+    const accountNew = Number.isFinite(createdMs) && Date.now() - createdMs < 24 * 60 * 60 * 1000
+
+    if (welcomeParam.current) {
+      setWelcomePlan({ kind: 'new' })
+      return
+    }
 
     let cancelled = false
 
@@ -127,36 +209,46 @@ export default function DashboardPage() {
       .then(xp => {
         if (cancelled) return
         const xpTotal = xp?.xp_total ?? 0
-        const level   = xp?.level ?? 1
-        const isBrandNew = xpTotal === 0 && level === 1
-
-        // Delay so daily-checkin celebration (if any) shows first
-        setTimeout(() => {
-          setCelebration(
-            isBrandNew
-              ? {
-                  icon:     '⚡',
-                  title:    t('dashboard.welcome_new', { name: firstName }),
-                  subtitle: t('dashboard.welcome_new_sub', { mascot: mascotNameRef.current }),
-                  xp:       0,
-                }
-              : {
-                  icon:     '👋',
-                  title:    t('dashboard.welcome_back', { name: firstName }),
-                  subtitle: t('dashboard.welcome_back_sub', { level, xp: xpTotal }),
-                  xp:       xpTotal,
-                },
-          )
-        }, 1500)
-
-        localStorage.setItem(key, String(Date.now()))
+        if (accountNew && xpTotal < NEW_ACCOUNT_MAX_XP) {
+          setWelcomePlan({ kind: 'new' })
+        } else {
+          setWelcomePlan({ kind: 'back', level: xp?.level ?? 1, xp: xpTotal })
+        }
       })
       .catch(err => {
         console.warn('[welcome] failed:', err)
+        // Conta com < 24 h e sem dados de XP: tratar como nova é o erro mais barato.
+        if (!cancelled && accountNew) setWelcomePlan({ kind: 'new' })
       })
 
-    return () => { cancelled = true }
-  }, [user?.id, firstName])
+    return () => {
+      cancelled = true
+      // StrictMode (dev): sem repor a guarda o 2.º efeito saía cedo e o
+      // fetch cancelado nunca era repetido.
+      welcomeDone.current = false
+    }
+  }, [user?.id, createdMs, queryClient])
+
+  // Dá tempo às outras fontes (daily-checkin, cinematic do hatch que depende
+  // do GET /api/voltix) de entrarem na fila antes das boas-vindas pedirem o
+  // lugar; sem voltix, não esperamos mais de 4 s.
+  useEffect(() => {
+    if (!welcomePlan || welcomeReady) return
+    const id = window.setTimeout(() => setWelcomeReady(true), voltixLoaded ? 1500 : 4000)
+    return () => window.clearTimeout(id)
+  }, [welcomePlan, welcomeReady, voltixLoaded])
+
+  // Só marca "já vimos as boas-vindas" quando o modal chega mesmo ao ecrã
+  // (se o user sair antes, volta a ter direito a elas).
+  useEffect(() => {
+    if (welcomeSlot !== 'granted' || !user?.id) return
+    welcomeShown.current = true
+    try {
+      localStorage.setItem(`xpm_welcomed_${user.id}`, String(Date.now()))
+    } catch (err) {
+      console.warn('[welcome] could not persist welcomed flag:', err)
+    }
+  }, [welcomeSlot, user?.id])
 
   /* ── daily check-in ── */
   useEffect(() => {
@@ -180,33 +272,30 @@ export default function DashboardPage() {
 
         const streak = res.streak ?? 0
         if (res.freeze_earned) toast(t('streak.freeze_earned'), 'info')
+        // As celebrações entram numa FIFO (uma de cada vez, sem se
+        // substituírem) e só abrem quando a fila de momentos o permite.
         if (streak === 7) {
-          setCelebration({ icon: '🔥', title: t('dashboard.streak_7_title'), subtitle: t('dashboard.streak_7_sub'), xp: res.xp_earned })
+          pushCelebration({ icon: '🔥', title: t('dashboard.streak_7_title'), subtitle: t('dashboard.streak_7_sub'), xp: res.xp_earned })
         } else if (streak === 30) {
-          setCelebration({ icon: '👑', title: t('dashboard.streak_30_title'), subtitle: t('dashboard.streak_30_sub'), xp: res.xp_earned })
+          pushCelebration({ icon: '👑', title: t('dashboard.streak_30_title'), subtitle: t('dashboard.streak_30_sub'), xp: res.xp_earned })
         } else if (streak === 60) {
-          setCelebration({ icon: '💎', title: t('dashboard.streak_60_title'), subtitle: t('dashboard.streak_60_sub'), xp: res.xp_earned })
+          pushCelebration({ icon: '💎', title: t('dashboard.streak_60_title'), subtitle: t('dashboard.streak_60_sub'), xp: res.xp_earned })
         } else if (streak === 100) {
-          setCelebration({ icon: '🌟', title: t('dashboard.streak_100_title'), subtitle: t('dashboard.streak_100_sub'), xp: res.xp_earned })
+          pushCelebration({ icon: '🌟', title: t('dashboard.streak_100_title'), subtitle: t('dashboard.streak_100_sub'), xp: res.xp_earned })
         }
 
         // Streak salvo por um freeze — momento raro que merece ser visto
-        // (é assim que o user aprende que a proteção existe). Ligeiro
-        // atraso para não colidir com uma celebração de marco.
+        // (é assim que o user aprende que a proteção existe).
         if (res.freeze_used) {
-          setTimeout(() => {
-            setCelebration({
-              icon:     '❄️',
-              title:    t('dashboard.freeze_used_title'),
-              subtitle: t('dashboard.freeze_used_sub', { n: streak }),
-            })
-          }, 600)
+          pushCelebration({
+            icon:     '❄️',
+            title:    t('dashboard.freeze_used_title'),
+            subtitle: t('dashboard.freeze_used_sub', { n: streak }),
+          })
         }
 
         res.badges_awarded?.forEach((b: { name: string; icon: string }) => {
-          setTimeout(() => {
-            setCelebration({ icon: b.icon, title: t('dashboard.badge_unlocked'), subtitle: b.name })
-          }, 800)
+          pushCelebration({ icon: b.icon, title: t('dashboard.badge_unlocked'), subtitle: b.name })
         })
       })
       .catch(err => {
@@ -320,14 +409,35 @@ export default function DashboardPage() {
 
       {/* Modals */}
       {showForm && <TransactionForm onClose={() => setShowForm(false)} />}
-      {celebration && (
+      {/* Só um destes monta de cada vez: a fila de momentos concede UM lugar
+          (cinematic > celebração > boas-vindas > pedidos). */}
+      {celebrationSlot === 'granted' && celebrations[0] && (
+        <CelebrationModal
+          key={celebrations[0].id}
+          open
+          onClose={closeCelebration}
+          icon={celebrations[0].icon}
+          title={celebrations[0].title}
+          subtitle={celebrations[0].subtitle}
+          xp={celebrations[0].xp}
+        />
+      )}
+      {welcomeSlot === 'granted' && welcomePlan && (
         <CelebrationModal
           open
-          onClose={() => setCelebration(null)}
-          icon={celebration.icon}
-          title={celebration.title}
-          subtitle={celebration.subtitle}
-          xp={celebration.xp}
+          onClose={closeWelcome}
+          icon={welcomePlan.kind === 'new' ? '⚡' : '👋'}
+          title={
+            welcomePlan.kind === 'new'
+              ? t('dashboard.welcome_new', { name: firstName })
+              : t('dashboard.welcome_back', { name: firstName })
+          }
+          subtitle={
+            welcomePlan.kind === 'new'
+              ? t('dashboard.welcome_new_sub', { mascot: mascotName })
+              : t('dashboard.welcome_back_sub', { level: welcomePlan.level, xp: welcomePlan.xp })
+          }
+          xp={welcomePlan.kind === 'new' ? 0 : welcomePlan.xp}
         />
       )}
     </div>
