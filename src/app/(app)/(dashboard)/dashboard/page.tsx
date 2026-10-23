@@ -26,6 +26,8 @@ interface Celebration {
   title:     string
   subtitle:  string
   xp?:       number
+  /** Marcos de streak 7/30/60/100 — o CelebrationModal valida contra o conjunto fechado de /p/streak. */
+  shareStreak?: number
 }
 
 type WelcomePlan =
@@ -275,13 +277,13 @@ export default function DashboardPage() {
         // As celebrações entram numa FIFO (uma de cada vez, sem se
         // substituírem) e só abrem quando a fila de momentos o permite.
         if (streak === 7) {
-          pushCelebration({ icon: '🔥', title: t('dashboard.streak_7_title'), subtitle: t('dashboard.streak_7_sub'), xp: res.xp_earned })
+          pushCelebration({ icon: '🔥', title: t('dashboard.streak_7_title'), subtitle: t('dashboard.streak_7_sub'), xp: res.xp_earned, shareStreak: streak })
         } else if (streak === 30) {
-          pushCelebration({ icon: '👑', title: t('dashboard.streak_30_title'), subtitle: t('dashboard.streak_30_sub'), xp: res.xp_earned })
+          pushCelebration({ icon: '👑', title: t('dashboard.streak_30_title'), subtitle: t('dashboard.streak_30_sub'), xp: res.xp_earned, shareStreak: streak })
         } else if (streak === 60) {
-          pushCelebration({ icon: '💎', title: t('dashboard.streak_60_title'), subtitle: t('dashboard.streak_60_sub'), xp: res.xp_earned })
+          pushCelebration({ icon: '💎', title: t('dashboard.streak_60_title'), subtitle: t('dashboard.streak_60_sub'), xp: res.xp_earned, shareStreak: streak })
         } else if (streak === 100) {
-          pushCelebration({ icon: '🌟', title: t('dashboard.streak_100_title'), subtitle: t('dashboard.streak_100_sub'), xp: res.xp_earned })
+          pushCelebration({ icon: '🌟', title: t('dashboard.streak_100_title'), subtitle: t('dashboard.streak_100_sub'), xp: res.xp_earned, shareStreak: streak })
         }
 
         // Streak salvo por um freeze — momento raro que merece ser visto
@@ -420,6 +422,7 @@ export default function DashboardPage() {
           title={celebrations[0].title}
           subtitle={celebrations[0].subtitle}
           xp={celebrations[0].xp}
+          shareStreak={celebrations[0].shareStreak}
         />
       )}
       {welcomeSlot === 'granted' && welcomePlan && (

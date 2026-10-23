@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useT } from '@/lib/i18n/LocaleProvider'
+import { ShareButton } from '@/components/common/ShareButton'
+import { streakSharePath } from '@/app/p/_lib/share'
 
 interface Props {
   open:       boolean
@@ -12,6 +14,12 @@ interface Props {
   subtitle:   string
   xp?:        number
   autoClose?: number | false // ms before auto-dismiss, or false to disable
+  /**
+   * Marco de sequência (7/30/60/100…) — quando está no conjunto das páginas
+   * públicas /p/streak/*, mostra um "Partilhar" secundário por baixo do
+   * CTA. O URL leva só o nº de dias (nunca dados pessoais nem euros).
+   */
+  shareStreak?: number
 }
 
 /* ── tiny pure-CSS confetti ───────────────────────────────────── */
@@ -30,13 +38,24 @@ const PIECES = Array.from({ length: 28 }, (_, i) => ({
 }))
 
 export function CelebrationModal({
-  open, onClose, icon, title, subtitle, xp, autoClose = 4500,
+  open, onClose, icon, title, subtitle, xp, autoClose = 4500, shareStreak,
 }: Props) {
   const t = useT()
   const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
   const remainingRef = useRef(0)
   const startedAtRef = useRef(0)
-  const [paused, setPaused] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  // O user tocou em "Partilhar": o auto-close fica suspenso até ele fechar
+  // (a folha nativa / o "Link copiado" não podem desaparecer por baixo).
+  const [pinned, setPinned]   = useState(false)
+  const paused = hovered || pinned
+  const sharePath = shareStreak !== undefined ? streakSharePath(shareStreak) : null
+
+  // Cada (re)abertura — ou troca de celebração no mesmo modal — recomeça
+  // sem pin.
+  useEffect(() => {
+    if (open) setPinned(false)
+  }, [open, title])
 
   // Reset the auto-close budget whenever the modal (re-)opens. Declared
   // BEFORE the arming effect below — effect order matters here.
@@ -67,6 +86,8 @@ export function CelebrationModal({
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
+      // Enter no botão "Partilhar" ativa-o — não pode também fechar o modal.
+      if (e.key === 'Enter' && e.target instanceof Element && e.target.closest('[data-share-button]')) return
       if (e.key === 'Escape' || e.key === 'Enter') {
         if (timerRef.current) clearTimeout(timerRef.current)
         onClose()
@@ -94,8 +115,8 @@ export function CelebrationModal({
           aria-modal="true"
           aria-labelledby="celebration-title"
           aria-describedby="celebration-subtitle"
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
           className="pointer-events-auto relative w-full max-w-sm bg-surface-2 border border-white/15 rounded-3xl p-8 text-center overflow-hidden animate-fade-in-up"
         >
           {/* Confetti */}
@@ -139,13 +160,14 @@ export function CelebrationModal({
             {subtitle}
           </p>
 
-          {/* XP badge */}
-          {xp && (
+          {/* XP badge — `xp ? … : null` e não `xp && …`: com xp=0 (welcome
+              de conta nova) o `&&` renderizava um "0" solto no cartão. */}
+          {xp ? (
             <div className="inline-flex items-center gap-2 bg-yellow-500/15 border border-yellow-500/30 rounded-2xl px-5 py-2.5 mb-5">
               <span className="text-xl" aria-hidden="true">⚡</span>
               <span className="text-yellow-400 font-black text-lg">+{xp} XP</span>
             </div>
-          )}
+          ) : null}
 
           {/* Close CTA */}
           <button
@@ -156,8 +178,21 @@ export function CelebrationModal({
             {t('celebration.continue')}
           </button>
 
-          {/* Countdown progress bar — bottom of card, gives user spatial awareness */}
-          {autoClose && (
+          {/* Partilhar — secundário, por baixo do CTA principal. */}
+          {sharePath && shareStreak !== undefined && (
+            <ShareButton
+              className="mt-3"
+              url={sharePath}
+              title={t('share.streak_title', { n: shareStreak })}
+              text={t('share.streak_text', { n: shareStreak })}
+              ariaLabel={t('share.streak_aria')}
+              onShareStart={() => setPinned(true)}
+            />
+          )}
+
+          {/* Countdown progress bar — bottom of card, gives user spatial awareness.
+              Some quando o user está a partilhar (auto-close suspenso). */}
+          {autoClose && !pinned && (
             <div
               className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 overflow-hidden"
               aria-hidden="true"

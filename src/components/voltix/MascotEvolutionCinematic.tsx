@@ -36,6 +36,9 @@ import { MascotCreature } from './MascotCreature'
 import type { MascotGender } from '@/types'
 import { EVO_DISPLAY_NAMES, EVO_XP_BONUS, type EvoStage } from '@/lib/mascotEvolution'
 import { playEvolutionSfx } from '@/lib/evolutionSfx'
+import { ShareButton } from '@/components/common/ShareButton'
+import { evoSharePath } from '@/app/p/_lib/share'
+import { useT } from '@/lib/i18n/LocaleProvider'
 
 interface Props {
   open:     boolean
@@ -141,18 +144,33 @@ function ParticleHelix({ visible, color }: { visible: boolean; color: string }) 
 export function MascotEvolutionCinematic({
   open, onClose, gender, fromEvo, toEvo,
 }: Props) {
+  const t = useT()
   const reduced = useReducedMotion()
   const [stage, setStage] = useState<'intro' | 'bleach' | 'burst' | 'reveal' | 'celebrate'>('intro')
   const [showConfetti, setShowConfetti] = useState(false)
   const skipRef = useRef<HTMLButtonElement>(null)
   const fired = useRef(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  // Timer do auto-close final. O user a partilhar suspende-o (fechar o
+  // momento por baixo da folha de partilha seria hostil) — depois fecha
+  // ele, com "Saltar"/ESC.
+  const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const fromName = EVO_DISPLAY_NAMES[gender][fromEvo]
   const toName   = EVO_DISPLAY_NAMES[gender][toEvo]
   const xpBonus  = toEvo > fromEvo && toEvo in EVO_XP_BONUS
     ? EVO_XP_BONUS[toEvo as Exclude<EvoStage, 1>]
     : 0
+  // Só partilhamos uma evolução real (para cima) e dentro do conjunto
+  // fechado das páginas /p/evo/* — o URL leva só género + forma.
+  const sharePath = toEvo > fromEvo ? evoSharePath(gender, toEvo) : null
+
+  function suspendAutoClose() {
+    if (autoCloseRef.current) {
+      clearTimeout(autoCloseRef.current)
+      autoCloseRef.current = null
+    }
+  }
 
   const accentColor = gender === 'penny' ? '#ec4899' : '#60a5fa'
 
@@ -213,8 +231,8 @@ export function MascotEvolutionCinematic({
     if (reduced) {
       setStage('celebrate')
       setShowConfetti(true)
-      const end = setTimeout(() => onCloseRef.current(), SKIP_FADE_MS + 3500)
-      return () => { clearTimeout(end); stopAudio() }
+      autoCloseRef.current = setTimeout(() => onCloseRef.current(), SKIP_FADE_MS + 3500)
+      return () => { suspendAutoClose(); stopAudio() }
     }
 
     const t1 = setTimeout(() => setStage('bleach'),  STAGE_TIMES.bleach)
@@ -224,10 +242,11 @@ export function MascotEvolutionCinematic({
       setStage('celebrate')
       setShowConfetti(true)
     }, STAGE_TIMES.celebrate)
-    const t5 = setTimeout(() => onCloseRef.current(), TOTAL_DURATION_MS)
+    autoCloseRef.current = setTimeout(() => onCloseRef.current(), TOTAL_DURATION_MS)
 
     return () => {
-      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5)
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4)
+      suspendAutoClose()
       stopAudio()
     }
     // onClose deliberadamente fora das deps (vive em onCloseRef, ver acima).
@@ -243,6 +262,9 @@ export function MascotEvolutionCinematic({
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
+      // Enter/Espaço no botão "Partilhar" ativam-no — não podem também
+      // fechar o momento por baixo (ESC continua a fechar).
+      if (e.key !== 'Escape' && e.target instanceof Element && e.target.closest('[data-share-button]')) return
       if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') onClose()
     }
     window.addEventListener('keydown', onKey)
@@ -440,6 +462,30 @@ export function MascotEvolutionCinematic({
               ))}
             </div>
           )}
+
+          {/* Partilhar — secundário: só aparece depois do reveal assentar
+              (o momento é a mascote, não o botão) e nunca abre sozinho.
+              Ao tocar, suspende o auto-close para a folha nativa / o
+              "Link copiado" não desaparecerem por baixo do user. */}
+          <AnimatePresence>
+            {stage === 'celebrate' && sharePath && (
+              <motion.div
+                key="share"
+                className="absolute inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] flex justify-center px-4"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : 0.7, duration: 0.4, ease: 'easeOut' }}
+              >
+                <ShareButton
+                  url={sharePath}
+                  title={t('share.evo_title')}
+                  text={t('share.evo_text', { name: toName })}
+                  ariaLabel={t('share.evo_aria')}
+                  onShareStart={suspendAutoClose}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Skip button — always accessible */}
           <button

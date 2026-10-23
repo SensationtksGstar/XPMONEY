@@ -18,6 +18,7 @@ import {
 import type { Course, CourseProgress } from '@/lib/courses'
 import { getCourseById } from '@/lib/coursesAccess'
 import { useLocale, useT } from '@/lib/i18n/LocaleProvider'
+import { ShareButton } from '@/components/common/ShareButton'
 
 const PLAN_RANK: Record<string, number> = {
   free:    0,
@@ -227,6 +228,20 @@ function Certificate({ course, userName, issuedAt, serverCode }: {
           </div>
         </div>
       </div>
+
+      {/* Partilhar — só com código PERSISTIDO (o link /verify/<código>
+          funciona de facto; legacy/pré-migração não tem URL público). A
+          página de verificação mostra só curso, 1.º nome + inicial e data. */}
+      {serverCode && (
+        <ShareButton
+          variant="solid"
+          url={`/verify/${encodeURIComponent(serverCode)}`}
+          title={t('share.cert_title')}
+          text={t('share.cert_text', { course: course.title })}
+          label={t('share.cert_button')}
+          ariaLabel={t('share.cert_aria')}
+        />
+      )}
 
       {/* ── Visão do universo XP-Money — teaser aprovado pelo painel
           marca+compliance+web3 (julho 2026). Substituiu o CTA/modal de
