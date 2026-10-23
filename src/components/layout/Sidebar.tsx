@@ -6,12 +6,13 @@ import { UserButton }  from '@clerk/nextjs'
 import {
   LayoutDashboard, ArrowLeftRight, Crosshair,
   Zap, Target, Settings, Crown, Trophy,
-  Star, TrendingUp, BookOpen, Sword, PiggyBank, Wallet,
+  Star, TrendingUp, BookOpen, Sword, PiggyBank, Wallet, Gift,
 } from 'lucide-react'
 import { cn }    from '@/lib/utils'
 import { Logo }  from '@/components/ui/Logo'
 import { useT } from '@/lib/i18n/LocaleProvider'
 import { useUserPlan } from '@/lib/contexts/UserPlanContext'
+import { useWrappedSeason } from '@/hooks/useWrappedSeason'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
 interface NavItem {
@@ -37,12 +38,20 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/settings',     labelKey: 'nav.settings',     icon: Settings,        pro: false },
 ]
 
+// Wrapped-lite: entrada sazonal (só em dezembro, Lisboa), logo a seguir às
+// Conquistas — é o resumo do ano dessas mesmas conquistas.
+const WRAPPED_ITEM: NavItem = { href: '/wrapped', labelKey: 'nav.wrapped', icon: Gift, pro: false }
+
 export function Sidebar() {
   const pathname = usePathname()
   const t        = useT()
   // `pro` marca só rotas 100% fechadas (perspetiva, simulador). O chip e o
   // cartão de upgrade existem só para quem ainda é free.
   const { isFree } = useUserPlan()
+  const { open: wrappedOpen } = useWrappedSeason()
+  const items = wrappedOpen
+    ? NAV_ITEMS.flatMap(item => item.href === '/badges' ? [item, WRAPPED_ITEM] : [item])
+    : NAV_ITEMS
 
   return (
     <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-full w-64 bg-white/3 border-r border-white/5 z-40">
@@ -54,7 +63,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map(item => {
+        {items.map(item => {
           const Icon     = item.icon
           const isActive = pathname.startsWith(item.href)
           return (

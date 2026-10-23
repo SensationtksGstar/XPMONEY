@@ -2,17 +2,18 @@
 
 import Link            from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect }    from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   LayoutDashboard, ArrowLeftRight,
   Target, BookOpen, Plus, MoreHorizontal,
   Crosshair, Sword, Trophy, Zap, LineChart, TrendingUp,
-  Settings, X, PiggyBank, Wallet, ChevronRight,
+  Settings, X, PiggyBank, Wallet, ChevronRight, Gift,
 } from 'lucide-react'
 import { cn }              from '@/lib/utils'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
 import { useT }            from '@/lib/i18n/LocaleProvider'
 import { useUserPlan }     from '@/lib/contexts/UserPlanContext'
+import { useWrappedSeason } from '@/hooks/useWrappedSeason'
 import type { TranslationKey } from '@/lib/i18n/translations'
 
 // 5-cell primary nav with the FAB at cell 3 → literally 50% of the width.
@@ -48,6 +49,9 @@ interface MoreGroup {
 // sections of tappable rows read instantly; the old flat 3×3 wall of
 // equal icons did not. Icons match the desktop Sidebar so the same
 // feature carries the same glyph on every breakpoint.
+// Wrapped-lite: linha sazonal no topo de "Progresso", só em dezembro (Lisboa).
+const WRAPPED_ITEM: MoreItem = { href: '/wrapped', labelKey: 'nav.wrapped', icon: Gift, badge: null }
+
 const MORE_GROUPS: MoreGroup[] = [
   {
     titleKey: 'nav.group_money',
@@ -88,6 +92,14 @@ export function MobileNav() {
   const { isFree }              = useUserPlan()
   const [showForm, setShowForm] = useState(false)
   const [showMore, setShowMore] = useState(false)
+  const { open: wrappedOpen }   = useWrappedSeason()
+
+  const moreGroups = useMemo<MoreGroup[]>(() => {
+    if (!wrappedOpen) return MORE_GROUPS
+    return MORE_GROUPS.map(g => g.titleKey === 'nav.group_progress'
+      ? { ...g, items: [WRAPPED_ITEM, ...g.items] }
+      : g)
+  }, [wrappedOpen])
 
   // Deep link do atalho PWA / push de registo: `?add=1` (ou o legado `new=true`)
   // abre o formulário e limpa o parâmetro. Lido via window.location em vez de
@@ -101,7 +113,7 @@ export function MobileNav() {
   }, [pathname, router])
 
   // Is the current page one of the "more" pages?
-  const moreActive = MORE_GROUPS.some(g => g.items.some(item => pathname.startsWith(item.href)))
+  const moreActive = moreGroups.some(g => g.items.some(item => pathname.startsWith(item.href)))
 
   return (
     <>
@@ -202,7 +214,7 @@ export function MobileNav() {
             {/* Grouped rows, not an icon wall. Scrolls inside itself so the
                 sheet never grows past the viewport on small phones (SE). */}
             <div className="px-4 pb-2 space-y-4 max-h-[72vh] overflow-y-auto overscroll-contain">
-              {MORE_GROUPS.map(group => (
+              {moreGroups.map(group => (
                 <div key={group.titleKey}>
                   <p className="px-1 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/40">
                     {t(group.titleKey)}

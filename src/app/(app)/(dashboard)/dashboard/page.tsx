@@ -13,6 +13,7 @@ import type { MascotGender }           from '@/types'
 import { resolveMascotGender }         from '@/lib/mascotGender'
 import { StreakChip }                  from '@/components/dashboard/StreakChip'
 import { PushNudgeCard }               from '@/components/dashboard/PushNudgeCard'
+import { WrappedNudgeCard }            from '@/components/dashboard/WrappedNudgeCard'
 import { TransactionForm }             from '@/components/transactions/TransactionForm'
 import { CelebrationModal }            from '@/components/ui/CelebrationModal'
 import { formatMonth }                 from '@/lib/utils'
@@ -360,6 +361,11 @@ export default function DashboardPage() {
           feed): só aparece com streak ≥ 2, permissão nunca pedida e sem
           dispensa nos últimos 14 dias. */}
       <PushNudgeCard />
+
+      {/* Wrapped-lite ("O teu ano") — convite transitório de 1 a 15/12,
+          mesma categoria do PushNudgeCard (fila de momentos, dispensável,
+          some depois de abrir /wrapped). */}
+      <WrappedNudgeCard />
 
       {/* Resumo do período — o PeriodFilter vive junto do resumo que
           controla (alimenta também a ExpenseBreakdown na análise). */}

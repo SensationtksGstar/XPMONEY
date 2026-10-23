@@ -32,6 +32,7 @@ const isAppPage = createRouteMatcher([
   '/cursos(.*)',
   '/badges(.*)',
   '/voltix(.*)',
+  '/wrapped(.*)',
   '/settings(.*)',
   '/onboarding(.*)',
   '/sign-in(.*)',

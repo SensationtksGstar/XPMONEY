@@ -17,7 +17,7 @@ const NeonShaderLayer = dynamic(
 const APP_ROUTE_PREFIXES = [
   '/dashboard', '/transactions', '/goals', '/missions', '/contas',
   '/orcamento', '/dividas', '/perspetiva', '/simulador', '/cursos',
-  '/badges', '/voltix', '/settings', '/sign-in', '/sign-up',
+  '/badges', '/voltix', '/wrapped', '/settings', '/sign-in', '/sign-up',
 ] as const
 
 function isAppRoute(pathname: string | null): boolean {

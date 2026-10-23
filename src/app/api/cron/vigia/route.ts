@@ -195,6 +195,8 @@ export async function GET(req: NextRequest) {
     { name: 'share:/p/streak/7',     run: () => expectStatus('share:/p/streak/7', '/p/streak/7', 200) },
     { name: 'share:/p/streak/8',     run: () => expectStatus('share:/p/streak/8', '/p/streak/8', 404) },
     { name: 'share:/p/streak/7/og',  run: () => expectPng('share:/p/streak/7/og', '/p/streak/7/opengraph-image') },
+    { name: 'share:/p/wrapped',      run: () => expectStatus('share:/p/wrapped', '/p/wrapped', 200) },
+    { name: 'share:/p/wrapped/og',   run: () => expectPng('share:/p/wrapped/og', '/p/wrapped/opengraph-image') },
     { name: 'stripe:webhook-endpoint', run: checkStripeWebhook },
   ]
 
